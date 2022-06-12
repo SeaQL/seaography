@@ -5,7 +5,7 @@
 
 To SeaQL.org, Inc. ("the Org")
 
-Project: ________ (the "Project")
+Project: Seaography - GraphQL framework on top of SeaORM (the "Project")
 
 Period: Jun 13, 2022 to Dec 31, 2022 (the "Project Period")
 
