@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 
-[workspaces]
+[workspace]
 members = [
   ".",
   "seaography_discoverer",
-  "seaography_typees"
+  "seaography_types",
 ]
