@@ -2,16 +2,17 @@ use std::collections::HashMap;
 
 use clap::Parser;
 
-use seaography_types::{relationship_meta::RelationshipMeta, column_meta::ColumnMeta, table_meta::TableMeta};
-use sqlx::SqlitePool;
+use itertools::Itertools;
+use seaography_types::{relationship_meta::RelationshipMeta, column_meta::ColumnMeta, table_meta::TableMeta, enum_meta::EnumMeta};
 
 use sea_schema::{
-    sea_query::{TableCreateStatement, TableForeignKey, ForeignKeyCreateStatement},
-    sqlite::{
-        def::TableDef,
-        discovery::{DiscoveryResult, SchemaDiscovery},
-    },
+    sea_query::{TableCreateStatement, TableForeignKey, ForeignKeyCreateStatement}
 };
+
+pub mod sqlite;
+pub use sqlite::explore_sqlite;
+
+pub mod mysql;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -21,24 +22,6 @@ pub struct Args {
 }
 
 pub type TablesHashMap = HashMap<String, TableCreateStatement>;
-
-pub async fn explore_sqlite(url: &String) -> DiscoveryResult<TablesHashMap> {
-    let connection = SqlitePool::connect(url)
-        .await
-        .unwrap();
-
-    let schema_discovery = SchemaDiscovery::new(connection);
-
-    let schema = schema_discovery.discover().await?;
-
-    let tables: TablesHashMap = schema
-        .tables
-        .iter()
-        .map(|table: &TableDef| (table.name.clone(), table.write()))
-        .collect();
-
-    Ok(tables)
-}
 
 pub fn extract_relationships_meta(tables: &TablesHashMap) -> Vec<RelationshipMeta> {
     tables
@@ -117,4 +100,31 @@ pub fn extract_tables_meta (tables: &TablesHashMap, relationships: &Vec<Relation
             }
         })
         .collect()
+}
+
+pub fn extract_enums (tables: &TablesHashMap) -> Vec<EnumMeta> {
+    let enums_mixed = tables
+        .into_iter()
+        .map(|(_, table_create_stmt)| {
+            table_create_stmt.get_columns().iter().filter(|col| {
+                match col.get_column_type().unwrap() {
+                     sea_schema::sea_query::ColumnType::Enum(_,_) => true,
+                    _ => false
+                }
+            }).map(|col| {
+                match col.get_column_type().unwrap() {
+                    sea_schema::sea_query::ColumnType::Enum(name, values) => EnumMeta {
+                        enum_name: name.clone(),
+                        enum_values: values.clone()
+                    },
+                   _ => panic!("NOT REACHABLE")
+               }
+            }).collect()
+        })
+        .fold(
+            Vec::<EnumMeta>::new(),
+            |acc: Vec<EnumMeta>, cur: Vec<EnumMeta>| [acc, cur].concat(),
+        );
+
+    enums_mixed.into_iter().unique_by(|enumeration| enumeration.enum_name.clone()).collect_vec()
 }

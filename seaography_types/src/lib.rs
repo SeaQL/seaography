@@ -3,6 +3,7 @@ pub mod column_meta;
 pub mod relationship_meta;
 pub mod table_meta;
 pub mod schema_meta;
+pub mod enum_meta;
 
 
 #[cfg(test)]
