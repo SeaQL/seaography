@@ -1,23 +1,26 @@
 use clap::Parser;
-use sea_schema::{sqlite::discovery::DiscoveryResult};
-use seaography_types::{relationship_meta::RelationshipMeta, table_meta::TableMeta, schema_meta::SchemaMeta,
+use seaography_discoverer::{
+    explore_mysql, explore_sqlite, extract_enums, extract_relationships_meta, extract_tables_meta,
+    Args, TablesHashMap, Result, explore_postgres,
 };
-use seaography_discoverer::{Args, explore_sqlite, TablesHashMap, extract_relationships_meta, extract_tables_meta, mysql::explore_mysql, extract_enums};
-
+use seaography_types::{
+    relationship_meta::RelationshipMeta, schema_meta::SchemaMeta, table_meta::TableMeta,
+};
 
 /**
  * Most ideas come from here
  * https://github.com/SeaQL/sea-orm/blob/master/sea-orm-cli/src/commands.rs
  */
 #[async_std::main]
-async fn main() -> DiscoveryResult<()> {
+async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let tables: TablesHashMap =
-    if args.url.starts_with("sqlite") {
-        explore_sqlite(&args.url).await?
+    let tables: TablesHashMap = if args.url.starts_with("sqlite") {
+        explore_sqlite(&args.url).await.unwrap()
     } else if args.url.starts_with("mysql") {
-        explore_mysql(&args.url).await
+        explore_mysql(&args.url).await?
+    } else if args.url.starts_with("pgsql") | args.url.starts_with("postgres") {
+        explore_postgres(&args.url).await?
     } else {
         unreachable!()
     };

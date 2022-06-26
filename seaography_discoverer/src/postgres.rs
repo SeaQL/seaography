@@ -1,12 +1,11 @@
-use sea_schema::mysql::{def::TableDef, discovery::SchemaDiscovery};
-use sqlx::MySqlPool;
-
 use crate::{TablesHashMap, Result};
+use sea_schema::postgres::{def::TableDef, discovery::SchemaDiscovery};
+use sqlx::PgPool;
 
-pub async fn explore_mysql(url: &String) -> Result<TablesHashMap> {
-    let connection = MySqlPool::connect(url).await?;
+pub async fn explore_postgres(uri: &String) -> Result<TablesHashMap> {
+    let connection = PgPool::connect(uri).await?;
 
-    let schema = url.split("/").last().ok_or("schema not found in database url")?;
+    let schema = uri.split("/").last().ok_or("schema not found in database url")?;
 
     let schema_discovery = SchemaDiscovery::new(connection, schema);
 
