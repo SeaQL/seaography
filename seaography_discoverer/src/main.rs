@@ -16,7 +16,7 @@ async fn main() -> Result<()> {
     let args = Args::parse();
 
     let tables: TablesHashMap = if args.url.starts_with("sqlite") {
-        explore_sqlite(&args.url).await.unwrap()
+        explore_sqlite(&args.url).await?
     } else if args.url.starts_with("mysql") {
         explore_mysql(&args.url).await?
     } else if args.url.starts_with("pgsql") | args.url.starts_with("postgres") {
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
         unreachable!()
     };
 
-    let relationships: Vec<RelationshipMeta> = extract_relationships_meta(&tables);
+    let relationships: Vec<RelationshipMeta> = extract_relationships_meta(&tables)?;
 
     let enums = extract_enums(&tables);
 
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
 
     let schema: SchemaMeta = SchemaMeta { tables, enums };
 
-    println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+    println!("{}", serde_json::to_string_pretty(&schema)?);
 
     Ok(())
 }

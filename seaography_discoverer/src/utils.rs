@@ -5,59 +5,65 @@ use seaography_types::{
     table_meta::TableMeta,
 };
 
-use crate::TablesHashMap;
+use crate::{Result, TablesHashMap};
 
-pub fn extract_relationships_meta(tables: &TablesHashMap) -> Vec<RelationshipMeta> {
+pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<RelationshipMeta>> {
     tables
         .iter()
-        .map(|(table_name, table)| {
+        .map(|(table_name, table)| -> Result<Vec<RelationshipMeta>> {
             table
                 .get_foreign_key_create_stmts()
                 .iter()
                 .map(|fk: &ForeignKeyCreateStatement| fk.get_foreign_key())
-                .map(|fk: &TableForeignKey| {
-                    let dst_table = fk.get_ref_table().unwrap();
+                .map(|fk: &TableForeignKey| -> Result<RelationshipMeta> {
+                    let dst_table = fk
+                        .get_ref_table()
+                        .ok_or("destination table not properly populated")?;
 
-                    let dst_table_stmt = tables.get(&dst_table).unwrap();
+                    let dst_table_stmt = tables
+                        .get(&dst_table)
+                        .ok_or("destination table not properly populated")?;
 
                     let src_cols: Vec<ColumnMeta> = fk
                         .get_columns()
                         .iter()
-                        .map(|col_name| {
+                        .map(|col_name| -> Result<ColumnMeta> {
                             let col = table
                                 .get_columns()
                                 .iter()
                                 .find(|col| col.get_column_name().eq(col_name))
-                                .unwrap();
-                            ColumnMeta::from_column_def(col)
+                                .ok_or("column definition not found")?;
+                            Ok(ColumnMeta::from_column_def(col))
                         })
-                        .collect();
+                        .collect::<Result<Vec<_>>>()?;
 
                     let dst_cols: Vec<ColumnMeta> = fk
                         .get_ref_columns()
                         .iter()
-                        .map(|col_name| {
+                        .map(|col_name| -> Result<ColumnMeta> {
                             let col = dst_table_stmt
                                 .get_columns()
                                 .iter()
                                 .find(|col| col.get_column_name().eq(col_name))
-                                .unwrap();
-                            ColumnMeta::from_column_def(col)
+                                .ok_or("column definition not found")?;
+                            Ok(ColumnMeta::from_column_def(col))
                         })
-                        .collect();
+                        .collect::<Result<Vec<_>>>()?;
 
-                    RelationshipMeta {
+                    Ok(RelationshipMeta {
                         src_table: table_name.clone(),
                         dst_table,
                         src_cols,
                         dst_cols,
-                    }
+                    })
                 })
-                .collect()
+                .collect::<Result<Vec<_>>>()
         })
-        .fold(
+        .try_fold(
             Vec::<RelationshipMeta>::new(),
-            |acc: Vec<RelationshipMeta>, cur: Vec<RelationshipMeta>| [acc, cur].concat(),
+            |acc: Vec<RelationshipMeta>,
+             cur: Result<Vec<RelationshipMeta>>|
+             -> Result<Vec<RelationshipMeta>> { Ok([acc, cur?].concat()) },
         )
 }
 
