@@ -150,7 +150,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
                     &self,
                     ctx: &Context<'a>
                 ) -> #return_type {
-                    let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataLoader>>().unwrap();
+                    let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 
                     let key = #fk_name(#(self.#key_items),*);
 
@@ -237,7 +237,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                 pub struct #fk_name(#(#source_field_types),*);
 
                 #[async_trait::async_trait]
-                impl async_graphql::dataloader::Loader<#fk_name> for OrmDataLoader {
+                impl async_graphql::dataloader::Loader<#fk_name> for OrmDataloader {
                     type Value = #return_type;
                     type Error = std::sync::Arc<sea_orm::error::DbErr>;
 
