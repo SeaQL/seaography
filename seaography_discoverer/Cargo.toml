@@ -15,3 +15,4 @@ sqlx = { version = "0.5.0", features = [ "sqlite", "mysql", "postgres", "runtime
 seaography_types = { path = "../seaography_types/" }
 itertools = "0.10.3"
 url = "2.2.2"
+heck = "0.4.0"

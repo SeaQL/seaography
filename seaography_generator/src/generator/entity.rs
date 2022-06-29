@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use proc_macro2::{TokenStream, Literal};
-use seaography_types::{table_meta::TableMeta, column_meta::ColumnMeta, relationship_meta::RelationshipMeta};
+use seaography_types::{table_meta::TableMeta, column_meta::ColumnMeta, relationship_meta::RelationshipMeta, column_type::ColumnType};
 use quote::quote;
 
 pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
@@ -14,10 +14,14 @@ pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let relations: Vec<TokenStream> = generate_entity_relations(table_meta);
     let foreign_keys: Vec<TokenStream> = generate_foreign_keys_and_loaders(table_meta);
 
+    let enumerations: Vec<TokenStream> = extract_enums(table_meta);
+
     quote! {
         use async_graphql::Context;
         use sea_orm::prelude::*;
         use itertools::Itertools;
+
+        #(use crate::graphql::enums::#enumerations;)*
 
         // TODO generate filter parser function
 
@@ -279,6 +283,21 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                         )
                     }
                 }
+            }
+        })
+        .collect()
+}
+
+pub fn extract_enums(table_meta: &TableMeta) -> Vec<TokenStream> {
+    table_meta
+        .columns
+        .iter()
+        .filter(|col| matches!(col.col_type, ColumnType::Enum(_)))
+        .map(|col| {
+            if let ColumnType::Enum(name) = &col.col_type {
+                name.parse().unwrap()
+            } else {
+                panic!("UNREACHABLE")
             }
         })
         .collect()

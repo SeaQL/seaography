@@ -4,6 +4,7 @@ use seaography_types::{
     column_meta::ColumnMeta, enum_meta::EnumMeta, relationship_meta::RelationshipMeta,
     table_meta::TableMeta,
 };
+use heck::ToUpperCamelCase;
 
 use crate::{Result, TablesHashMap, Error};
 
@@ -108,7 +109,7 @@ pub fn extract_enums(tables: &TablesHashMap) -> Vec<EnumMeta> {
                 })
                 .map(|col| match col.get_column_type().unwrap() {
                     sea_schema::sea_query::ColumnType::Enum(name, values) => EnumMeta {
-                        enum_name: name.clone(),
+                        enum_name: name.to_upper_camel_case(),
                         enum_values: values.clone(),
                     },
                     _ => panic!("NOT REACHABLE"),
