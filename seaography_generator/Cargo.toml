@@ -12,4 +12,5 @@ proc-macro2 = "1.0.37"
 toml = "0.5.9"
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.81"
-seaography_types = { path = "../seaography_types/" }
+clap = { version = "3.2.6", features = ["derive"] }
+seaography_types = { path = "../seaography_types" }
