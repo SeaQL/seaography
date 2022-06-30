@@ -6,8 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sea-query = { version = "0.24.6", default-features = false }
+sea-query = { version = "^0.24.0", git = "https://github.com/hunjixin/sea-query", branch = "support/bigger_blob" }
 heck = "0.4.0"
 proc-macro2 = "1.0.40"
 quote = "1.0.20"
+url = "2.2.2"
 serde = { version = "1.0.137", features = ["derive"] }

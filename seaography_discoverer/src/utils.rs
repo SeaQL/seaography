@@ -1,12 +1,9 @@
+use heck::ToUpperCamelCase;
 use itertools::Itertools;
 use sea_schema::sea_query::{ForeignKeyCreateStatement, TableForeignKey};
-use seaography_types::{
-    column_meta::ColumnMeta, enum_meta::EnumMeta, relationship_meta::RelationshipMeta,
-    table_meta::TableMeta,
-};
-use heck::ToUpperCamelCase;
+use seaography_types::{ColumnMeta, EnumMeta, RelationshipMeta, TableMeta};
 
-use crate::{Result, TablesHashMap, Error};
+use crate::{Result, TablesHashMap};
 
 pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<RelationshipMeta>> {
     tables
@@ -25,6 +22,7 @@ pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<Relation
                         .get(&dst_table)
                         .ok_or("destination table not properly populated")?;
 
+                    // TODO: Duplicate code
                     let src_cols: Vec<ColumnMeta> = fk
                         .get_columns()
                         .iter()
@@ -38,6 +36,7 @@ pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<Relation
                         })
                         .collect::<Result<Vec<_>>>()?;
 
+                    // TODO: Duplicate code
                     let dst_cols: Vec<ColumnMeta> = fk
                         .get_ref_columns()
                         .iter()
@@ -125,51 +124,4 @@ pub fn extract_enums(tables: &TablesHashMap) -> Vec<EnumMeta> {
         .into_iter()
         .unique_by(|enumeration| enumeration.enum_name.clone())
         .collect_vec()
-}
-
-pub fn parse_database_url(database_url: &String) -> Result<url::Url> {
-    let url = url::Url::parse(&database_url)?;
-
-    // Make sure we have all the required url components
-    //
-    // Missing scheme will have been caught by the Url::parse() call
-    // above
-    let url_username = url.username();
-    let url_host = url.host_str();
-
-    let is_sqlite = url.scheme() == "sqlite";
-
-    // Skip checking if it's SQLite
-    if !is_sqlite {
-        // Panic on any that are missing
-        if url_username.is_empty() {
-            return Err(Error::Error("No username was found in the database url".into()))
-        }
-        if url_host.is_none() {
-            return Err(Error::Error("No host was found in the database url".into()))
-        }
-    }
-
-    //
-    // Make sure we have database name
-    //
-    if !is_sqlite {
-        // The database name should be the first element of the path string
-        //
-        // Throwing an error if there is no database name since it might be
-        // accepted by the database without it, while we're looking to dump
-        // information from a particular database
-        let database_name = url
-            .path_segments()
-            .ok_or(Error::Error(format!("There is no database name as part of the url path: {}", url.as_str())))?
-            .next()
-            .unwrap();
-
-        // An empty string as the database name is also an error
-        if database_name.is_empty() {
-            return Err(Error::Error(format!("There is no database name as part of the url path: {}", url.as_str())))
-        }
-    }
-
-    Ok(url)
 }

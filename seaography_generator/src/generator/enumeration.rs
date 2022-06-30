@@ -1,18 +1,15 @@
-use std::path::Path;
 use proc_macro2::TokenStream;
 use quote::quote;
 use seaography_types::enum_meta::EnumMeta;
+use std::path::Path;
 
 pub fn generate_enumeration(enum_meta: &EnumMeta) -> TokenStream {
-    let enum_ident: TokenStream = enum_meta
-        .camel_case()
-        .parse()
-        .unwrap();
+    let enum_ident: TokenStream = enum_meta.camel_case().parse().unwrap();
 
     let enum_values: Vec<TokenStream> = enum_meta
         .enums()
         .iter()
-        .map(|value| value.parse().unwrap() )
+        .map(|value| value.parse().unwrap())
         .collect();
 
     quote! {

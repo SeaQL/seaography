@@ -57,4 +57,38 @@ impl RelationshipMeta {
 
         cols.iter().map(|col: &ColumnMeta| !col.not_null).collect()
     }
+
+    pub fn extract_source_name(&self, is_reverse: bool) -> String {
+        let source_columns = if is_reverse { &self.dst_cols } else { &self.src_cols };
+
+        source_columns
+            .clone()
+            .into_iter()
+            .map(|column| column.snake_case())
+            .map(|s: String| {
+                if s.ends_with("_id") {
+                    String::from(s.split_at(s.len() - 3).0)
+                } else {
+                    s
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("_")
+    }
+
+    pub fn retrieve_name(&self, is_reverse: bool) -> String {
+        let destination_entity = self.snake_case(is_reverse);
+
+        let source_name = self.extract_source_name(is_reverse).to_snake_case();
+
+        format!("{}_{}", source_name, destination_entity)
+    }
+
+    pub fn retrieve_foreign_key(&self, is_reverse: bool) -> String {
+        let destination_entity = self.camel_case(is_reverse);
+
+        let source_name = self.extract_source_name(is_reverse).to_upper_camel_case();
+
+        format!("{}{}FK", source_name, destination_entity)
+    }
 }

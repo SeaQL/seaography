@@ -2,7 +2,7 @@ use std::path::Path;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use seaography_types::{table_meta::TableMeta, column_meta::ColumnMeta};
+use seaography_types::{column_meta::ColumnMeta, table_meta::TableMeta};
 
 pub fn generate_root_node(tables_meta: &Vec<TableMeta>) -> TokenStream {
     let pagination_input = generate_pagination_input();
@@ -14,7 +14,6 @@ pub fn generate_root_node(tables_meta: &Vec<TableMeta>) -> TokenStream {
     quote! {
         use super::entities;
 
-        use async_graphql::Context;
         use sea_orm::prelude::*;
 
         #pagination_input
@@ -40,7 +39,7 @@ pub fn generate_single_queries(tables_meta: &Vec<TableMeta>) -> Vec<TokenStream>
 
             quote! {
                 async fn #entity_module<'a>(
-                    &self, ctx: &Context<'a>,
+                    &self, ctx: &async_graphql::Context<'a>,
                     filters: Option<entities::#entity_module::Filter>,
                     pagination: Option<PaginationInput>,
                 ) -> PaginatedResult<entities::#entity_module::Model> {
@@ -163,7 +162,7 @@ pub fn generate_paginated_result(tables_meta: &Vec<TableMeta>) -> TokenStream {
         .map(|table_meta: &TableMeta| {
             let name = format!("Paginated{}Result", table_meta.camel_case());
             let module = table_meta.snake_case_ident();
-            quote!{
+            quote! {
                 #[graphql(concrete(name = #name, params(entities::#module::Model)))]
             }
         })
@@ -180,7 +179,10 @@ pub fn generate_paginated_result(tables_meta: &Vec<TableMeta>) -> TokenStream {
     }
 }
 
-pub fn write_root_node<P: AsRef<Path>>(path: &P, tables_meta: &Vec<TableMeta>) -> std::io::Result<()> {
+pub fn write_root_node<P: AsRef<Path>>(
+    path: &P,
+    tables_meta: &Vec<TableMeta>,
+) -> std::io::Result<()> {
     let file_name = path.as_ref().join("root_node.rs");
 
     let data = generate_root_node(tables_meta);

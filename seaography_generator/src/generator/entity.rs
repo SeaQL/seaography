@@ -1,13 +1,16 @@
 use std::path::Path;
 
-use proc_macro2::{TokenStream, Literal};
-use seaography_types::{table_meta::TableMeta, column_meta::ColumnMeta, relationship_meta::RelationshipMeta, column_type::ColumnType};
+use proc_macro2::{Literal, TokenStream};
 use quote::quote;
+use seaography_types::{
+    column_meta::ColumnMeta, column_type::ColumnType, relationship_meta::RelationshipMeta,
+    table_meta::TableMeta,
+};
 
 pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let entity_module = table_meta.snake_case_ident();
-    let entity_name = table_meta.camel_case_ident();
-    let entity_filter: TokenStream = format!("{}Filter", table_meta.camel_case()).parse().unwrap();
+    let entity_name = table_meta.camel_case();
+    let entity_filter = format!("{}Filter", table_meta.camel_case());
 
     let filters: Vec<TokenStream> = generate_entity_filters(table_meta);
     let getters: Vec<TokenStream> = generate_entity_getters(table_meta);
@@ -17,9 +20,7 @@ pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let enumerations: Vec<TokenStream> = extract_enums(table_meta);
 
     quote! {
-        use async_graphql::Context;
         use sea_orm::prelude::*;
-        use itertools::Itertools;
 
         #(use crate::graphql::enums::#enumerations;)*
 
@@ -85,30 +86,12 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
         .map(|relationship: &RelationshipMeta| {
             let reverse = relationship.is_reverse(&table_meta.table_name);
 
-
-            let source_entity = &relationship.camel_case(!reverse);
-            let destination_entity = &relationship.camel_case(reverse);
-
-            let fk_name: TokenStream = format!("{}{}FK", source_entity, destination_entity).parse().unwrap();
+            let fk_name: TokenStream = relationship.retrieve_foreign_key(reverse).parse().unwrap();
 
             let source_columns = if reverse { &relationship.dst_cols } else { &relationship.src_cols };
 
-            let source_name = source_columns
-                .clone()
-                .into_iter()
-                .map(|column| column.snake_case())
-                .map(|s: String| {
-                    if s.ends_with("_id") {
-                        String::from(s.split_at(s.len() - 3).0)
-                    } else {
-                        s
-                    }
-                })
-                .collect::<Vec<String>>()
-                .join("_");
-
             let destination_table_module = &relationship.snake_case(reverse);
-            let relation_name: TokenStream = format!("{}_{}", source_name, destination_table_module).parse().unwrap();
+            let relation_name: TokenStream = relationship.retrieve_name(reverse).parse().unwrap();
             let destination_table_module: TokenStream = format!("{}", destination_table_module).parse().unwrap();
 
             let return_type: TokenStream = if reverse {
@@ -152,7 +135,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
             quote! {
                 pub async fn #relation_name<'a>(
                     &self,
-                    ctx: &Context<'a>
+                    ctx: &async_graphql::Context<'a>
                 ) -> #return_type {
                     let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 
@@ -176,11 +159,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
 
             let field_indexes: Vec<Literal> = (0..relationship.src_cols.clone().len()).map(|n| Literal::usize_unsuffixed(n)).collect();
 
-            let source_entity = relationship.camel_case(!reverse);
-
-            let destination_entity = relationship.camel_case(reverse);
             let destination_table_module = relationship.snake_case_ident(reverse);
-
 
             let source_columns = if reverse { &relationship.dst_cols } else { &relationship.src_cols };
 
@@ -189,7 +168,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
             let destination_column_enum_names: Vec<TokenStream> = destination_columns.iter().map(|column| column.camel_case_ident()).collect();
 
 
-            let fk_name: TokenStream = format!("{}{}FK", source_entity, destination_entity).parse().unwrap();
+            let fk_name: TokenStream = relationship.retrieve_foreign_key(reverse).parse().unwrap();
 
             let return_type: TokenStream = if reverse {
                 quote! {
@@ -225,6 +204,16 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                     }
                 })
                 .collect();
+
+            let prepare_dependencies = if reverse {
+                quote! {
+                    use itertools::Itertools;
+                }
+            } else {
+                quote! {
+
+                }
+            };
 
             let prepare_step = if reverse {
                 quote! {
@@ -268,6 +257,8 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                 )
                             );
 
+                        #prepare_dependencies
+
                         Ok(
                             crate::orm::#destination_table_module::Entity::find()
                                 .filter(filter)
@@ -303,8 +294,13 @@ pub fn extract_enums(table_meta: &TableMeta) -> Vec<TokenStream> {
         .collect()
 }
 
-pub fn write_graphql_entity<P: AsRef<Path>>(path: &P, table_meta: &TableMeta) -> std::io::Result<()> {
-    let file_name = path.as_ref().join(format!("{}.rs", table_meta.snake_case()));
+pub fn write_graphql_entity<P: AsRef<Path>>(
+    path: &P,
+    table_meta: &TableMeta,
+) -> std::io::Result<()> {
+    let file_name = path
+        .as_ref()
+        .join(format!("{}.rs", table_meta.snake_case()));
 
     let data = generate_entity(table_meta);
 

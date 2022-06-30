@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, path::Path, io};
+use std::{collections::BTreeMap, io, path::Path};
 
 use seaography_types::schema_meta::SqlVersion;
 use serde::Serialize;
@@ -69,7 +69,6 @@ impl TomlStructure {
             },
         );
 
-
         dependencies.insert(
             "async-trait".into(),
             DependencyInfo {
@@ -109,7 +108,11 @@ impl TomlStructure {
     }
 }
 
-pub fn write_cargo_toml<P: AsRef<Path>>(path: &P, crate_name: &String, sql_version: &SqlVersion) -> io::Result<()> {
+pub fn write_cargo_toml<P: AsRef<Path>>(
+    path: &P,
+    crate_name: &String,
+    sql_version: &SqlVersion,
+) -> io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
     let data = TomlStructure::new(crate_name, sql_version);
