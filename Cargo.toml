@@ -12,4 +12,6 @@ members = [
   ".",
   "seaography_discoverer",
   "seaography_types",
+  "seaography_generator",
+  "seaography_cli"
 ]

@@ -1,64 +1,91 @@
+use heck::ToUpperCamelCase;
 use itertools::Itertools;
 use sea_schema::sea_query::{ForeignKeyCreateStatement, TableForeignKey};
-use seaography_types::{
-    column_meta::ColumnMeta, enum_meta::EnumMeta, relationship_meta::RelationshipMeta,
-    table_meta::TableMeta,
-};
+use seaography_types::{ColumnMeta, EnumMeta, RelationshipMeta, TableMeta};
 
-use crate::TablesHashMap;
+use crate::{Result, TablesHashMap};
 
-pub fn extract_relationships_meta(tables: &TablesHashMap) -> Vec<RelationshipMeta> {
-    tables
-        .iter()
-        .map(|(table_name, table)| {
-            table
-                .get_foreign_key_create_stmts()
-                .iter()
-                .map(|fk: &ForeignKeyCreateStatement| fk.get_foreign_key())
-                .map(|fk: &TableForeignKey| {
-                    let dst_table = fk.get_ref_table().unwrap();
-
-                    let dst_table_stmt = tables.get(&dst_table).unwrap();
-
-                    let src_cols: Vec<ColumnMeta> = fk
-                        .get_columns()
+pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<RelationshipMeta>> {
+    Ok(
+        tables
+            .iter()
+            .flat_map(|(table_name, table)| -> Result<Vec<RelationshipMeta>> {
+                Ok(
+                    table
+                        .get_foreign_key_create_stmts()
                         .iter()
-                        .map(|col_name| {
-                            let col = table
+                        .map(|fk: &ForeignKeyCreateStatement| fk.get_foreign_key())
+                        .flat_map(|fk: &TableForeignKey| -> Result<Vec<RelationshipMeta>> {
+                            let dst_table = fk
+                                .get_ref_table()
+                                .ok_or("destination table not properly populated")?;
+
+                            let dst_table_stmt = tables
+                                .get(&dst_table)
+                                .ok_or("destination table not properly populated")?;
+
+                            // TODO: Duplicate code
+                            let src_cols: Vec<ColumnMeta> = fk
                                 .get_columns()
                                 .iter()
-                                .find(|col| col.get_column_name().eq(col_name))
-                                .unwrap();
-                            ColumnMeta::from_column_def(col)
-                        })
-                        .collect();
+                                .map(|col_name| -> Result<ColumnMeta> {
+                                    let col = table
+                                        .get_columns()
+                                        .iter()
+                                        .find(|col| col.get_column_name().eq(col_name))
+                                        .ok_or("column definition not found")?;
+                                    Ok(ColumnMeta::from_column_def(col))
+                                })
+                                .collect::<Result<Vec<_>>>()?;
 
-                    let dst_cols: Vec<ColumnMeta> = fk
-                        .get_ref_columns()
-                        .iter()
-                        .map(|col_name| {
-                            let col = dst_table_stmt
-                                .get_columns()
+                            // TODO: Duplicate code
+                            let dst_cols: Vec<ColumnMeta> = fk
+                                .get_ref_columns()
                                 .iter()
-                                .find(|col| col.get_column_name().eq(col_name))
-                                .unwrap();
-                            ColumnMeta::from_column_def(col)
-                        })
-                        .collect();
+                                .map(|col_name| -> Result<ColumnMeta> {
+                                    let col = dst_table_stmt
+                                        .get_columns()
+                                        .iter()
+                                        .find(|col| col.get_column_name().eq(col_name))
+                                        .ok_or("column definition not found")?;
+                                    Ok(ColumnMeta::from_column_def(col))
+                                })
+                                .collect::<Result<Vec<_>>>()?;
 
-                    RelationshipMeta {
-                        src_table: table_name.clone(),
-                        dst_table,
-                        src_cols,
-                        dst_cols,
-                    }
-                })
-                .collect()
-        })
-        .fold(
-            Vec::<RelationshipMeta>::new(),
-            |acc: Vec<RelationshipMeta>, cur: Vec<RelationshipMeta>| [acc, cur].concat(),
-        )
+                            if table_name.eq(&dst_table) {
+                                Ok(vec![
+                                    RelationshipMeta {
+                                        src_table: table_name.clone(),
+                                        dst_table: dst_table.clone(),
+                                        src_cols: src_cols.clone(),
+                                        dst_cols: dst_cols.clone(),
+                                    },
+                                    RelationshipMeta {
+                                        src_table: table_name.clone(),
+                                        dst_table,
+                                        src_cols: dst_cols,
+                                        dst_cols: src_cols,
+                                    }
+                                ])
+                            } else {
+                                Ok(vec![
+                                    RelationshipMeta {
+                                        src_table: table_name.clone(),
+                                        dst_table,
+                                        src_cols,
+                                        dst_cols,
+                                    }
+                                ])
+                            }
+                        })
+                        .flatten()
+                        .collect()
+                )
+            })
+            .flatten()
+            .unique()
+            .collect()
+    )
 }
 
 pub fn extract_tables_meta(
@@ -102,7 +129,7 @@ pub fn extract_enums(tables: &TablesHashMap) -> Vec<EnumMeta> {
                 })
                 .map(|col| match col.get_column_type().unwrap() {
                     sea_schema::sea_query::ColumnType::Enum(name, values) => EnumMeta {
-                        enum_name: name.clone(),
+                        enum_name: name.to_upper_camel_case(),
                         enum_values: values.clone(),
                     },
                     _ => panic!("NOT REACHABLE"),

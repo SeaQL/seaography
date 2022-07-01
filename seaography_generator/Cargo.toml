@@ -1,0 +1,15 @@
+[package]
+name = "seaography_generator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+quote = "1.0.18"
+heck = "0.4.0"
+proc-macro2 = "1.0.37"
+toml = "0.5.9"
+serde = { version = "1.0.137", features = ["derive"] }
+clap = { version = "3.2.6", features = ["derive"] }
+seaography_types = { path = "../seaography_types" }

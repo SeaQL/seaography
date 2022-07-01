@@ -1,6 +1,7 @@
-use clap::Parser;
 use sea_schema::sea_query::TableCreateStatement;
 use std::collections::HashMap;
+
+use seaography_types::{RelationshipMeta, SchemaMeta, TableMeta, SqlVersion};
 
 pub mod sqlite;
 pub use sqlite::explore_sqlite;
@@ -17,11 +18,36 @@ pub use error::{Error, Result};
 pub mod utils;
 pub use utils::{extract_enums, extract_relationships_meta, extract_tables_meta};
 
-#[derive(Parser)]
-#[clap(author, version, about, long_about = None)]
-pub struct Args {
-    #[clap(short, long, value_parser)]
-    pub url: String,
-}
+pub use sea_schema;
 
 pub type TablesHashMap = HashMap<String, TableCreateStatement>;
+
+pub async fn extract_database_metadata(database_url: &url::Url) -> Result<(TablesHashMap, SqlVersion)> {
+    Ok(
+        match database_url.scheme() {
+            "mysql" => (explore_mysql(&database_url.to_string()).await?, SqlVersion::Mysql),
+            "sqlite" => (explore_sqlite(&database_url.to_string()).await?, SqlVersion::Sqlite),
+            "postgres" | "postgresql" | "pgsql" => {
+                (explore_postgres(&database_url.to_string()).await?, SqlVersion::Postgres)
+            }
+            _ => unimplemented!("{} is not supported", database_url.scheme()),
+        }
+    )
+}
+
+pub async fn extract_schema(database_url: &url::Url, tables: &TablesHashMap, version: &SqlVersion) -> Result<SchemaMeta> {
+    let relationships: Vec<RelationshipMeta> = extract_relationships_meta(&tables)?;
+
+    let enums = extract_enums(&tables);
+
+    let tables: Vec<TableMeta> = extract_tables_meta(&tables, &relationships);
+
+    let schema: SchemaMeta = SchemaMeta {
+        tables,
+        enums,
+        url: database_url.to_string(),
+        version: version.clone(),
+    };
+
+    Ok(schema)
+}

@@ -1,12 +1,15 @@
 use sea_schema::mysql::{def::TableDef, discovery::SchemaDiscovery};
 use sqlx::MySqlPool;
 
-use crate::{TablesHashMap, Result};
+use crate::{Result, TablesHashMap};
 
 pub async fn explore_mysql(url: &String) -> Result<TablesHashMap> {
     let connection = MySqlPool::connect(url).await?;
 
-    let schema = url.split("/").last().ok_or("schema not found in database url")?;
+    let schema = url
+        .split("/")
+        .last()
+        .ok_or("schema not found in database url")?;
 
     let schema_discovery = SchemaDiscovery::new(connection, schema);
 

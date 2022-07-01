@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::column_type::{ColumnType, map_sea_query_column_type};
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct ColumnMeta {
     pub col_name: String,
     pub col_type: ColumnType,
