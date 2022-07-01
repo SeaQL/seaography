@@ -18,7 +18,8 @@ pub enum Error {
     Error(String),
     DiscovererError(seaography_discoverer::Error),
     SeaCodegenError(sea_orm_codegen::Error),
-    IoError(std::io::Error)
+    IoError(std::io::Error),
+    ParseError(url::ParseError)
 }
 
 impl From<seaography_discoverer::Error> for Error {
@@ -36,6 +37,12 @@ impl From<sea_orm_codegen::Error> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Self::IoError(err)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(err: ParseError) -> Self {
+        Self::ParseError(err)
     }
 }
 

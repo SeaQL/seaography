@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::column_meta::ColumnMeta;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct RelationshipMeta {
     pub src_table: String,
     pub dst_table: String,

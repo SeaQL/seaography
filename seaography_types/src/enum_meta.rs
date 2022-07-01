@@ -1,7 +1,7 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct EnumMeta {
     pub enum_name: String,
     pub enum_values: Vec<String>
