@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::Path
 use heck::ToUpperCamelCase;
 
 use proc_macro2::{Literal, TokenStream};
@@ -8,7 +8,6 @@ use seaography_types::{
     table_meta::TableMeta,
 };
 use itertools::Itertools;
-
 
 pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let entity_module = table_meta.snake_case_ident();
@@ -159,7 +158,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
                     let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 
                     let key = #fk_name(#(self.#key_items.clone()),*);
-
+                    let key = #fk_name(#(self.#key_items),*);
                     let data: Option<_> = data_loader.load_one(key).await.unwrap();
 
                     #return_value
@@ -268,7 +267,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                         sea_orm::sea_query::SimpleExpr::Tuple(
                                             keys
                                                 .iter()
-                                                .map(|tuple|
+                                                .map(|tuple
                                                     sea_orm::sea_query::SimpleExpr::Values(vec![#(tuple.#field_indexes.clone().into()),*])
                                                 )
                                                 .collect()
@@ -287,7 +286,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                 .into_iter()
                                 .map(|model| {
                                     let key = #fk_name(#(#destination_fields.clone()),*);
-
+                                    
                                     (key, model)
                                 })
                                 #prepare_step

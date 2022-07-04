@@ -17,9 +17,9 @@ async fn main() -> Result<()> {
     let path = std::path::Path::new(&args.destination);
 
     std::fs::create_dir_all(&path.join("src/orm"))?;
-
+    
     println!("{:#?}", schema);
-
+    
     generate_orm(&path.join("src/orm"), tables.values().cloned().collect())?;
 
     write_project(&path, &schema, &args.crate_name)?;
