@@ -1,4 +1,5 @@
 use std::path::Path;
+use heck::ToUpperCamelCase;
 
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;
@@ -6,6 +7,8 @@ use seaography_types::{
     column_meta::ColumnMeta, column_type::ColumnType, relationship_meta::RelationshipMeta,
     table_meta::TableMeta,
 };
+use itertools::Itertools;
+
 
 pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let entity_module = table_meta.snake_case_ident();
@@ -51,6 +54,14 @@ pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .columns
         .iter()
+        .filter(|column| {
+            match column.col_type {
+                // TODO support enum type
+                ColumnType::Binary => false,
+                ColumnType::Enum(_) => false,
+                _ => true
+            }
+        })
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
             let column_filter_type = column.get_base_type();
@@ -70,9 +81,16 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
             let column_name = column.snake_case_ident();
             let column_type = column.get_type();
 
-            quote! {
-                pub async fn #column_name(&self) -> &#column_type {
-                    &self.#column_name
+            match column.col_type {
+                ColumnType::Enum(_) => quote! {
+                    pub async fn #column_name(&self) -> #column_type {
+                        self.#column_name.clone().map(|i| i.into())
+                    }
+                },
+                _ => quote! {
+                    pub async fn #column_name(&self) -> &#column_type {
+                        &self.#column_name
+                    }
                 }
             }
         })
@@ -83,6 +101,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .relations
         .iter()
+        .unique_by(|relationship| relationship.retrieve_foreign_key(relationship.is_reverse(&table_meta.table_name)))
         .map(|relationship: &RelationshipMeta| {
             let reverse = relationship.is_reverse(&table_meta.table_name);
 
@@ -139,7 +158,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
                 ) -> #return_type {
                     let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 
-                    let key = #fk_name(#(self.#key_items),*);
+                    let key = #fk_name(#(self.#key_items.clone()),*);
 
                     let data: Option<_> = data_loader.load_one(key).await.unwrap();
 
@@ -154,6 +173,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
     table_meta
         .relations
         .iter()
+        .unique_by(|relationship| relationship.retrieve_foreign_key(relationship.is_reverse(&table_meta.table_name)))
         .map(|relationship: &RelationshipMeta| {
             let reverse = relationship.is_reverse(&table_meta.table_name);
 
@@ -249,7 +269,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                             keys
                                                 .iter()
                                                 .map(|tuple|
-                                                    sea_orm::sea_query::SimpleExpr::Values(vec![#(tuple.#field_indexes.into()),*])
+                                                    sea_orm::sea_query::SimpleExpr::Values(vec![#(tuple.#field_indexes.clone().into()),*])
                                                 )
                                                 .collect()
                                         )
@@ -266,7 +286,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                 .await?
                                 .into_iter()
                                 .map(|model| {
-                                    let key = #fk_name(#(#destination_fields),*);
+                                    let key = #fk_name(#(#destination_fields.clone()),*);
 
                                     (key, model)
                                 })
@@ -286,7 +306,7 @@ pub fn extract_enums(table_meta: &TableMeta) -> Vec<TokenStream> {
         .filter(|col| matches!(col.col_type, ColumnType::Enum(_)))
         .map(|col| {
             if let ColumnType::Enum(name) = &col.col_type {
-                name.parse().unwrap()
+                name.to_upper_camel_case().parse().unwrap()
             } else {
                 panic!("UNREACHABLE")
             }

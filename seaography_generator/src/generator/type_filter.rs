@@ -23,6 +23,7 @@ pub fn generate_type_filter() -> TokenStream {
         // TODO #[graphql(concrete(name = "DateFilter", params()))]
         // TODO #[graphql(concrete(name = "TimeFilter", params()))]
         #[graphql(concrete(name = "DateTimeFilter", params(DateTime)))]
+        #[graphql(concrete(name = "DateTimeUtcFilter", params(DateTimeUtc)))]
         // TODO #[graphql(concrete(name = "TimestampFilter", params()))]
         // TODO #[graphql(concrete(name = "TimestampWithTimeZoneFilter", params()))]
         #[graphql(concrete(name = "DecimalFilter", params(Decimal)))]
