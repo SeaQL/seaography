@@ -1,5 +1,5 @@
 use clap::Parser;
-use seaography_cli::{parse_database_url, Args, Result, generate_orm};
+use seaography_cli::{generate_orm, parse_database_url, Args, Result};
 use seaography_discoverer::{extract_database_metadata, extract_schema};
 use seaography_generator::write_project;
 use seaography_types::SchemaMeta;
@@ -17,7 +17,9 @@ async fn main() -> Result<()> {
     let path = std::path::Path::new(&args.destination);
 
     std::fs::create_dir_all(&path.join("src/orm"))?;
-
+    
+    println!("{:#?}", schema);
+    
     generate_orm(&path.join("src/orm"), tables.values().cloned().collect())?;
 
     write_project(&path, &schema, &args.crate_name)?;

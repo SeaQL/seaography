@@ -19,7 +19,7 @@ pub enum Error {
     DiscovererError(seaography_discoverer::Error),
     SeaCodegenError(sea_orm_codegen::Error),
     IoError(std::io::Error),
-    ParseError(url::ParseError)
+    ParseError(url::ParseError),
 }
 
 impl From<seaography_discoverer::Error> for Error {
@@ -109,10 +109,9 @@ pub fn parse_database_url(database_url: &String) -> Result<url::Url> {
 
 pub fn generate_orm<P: AsRef<std::path::Path>>(
     path: &P,
-    table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>
+    table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>,
 ) -> Result<()> {
-    let entity_writer =
-        sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
+    let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
 
     let writer_output = entity_writer.generate(true, sea_orm_codegen::WithSerde::None);
 

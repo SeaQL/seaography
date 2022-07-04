@@ -2,7 +2,7 @@ use std::path::Path;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use seaography_types::{column_meta::ColumnMeta, table_meta::TableMeta};
+use seaography_types::{ColumnMeta, TableMeta, ColumnType};
 
 pub fn generate_root_node(tables_meta: &Vec<TableMeta>) -> TokenStream {
     let pagination_input = generate_pagination_input();
@@ -95,6 +95,14 @@ pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
     let columns_filters: Vec<TokenStream> = table_meta
         .columns
         .iter()
+        .filter(|column| {
+            match column.col_type {
+                // TODO support enum type
+                ColumnType::Binary => false,
+                ColumnType::Enum(_) => false,
+                _ => true
+            }
+        })
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
             let column_enum_name = column.camel_case_ident();

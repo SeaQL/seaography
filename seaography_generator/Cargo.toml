@@ -13,3 +13,4 @@ toml = "0.5.9"
 serde = { version = "1.0.137", features = ["derive"] }
 clap = { version = "3.2.6", features = ["derive"] }
 seaography_types = { path = "../seaography_types" }
+itertools = "0.10.3"

@@ -22,11 +22,13 @@ pub fn write_graphql<P: AsRef<Path>>(
     tables_meta: &Vec<TableMeta>,
     enums_meta: &Vec<EnumMeta>,
 ) -> std::io::Result<()> {
-    std::fs::create_dir_all(&path.as_ref().join("enums"))?;
-    for enum_meta in enums_meta.iter() {
-        write_graphql_enum(&path.as_ref().join("enums"), enum_meta)?;
+    if enums_meta.len() > 0 {
+        std::fs::create_dir_all(&path.as_ref().join("enums"))?;
+        for enum_meta in enums_meta.iter() {
+            write_graphql_enum(&path.as_ref().join("enums"), enum_meta)?;
+        }
+        write_enums_mod(path, enums_meta)?;
     }
-    write_enums_mod(path, enums_meta)?;
 
     std::fs::create_dir_all(&path.as_ref().join("entities"))?;
     for table_meta in tables_meta.iter() {
@@ -40,14 +42,23 @@ pub fn write_graphql<P: AsRef<Path>>(
 
     write_type_filter(path)?;
 
-    write_mod(path)?;
+    write_mod(path, enums_meta)?;
 
     Ok(())
 }
 
-pub fn write_mod<P: AsRef<Path>>(path: &P) -> std::io::Result<()> {
+pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>,) -> std::io::Result<()> {
+    let enums_mod = if enums_meta.len() > 0 {
+        quote!{
+            pub mod enums;
+        }
+    } else {
+        quote!{}
+    };
+
     let mod_tokens = quote! {
         pub mod entities;
+        #enums_mod
         pub mod root_node;
         pub mod type_filter;
         pub mod orm_dataloader;
