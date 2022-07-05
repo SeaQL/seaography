@@ -11,13 +11,3 @@ pub use relationship_meta::RelationshipMeta;
 pub use table_meta::TableMeta;
 pub use schema_meta::{SchemaMeta, SqlVersion};
 pub use enum_meta::EnumMeta;
-
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
-    }
-}

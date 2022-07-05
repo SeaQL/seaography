@@ -6,6 +6,38 @@ use serde::{Deserialize, Serialize};
 
 use crate::column_type::{ColumnType, map_sea_query_column_type};
 
+/// Used to represent column metadata required by the generator crate
+///
+/// ```
+/// use seaography_types::{ColumnMeta, ColumnType};
+/// let column_meta = ColumnMeta {
+///     col_name: "user_name".into(),
+///     col_type: ColumnType::Integer64,
+///     not_null: false,
+///     is_primary_key: false
+/// };
+///
+/// assert_eq!(column_meta.camel_case(), "UserName");
+/// assert_eq!(column_meta.snake_case(), "user_name");
+/// assert_eq!(column_meta.get_base_type().to_string(), "i64");
+/// assert_eq!(column_meta.get_type().to_string(), "Option < i64 >");
+/// ```
+///
+/// ```
+/// use seaography_types::{ColumnMeta, ColumnType};
+///
+/// let column_meta = ColumnMeta {
+///     col_name: "UserId".into(),
+///     col_type: ColumnType::Uuid,
+///     not_null: true,
+///     is_primary_key: false
+/// };
+///
+/// assert_eq!(column_meta.camel_case(), "UserId");
+/// assert_eq!(column_meta.snake_case(), "user_id");
+/// assert_eq!(column_meta.get_base_type().to_string(), "Uuid");
+/// assert_eq!(column_meta.get_type().to_string(), "Uuid");
+/// ```
 #[derive(Clone, Deserialize, Serialize, Eq, PartialEq, Hash)]
 pub struct ColumnMeta {
     pub col_name: String,
@@ -73,8 +105,8 @@ impl ColumnMeta {
             ColumnType::Enum(name) => name.to_upper_camel_case(),
             _ => unimplemented!(),
         }
-        .parse()
-        .unwrap()
+            .parse()
+            .unwrap()
     }
 
     pub fn get_type(&self) -> TokenStream {

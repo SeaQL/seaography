@@ -4,6 +4,107 @@ use serde::{Deserialize, Serialize};
 
 use crate::column_meta::ColumnMeta;
 
+/// Used to represent relationship metadata required by the generator crate
+///
+/// ```
+/// use seaography_types::{ColumnMeta, RelationshipMeta, ColumnType};
+///
+/// let src_product_id = ColumnMeta {
+///     col_name: "product_id".into(),
+///     col_type: ColumnType::Uuid,
+///     not_null: true,
+///     is_primary_key: true
+/// };
+/// let src_product_item_id = ColumnMeta {
+///     col_name: "product_item_id".into(),
+///     col_type: ColumnType::Integer64,
+///     not_null: true,
+///     is_primary_key: true
+/// };
+///
+/// let dst_id = ColumnMeta {
+///     col_name: "id".into(),
+///     col_type: ColumnType::Uuid,
+///     not_null: true,
+///     is_primary_key: true
+/// };
+/// let dst_item_id = ColumnMeta {
+///     col_name: "item_id".into(),
+///     col_type: ColumnType::Integer64,
+///     not_null: true,
+///     is_primary_key: true
+/// };
+///
+/// let relation_meta = RelationshipMeta {
+///     src_table: "OrderItems".into(),
+///     dst_table: "ProductItems".into(),
+///
+///     src_cols: vec![src_product_id, src_product_item_id],
+///     dst_cols: vec![dst_id, dst_item_id]
+/// };
+///
+/// assert_eq!(relation_meta.snake_case(true), "order_items");
+/// assert_eq!(relation_meta.snake_case(false), "product_items");
+///
+/// assert_eq!(relation_meta.camel_case(true), "OrderItems");
+/// assert_eq!(relation_meta.camel_case(false), "ProductItems");
+///
+/// assert_eq!(relation_meta.is_reverse(&String::from("OrderItems")), false);
+/// assert_eq!(relation_meta.is_reverse(&String::from("ProductItems")), true);
+///
+/// assert_eq!(relation_meta.is_optional(true), false);
+/// assert_eq!(relation_meta.is_optional(false), false);
+///
+/// assert_eq!(relation_meta.get_optional_cols(true), vec![false, false]);
+/// assert_eq!(relation_meta.get_optional_cols(false), vec![false, false]);
+///
+/// assert_eq!(relation_meta.extract_source_name(true), "id_item");
+/// assert_eq!(relation_meta.extract_source_name(false), "product_product_item");
+///
+/// assert_eq!(relation_meta.retrieve_name(true), "id_item_order_items");
+/// assert_eq!(relation_meta.retrieve_name(false), "product_product_item_product_items");
+///
+/// assert_eq!(relation_meta.retrieve_foreign_key(true), "IdItemOrderItemsFK");
+/// assert_eq!(relation_meta.retrieve_foreign_key(false), "ProductProductItemProductItemsFK");
+/// ```
+///
+/// ```
+/// use seaography_types::{ColumnMeta, RelationshipMeta, ColumnType};
+///
+/// let src_column = ColumnMeta {
+///     col_name: "product_id".into(),
+///     col_type: ColumnType::Uuid,
+///     not_null: false,
+///     is_primary_key: true
+/// };
+///
+/// let dst_column = ColumnMeta {
+///     col_name: "id".into(),
+///     col_type: ColumnType::Uuid,
+///     not_null: true,
+///     is_primary_key: true
+/// };
+///
+/// let relation_meta = RelationshipMeta {
+///     src_table: "OrderItems".into(),
+///     dst_table: "ProductItems".into(),
+///
+///     src_cols: vec![src_column],
+///     dst_cols: vec![dst_column]
+/// };
+///
+/// assert_eq!(relation_meta.is_optional(true), false);
+/// assert_eq!(relation_meta.is_optional(false), true);
+///
+/// assert_eq!(relation_meta.get_optional_cols(true), vec![false]);
+/// assert_eq!(relation_meta.get_optional_cols(false), vec![true]);
+///
+/// assert_eq!(relation_meta.extract_source_name(true), "id");
+/// assert_eq!(relation_meta.extract_source_name(false), "product");
+///
+/// assert_eq!(relation_meta.retrieve_name(true), "id_order_items");
+/// assert_eq!(relation_meta.retrieve_name(false), "product_product_items");
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct RelationshipMeta {
     pub src_table: String,
