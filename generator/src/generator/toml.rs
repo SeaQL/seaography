@@ -16,6 +16,61 @@ pub struct DependencyInfo {
 }
 
 impl TomlStructure {
+    /// Used to contract a new rust toml project configuration
+    ///
+    /// ```
+    /// use seaography_generator::generator::toml::TomlStructure;
+    /// use seaography_types::SqlVersion;
+    ///
+    /// let left = TomlStructure::new(&"generated".into(), &SqlVersion::Sqlite);
+    ///
+    /// let right = r#"[package]
+    /// edition = '2021'
+    /// name = 'generated'
+    /// version = '0.1.0'
+    /// [dependencies.async-graphql]
+    /// version = '3.0.38'
+    /// features = [
+    ///     'decimal',
+    ///     'chrono',
+    ///     'dataloader',
+    /// ]
+    ///
+    /// [dependencies.async-graphql-poem]
+    /// version = '3.0.38'
+    ///
+    /// [dependencies.async-trait]
+    /// version = '0.1.53'
+    ///
+    /// [dependencies.itertools]
+    /// version = '0.10.3'
+    ///
+    /// [dependencies.poem]
+    /// version = '1.3.29'
+    ///
+    /// [dependencies.sea-orm]
+    /// version = '0.7.0'
+    /// features = [
+    ///     'sqlx-sqlite',
+    ///     'runtime-async-std-native-tls',
+    /// ]
+    ///
+    /// [dependencies.tokio]
+    /// version = '1.17.0'
+    /// features = [
+    ///     'macros',
+    ///     'rt-multi-thread',
+    /// ]
+    ///
+    /// [dependencies.tracing]
+    /// version = '0.1.34'
+    ///
+    /// [dependencies.tracing-subscriber]
+    /// version = '0.3.11'
+    /// "#;
+    ///
+    /// assert_eq!(toml::to_string_pretty(&left).unwrap(), right);
+    /// ```
     pub fn new(crate_name: &String, sql_version: &SqlVersion) -> Self {
         let mut package: BTreeMap<String, String> = BTreeMap::new();
 
