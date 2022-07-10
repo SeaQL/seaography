@@ -18,6 +18,8 @@ pub use error::{Error, Result};
 pub mod utils;
 pub use utils::{extract_enums, extract_relationships_meta, extract_tables_meta};
 
+pub mod test_cfg;
+
 pub use sea_schema;
 
 pub type TablesHashMap = HashMap<String, TableCreateStatement>;

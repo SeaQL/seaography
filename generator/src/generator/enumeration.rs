@@ -4,6 +4,39 @@ use seaography_types::enum_meta::EnumMeta;
 use std::path::Path;
 use heck::ToUpperCamelCase;
 
+/// Used to generate graphql enumeration
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generator::enumeration::generate_enumeration;
+/// use seaography_types::EnumMeta;
+/// let enum_meta = EnumMeta {
+///     enum_name: "Size".into(),
+///     enum_values: vec!["Small".into(), "Medium".into(), "Large".into(), "Extra-Large".into()]
+/// };
+///
+/// let left = generate_enumeration(&enum_meta);
+/// let right = quote!{
+///     use crate::orm::sea_orm_active_enums;
+///     use async_graphql::*;
+///     use sea_orm::entity::prelude::*;
+///     #[derive(Debug, Copy, Clone, Eq, PartialEq, EnumIter, DeriveActiveEnum, Enum)]
+///     #[graphql(remote = "sea_orm_active_enums::Size")]
+///     #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "Size")]
+///     pub enum Size {
+///         #[sea_orm(string_value = "Small")]
+///         Small,
+///         #[sea_orm(string_value = "Medium")]
+///         Medium,
+///         #[sea_orm(string_value = "Large")]
+///         Large,
+///         #[sea_orm(string_value = "Extra-Large")]
+///         ExtraLarge,
+///     }
+/// };
+///
+/// assert_eq!(left.to_string(), right.to_string());
+/// ```
 pub fn generate_enumeration(enum_meta: &EnumMeta) -> TokenStream {
     let enum_proxy_name = format!("sea_orm_active_enums::{}", enum_meta.camel_case());
     let enum_name = &enum_meta.enum_name;
@@ -19,10 +52,9 @@ pub fn generate_enumeration(enum_meta: &EnumMeta) -> TokenStream {
     });
 
     quote! {
-        use sea_orm::entity::prelude::*;
-        use async_graphql::*;
-
         use crate::orm::sea_orm_active_enums;
+        use async_graphql::*;
+        use sea_orm::entity::prelude::*;
 
         #[derive(Debug, Copy, Clone, Eq, PartialEq, EnumIter, DeriveActiveEnum, Enum)]
         #[graphql(remote = #enum_proxy_name)]
