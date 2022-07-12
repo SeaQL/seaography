@@ -6,6 +6,7 @@ use seaography_types::schema_meta::SchemaMeta;
 use std::path::Path;
 
 pub mod generator;
+pub mod test_cfg;
 
 pub fn write_project<P: AsRef<Path>>(
     path: &P,
@@ -22,19 +23,102 @@ pub fn write_project<P: AsRef<Path>>(
         &schema.enums,
     )?;
 
-    let lib_tokens = quote! {
+    let lib_tokens = generate_lib();
+
+    std::fs::write(&path.as_ref().join("src/lib.rs"), lib_tokens.to_string())?;
+
+    let db_url = &schema.url;
+
+    let main_tokens = generate_main(db_url, crate_name);
+
+    std::fs::write(&path.as_ref().join("src/main.rs"), main_tokens.to_string())?;
+
+    Ok(())
+}
+
+/// Used to generate project/src/lib.rs file content
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generate_lib;
+///
+/// let left = generate_lib();
+///
+/// let right = quote!{
+///     pub mod orm;
+///     pub mod graphql;
+///
+///     pub use graphql::QueryRoot;
+///     pub use graphql::OrmDataloader;
+/// };
+///
+/// assert_eq!(left.to_string(), right.to_string());
+/// ```
+pub fn generate_lib() -> TokenStream {
+    quote! {
         pub mod orm;
         pub mod graphql;
 
         pub use graphql::QueryRoot;
         pub use graphql::OrmDataloader;
-    };
-    std::fs::write(&path.as_ref().join("src/lib.rs"), lib_tokens.to_string())?;
+    }
+}
 
+
+/// Used to generate project/src/main.rs file content
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generate_main;
+///
+/// let left = generate_main(&"sqlite://test.db".into(), &"generated".into());
+///
+/// let right = quote! {
+///     use async_graphql::{
+///         http::{playground_source, GraphQLPlaygroundConfig},
+///         EmptyMutation, EmptySubscription, Schema,
+///         dataloader::DataLoader
+///     };
+///     use async_graphql_poem::GraphQL;
+///     use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
+///     use sea_orm::Database;
+///     use generated::*;
+///     #[handler]
+///     async fn graphql_playground() -> impl IntoResponse {
+///         Html(playground_source(GraphQLPlaygroundConfig::new("/")))
+///     }
+///     #[tokio::main]
+///     async fn main() {
+///         tracing_subscriber::fmt()
+///             .with_max_level(tracing::Level::DEBUG)
+///             .with_test_writer()
+///             .init();
+///         let database = Database::connect("sqlite://test.db").await.unwrap();
+///         let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
+///             OrmDataloader {
+///                 db: database.clone()
+///             },
+///             tokio::spawn
+///         );
+///         let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
+///             .data(database)
+///             .data(orm_dataloader)
+///             .finish();
+///         let app = Route::new().at("/", get(graphql_playground).post(GraphQL::new(schema)));
+///         println!("Playground: http://localhost:8000");
+///         Server::new(TcpListener::bind("0.0.0.0:8000"))
+///             .run(app)
+///             .await
+///             .unwrap();
+///     }
+/// };
+///
+/// assert_eq!(left.to_string(), right.to_string());
+/// ```
+pub fn generate_main(db_url: &String, crate_name: &String) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.parse().unwrap();
-    let db_url = &schema.url;
 
-    let main_tokens = quote! {
+    quote! {
         use async_graphql::{
             http::{playground_source, GraphQLPlaygroundConfig},
             EmptyMutation, EmptySubscription, Schema, dataloader::DataLoader
@@ -83,9 +167,5 @@ pub fn write_project<P: AsRef<Path>>(
                 .unwrap();
         }
 
-    };
-
-    std::fs::write(&path.as_ref().join("src/main.rs"), main_tokens.to_string())?;
-
-    Ok(())
+    }
 }
