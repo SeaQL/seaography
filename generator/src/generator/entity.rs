@@ -18,6 +18,7 @@ pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let getters: Vec<TokenStream> = generate_entity_getters(table_meta);
     let relations: Vec<TokenStream> = generate_entity_relations(table_meta);
     let foreign_keys: Vec<TokenStream> = generate_foreign_keys_and_loaders(table_meta);
+    let recursive_filter_fn: TokenStream = generate_recursive_filter_fn(table_meta);
 
     let enumerations: Vec<TokenStream> = extract_enums(table_meta);
 
@@ -26,7 +27,7 @@ pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
 
         #(use crate::graphql::enums::#enumerations;)*
 
-        // TODO generate filter parser function
+        #recursive_filter_fn
 
         pub use crate::orm::#entity_module::*;
         use crate::graphql::*;
@@ -49,6 +50,26 @@ pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     }
 }
 
+/// Used to generate filter struct fields for entity
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generator::entity::generate_entity_filters;
+/// use seaography_generator::test_cfg::get_font_table;
+///
+/// let left: Vec<_> = generate_entity_filters(&get_font_table()).iter().map(|t| t.to_string()).collect();
+///
+/// let right: Vec<_>  = vec![
+///     quote!{
+///         pub id: Option<TypeFilter<i32>>
+///     },
+///     quote!{
+///         pub name: Option<TypeFilter<String>>
+///     },
+/// ].iter().map(|t| t.to_string()).collect();
+///
+/// assert_eq!(left, right)
+/// ```
 pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .columns
@@ -72,6 +93,39 @@ pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
         .collect()
 }
 
+/// Used to contract entity field getters
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generator::entity::generate_entity_getters;
+/// use seaography_generator::test_cfg::get_font_table;
+///
+/// let left: Vec<_> = generate_entity_getters(&get_font_table()).iter().map(|t| t.to_string()).collect();;
+/// let right: Vec<_>  = vec![
+///     quote!{
+///         pub async fn id(&self) -> &i32 {
+///             &self.id
+///         }
+///     },
+///     quote!{
+///         pub async fn name(&self) -> &String {
+///             &self.name
+///         }
+///     },
+///     quote!{
+///         pub async fn language(&self) -> LanguageEnum {
+///             self.language.clone().map(|i| i.into())
+///         }
+///     },
+///     quote!{
+///         pub async fn variant(&self) -> VariantEnum {
+///             self.variant.clone().map(|i| i.into())
+///         }
+///     },
+/// ].iter().map(|t| t.to_string()).collect();
+///
+/// assert_eq!(left, right);
+/// ```
 pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .columns
@@ -96,6 +150,31 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
         .collect()
 }
 
+/// Used to generate entity relation fields
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generator::entity::generate_entity_relations;
+/// use seaography_generator::test_cfg::get_font_table;
+///
+/// let left: Vec<_> = generate_entity_relations(&get_font_table()).iter().map(|t| t.to_string()).collect();;
+/// let right: Vec<_>  = vec![
+///     quote!{
+///         pub async fn id_char<'a>(&self, ctx: &async_graphql::Context<'a>) -> Vec<crate::orm::char::Model> {
+///             let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
+///             let key = IdCharFK(self.id.clone());
+///             let data: Option<_> = data_loader.load_one(key).await.unwrap();
+///             data.unwrap_or(vec![])
+///         }
+///     },
+/// ].iter().map(|t| t.to_string()).collect();
+///
+/// assert_eq!(left, right);
+/// ```
+///
+/// TODO: write test 1-1
+/// TODO: write test 1-N
+/// TODO: write test N-M
 pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .relations
@@ -168,6 +247,13 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
         .collect()
 }
 
+/// Used to generate FK structs and dataloader getter functions for every relation of entity
+///
+/// TODO: Add tests
+/// TODO: 1-1
+/// TODO: 1-N
+/// TODO: N-1
+/// TODO: N-M
 pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .relations
@@ -298,6 +384,175 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
         .collect()
 }
 
+/// Used to generate filter function for an entity.
+///
+/// The filter function used to assist the generation of SQL where queries
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generator::entity::generate_recursive_filter_fn;
+/// use seaography_generator::test_cfg::get_char_table;
+///
+/// let left = generate_recursive_filter_fn(&get_char_table());
+///
+/// let right = quote!{
+///     pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
+///         let mut condition = sea_orm::Condition::all();
+///         if let Some(current_filter) = root_filter {
+///             if let Some(or_filters) = current_filter.or {
+///                 let or_condition = or_filters
+///                     .into_iter()
+///                     .fold(sea_orm::Condition::any(), |fold_condition, filter|
+///                         fold_condition.add(filter_recursive(Some(*filter))));
+///                 condition = condition.add(or_condition);
+///             }
+///             if let Some(and_filters) = current_filter.and {
+///                 let and_condition = and_filters
+///                     .into_iter()
+///                     .fold(sea_orm::Condition::all(), |fold_condition, filter|
+///                         fold_condition.add(filter_recursive(Some(*filter)))
+///                     );
+///                 condition = condition.add(and_condition);
+///             }
+///             if let Some(id) = current_filter.id {
+///                 if let Some(eq_value) = id.eq {
+///                     condition = condition.add(Column::Id.eq(eq_value))
+///                 }
+///                 if let Some(ne_value) = id.ne {
+///                     condition = condition.add(Column::Id.ne(ne_value))
+///                 }
+///             }
+///             if let Some(character) = current_filter.character {
+///                 if let Some(eq_value) = character.eq {
+///                     condition = condition.add(Column::Character.eq(eq_value))
+///                 }
+///                 if let Some(ne_value) = character.ne {
+///                     condition = condition.add(Column::Character.ne(ne_value))
+///                 }
+///             }
+///             if let Some(size_w) = current_filter.size_w {
+///                 if let Some(eq_value) = size_w.eq {
+///                     condition = condition.add(Column::SizeW.eq(eq_value))
+///                 }
+///                 if let Some(ne_value) = size_w.ne {
+///                     condition = condition.add(Column::SizeW.ne(ne_value))
+///                 }
+///             }
+///             if let Some(size_h) = current_filter.size_h {
+///                 if let Some(eq_value) = size_h.eq {
+///                     condition = condition.add(Column::SizeH.eq(eq_value))
+///                 }
+///                 if let Some(ne_value) = size_h.ne {
+///                     condition = condition.add(Column::SizeH.ne(ne_value))
+///                 }
+///             }
+///             if let Some(font_id) = current_filter.font_id {
+///                 if let Some(eq_value) = font_id.eq {
+///                     condition = condition.add(Column::FontId.eq(eq_value))
+///                 }
+///                 if let Some(ne_value) = font_id.ne {
+///                     condition = condition.add(Column::FontId.ne(ne_value))
+///                 }
+///             }
+///             if let Some(font_size) = current_filter.font_size {
+///                 if let Some(eq_value) = font_size.eq {
+///                     condition = condition.add(Column::FontSize.eq(eq_value))
+///                 }
+///                 if let Some(ne_value) = font_size.ne {
+///                     condition = condition.add(Column::FontSize.ne(ne_value))
+///                 }
+///             }
+///         }
+///         condition
+///     }
+/// };
+///
+/// assert_eq!(left.to_string(), right.to_string());
+/// ```
+pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
+    let columns_filters: Vec<TokenStream> = table_meta
+        .columns
+        .iter()
+        .filter(|column| {
+            match column.col_type {
+                // TODO support enum type
+                ColumnType::Binary => false,
+                ColumnType::Enum(_) => false,
+                _ => true
+            }
+        })
+        .map(|column: &ColumnMeta| {
+            let column_name = column.snake_case_ident();
+            let column_enum_name = column.camel_case_ident();
+
+            quote! {
+                if let Some(#column_name) = current_filter.#column_name {
+                    if let Some(eq_value) = #column_name.eq {
+                        condition = condition.add(Column::#column_enum_name.eq(eq_value))
+                    }
+
+                    if let Some(ne_value) = #column_name.ne {
+                        condition = condition.add(Column::#column_enum_name.ne(ne_value))
+                    }
+                }
+            }
+        })
+        .collect();
+
+    quote! {
+        pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
+            let mut condition = sea_orm::Condition::all();
+
+            if let Some(current_filter) = root_filter {
+                if let Some(or_filters) = current_filter.or {
+                    let or_condition = or_filters
+                        .into_iter()
+                        .fold(
+                            sea_orm::Condition::any(),
+                            |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
+                        );
+                    condition = condition.add(or_condition);
+                }
+
+                if let Some(and_filters) = current_filter.and {
+                    let and_condition = and_filters
+                        .into_iter()
+                        .fold(
+                            sea_orm::Condition::all(),
+                            |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
+                        );
+                    condition = condition.add(and_condition);
+                }
+
+                #(#columns_filters)*
+            }
+
+            condition
+        }
+    }
+}
+
+/// Used to extract enumerations from table meta
+///
+/// ```
+/// use quote::quote;
+/// use seaography_generator::generator::entity::extract_enums;
+/// use seaography_generator::test_cfg::get_font_table;
+///
+/// let left: Vec<_> = extract_enums(&get_font_table()).iter().map(|t| t.to_string()).collect();
+///
+/// let right: Vec<_> = vec![
+///     quote! {
+///         LanguageEnum
+///     },
+///     quote! {
+///         VariantEnum
+///     },
+///
+/// ].iter().map(|t| t.to_string()).collect();
+///
+/// assert_eq!(left, right);
+/// ```
 pub fn extract_enums(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .columns
