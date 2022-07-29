@@ -21,8 +21,8 @@ pub mod type_filter;
 /// Used to generate graphql folder with all entities, enums and module structure
 pub fn write_graphql<P: AsRef<Path>>(
     path: &P,
-    tables_meta: &Vec<TableMeta>,
-    enums_meta: &Vec<EnumMeta>,
+    tables_meta: &[TableMeta],
+    enums_meta: &[EnumMeta],
 ) -> std::io::Result<()> {
     if !enums_meta.is_empty() {
         std::fs::create_dir_all(&path.as_ref().join("enums"))?;
@@ -50,7 +50,7 @@ pub fn write_graphql<P: AsRef<Path>>(
 }
 
 /// Used to write project/src/graphql/mod.rs
-pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>) -> std::io::Result<()> {
+pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std::io::Result<()> {
     let mod_tokens = generate_graphql_mod(enums_meta.len());
 
     std::fs::write(path.as_ref().join("mod.rs"), mod_tokens.to_string())?;

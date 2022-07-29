@@ -11,7 +11,7 @@ pub mod test_cfg;
 pub fn write_project<P: AsRef<Path>>(
     path: &P,
     schema: &SchemaMeta,
-    crate_name: &String,
+    crate_name: &str,
 ) -> std::io::Result<()> {
     std::fs::create_dir_all(path.as_ref().join("src/graphql"))?;
 

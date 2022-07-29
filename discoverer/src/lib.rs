@@ -29,15 +29,15 @@ pub async fn extract_database_metadata(
 ) -> Result<(TablesHashMap, SqlVersion)> {
     Ok(match database_url.scheme() {
         "mysql" => (
-            explore_mysql(&database_url.to_string()).await?,
+            explore_mysql(database_url.as_ref()).await?,
             SqlVersion::Mysql,
         ),
         "sqlite" => (
-            explore_sqlite(&database_url.to_string()).await?,
+            explore_sqlite(database_url.as_ref()).await?,
             SqlVersion::Sqlite,
         ),
         "postgres" | "postgresql" | "pgsql" => (
-            explore_postgres(&database_url.to_string()).await?,
+            explore_postgres(database_url.as_ref()).await?,
             SqlVersion::Postgres,
         ),
         _ => unimplemented!("{} is not supported", database_url.scheme()),
