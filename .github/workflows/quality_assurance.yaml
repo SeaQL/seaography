@@ -29,6 +29,7 @@ jobs:
             -   uses: actions-rs/cargo@v1
                 with:
                     command: test
+                    args: --workspace
     fmt:
         name: Format
         runs-on: ubuntu-latest

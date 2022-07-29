@@ -22,7 +22,7 @@ impl TomlStructure {
     /// use seaography_generator::generator::toml::TomlStructure;
     /// use seaography_types::SqlVersion;
     ///
-    /// let left = TomlStructure::new(&"generated".into(), &SqlVersion::Sqlite);
+    /// let left = TomlStructure::new("generated", &SqlVersion::Sqlite);
     ///
     /// let right = r#"[package]
     /// edition = '2021'

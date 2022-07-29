@@ -71,7 +71,7 @@ pub fn generate_lib() -> TokenStream {
 /// use quote::quote;
 /// use seaography_generator::generate_main;
 ///
-/// let left = generate_main(&"sqlite://test.db".into(), &"generated".into());
+/// let left = generate_main("sqlite://test.db", &"generated".into());
 ///
 /// let right = quote! {
 ///     use async_graphql::{
