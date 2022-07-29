@@ -74,7 +74,7 @@ impl TomlStructure {
     pub fn new(crate_name: &str, sql_version: &SqlVersion) -> Self {
         let mut package: BTreeMap<String, String> = BTreeMap::new();
 
-        package.insert("name".into(), crate_name.clone());
+        package.insert("name".into(), crate_name.into());
         package.insert("version".into(), "0.1.0".into());
         package.insert("edition".into(), "2021".into());
 
