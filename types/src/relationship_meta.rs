@@ -118,7 +118,7 @@ impl RelationshipMeta {
     pub fn snake_case(&self, src: bool) -> String {
         match src {
             true => self.src_table.to_snake_case(),
-            false => self.dst_table.to_snake_case()
+            false => self.dst_table.to_snake_case(),
         }
     }
 
@@ -129,7 +129,7 @@ impl RelationshipMeta {
     pub fn camel_case(&self, src: bool) -> String {
         match src {
             true => self.src_table.to_upper_camel_case(),
-            false => self.dst_table.to_upper_camel_case()
+            false => self.dst_table.to_upper_camel_case(),
         }
     }
 
@@ -144,7 +144,7 @@ impl RelationshipMeta {
     pub fn is_optional(&self, is_reverse: bool) -> bool {
         let cols: &Vec<ColumnMeta> = match is_reverse {
             true => &self.dst_cols,
-            false => &self.src_cols
+            false => &self.src_cols,
         };
 
         cols.iter().any(|col: &ColumnMeta| !col.not_null)
@@ -153,14 +153,18 @@ impl RelationshipMeta {
     pub fn get_optional_cols(&self, is_reverse: bool) -> Vec<bool> {
         let cols: &Vec<ColumnMeta> = match is_reverse {
             true => &self.dst_cols,
-            false => &self.src_cols
+            false => &self.src_cols,
         };
 
         cols.iter().map(|col: &ColumnMeta| !col.not_null).collect()
     }
 
     pub fn extract_source_name(&self, is_reverse: bool) -> String {
-        let source_columns = if is_reverse { &self.dst_cols } else { &self.src_cols };
+        let source_columns = if is_reverse {
+            &self.dst_cols
+        } else {
+            &self.src_cols
+        };
 
         source_columns
             .clone()

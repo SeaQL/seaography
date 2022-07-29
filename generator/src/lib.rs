@@ -64,7 +64,6 @@ pub fn generate_lib() -> TokenStream {
     }
 }
 
-
 /// Used to generate project/src/main.rs file content
 ///
 /// ```

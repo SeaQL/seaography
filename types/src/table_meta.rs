@@ -1,4 +1,4 @@
-use heck::{ToUpperCamelCase, ToSnakeCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
 use serde::{Deserialize, Serialize};
 

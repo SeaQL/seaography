@@ -1,5 +1,5 @@
-use std::path::Path;
 use proc_macro2::TokenStream;
+use std::path::Path;
 
 use quote::quote;
 use seaography_types::enum_meta::EnumMeta;
@@ -50,7 +50,7 @@ pub fn write_graphql<P: AsRef<Path>>(
 }
 
 /// Used to write project/src/graphql/mod.rs
-pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>,) -> std::io::Result<()> {
+pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>) -> std::io::Result<()> {
     let mod_tokens = generate_graphql_mod(enums_meta.len());
 
     std::fs::write(path.as_ref().join("mod.rs"), mod_tokens.to_string())?;
@@ -100,11 +100,11 @@ pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>,) -> std::
 /// ```
 pub fn generate_graphql_mod(enums_meta_len: usize) -> TokenStream {
     let enums_mod = if enums_meta_len > 0 {
-        quote!{
+        quote! {
             pub mod enums;
         }
     } else {
-        quote!{}
+        quote! {}
     };
 
     quote! {

@@ -1,10 +1,7 @@
 use seaography_types::{ColumnMeta, ColumnType, RelationshipMeta, TableMeta};
 
 pub fn get_tables_meta() -> Vec<TableMeta> {
-    vec![
-        get_char_table(),
-        get_font_table()
-    ]
+    vec![get_char_table(), get_font_table()]
 }
 
 pub fn get_char_table() -> TableMeta {

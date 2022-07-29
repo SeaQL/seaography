@@ -1,8 +1,8 @@
+use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use seaography_types::enum_meta::EnumMeta;
 use std::path::Path;
-use heck::ToUpperCamelCase;
 
 /// Used to generate graphql enumeration
 ///

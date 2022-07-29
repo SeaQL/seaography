@@ -1,13 +1,13 @@
-use std::path::Path;
 use heck::ToUpperCamelCase;
+use std::path::Path;
 
+use itertools::Itertools;
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use seaography_types::{
     column_meta::ColumnMeta, column_type::ColumnType, relationship_meta::RelationshipMeta,
     table_meta::TableMeta,
 };
-use itertools::Itertools;
 
 pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let entity_module = table_meta.snake_case_ident();
@@ -74,9 +74,7 @@ pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .columns
         .iter()
-        .filter(|column| {
-            !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_))
-        })
+        .filter(|column| !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_)))
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
             let column_filter_type = column.get_base_type();
@@ -139,7 +137,7 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
                     pub async fn #column_name(&self) -> &#column_type {
                         &self.#column_name
                     }
-                }
+                },
             }
         })
         .collect()
@@ -468,9 +466,7 @@ pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
     let columns_filters: Vec<TokenStream> = table_meta
         .columns
         .iter()
-        .filter(|column| {
-            !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_))
-        })
+        .filter(|column| !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_)))
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
             let column_enum_name = column.camel_case_ident();

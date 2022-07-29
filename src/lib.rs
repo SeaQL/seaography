@@ -114,7 +114,12 @@ pub fn generate_orm<P: AsRef<std::path::Path>>(
 ) -> Result<()> {
     let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
     // TODO: read postgres database schema from CLI params
-    let entity_writer_ctx = EntityWriterContext::new(true, sea_orm_codegen::WithSerde::None, sea_orm_codegen::DateTimeCrate::Chrono, None);
+    let entity_writer_ctx = EntityWriterContext::new(
+        true,
+        sea_orm_codegen::WithSerde::None,
+        sea_orm_codegen::DateTimeCrate::Chrono,
+        None,
+    );
 
     let writer_output = entity_writer.generate(&entity_writer_ctx);
 

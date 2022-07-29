@@ -3,7 +3,6 @@ use std::path::Path;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-
 /// Used to generate type filter struct. The struct is used on root query queries to filter entities based on various fields
 ///
 /// ```
