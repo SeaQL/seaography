@@ -81,7 +81,8 @@ jobs:
                 run: cp ./chinook.db ./generated/chinook.db
             -   uses: actions-rs/cargo@v1
                 with:
-                    command: run sqlite://chinook.db generated ./generated
+                    command: run
+                    args: sqlite://chinook.db generated ./generated
             -   name: Integration tests
                 working-directory: ./generated
                 run: cargo test
