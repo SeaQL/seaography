@@ -2,6 +2,10 @@
 edition = '2021'
 name = 'generated'
 version = '0.1.0'
+
+[dependencies]
+serde_json = "1.0.82"
+
 [dependencies.async-graphql]
 version = '3.0.38'
 features = [

@@ -12,7 +12,7 @@ seaography_discoverer = { path = "./discoverer" }
 seaography_generator = { path = "./generator" }
 clap = { version = "3.2.6", features = ["derive"] }
 async-std = { version = "1.12.0", features = [ "attributes", "tokio1" ] }
-sea-orm-codegen = { git="https://github.com/SeaQL/sea-orm", branch="684-seaorm-entity-generator-does-not-support-blob-fields"}
+sea-orm-codegen = { version = "^0.9.1"}
 
 [workspace]
 members = [
