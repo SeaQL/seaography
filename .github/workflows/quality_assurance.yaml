@@ -75,13 +75,14 @@ jobs:
                     profile: minimal
                     toolchain: stable
                     override: true
-
             -   name: Remove generated folder
                 run: rm -rf ./generated/src
             -   name: Move database
                 run: cp ./chinook.db ./generated/chinook.db
-            -   name: Change working director
-                run: cd ./generated
             -   uses: actions-rs/cargo@v1
+                with:
+                    command: run sqlite://chinook.db generated ./generated
+            -   uses: actions-rs/cargo@v1
+                working-directory: ./generated
                 with:
                     command: test
