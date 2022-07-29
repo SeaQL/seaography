@@ -182,9 +182,7 @@ impl TomlStructure {
             package,
             dependencies,
             dev,
-            workspace: WorkspaceInfo {
-                members: vec![]
-            },
+            workspace: WorkspaceInfo { members: vec![] },
         }
     }
 }
