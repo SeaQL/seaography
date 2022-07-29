@@ -82,6 +82,6 @@ jobs:
             -   uses: actions-rs/cargo@v1
                 with:
                     command: run sqlite://chinook.db generated ./generated
-            -   name: Run integration tests
+            -   name: Integration tests
                 working-directory: ./generated
                 run: cargo test
