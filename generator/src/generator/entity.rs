@@ -75,12 +75,7 @@ pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
         .columns
         .iter()
         .filter(|column| {
-            match column.col_type {
-                // TODO support enum type
-                ColumnType::Binary => false,
-                ColumnType::Enum(_) => false,
-                _ => true
-            }
+            !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_))
         })
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
@@ -189,7 +184,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
 
             let destination_table_module = &relationship.snake_case(reverse);
             let relation_name: TokenStream = relationship.retrieve_name(reverse).parse().unwrap();
-            let destination_table_module: TokenStream = format!("{}", destination_table_module).parse().unwrap();
+            let destination_table_module: TokenStream = destination_table_module.parse().unwrap();
 
             let return_type: TokenStream = if reverse {
                 quote! {
@@ -262,7 +257,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
         .map(|relationship: &RelationshipMeta| {
             let reverse = relationship.is_reverse(&table_meta.table_name);
 
-            let field_indexes: Vec<Literal> = (0..relationship.src_cols.clone().len()).map(|n| Literal::usize_unsuffixed(n)).collect();
+            let field_indexes: Vec<Literal> = (0..relationship.src_cols.clone().len()).map(Literal::usize_unsuffixed).collect();
 
             let destination_table_module = relationship.snake_case_ident(reverse);
 
@@ -474,12 +469,7 @@ pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
         .columns
         .iter()
         .filter(|column| {
-            match column.col_type {
-                // TODO support enum type
-                ColumnType::Binary => false,
-                ColumnType::Enum(_) => false,
-                _ => true
-            }
+            !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_))
         })
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();

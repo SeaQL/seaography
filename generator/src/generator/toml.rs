@@ -71,7 +71,7 @@ impl TomlStructure {
     ///
     /// assert_eq!(toml::to_string_pretty(&left).unwrap(), right);
     /// ```
-    pub fn new(crate_name: &String, sql_version: &SqlVersion) -> Self {
+    pub fn new(crate_name: &str, sql_version: &SqlVersion) -> Self {
         let mut package: BTreeMap<String, String> = BTreeMap::new();
 
         package.insert("name".into(), crate_name.clone());

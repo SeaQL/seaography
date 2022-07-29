@@ -24,7 +24,7 @@ pub fn write_graphql<P: AsRef<Path>>(
     tables_meta: &Vec<TableMeta>,
     enums_meta: &Vec<EnumMeta>,
 ) -> std::io::Result<()> {
-    if enums_meta.len() > 0 {
+    if !enums_meta.is_empty() {
         std::fs::create_dir_all(&path.as_ref().join("enums"))?;
         for enum_meta in enums_meta.iter() {
             write_graphql_enum(&path.as_ref().join("enums"), enum_meta)?;
@@ -152,7 +152,7 @@ pub fn write_enums_mod<P: AsRef<Path>>(
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_enums_mod(enums_meta: &Vec<EnumMeta>) -> TokenStream {
+pub fn generate_enums_mod(enums_meta: &[EnumMeta]) -> TokenStream {
     let enum_names: Vec<proc_macro2::TokenStream> = enums_meta
         .iter()
         .map(|enumeration| enumeration.snake_case().parse().unwrap())

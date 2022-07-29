@@ -115,7 +115,7 @@ pub fn generate_lib() -> TokenStream {
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_main(db_url: &String, crate_name: &String) -> TokenStream {
+pub fn generate_main(db_url: &str, crate_name: &String) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.parse().unwrap();
 
     quote! {

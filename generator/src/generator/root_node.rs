@@ -31,10 +31,10 @@ pub fn generate_root_node(tables_meta: &Vec<TableMeta>) -> TokenStream {
 }
 
 /// Used to gather all root_node queries for every entity
-pub fn generate_single_queries(tables_meta: &Vec<TableMeta>) -> Vec<TokenStream> {
+pub fn generate_single_queries(tables_meta: &[TableMeta]) -> Vec<TokenStream> {
     tables_meta
         .iter()
-        .map(|table_meta: &TableMeta| generate_table_query(table_meta))
+        .map(generate_table_query)
         .collect()
 }
 
@@ -199,7 +199,7 @@ pub fn generate_pagination_input() -> TokenStream {
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_paginated_result(tables_meta: &Vec<TableMeta>) -> TokenStream {
+pub fn generate_paginated_result(tables_meta: &[TableMeta]) -> TokenStream {
     let derives: Vec<TokenStream> = tables_meta
         .iter()
         .map(|table_meta: &TableMeta| {
