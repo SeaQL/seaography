@@ -7,12 +7,20 @@ use serde::Serialize;
 pub struct TomlStructure {
     package: BTreeMap<String, String>,
     dependencies: BTreeMap<String, DependencyInfo>,
+    #[serde(rename(serialize = "dev-dependencies"))]
+    dev: BTreeMap<String, DependencyInfo>,
+    workspace: WorkspaceInfo,
 }
 
 #[derive(Serialize)]
 pub struct DependencyInfo {
     pub version: String,
     pub features: Option<Vec<String>>,
+}
+
+#[derive(Serialize)]
+pub struct WorkspaceInfo {
+    members: Vec<String>,
 }
 
 impl TomlStructure {
@@ -67,6 +75,11 @@ impl TomlStructure {
     ///
     /// [dependencies.tracing-subscriber]
     /// version = '0.3.11'
+    /// [dev-dependencies.serde_json]
+    /// version = '1.0.82'
+    ///
+    /// [workspace]
+    /// members = []
     /// "#;
     ///
     /// assert_eq!(toml::to_string_pretty(&left).unwrap(), right);
@@ -156,9 +169,22 @@ impl TomlStructure {
             },
         );
 
+        let mut dev: BTreeMap<String, DependencyInfo> = BTreeMap::new();
+        dev.insert(
+            "serde_json".into(),
+            DependencyInfo {
+                version: "1.0.82".into(),
+                features: None,
+            },
+        );
+
         Self {
             package,
             dependencies,
+            dev,
+            workspace: WorkspaceInfo {
+                members: vec![]
+            },
         }
     }
 }

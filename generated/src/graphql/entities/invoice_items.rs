@@ -1,6 +1,68 @@
+use sea_orm::prelude::*;
+pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
+    let mut condition = sea_orm::Condition::all();
+    if let Some(current_filter) = root_filter {
+        if let Some(or_filters) = current_filter.or {
+            let or_condition = or_filters
+                .into_iter()
+                .fold(sea_orm::Condition::any(), |fold_condition, filter| {
+                    fold_condition.add(filter_recursive(Some(*filter)))
+                });
+            condition = condition.add(or_condition);
+        }
+        if let Some(and_filters) = current_filter.and {
+            let and_condition = and_filters
+                .into_iter()
+                .fold(sea_orm::Condition::all(), |fold_condition, filter| {
+                    fold_condition.add(filter_recursive(Some(*filter)))
+                });
+            condition = condition.add(and_condition);
+        }
+        if let Some(invoice_line_id) = current_filter.invoice_line_id {
+            if let Some(eq_value) = invoice_line_id.eq {
+                condition = condition.add(Column::InvoiceLineId.eq(eq_value))
+            }
+            if let Some(ne_value) = invoice_line_id.ne {
+                condition = condition.add(Column::InvoiceLineId.ne(ne_value))
+            }
+        }
+        if let Some(invoice_id) = current_filter.invoice_id {
+            if let Some(eq_value) = invoice_id.eq {
+                condition = condition.add(Column::InvoiceId.eq(eq_value))
+            }
+            if let Some(ne_value) = invoice_id.ne {
+                condition = condition.add(Column::InvoiceId.ne(ne_value))
+            }
+        }
+        if let Some(track_id) = current_filter.track_id {
+            if let Some(eq_value) = track_id.eq {
+                condition = condition.add(Column::TrackId.eq(eq_value))
+            }
+            if let Some(ne_value) = track_id.ne {
+                condition = condition.add(Column::TrackId.ne(ne_value))
+            }
+        }
+        if let Some(unit_price) = current_filter.unit_price {
+            if let Some(eq_value) = unit_price.eq {
+                condition = condition.add(Column::UnitPrice.eq(eq_value))
+            }
+            if let Some(ne_value) = unit_price.ne {
+                condition = condition.add(Column::UnitPrice.ne(ne_value))
+            }
+        }
+        if let Some(quantity) = current_filter.quantity {
+            if let Some(eq_value) = quantity.eq {
+                condition = condition.add(Column::Quantity.eq(eq_value))
+            }
+            if let Some(ne_value) = quantity.ne {
+                condition = condition.add(Column::Quantity.ne(ne_value))
+            }
+        }
+    }
+    condition
+}
 use crate::graphql::*;
 pub use crate::orm::invoice_items::*;
-use sea_orm::prelude::*;
 #[async_graphql::Object(name = "InvoiceItems")]
 impl Model {
     pub async fn invoice_line_id(&self) -> &i32 {
@@ -12,7 +74,7 @@ impl Model {
     pub async fn track_id(&self) -> &i32 {
         &self.track_id
     }
-    pub async fn unit_price(&self) -> &Decimal {
+    pub async fn unit_price(&self) -> &f64 {
         &self.unit_price
     }
     pub async fn quantity(&self) -> &i32 {
@@ -49,7 +111,7 @@ pub struct Filter {
     pub invoice_line_id: Option<TypeFilter<i32>>,
     pub invoice_id: Option<TypeFilter<i32>>,
     pub track_id: Option<TypeFilter<i32>>,
-    pub unit_price: Option<TypeFilter<Decimal>>,
+    pub unit_price: Option<TypeFilter<f64>>,
     pub quantity: Option<TypeFilter<i32>>,
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]

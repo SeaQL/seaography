@@ -1,6 +1,52 @@
+use sea_orm::prelude::*;
+pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
+    let mut condition = sea_orm::Condition::all();
+    if let Some(current_filter) = root_filter {
+        if let Some(or_filters) = current_filter.or {
+            let or_condition = or_filters
+                .into_iter()
+                .fold(sea_orm::Condition::any(), |fold_condition, filter| {
+                    fold_condition.add(filter_recursive(Some(*filter)))
+                });
+            condition = condition.add(or_condition);
+        }
+        if let Some(and_filters) = current_filter.and {
+            let and_condition = and_filters
+                .into_iter()
+                .fold(sea_orm::Condition::all(), |fold_condition, filter| {
+                    fold_condition.add(filter_recursive(Some(*filter)))
+                });
+            condition = condition.add(and_condition);
+        }
+        if let Some(album_id) = current_filter.album_id {
+            if let Some(eq_value) = album_id.eq {
+                condition = condition.add(Column::AlbumId.eq(eq_value))
+            }
+            if let Some(ne_value) = album_id.ne {
+                condition = condition.add(Column::AlbumId.ne(ne_value))
+            }
+        }
+        if let Some(title) = current_filter.title {
+            if let Some(eq_value) = title.eq {
+                condition = condition.add(Column::Title.eq(eq_value))
+            }
+            if let Some(ne_value) = title.ne {
+                condition = condition.add(Column::Title.ne(ne_value))
+            }
+        }
+        if let Some(artist_id) = current_filter.artist_id {
+            if let Some(eq_value) = artist_id.eq {
+                condition = condition.add(Column::ArtistId.eq(eq_value))
+            }
+            if let Some(ne_value) = artist_id.ne {
+                condition = condition.add(Column::ArtistId.ne(ne_value))
+            }
+        }
+    }
+    condition
+}
 use crate::graphql::*;
 pub use crate::orm::albums::*;
-use sea_orm::prelude::*;
 #[async_graphql::Object(name = "Albums")]
 impl Model {
     pub async fn album_id(&self) -> &i32 {
