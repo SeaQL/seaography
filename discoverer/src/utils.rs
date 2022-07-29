@@ -348,7 +348,7 @@ pub fn extract_tables_meta(
                         relation.src_table.eq(table_name) || relation.dst_table.eq(table_name)
                     })
                     .cloned()
-                    .collect()
+                    .collect(),
             }
         })
         .collect()
@@ -415,7 +415,12 @@ pub fn extract_table_enums(table_create_stmt: &TableCreateStatement) -> Vec<Enum
     table_create_stmt
         .get_columns()
         .iter()
-        .filter(|col| matches!(col.get_column_type().unwrap(), sea_schema::sea_query::ColumnType::Enum(_, _)))
+        .filter(|col| {
+            matches!(
+                col.get_column_type().unwrap(),
+                sea_schema::sea_query::ColumnType::Enum(_, _)
+            )
+        })
         .map(|col| match col.get_column_type().unwrap() {
             sea_schema::sea_query::ColumnType::Enum(name, values) => EnumMeta {
                 enum_name: name.to_upper_camel_case(),

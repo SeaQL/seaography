@@ -120,10 +120,7 @@ pub fn generate_graphql_mod(enums_meta_len: usize) -> TokenStream {
 }
 
 /// Used to write project/src/graphql/enums/mod.rs
-pub fn write_enums_mod<P: AsRef<Path>>(
-    path: &P,
-    enums_meta: &[EnumMeta],
-) -> std::io::Result<()> {
+pub fn write_enums_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std::io::Result<()> {
     let mod_tokens = generate_enums_mod(enums_meta);
 
     std::fs::write(path.as_ref().join("enums/mod.rs"), mod_tokens.to_string())?;

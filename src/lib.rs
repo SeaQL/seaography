@@ -89,10 +89,12 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url> {
         // information from a particular database
         let database_name = url
             .path_segments()
-            .ok_or_else(|| Error::Error(format!(
-                "There is no database name as part of the url path: {}",
-                url.as_str()
-            )))?
+            .ok_or_else(|| {
+                Error::Error(format!(
+                    "There is no database name as part of the url path: {}",
+                    url.as_str()
+                ))
+            })?
             .next()
             .unwrap();
 
