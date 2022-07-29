@@ -49,11 +49,11 @@ pub async fn extract_schema(
     tables: &TablesHashMap,
     version: &SqlVersion,
 ) -> Result<SchemaMeta> {
-    let relationships: Vec<RelationshipMeta> = extract_relationships_meta(&tables)?;
+    let relationships: Vec<RelationshipMeta> = extract_relationships_meta(tables)?;
 
-    let enums = extract_enums(&tables);
+    let enums = extract_enums(tables);
 
-    let tables: Vec<TableMeta> = extract_tables_meta(&tables, &relationships);
+    let tables: Vec<TableMeta> = extract_tables_meta(tables, &relationships);
 
     let schema: SchemaMeta = SchemaMeta {
         tables,

@@ -165,7 +165,7 @@ impl TomlStructure {
 
 pub fn write_cargo_toml<P: AsRef<Path>>(
     path: &P,
-    crate_name: &String,
+    crate_name: &str,
     sql_version: &SqlVersion,
 ) -> io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");

@@ -70,7 +70,7 @@ pub fn generate_lib() -> TokenStream {
 /// use quote::quote;
 /// use seaography_generator::generate_main;
 ///
-/// let left = generate_main("sqlite://test.db", &"generated".into());
+/// let left = generate_main("sqlite://test.db", "generated");
 ///
 /// let right = quote! {
 ///     use async_graphql::{
@@ -114,7 +114,7 @@ pub fn generate_lib() -> TokenStream {
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_main(db_url: &str, crate_name: &String) -> TokenStream {
+pub fn generate_main(db_url: &str, crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.parse().unwrap();
 
     quote! {

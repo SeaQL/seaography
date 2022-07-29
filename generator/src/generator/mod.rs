@@ -122,7 +122,7 @@ pub fn generate_graphql_mod(enums_meta_len: usize) -> TokenStream {
 /// Used to write project/src/graphql/enums/mod.rs
 pub fn write_enums_mod<P: AsRef<Path>>(
     path: &P,
-    enums_meta: &Vec<EnumMeta>,
+    enums_meta: &[EnumMeta],
 ) -> std::io::Result<()> {
     let mod_tokens = generate_enums_mod(enums_meta);
 
@@ -168,7 +168,7 @@ pub fn generate_enums_mod(enums_meta: &[EnumMeta]) -> TokenStream {
 /// Used to write project/src/graphql/entities/mod.rs
 pub fn write_entities_mod<P: AsRef<Path>>(
     path: &P,
-    tables_meta: &Vec<TableMeta>,
+    tables_meta: &[TableMeta],
 ) -> std::io::Result<()> {
     let mod_tokens = generate_entities_mod(tables_meta);
 
@@ -207,7 +207,7 @@ pub fn write_entities_mod<P: AsRef<Path>>(
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_entities_mod(tables_meta: &Vec<TableMeta>) -> TokenStream {
+pub fn generate_entities_mod(tables_meta: &[TableMeta]) -> TokenStream {
     let entity_names: Vec<proc_macro2::TokenStream> = tables_meta
         .iter()
         .map(|table_meta| table_meta.snake_case_ident())

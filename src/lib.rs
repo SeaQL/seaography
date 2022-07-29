@@ -53,8 +53,8 @@ pub type Result<T> = std::result::Result<T, Error>;
  * Most code depends from here
  * https://github.com/SeaQL/sea-orm/blob/master/sea-orm-cli/src/commands.rs
  */
-pub fn parse_database_url(database_url: &String) -> Result<url::Url> {
-    let url = url::Url::parse(&database_url)?;
+pub fn parse_database_url(database_url: &str) -> Result<url::Url> {
+    let url = url::Url::parse(database_url)?;
 
     // Make sure we have all the required url components
     //
@@ -89,7 +89,7 @@ pub fn parse_database_url(database_url: &String) -> Result<url::Url> {
         // information from a particular database
         let database_name = url
             .path_segments()
-            .ok_or(Error::Error(format!(
+            .ok_or_else(|| Error::Error(format!(
                 "There is no database name as part of the url path: {}",
                 url.as_str()
             )))?

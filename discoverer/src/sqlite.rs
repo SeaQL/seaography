@@ -3,7 +3,7 @@ use sqlx::SqlitePool;
 
 use crate::{Error, Result, TablesHashMap};
 
-pub async fn explore_sqlite(url: &String) -> Result<TablesHashMap> {
+pub async fn explore_sqlite(url: &str) -> Result<TablesHashMap> {
     let connection = SqlitePool::connect(url).await?;
 
     let schema_discovery = SchemaDiscovery::new(connection);

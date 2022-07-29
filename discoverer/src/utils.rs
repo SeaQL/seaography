@@ -166,7 +166,7 @@ pub fn extract_table_relationship_meta(
 /// ```
 pub fn extract_relationship_columns(
     col_names: Vec<String>,
-    table_cols: &Vec<ColumnDef>,
+    table_cols: &[ColumnDef],
 ) -> Result<Vec<ColumnMeta>> {
     col_names
         .iter()
@@ -328,15 +328,15 @@ pub fn extract_relationship_columns(
 /// ```
 pub fn extract_tables_meta(
     tables: &TablesHashMap,
-    relationships: &Vec<RelationshipMeta>,
+    relationships: &[RelationshipMeta],
 ) -> Vec<TableMeta> {
     tables
-        .into_iter()
+        .iter()
         .map(|(table_name, table_create_stmt)| {
             let columns: Vec<ColumnMeta> = table_create_stmt
                 .get_columns()
                 .iter()
-                .map(|col| ColumnMeta::from_column_def(col))
+                .map(ColumnMeta::from_column_def)
                 .collect();
 
             TableMeta {
@@ -347,8 +347,8 @@ pub fn extract_tables_meta(
                     .filter(|relation| {
                         relation.src_table.eq(table_name) || relation.dst_table.eq(table_name)
                     })
-                    .map(|rel| rel.clone())
-                    .collect(),
+                    .cloned()
+                    .collect()
             }
         })
         .collect()
@@ -366,7 +366,7 @@ pub fn extract_tables_meta(
 pub fn extract_enums(tables: &TablesHashMap) -> Vec<EnumMeta> {
     // extract enum meta from tables, the produced result contains duplicates
     let enums_mixed = tables
-        .into_iter()
+        .iter()
         .map(|(_, table_create_stmt)| extract_table_enums(table_create_stmt))
         .fold(
             Vec::<EnumMeta>::new(),
@@ -415,10 +415,7 @@ pub fn extract_table_enums(table_create_stmt: &TableCreateStatement) -> Vec<Enum
     table_create_stmt
         .get_columns()
         .iter()
-        .filter(|col| match col.get_column_type().unwrap() {
-            sea_schema::sea_query::ColumnType::Enum(_, _) => true,
-            _ => false,
-        })
+        .filter(|col| matches!(col.get_column_type().unwrap(), sea_schema::sea_query::ColumnType::Enum(_, _)))
         .map(|col| match col.get_column_type().unwrap() {
             sea_schema::sea_query::ColumnType::Enum(name, values) => EnumMeta {
                 enum_name: name.to_upper_camel_case(),
