@@ -107,11 +107,11 @@ jobs:
             - name: Remove generated folder
               run: rm -rf ./examples/mysql/src
             - name: Create DB
-              run: mysql -u root -p root -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
+              run: mysql -u=root -p=root -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
             - name: Import DB Schema
-              run: mysql -u root -p root -h 127.0.0.1 sakila < sakila-schema.sql
+              run: mysql -u=root -p=root -h 127.0.0.1 sakila < sakila-schema.sql
             - name: Import DB Data
-              run: mysql -u root -p root -h 127.0.0.1 sakila < sakila-data.sql
+              run: mysql -u=root -p=root -h 127.0.0.1 sakila < sakila-data.sql
               working-directory: ./examples/mysql
             - uses: actions-rs/cargo@v1
               with:
