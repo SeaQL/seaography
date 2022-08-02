@@ -78,11 +78,11 @@ jobs:
             -   name: Remove generated folder
                 run: rm -rf ./generated/src
             -   name: Move database
-                run: cp ./chinook.db ./generated/chinook.db
+                run: cp ./chinook.db ./examples/sqlite/chinook.db
             -   uses: actions-rs/cargo@v1
                 with:
                     command: run
-                    args: sqlite://chinook.db generated ./generated
+                    args: sqlite://chinook.db generated ./examples/sqlite
             -   name: Integration tests
-                working-directory: ./generated
+                working-directory: ./examples/sqlite
                 run: cargo test
