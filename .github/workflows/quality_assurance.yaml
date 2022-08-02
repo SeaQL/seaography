@@ -106,10 +106,6 @@ jobs:
                   override: true
             - name: Remove generated folder
               run: rm -rf ./examples/mysql/src
-            - uses: actions-rs/cargo@v1
-              with:
-                  command: run
-                  args: 'mysql://root:root@127.0.0.1/sakila generated ./examples/mysql'
             - name: Create DB
               run: mysql -u root -p root -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
             - name: Import DB Schema
@@ -117,6 +113,10 @@ jobs:
             - name: Import DB Data
               run: mysql -u root -p root -h 127.0.0.1 sakila < sakila-data.sql
               working-directory: ./examples/mysql
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: 'mysql://root:root@127.0.0.1/sakila generated ./examples/mysql'
             - name: Integration tests
               working-directory: ./examples/mysql
               run: cargo test

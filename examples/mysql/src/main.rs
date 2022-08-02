@@ -17,7 +17,7 @@ async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .with_test_writer()
         .init();
-    let database = Database::connect("mysql://root:root@localhost/sakila")
+    let database = Database::connect("mysql://root:root@127.0.0.1/sakila")
         .await
         .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
