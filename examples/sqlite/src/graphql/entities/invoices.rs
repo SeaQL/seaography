@@ -124,17 +124,6 @@ impl Model {
     pub async fn total(&self) -> &f64 {
         &self.total
     }
-    pub async fn invoice_invoice_items<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::invoice_items::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = InvoiceInvoiceItemsFK(self.invoice_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
     pub async fn customer_customers<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -145,6 +134,17 @@ impl Model {
         let key = CustomerCustomersFK(self.customer_id.clone());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
+    }
+    pub async fn invoice_invoice_items<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::invoice_items::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = InvoiceInvoiceItemsFK(self.invoice_id.clone());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
     }
 }
 #[derive(async_graphql :: InputObject, Debug)]
@@ -161,6 +161,44 @@ pub struct Filter {
     pub billing_country: Option<TypeFilter<String>>,
     pub billing_postal_code: Option<TypeFilter<String>>,
     pub total: Option<TypeFilter<f64>>,
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct CustomerCustomersFK(i32);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<CustomerCustomersFK> for OrmDataloader {
+    type Value = crate::orm::customers::Model;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[CustomerCustomersFK],
+    ) -> Result<std::collections::HashMap<CustomerCustomersFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::customers::Column::CustomerId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        Ok(crate::orm::customers::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = CustomerCustomersFK(model.customer_id.clone());
+                (key, model)
+            })
+            .collect())
+    }
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InvoiceInvoiceItemsFK(i32);
@@ -199,43 +237,5 @@ impl async_graphql::dataloader::Loader<InvoiceInvoiceItemsFK> for OrmDataloader 
                 (key, model)
             })
             .into_group_map())
-    }
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct CustomerCustomersFK(i32);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<CustomerCustomersFK> for OrmDataloader {
-    type Value = crate::orm::customers::Model;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[CustomerCustomersFK],
-    ) -> Result<std::collections::HashMap<CustomerCustomersFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::customers::Column::CustomerId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        Ok(crate::orm::customers::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = CustomerCustomersFK(model.customer_id.clone());
-                (key, model)
-            })
-            .collect())
     }
 }

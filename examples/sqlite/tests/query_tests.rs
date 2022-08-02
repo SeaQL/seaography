@@ -4,7 +4,7 @@ use generated::{OrmDataloader, QueryRoot};
 use sea_orm::Database;
 
 pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
-    let database = Database::connect("sqlite://../chinook.db").await.unwrap();
+    let database = Database::connect("sqlite://chinook.db").await.unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
         OrmDataloader {
             db: database.clone(),

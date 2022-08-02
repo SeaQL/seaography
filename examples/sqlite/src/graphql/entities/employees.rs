@@ -190,17 +190,6 @@ impl Model {
     pub async fn email(&self) -> &Option<String> {
         &self.email
     }
-    pub async fn employee_customers<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::customers::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = EmployeeCustomersFK(self.employee_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
     pub async fn employee_employees<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -220,6 +209,17 @@ impl Model {
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
         let key = ReportsToEmployeesFK(self.reports_to.clone());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
+    }
+    pub async fn employee_customers<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::customers::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = EmployeeCustomersFK(self.employee_id.clone());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
@@ -244,45 +244,6 @@ pub struct Filter {
     pub phone: Option<TypeFilter<String>>,
     pub fax: Option<TypeFilter<String>>,
     pub email: Option<TypeFilter<String>>,
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct EmployeeCustomersFK(i32);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<EmployeeCustomersFK> for OrmDataloader {
-    type Value = Vec<crate::orm::customers::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[EmployeeCustomersFK],
-    ) -> Result<std::collections::HashMap<EmployeeCustomersFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::customers::Column::SupportRepId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::customers::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = EmployeeCustomersFK(model.support_rep_id.unwrap().clone());
-                (key, model)
-            })
-            .into_group_map())
-    }
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct EmployeeEmployeesFK(i32);
@@ -357,6 +318,45 @@ impl async_graphql::dataloader::Loader<ReportsToEmployeesFK> for OrmDataloader {
             .into_iter()
             .map(|model| {
                 let key = ReportsToEmployeesFK(Some(model.employee_id).clone());
+                (key, model)
+            })
+            .into_group_map())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct EmployeeCustomersFK(i32);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<EmployeeCustomersFK> for OrmDataloader {
+    type Value = Vec<crate::orm::customers::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[EmployeeCustomersFK],
+    ) -> Result<std::collections::HashMap<EmployeeCustomersFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::customers::Column::SupportRepId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::customers::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = EmployeeCustomersFK(model.support_rep_id.unwrap().clone());
                 (key, model)
             })
             .into_group_map())

@@ -6,26 +6,26 @@ pub struct PaginationInput {
     pub page: usize,
 }
 #[derive(async_graphql :: SimpleObject, Debug)]
-#[graphql(concrete(name = "PaginatedPlaylistsResult", params(entities::playlists::Model)))]
 #[graphql(concrete(name = "PaginatedTracksResult", params(entities::tracks::Model)))]
+#[graphql(concrete(name = "PaginatedEmployeesResult", params(entities::employees::Model)))]
+#[graphql(concrete(name = "PaginatedPlaylistsResult", params(entities::playlists::Model)))]
+#[graphql(concrete(name = "PaginatedGenresResult", params(entities::genres::Model)))]
+#[graphql(concrete(name = "PaginatedCustomersResult", params(entities::customers::Model)))]
 #[graphql(concrete(name = "PaginatedAlbumsResult", params(entities::albums::Model)))]
+#[graphql(concrete(
+    name = "PaginatedMediaTypesResult",
+    params(entities::media_types::Model)
+))]
+#[graphql(concrete(name = "PaginatedInvoicesResult", params(entities::invoices::Model)))]
 #[graphql(concrete(name = "PaginatedArtistsResult", params(entities::artists::Model)))]
 #[graphql(concrete(
     name = "PaginatedInvoiceItemsResult",
     params(entities::invoice_items::Model)
 ))]
-#[graphql(concrete(name = "PaginatedCustomersResult", params(entities::customers::Model)))]
-#[graphql(concrete(name = "PaginatedInvoicesResult", params(entities::invoices::Model)))]
 #[graphql(concrete(
     name = "PaginatedPlaylistTrackResult",
     params(entities::playlist_track::Model)
 ))]
-#[graphql(concrete(
-    name = "PaginatedMediaTypesResult",
-    params(entities::media_types::Model)
-))]
-#[graphql(concrete(name = "PaginatedEmployeesResult", params(entities::employees::Model)))]
-#[graphql(concrete(name = "PaginatedGenresResult", params(entities::genres::Model)))]
 pub struct PaginatedResult<T: async_graphql::ObjectType> {
     pub data: Vec<T>,
     pub pages: usize,
@@ -34,35 +34,6 @@ pub struct PaginatedResult<T: async_graphql::ObjectType> {
 pub struct QueryRoot;
 #[async_graphql::Object]
 impl QueryRoot {
-    async fn playlists<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-        filters: Option<entities::playlists::Filter>,
-        pagination: Option<PaginationInput>,
-    ) -> PaginatedResult<entities::playlists::Model> {
-        println!("filters: {:?}", filters);
-        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
-        let stmt = entities::playlists::Entity::find()
-            .filter(entities::playlists::filter_recursive(filters));
-        if let Some(pagination) = pagination {
-            let paginator = stmt.paginate(db, pagination.limit);
-            let data: Vec<entities::playlists::Model> =
-                paginator.fetch_page(pagination.page).await.unwrap();
-            let pages = paginator.num_pages().await.unwrap();
-            PaginatedResult {
-                data,
-                pages,
-                current: pagination.page,
-            }
-        } else {
-            let data: Vec<entities::playlists::Model> = stmt.all(db).await.unwrap();
-            PaginatedResult {
-                data,
-                pages: 1,
-                current: 1,
-            }
-        }
-    }
     async fn tracks<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -92,6 +63,122 @@ impl QueryRoot {
             }
         }
     }
+    async fn employees<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+        filters: Option<entities::employees::Filter>,
+        pagination: Option<PaginationInput>,
+    ) -> PaginatedResult<entities::employees::Model> {
+        println!("filters: {:?}", filters);
+        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
+        let stmt = entities::employees::Entity::find()
+            .filter(entities::employees::filter_recursive(filters));
+        if let Some(pagination) = pagination {
+            let paginator = stmt.paginate(db, pagination.limit);
+            let data: Vec<entities::employees::Model> =
+                paginator.fetch_page(pagination.page).await.unwrap();
+            let pages = paginator.num_pages().await.unwrap();
+            PaginatedResult {
+                data,
+                pages,
+                current: pagination.page,
+            }
+        } else {
+            let data: Vec<entities::employees::Model> = stmt.all(db).await.unwrap();
+            PaginatedResult {
+                data,
+                pages: 1,
+                current: 1,
+            }
+        }
+    }
+    async fn playlists<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+        filters: Option<entities::playlists::Filter>,
+        pagination: Option<PaginationInput>,
+    ) -> PaginatedResult<entities::playlists::Model> {
+        println!("filters: {:?}", filters);
+        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
+        let stmt = entities::playlists::Entity::find()
+            .filter(entities::playlists::filter_recursive(filters));
+        if let Some(pagination) = pagination {
+            let paginator = stmt.paginate(db, pagination.limit);
+            let data: Vec<entities::playlists::Model> =
+                paginator.fetch_page(pagination.page).await.unwrap();
+            let pages = paginator.num_pages().await.unwrap();
+            PaginatedResult {
+                data,
+                pages,
+                current: pagination.page,
+            }
+        } else {
+            let data: Vec<entities::playlists::Model> = stmt.all(db).await.unwrap();
+            PaginatedResult {
+                data,
+                pages: 1,
+                current: 1,
+            }
+        }
+    }
+    async fn genres<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+        filters: Option<entities::genres::Filter>,
+        pagination: Option<PaginationInput>,
+    ) -> PaginatedResult<entities::genres::Model> {
+        println!("filters: {:?}", filters);
+        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
+        let stmt =
+            entities::genres::Entity::find().filter(entities::genres::filter_recursive(filters));
+        if let Some(pagination) = pagination {
+            let paginator = stmt.paginate(db, pagination.limit);
+            let data: Vec<entities::genres::Model> =
+                paginator.fetch_page(pagination.page).await.unwrap();
+            let pages = paginator.num_pages().await.unwrap();
+            PaginatedResult {
+                data,
+                pages,
+                current: pagination.page,
+            }
+        } else {
+            let data: Vec<entities::genres::Model> = stmt.all(db).await.unwrap();
+            PaginatedResult {
+                data,
+                pages: 1,
+                current: 1,
+            }
+        }
+    }
+    async fn customers<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+        filters: Option<entities::customers::Filter>,
+        pagination: Option<PaginationInput>,
+    ) -> PaginatedResult<entities::customers::Model> {
+        println!("filters: {:?}", filters);
+        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
+        let stmt = entities::customers::Entity::find()
+            .filter(entities::customers::filter_recursive(filters));
+        if let Some(pagination) = pagination {
+            let paginator = stmt.paginate(db, pagination.limit);
+            let data: Vec<entities::customers::Model> =
+                paginator.fetch_page(pagination.page).await.unwrap();
+            let pages = paginator.num_pages().await.unwrap();
+            PaginatedResult {
+                data,
+                pages,
+                current: pagination.page,
+            }
+        } else {
+            let data: Vec<entities::customers::Model> = stmt.all(db).await.unwrap();
+            PaginatedResult {
+                data,
+                pages: 1,
+                current: 1,
+            }
+        }
+    }
     async fn albums<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -114,6 +201,64 @@ impl QueryRoot {
             }
         } else {
             let data: Vec<entities::albums::Model> = stmt.all(db).await.unwrap();
+            PaginatedResult {
+                data,
+                pages: 1,
+                current: 1,
+            }
+        }
+    }
+    async fn media_types<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+        filters: Option<entities::media_types::Filter>,
+        pagination: Option<PaginationInput>,
+    ) -> PaginatedResult<entities::media_types::Model> {
+        println!("filters: {:?}", filters);
+        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
+        let stmt = entities::media_types::Entity::find()
+            .filter(entities::media_types::filter_recursive(filters));
+        if let Some(pagination) = pagination {
+            let paginator = stmt.paginate(db, pagination.limit);
+            let data: Vec<entities::media_types::Model> =
+                paginator.fetch_page(pagination.page).await.unwrap();
+            let pages = paginator.num_pages().await.unwrap();
+            PaginatedResult {
+                data,
+                pages,
+                current: pagination.page,
+            }
+        } else {
+            let data: Vec<entities::media_types::Model> = stmt.all(db).await.unwrap();
+            PaginatedResult {
+                data,
+                pages: 1,
+                current: 1,
+            }
+        }
+    }
+    async fn invoices<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+        filters: Option<entities::invoices::Filter>,
+        pagination: Option<PaginationInput>,
+    ) -> PaginatedResult<entities::invoices::Model> {
+        println!("filters: {:?}", filters);
+        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
+        let stmt = entities::invoices::Entity::find()
+            .filter(entities::invoices::filter_recursive(filters));
+        if let Some(pagination) = pagination {
+            let paginator = stmt.paginate(db, pagination.limit);
+            let data: Vec<entities::invoices::Model> =
+                paginator.fetch_page(pagination.page).await.unwrap();
+            let pages = paginator.num_pages().await.unwrap();
+            PaginatedResult {
+                data,
+                pages,
+                current: pagination.page,
+            }
+        } else {
+            let data: Vec<entities::invoices::Model> = stmt.all(db).await.unwrap();
             PaginatedResult {
                 data,
                 pages: 1,
@@ -179,64 +324,6 @@ impl QueryRoot {
             }
         }
     }
-    async fn customers<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-        filters: Option<entities::customers::Filter>,
-        pagination: Option<PaginationInput>,
-    ) -> PaginatedResult<entities::customers::Model> {
-        println!("filters: {:?}", filters);
-        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
-        let stmt = entities::customers::Entity::find()
-            .filter(entities::customers::filter_recursive(filters));
-        if let Some(pagination) = pagination {
-            let paginator = stmt.paginate(db, pagination.limit);
-            let data: Vec<entities::customers::Model> =
-                paginator.fetch_page(pagination.page).await.unwrap();
-            let pages = paginator.num_pages().await.unwrap();
-            PaginatedResult {
-                data,
-                pages,
-                current: pagination.page,
-            }
-        } else {
-            let data: Vec<entities::customers::Model> = stmt.all(db).await.unwrap();
-            PaginatedResult {
-                data,
-                pages: 1,
-                current: 1,
-            }
-        }
-    }
-    async fn invoices<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-        filters: Option<entities::invoices::Filter>,
-        pagination: Option<PaginationInput>,
-    ) -> PaginatedResult<entities::invoices::Model> {
-        println!("filters: {:?}", filters);
-        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
-        let stmt = entities::invoices::Entity::find()
-            .filter(entities::invoices::filter_recursive(filters));
-        if let Some(pagination) = pagination {
-            let paginator = stmt.paginate(db, pagination.limit);
-            let data: Vec<entities::invoices::Model> =
-                paginator.fetch_page(pagination.page).await.unwrap();
-            let pages = paginator.num_pages().await.unwrap();
-            PaginatedResult {
-                data,
-                pages,
-                current: pagination.page,
-            }
-        } else {
-            let data: Vec<entities::invoices::Model> = stmt.all(db).await.unwrap();
-            PaginatedResult {
-                data,
-                pages: 1,
-                current: 1,
-            }
-        }
-    }
     async fn playlist_track<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -259,93 +346,6 @@ impl QueryRoot {
             }
         } else {
             let data: Vec<entities::playlist_track::Model> = stmt.all(db).await.unwrap();
-            PaginatedResult {
-                data,
-                pages: 1,
-                current: 1,
-            }
-        }
-    }
-    async fn media_types<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-        filters: Option<entities::media_types::Filter>,
-        pagination: Option<PaginationInput>,
-    ) -> PaginatedResult<entities::media_types::Model> {
-        println!("filters: {:?}", filters);
-        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
-        let stmt = entities::media_types::Entity::find()
-            .filter(entities::media_types::filter_recursive(filters));
-        if let Some(pagination) = pagination {
-            let paginator = stmt.paginate(db, pagination.limit);
-            let data: Vec<entities::media_types::Model> =
-                paginator.fetch_page(pagination.page).await.unwrap();
-            let pages = paginator.num_pages().await.unwrap();
-            PaginatedResult {
-                data,
-                pages,
-                current: pagination.page,
-            }
-        } else {
-            let data: Vec<entities::media_types::Model> = stmt.all(db).await.unwrap();
-            PaginatedResult {
-                data,
-                pages: 1,
-                current: 1,
-            }
-        }
-    }
-    async fn employees<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-        filters: Option<entities::employees::Filter>,
-        pagination: Option<PaginationInput>,
-    ) -> PaginatedResult<entities::employees::Model> {
-        println!("filters: {:?}", filters);
-        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
-        let stmt = entities::employees::Entity::find()
-            .filter(entities::employees::filter_recursive(filters));
-        if let Some(pagination) = pagination {
-            let paginator = stmt.paginate(db, pagination.limit);
-            let data: Vec<entities::employees::Model> =
-                paginator.fetch_page(pagination.page).await.unwrap();
-            let pages = paginator.num_pages().await.unwrap();
-            PaginatedResult {
-                data,
-                pages,
-                current: pagination.page,
-            }
-        } else {
-            let data: Vec<entities::employees::Model> = stmt.all(db).await.unwrap();
-            PaginatedResult {
-                data,
-                pages: 1,
-                current: 1,
-            }
-        }
-    }
-    async fn genres<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-        filters: Option<entities::genres::Filter>,
-        pagination: Option<PaginationInput>,
-    ) -> PaginatedResult<entities::genres::Model> {
-        println!("filters: {:?}", filters);
-        let db: &DatabaseConnection = ctx.data::<DatabaseConnection>().unwrap();
-        let stmt =
-            entities::genres::Entity::find().filter(entities::genres::filter_recursive(filters));
-        if let Some(pagination) = pagination {
-            let paginator = stmt.paginate(db, pagination.limit);
-            let data: Vec<entities::genres::Model> =
-                paginator.fetch_page(pagination.page).await.unwrap();
-            let pages = paginator.num_pages().await.unwrap();
-            PaginatedResult {
-                data,
-                pages,
-                current: pagination.page,
-            }
-        } else {
-            let data: Vec<entities::genres::Model> = stmt.all(db).await.unwrap();
             PaginatedResult {
                 data,
                 pages: 1,
