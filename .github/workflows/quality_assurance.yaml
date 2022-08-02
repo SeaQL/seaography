@@ -77,8 +77,6 @@ jobs:
                     override: true
             -   name: Remove generated folder
                 run: rm -rf ./examples/sqlite/src
-            -   name: Move database
-                run: cp ./chinook.db ./examples/sqlite/chinook.db
             -   uses: actions-rs/cargo@v1
                 with:
                     command: run
