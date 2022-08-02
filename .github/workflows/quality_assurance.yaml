@@ -110,8 +110,12 @@ jobs:
               with:
                   command: run
                   args: 'mysql://root:root@127.0.0.1/sakila generated ./examples/mysql'
+            - name: Create DB
+              run: mysql -u root -p root -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
             - name: Import DB Schema
-              run: mysql -u root -p root -h 127.0.0.1 < sakila.sql
+              run: mysql -u root -p root -h 127.0.0.1 sakila < sakila-schema.sql
+            - name: Import DB Data
+              run: mysql -u root -p root -h 127.0.0.1 sakila < sakila-data.sql
               working-directory: ./examples/mysql
             - name: Integration tests
               working-directory: ./examples/mysql
