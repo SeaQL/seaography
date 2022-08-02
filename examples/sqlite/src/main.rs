@@ -17,7 +17,7 @@ async fn main() {
         .with_max_level(tracing::Level::DEBUG)
         .with_test_writer()
         .init();
-    let database = Database::connect("sqlite://./chinook.db").await.unwrap();
+    let database = Database::connect("sqlite://chinook.db").await.unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
         OrmDataloader {
             db: database.clone(),

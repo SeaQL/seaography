@@ -84,3 +84,42 @@ jobs:
             -   name: Integration tests
                 working-directory: ./examples/sqlite
                 run: cargo test
+
+    integration-mysql:
+        name: MySQL integration tests
+        runs-on: ubuntu-latest
+        needs:
+            - check
+            - test
+        services:
+            mysql:
+                image: mysql:5.7
+                env:
+                    MYSQL_HOST: 127.0.0.1
+                    MYSQL_ROOT_PASSWORD: root
+                ports:
+                    - "3306:3306"
+                options: >-
+                    --health-cmd="mysqladmin ping"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=3
+        steps:
+            -   uses: actions/checkout@v2
+            -   uses: actions-rs/toolchain@v1
+            with:
+              profile: minimal
+              toolchain: stable
+              override: true
+                -   name: Remove generated folder
+                  run: rm -rf ./examples/mysql/src
+                -   uses: actions-rs/cargo@v1
+                  with:
+                      command: run
+                      args: mysql://root:root@127.0.0.1/sakila generated ./examples/mysql
+                -   name: Import DB Schema
+                  run: mysql -u root -p root -h 127.0.0.1 < sakila.sql
+                  working-directory: ./examples/mysql
+                -   name: Integration tests
+                  working-directory: ./examples/mysql
+                  run: cargo test
