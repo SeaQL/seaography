@@ -1,67 +1,63 @@
 name: Testing
-
-on: push
-
+'on': push
 jobs:
     check:
         name: Check
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v2
-            -   uses: actions-rs/toolchain@v1
-                with:
-                    profile: minimal
-                    toolchain: stable
-                    override: true
-            -   uses: actions-rs/cargo@v1
-                with:
-                    command: check
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: check
     test:
         name: Test
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v2
-            -   uses: actions-rs/toolchain@v1
-                with:
-                    profile: minimal
-                    toolchain: stable
-                    override: true
-            -   uses: actions-rs/cargo@v1
-                with:
-                    command: test
-                    args: --workspace
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: test
+                  args: '--workspace'
     fmt:
         name: Format
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v2
-            -   uses: actions-rs/toolchain@v1
-                with:
-                    profile: minimal
-                    toolchain: stable
-                    override: true
-            -   run: rustup component add rustfmt
-            -   uses: actions-rs/cargo@v1
-                with:
-                    command: fmt
-                    args: --all -- --check
-
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - run: rustup component add rustfmt
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: fmt
+                  args: '--all -- --check'
     clippy:
         name: Lint
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v2
-            -   uses: actions-rs/toolchain@v1
-                with:
-                    profile: minimal
-                    toolchain: stable
-                    override: true
-            -   run: rustup component add clippy
-            -   uses: actions-rs/cargo@v1
-                with:
-                    command: clippy
-                    args: -- -D warnings
-
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - run: rustup component add clippy
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: clippy
+                  args: '-- -D warnings'
     integration-sqlite:
         name: SQLite integration tests
         runs-on: ubuntu-latest
@@ -69,22 +65,21 @@ jobs:
             - check
             - test
         steps:
-            -   uses: actions/checkout@v2
-            -   uses: actions-rs/toolchain@v1
-                with:
-                    profile: minimal
-                    toolchain: stable
-                    override: true
-            -   name: Remove generated folder
-                run: rm -rf ./examples/sqlite/src
-            -   uses: actions-rs/cargo@v1
-                with:
-                    command: run
-                    args: sqlite://chinook.db generated ./examples/sqlite
-            -   name: Integration tests
-                working-directory: ./examples/sqlite
-                run: cargo test
-
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - name: Remove generated folder
+              run: rm -rf ./examples/sqlite/src
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: 'sqlite://chinook.db generated ./examples/sqlite'
+            - name: Integration tests
+              working-directory: ./examples/sqlite
+              run: cargo test
     integration-mysql:
         name: MySQL integration tests
         runs-on: ubuntu-latest
@@ -93,33 +88,31 @@ jobs:
             - test
         services:
             mysql:
-                image: mysql:5.7
+                image: 'mysql:5.7'
                 env:
                     MYSQL_HOST: 127.0.0.1
                     MYSQL_ROOT_PASSWORD: root
                 ports:
-                    - "3306:3306"
+                    - '3306:3306'
                 options: >-
-                    --health-cmd="mysqladmin ping"
-                    --health-interval=10s
-                    --health-timeout=5s
-                    --health-retries=3
+                    --health-cmd="mysqladmin ping" --health-interval=10s
+                    --health-timeout=5s --health-retries=3
         steps:
-            -   uses: actions/checkout@v2
-            -   uses: actions-rs/toolchain@v1
-            with:
-              profile: minimal
-              toolchain: stable
-              override: true
-                -   name: Remove generated folder
-                  run: rm -rf ./examples/mysql/src
-                -   uses: actions-rs/cargo@v1
-                  with:
-                      command: run
-                      args: mysql://root:root@127.0.0.1/sakila generated ./examples/mysql
-                -   name: Import DB Schema
-                  run: mysql -u root -p root -h 127.0.0.1 < sakila.sql
-                  working-directory: ./examples/mysql
-                -   name: Integration tests
-                  working-directory: ./examples/mysql
-                  run: cargo test
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - name: Remove generated folder
+              run: rm -rf ./examples/mysql/src
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: 'mysql://root:root@127.0.0.1/sakila generated ./examples/mysql'
+            - name: Import DB Schema
+              run: mysql -u root -p root -h 127.0.0.1 < sakila.sql
+              working-directory: ./examples/mysql
+            - name: Integration tests
+              working-directory: ./examples/mysql
+              run: cargo test
