@@ -4,7 +4,7 @@ use generated::{OrmDataloader, QueryRoot};
 use sea_orm::Database;
 
 pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
-    let database = Database::connect("mysql://root:root@127.0.0.1/sakila")
+    let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
