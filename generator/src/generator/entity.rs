@@ -155,7 +155,7 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
 ///     quote!{
 ///         pub async fn id_char<'a>(&self, ctx: &async_graphql::Context<'a>) -> Vec<crate::orm::char::Model> {
 ///             let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
-///             let key = IdCharFK(self.id.clone());
+///             let key = IdCharFK(self.id.clone().try_into().unwrap());
 ///             let data: Option<_> = data_loader.load_one(key).await.unwrap();
 ///             data.unwrap_or(vec![])
 ///         }
@@ -229,7 +229,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
                 ) -> #return_type {
                     let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 
-                    let key = #fk_name(#(self.#key_items.clone()),*);
+                    let key = #fk_name(#(self.#key_items.clone().try_into().unwrap()),*);
 
                     let data: Option<_> = data_loader.load_one(key).await.unwrap();
 
@@ -364,7 +364,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                 .await?
                                 .into_iter()
                                 .map(|model| {
-                                    let key = #fk_name(#(#destination_fields.clone()),*);
+                                    let key = #fk_name(#(#destination_fields.clone().try_into().unwrap()),*);
 
                                     (key, model)
                                 })
