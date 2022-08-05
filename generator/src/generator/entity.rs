@@ -289,11 +289,11 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
 
                     if source_optional && !destination_optional {
                         quote! {
-                            model.#name.unwrap()
+                            model.#name.as_ref().unwrap()
                         }
                     } else if !source_optional && destination_optional {
                         quote! {
-                            Some(model.#name)
+                            Some(model.#name.clone())
                         }
                     } else {
                         quote! {
