@@ -153,7 +153,7 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
 /// let left: Vec<_> = generate_entity_relations(&get_font_table()).iter().map(|t| t.to_string()).collect();;
 /// let right: Vec<_>  = vec![
 ///     quote!{
-///         pub async fn id_char<'a>(&self, ctx: &async_graphql::Context<'a>) -> Vec<crate::orm::char::Model> {
+///         pub async fn font_char<'a>(&self, ctx: &async_graphql::Context<'a>) -> Vec<crate::orm::char::Model> {
 ///             let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 ///             let key = IdCharFK(self.id.clone().try_into().unwrap());
 ///             let data: Option<_> = data_loader.load_one(key).await.unwrap();
