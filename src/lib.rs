@@ -1,3 +1,4 @@
+use sea_orm_codegen::EntityWriterContext;
 use url::ParseError;
 
 #[derive(clap::Parser)]
@@ -52,8 +53,8 @@ pub type Result<T> = std::result::Result<T, Error>;
  * Most code depends from here
  * https://github.com/SeaQL/sea-orm/blob/master/sea-orm-cli/src/commands.rs
  */
-pub fn parse_database_url(database_url: &String) -> Result<url::Url> {
-    let url = url::Url::parse(&database_url)?;
+pub fn parse_database_url(database_url: &str) -> Result<url::Url> {
+    let url = url::Url::parse(database_url)?;
 
     // Make sure we have all the required url components
     //
@@ -88,10 +89,12 @@ pub fn parse_database_url(database_url: &String) -> Result<url::Url> {
         // information from a particular database
         let database_name = url
             .path_segments()
-            .ok_or(Error::Error(format!(
-                "There is no database name as part of the url path: {}",
-                url.as_str()
-            )))?
+            .ok_or_else(|| {
+                Error::Error(format!(
+                    "There is no database name as part of the url path: {}",
+                    url.as_str()
+                ))
+            })?
             .next()
             .unwrap();
 
@@ -112,8 +115,15 @@ pub fn generate_orm<P: AsRef<std::path::Path>>(
     table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>,
 ) -> Result<()> {
     let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
+    // TODO: read postgres database schema from CLI params
+    let entity_writer_ctx = EntityWriterContext::new(
+        true,
+        sea_orm_codegen::WithSerde::None,
+        sea_orm_codegen::DateTimeCrate::Chrono,
+        None,
+    );
 
-    let writer_output = entity_writer.generate(true, sea_orm_codegen::WithSerde::None);
+    let writer_output = entity_writer.generate(&entity_writer_ctx);
 
     for sea_orm_codegen::OutputFile { name, content } in writer_output.files.iter() {
         let file_path = path.as_ref().join(name);

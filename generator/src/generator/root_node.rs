@@ -2,10 +2,10 @@ use std::path::Path;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use seaography_types::{TableMeta};
+use seaography_types::TableMeta;
 
 /// Use to generate project/src/graphql/root_node.rs file content
-pub fn generate_root_node(tables_meta: &Vec<TableMeta>) -> TokenStream {
+pub fn generate_root_node(tables_meta: &[TableMeta]) -> TokenStream {
     let pagination_input = generate_pagination_input();
 
     let paginated_result = generate_paginated_result(tables_meta);
@@ -31,11 +31,8 @@ pub fn generate_root_node(tables_meta: &Vec<TableMeta>) -> TokenStream {
 }
 
 /// Used to gather all root_node queries for every entity
-pub fn generate_single_queries(tables_meta: &Vec<TableMeta>) -> Vec<TokenStream> {
-    tables_meta
-        .iter()
-        .map(|table_meta: &TableMeta| generate_table_query(table_meta))
-        .collect()
+pub fn generate_single_queries(tables_meta: &[TableMeta]) -> Vec<TokenStream> {
+    tables_meta.iter().map(generate_table_query).collect()
 }
 
 /// Used to generate a root query for the current table_meta
@@ -199,7 +196,7 @@ pub fn generate_pagination_input() -> TokenStream {
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_paginated_result(tables_meta: &Vec<TableMeta>) -> TokenStream {
+pub fn generate_paginated_result(tables_meta: &[TableMeta]) -> TokenStream {
     let derives: Vec<TokenStream> = tables_meta
         .iter()
         .map(|table_meta: &TableMeta| {
@@ -223,10 +220,7 @@ pub fn generate_paginated_result(tables_meta: &Vec<TableMeta>) -> TokenStream {
 }
 
 /// Used to write project/src/graphql/root_node.rs
-pub fn write_root_node<P: AsRef<Path>>(
-    path: &P,
-    tables_meta: &Vec<TableMeta>,
-) -> std::io::Result<()> {
+pub fn write_root_node<P: AsRef<Path>>(path: &P, tables_meta: &[TableMeta]) -> std::io::Result<()> {
     let file_name = path.as_ref().join("root_node.rs");
 
     let data = generate_root_node(tables_meta);

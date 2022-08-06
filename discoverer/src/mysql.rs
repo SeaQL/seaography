@@ -3,11 +3,11 @@ use sqlx::MySqlPool;
 
 use crate::{Result, TablesHashMap};
 
-pub async fn explore_mysql(url: &String) -> Result<TablesHashMap> {
+pub async fn explore_mysql(url: &str) -> Result<TablesHashMap> {
     let connection = MySqlPool::connect(url).await?;
 
     let schema = url
-        .split("/")
+        .split('/')
         .last()
         .ok_or("schema not found in database url")?;
 

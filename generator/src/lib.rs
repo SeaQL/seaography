@@ -11,7 +11,7 @@ pub mod test_cfg;
 pub fn write_project<P: AsRef<Path>>(
     path: &P,
     schema: &SchemaMeta,
-    crate_name: &String,
+    crate_name: &str,
 ) -> std::io::Result<()> {
     std::fs::create_dir_all(path.as_ref().join("src/graphql"))?;
 
@@ -64,14 +64,13 @@ pub fn generate_lib() -> TokenStream {
     }
 }
 
-
 /// Used to generate project/src/main.rs file content
 ///
 /// ```
 /// use quote::quote;
 /// use seaography_generator::generate_main;
 ///
-/// let left = generate_main(&"sqlite://test.db".into(), &"generated".into());
+/// let left = generate_main("sqlite://test.db", "generated");
 ///
 /// let right = quote! {
 ///     use async_graphql::{
@@ -115,7 +114,7 @@ pub fn generate_lib() -> TokenStream {
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_main(db_url: &String, crate_name: &String) -> TokenStream {
+pub fn generate_main(db_url: &str, crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.parse().unwrap();
 
     quote! {

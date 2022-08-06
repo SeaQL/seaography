@@ -2,13 +2,15 @@ use crate::{Result, TablesHashMap};
 use sea_schema::postgres::{def::TableDef, discovery::SchemaDiscovery};
 use sqlx::PgPool;
 
-pub async fn explore_postgres(uri: &String) -> Result<TablesHashMap> {
+pub async fn explore_postgres(uri: &str) -> Result<TablesHashMap> {
     let connection = PgPool::connect(uri).await?;
 
-    let schema = uri
-        .split("/")
+    let database = uri
+        .split('/')
         .last()
-        .ok_or("schema not found in database url")?;
+        .ok_or("database not specified in url")?;
+
+    let schema = database.split("currentSchema=").last().unwrap_or("public");
 
     let schema_discovery = SchemaDiscovery::new(connection, schema);
 

@@ -4,7 +4,7 @@ use quote::quote;
 use sea_query::{ColumnDef, ColumnSpec};
 use serde::{Deserialize, Serialize};
 
-use crate::column_type::{ColumnType, map_sea_query_column_type};
+use crate::column_type::{map_sea_query_column_type, ColumnType};
 
 /// Used to represent column metadata required by the generator crate
 ///
@@ -53,8 +53,12 @@ impl ColumnMeta {
         Self {
             col_name: col.get_column_name().to_snake_case(),
             col_type: map_sea_query_column_type(col.get_column_type().unwrap()),
-            not_null: col_specs.iter().any(|spec| matches!(spec, ColumnSpec::NotNull)),
-            is_primary_key: col_specs.iter().any(|spec| matches!(spec, ColumnSpec::PrimaryKey)),
+            not_null: col_specs
+                .iter()
+                .any(|spec| matches!(spec, ColumnSpec::NotNull)),
+            is_primary_key: col_specs
+                .iter()
+                .any(|spec| matches!(spec, ColumnSpec::PrimaryKey)),
         }
     }
 
@@ -105,8 +109,8 @@ impl ColumnMeta {
             ColumnType::Enum(name) => name.to_upper_camel_case(),
             _ => unimplemented!(),
         }
-            .parse()
-            .unwrap()
+        .parse()
+        .unwrap()
     }
 
     pub fn get_type(&self) -> TokenStream {

@@ -1,8 +1,10 @@
-use std::collections::HashMap;
-use sea_schema::sea_query::{TableCreateStatement, Table, ColumnDef, ForeignKeyAction, ForeignKey, Value};
-use sea_schema::sea_query::tests_cfg::{Char, Font};
-use seaography_types::EnumMeta;
 use crate::TablesHashMap;
+use sea_schema::sea_query::tests_cfg::{Char, Font};
+use sea_schema::sea_query::{
+    ColumnDef, ForeignKey, ForeignKeyAction, Table, TableCreateStatement, Value,
+};
+use seaography_types::EnumMeta;
+use std::collections::HashMap;
 
 pub fn get_tables_hash_map() -> TablesHashMap {
     let mut hashmap: TablesHashMap = HashMap::new();
@@ -17,11 +19,21 @@ pub fn get_char_table() -> TableCreateStatement {
     Table::create()
         .table(Char::Table)
         .if_not_exists()
-        .col(ColumnDef::new(Char::Id).integer().not_null().auto_increment().primary_key())
+        .col(
+            ColumnDef::new(Char::Id)
+                .integer()
+                .not_null()
+                .auto_increment()
+                .primary_key(),
+        )
         .col(ColumnDef::new(Char::Character).string().not_null())
         .col(ColumnDef::new(Char::SizeW).integer().not_null())
         .col(ColumnDef::new(Char::SizeH).integer().not_null())
-        .col(ColumnDef::new(Char::FontId).integer().default(Value::Int(None)))
+        .col(
+            ColumnDef::new(Char::FontId)
+                .integer()
+                .default(Value::Int(None)),
+        )
         .col(ColumnDef::new(Char::FontSize).integer().not_null())
         .foreign_key(
             ForeignKey::create()
@@ -29,14 +41,18 @@ pub fn get_char_table() -> TableCreateStatement {
                 .from(Char::Table, Char::FontId)
                 .to(Font::Table, Font::Id)
                 .on_delete(ForeignKeyAction::Cascade)
-                .on_update(ForeignKeyAction::Cascade)
+                .on_update(ForeignKeyAction::Cascade),
         )
         .to_owned()
 }
 
 pub fn get_complex_fonts_table() -> TableCreateStatement {
     get_base_fonts_table()
-        .col(ColumnDef::new(Font::Variant).enumeration("VariantEnum", vec!["Bold", "Italic", "Slim"]).not_null())
+        .col(
+            ColumnDef::new(Font::Variant)
+                .enumeration("VariantEnum", vec!["Bold", "Italic", "Slim"])
+                .not_null(),
+        )
         .to_owned()
 }
 
@@ -50,9 +66,19 @@ pub fn get_base_fonts_table() -> TableCreateStatement {
     Table::create()
         .table(Font::Table)
         .if_not_exists()
-        .col(ColumnDef::new(Font::Id).integer().not_null().auto_increment().primary_key())
+        .col(
+            ColumnDef::new(Font::Id)
+                .integer()
+                .not_null()
+                .auto_increment()
+                .primary_key(),
+        )
         .col(ColumnDef::new(Font::Name).string().not_null())
-        .col(ColumnDef::new(Font::Language).enumeration("LanguageEnum", vec!["English", "French", "German"]).not_null())
+        .col(
+            ColumnDef::new(Font::Language)
+                .enumeration("LanguageEnum", vec!["English", "French", "German"])
+                .not_null(),
+        )
         .to_owned()
 }
 

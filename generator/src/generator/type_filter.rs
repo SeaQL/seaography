@@ -3,7 +3,6 @@ use std::path::Path;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-
 /// Used to generate type filter struct. The struct is used on root query queries to filter entities based on various fields
 ///
 /// ```
@@ -25,6 +24,7 @@ use quote::quote;
 ///     #[graphql(concrete(name = "BigUnsignedFilter", params(u64)))]
 ///     #[graphql(concrete(name = "FloatFilter", params(f32)))]
 ///     #[graphql(concrete(name = "DoubleFilter", params(f64)))]
+///     #[graphql(concrete(name = "DateFilter", params(Date)))]
 ///     #[graphql(concrete(name = "DateTimeFilter", params(DateTime)))]
 ///     #[graphql(concrete(name = "DateTimeUtcFilter", params(DateTimeUtc)))]
 ///     #[graphql(concrete(name = "DecimalFilter", params(Decimal)))]
@@ -63,6 +63,7 @@ pub fn generate_type_filter() -> TokenStream {
         // TODO #[graphql(concrete(name = "JsonFilter", params()))]
         // TODO #[graphql(concrete(name = "DateFilter", params()))]
         // TODO #[graphql(concrete(name = "TimeFilter", params()))]
+        #[graphql(concrete(name = "DateFilter", params(Date)))]
         #[graphql(concrete(name = "DateTimeFilter", params(DateTime)))]
         #[graphql(concrete(name = "DateTimeUtcFilter", params(DateTimeUtc)))]
         // TODO #[graphql(concrete(name = "TimestampFilter", params()))]

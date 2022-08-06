@@ -1,6 +1,8 @@
 use heck::ToUpperCamelCase;
 use itertools::Itertools;
-use sea_schema::sea_query::{ColumnDef, ForeignKeyCreateStatement, TableCreateStatement, TableForeignKey};
+use sea_schema::sea_query::{
+    ColumnDef, ForeignKeyCreateStatement, TableCreateStatement, TableForeignKey,
+};
 use seaography_types::{ColumnMeta, EnumMeta, RelationshipMeta, TableMeta};
 
 use crate::{Result, TablesHashMap};
@@ -43,16 +45,14 @@ use crate::{Result, TablesHashMap};
 /// assert_eq!(extract_relationships_meta(&tables).unwrap(), vec![])
 /// ```
 pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<RelationshipMeta>> {
-    Ok(
-        tables
-            .iter()
-            .map(|(table_name, table)| extract_table_relationship_meta(tables, table_name, table))
-            .collect::<Result<Vec<Vec<RelationshipMeta>>>>()?
-            .into_iter()
-            .flatten()
-            .unique()
-            .collect()
-    )
+    Ok(tables
+        .iter()
+        .map(|(table_name, table)| extract_table_relationship_meta(tables, table_name, table))
+        .collect::<Result<Vec<Vec<RelationshipMeta>>>>()?
+        .into_iter()
+        .flatten()
+        .unique()
+        .collect())
 }
 
 /// Used to extract relationship meta from @table
@@ -89,60 +89,58 @@ pub fn extract_relationships_meta(tables: &TablesHashMap) -> Result<Vec<Relation
 ///
 /// assert_eq!(left, relations);
 /// ```
-pub fn extract_table_relationship_meta(tables: &TablesHashMap, table_name: &String, table: &TableCreateStatement) -> Result<Vec<RelationshipMeta>> {
-    Ok(
-        table
-            .get_foreign_key_create_stmts()
-            .iter()
-            .map(|fk: &ForeignKeyCreateStatement| fk.get_foreign_key())
-            .map(|fk: &TableForeignKey| -> Result<Vec<RelationshipMeta>> {
-                let dst_table = fk
-                    .get_ref_table()
-                    .ok_or("destination table not properly populated")?;
+pub fn extract_table_relationship_meta(
+    tables: &TablesHashMap,
+    table_name: &String,
+    table: &TableCreateStatement,
+) -> Result<Vec<RelationshipMeta>> {
+    Ok(table
+        .get_foreign_key_create_stmts()
+        .iter()
+        .map(|fk: &ForeignKeyCreateStatement| fk.get_foreign_key())
+        .map(|fk: &TableForeignKey| -> Result<Vec<RelationshipMeta>> {
+            let dst_table = fk
+                .get_ref_table()
+                .ok_or("destination table not properly populated")?;
 
-                let dst_table_stmt = tables
-                    .get(&dst_table)
-                    .ok_or("source table not properly populated")?;
+            let dst_table_stmt = tables
+                .get(&dst_table)
+                .ok_or("source table not properly populated")?;
 
-                let src_cols: Vec<ColumnMeta> = extract_relationship_columns(fk.get_columns(), table.get_columns())?;
+            let src_cols: Vec<ColumnMeta> =
+                extract_relationship_columns(fk.get_columns(), table.get_columns())?;
 
-                let dst_cols: Vec<ColumnMeta> = extract_relationship_columns(fk.get_ref_columns(), dst_table_stmt.get_columns())?;
+            let dst_cols: Vec<ColumnMeta> =
+                extract_relationship_columns(fk.get_ref_columns(), dst_table_stmt.get_columns())?;
 
-                if table_name.eq(&dst_table) {
-                    Ok(
-                        vec![
-                            RelationshipMeta {
-                                src_table: table_name.clone(),
-                                dst_table: dst_table.clone(),
-                                src_cols: src_cols.clone(),
-                                dst_cols: dst_cols.clone(),
-                            },
-                            RelationshipMeta {
-                                src_table: table_name.clone(),
-                                dst_table,
-                                src_cols: dst_cols,
-                                dst_cols: src_cols,
-                            }
-                        ]
-                    )
-                } else {
-                    Ok(
-                        vec![
-                            RelationshipMeta {
-                                src_table: table_name.clone(),
-                                dst_table,
-                                src_cols,
-                                dst_cols,
-                            }
-                        ]
-                    )
-                }
-            })
-            .collect::<Result<Vec<Vec<RelationshipMeta>>>>()?
-            .into_iter()
-            .flatten()
-            .collect()
-    )
+            if table_name.eq(&dst_table) {
+                Ok(vec![
+                    RelationshipMeta {
+                        src_table: table_name.clone(),
+                        dst_table: dst_table.clone(),
+                        src_cols: src_cols.clone(),
+                        dst_cols: dst_cols.clone(),
+                    },
+                    RelationshipMeta {
+                        src_table: table_name.clone(),
+                        dst_table,
+                        src_cols: dst_cols,
+                        dst_cols: src_cols,
+                    },
+                ])
+            } else {
+                Ok(vec![RelationshipMeta {
+                    src_table: table_name.clone(),
+                    dst_table,
+                    src_cols,
+                    dst_cols,
+                }])
+            }
+        })
+        .collect::<Result<Vec<Vec<RelationshipMeta>>>>()?
+        .into_iter()
+        .flatten()
+        .collect())
 }
 
 /// Used to extract relationship columns from existing table column definitions
@@ -166,7 +164,10 @@ pub fn extract_table_relationship_meta(tables: &TablesHashMap, table_name: &Stri
 ///     ]
 /// );
 /// ```
-pub fn extract_relationship_columns(col_names: Vec<String>, table_cols: &Vec<ColumnDef>) -> Result<Vec<ColumnMeta>> {
+pub fn extract_relationship_columns(
+    col_names: Vec<String>,
+    table_cols: &[ColumnDef],
+) -> Result<Vec<ColumnMeta>> {
     col_names
         .iter()
         .map(|col_name| -> Result<ColumnMeta> {
@@ -327,15 +328,15 @@ pub fn extract_relationship_columns(col_names: Vec<String>, table_cols: &Vec<Col
 /// ```
 pub fn extract_tables_meta(
     tables: &TablesHashMap,
-    relationships: &Vec<RelationshipMeta>,
+    relationships: &[RelationshipMeta],
 ) -> Vec<TableMeta> {
     tables
-        .into_iter()
+        .iter()
         .map(|(table_name, table_create_stmt)| {
             let columns: Vec<ColumnMeta> = table_create_stmt
                 .get_columns()
                 .iter()
-                .map(|col| ColumnMeta::from_column_def(col))
+                .map(ColumnMeta::from_column_def)
                 .collect();
 
             TableMeta {
@@ -346,7 +347,7 @@ pub fn extract_tables_meta(
                     .filter(|relation| {
                         relation.src_table.eq(table_name) || relation.dst_table.eq(table_name)
                     })
-                    .map(|rel| rel.clone())
+                    .cloned()
                     .collect(),
             }
         })
@@ -365,7 +366,7 @@ pub fn extract_tables_meta(
 pub fn extract_enums(tables: &TablesHashMap) -> Vec<EnumMeta> {
     // extract enum meta from tables, the produced result contains duplicates
     let enums_mixed = tables
-        .into_iter()
+        .iter()
         .map(|(_, table_create_stmt)| extract_table_enums(table_create_stmt))
         .fold(
             Vec::<EnumMeta>::new(),
@@ -410,13 +411,15 @@ pub fn extract_enums(tables: &TablesHashMap) -> Vec<EnumMeta> {
 ///
 /// assert_eq!(extract_table_enums(&table_create_stmt), vec![]);
 /// ```
-pub fn extract_table_enums(table_create_stmt: &TableCreateStatement) -> Vec<EnumMeta>{
+pub fn extract_table_enums(table_create_stmt: &TableCreateStatement) -> Vec<EnumMeta> {
     table_create_stmt
         .get_columns()
         .iter()
-        .filter(|col| match col.get_column_type().unwrap() {
-            sea_schema::sea_query::ColumnType::Enum(_, _) => true,
-            _ => false,
+        .filter(|col| {
+            matches!(
+                col.get_column_type().unwrap(),
+                sea_schema::sea_query::ColumnType::Enum(_, _)
+            )
         })
         .map(|col| match col.get_column_type().unwrap() {
             sea_schema::sea_query::ColumnType::Enum(name, values) => EnumMeta {

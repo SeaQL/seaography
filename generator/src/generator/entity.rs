@@ -1,13 +1,13 @@
-use std::path::Path;
 use heck::ToUpperCamelCase;
+use std::path::Path;
 
+use itertools::Itertools;
 use proc_macro2::{Literal, TokenStream};
 use quote::quote;
 use seaography_types::{
     column_meta::ColumnMeta, column_type::ColumnType, relationship_meta::RelationshipMeta,
     table_meta::TableMeta,
 };
-use itertools::Itertools;
 
 pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
     let entity_module = table_meta.snake_case_ident();
@@ -74,14 +74,7 @@ pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
     table_meta
         .columns
         .iter()
-        .filter(|column| {
-            match column.col_type {
-                // TODO support enum type
-                ColumnType::Binary => false,
-                ColumnType::Enum(_) => false,
-                _ => true
-            }
-        })
+        .filter(|column| !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_)))
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
             let column_filter_type = column.get_base_type();
@@ -144,7 +137,7 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
                     pub async fn #column_name(&self) -> &#column_type {
                         &self.#column_name
                     }
-                }
+                },
             }
         })
         .collect()
@@ -162,7 +155,7 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
 ///     quote!{
 ///         pub async fn id_char<'a>(&self, ctx: &async_graphql::Context<'a>) -> Vec<crate::orm::char::Model> {
 ///             let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
-///             let key = IdCharFK(self.id.clone());
+///             let key = IdCharFK(self.id.clone().try_into().unwrap());
 ///             let data: Option<_> = data_loader.load_one(key).await.unwrap();
 ///             data.unwrap_or(vec![])
 ///         }
@@ -189,7 +182,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
 
             let destination_table_module = &relationship.snake_case(reverse);
             let relation_name: TokenStream = relationship.retrieve_name(reverse).parse().unwrap();
-            let destination_table_module: TokenStream = format!("{}", destination_table_module).parse().unwrap();
+            let destination_table_module: TokenStream = destination_table_module.parse().unwrap();
 
             let return_type: TokenStream = if reverse {
                 quote! {
@@ -236,7 +229,7 @@ pub fn generate_entity_relations(table_meta: &TableMeta) -> Vec<TokenStream> {
                 ) -> #return_type {
                     let data_loader = ctx.data::<async_graphql::dataloader::DataLoader<OrmDataloader>>().unwrap();
 
-                    let key = #fk_name(#(self.#key_items.clone()),*);
+                    let key = #fk_name(#(self.#key_items.clone().try_into().unwrap()),*);
 
                     let data: Option<_> = data_loader.load_one(key).await.unwrap();
 
@@ -262,7 +255,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
         .map(|relationship: &RelationshipMeta| {
             let reverse = relationship.is_reverse(&table_meta.table_name);
 
-            let field_indexes: Vec<Literal> = (0..relationship.src_cols.clone().len()).map(|n| Literal::usize_unsuffixed(n)).collect();
+            let field_indexes: Vec<Literal> = (0..relationship.src_cols.clone().len()).map(Literal::usize_unsuffixed).collect();
 
             let destination_table_module = relationship.snake_case_ident(reverse);
 
@@ -296,11 +289,11 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
 
                     if source_optional && !destination_optional {
                         quote! {
-                            model.#name.unwrap()
+                            model.#name.as_ref().unwrap()
                         }
                     } else if !source_optional && destination_optional {
                         quote! {
-                            Some(model.#name)
+                            Some(model.#name.clone())
                         }
                     } else {
                         quote! {
@@ -371,7 +364,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                 .await?
                                 .into_iter()
                                 .map(|model| {
-                                    let key = #fk_name(#(#destination_fields.clone()),*);
+                                    let key = #fk_name(#(#destination_fields.clone().try_into().unwrap()),*);
 
                                     (key, model)
                                 })
@@ -473,14 +466,7 @@ pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
     let columns_filters: Vec<TokenStream> = table_meta
         .columns
         .iter()
-        .filter(|column| {
-            match column.col_type {
-                // TODO support enum type
-                ColumnType::Binary => false,
-                ColumnType::Enum(_) => false,
-                _ => true
-            }
-        })
+        .filter(|column| !matches!(column.col_type, ColumnType::Binary | ColumnType::Enum(_)))
         .map(|column: &ColumnMeta| {
             let column_name = column.snake_case_ident();
             let column_enum_name = column.camel_case_ident();

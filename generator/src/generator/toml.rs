@@ -7,12 +7,20 @@ use serde::Serialize;
 pub struct TomlStructure {
     package: BTreeMap<String, String>,
     dependencies: BTreeMap<String, DependencyInfo>,
+    #[serde(rename(serialize = "dev-dependencies"))]
+    dev: BTreeMap<String, DependencyInfo>,
+    workspace: WorkspaceInfo,
 }
 
 #[derive(Serialize)]
 pub struct DependencyInfo {
     pub version: String,
     pub features: Option<Vec<String>>,
+}
+
+#[derive(Serialize)]
+pub struct WorkspaceInfo {
+    members: Vec<String>,
 }
 
 impl TomlStructure {
@@ -22,7 +30,7 @@ impl TomlStructure {
     /// use seaography_generator::generator::toml::TomlStructure;
     /// use seaography_types::SqlVersion;
     ///
-    /// let left = TomlStructure::new(&"generated".into(), &SqlVersion::Sqlite);
+    /// let left = TomlStructure::new("generated", &SqlVersion::Sqlite);
     ///
     /// let right = r#"[package]
     /// edition = '2021'
@@ -67,14 +75,19 @@ impl TomlStructure {
     ///
     /// [dependencies.tracing-subscriber]
     /// version = '0.3.11'
+    /// [dev-dependencies.serde_json]
+    /// version = '1.0.82'
+    ///
+    /// [workspace]
+    /// members = []
     /// "#;
     ///
     /// assert_eq!(toml::to_string_pretty(&left).unwrap(), right);
     /// ```
-    pub fn new(crate_name: &String, sql_version: &SqlVersion) -> Self {
+    pub fn new(crate_name: &str, sql_version: &SqlVersion) -> Self {
         let mut package: BTreeMap<String, String> = BTreeMap::new();
 
-        package.insert("name".into(), crate_name.clone());
+        package.insert("name".into(), crate_name.into());
         package.insert("version".into(), "0.1.0".into());
         package.insert("edition".into(), "2021".into());
 
@@ -156,16 +169,27 @@ impl TomlStructure {
             },
         );
 
+        let mut dev: BTreeMap<String, DependencyInfo> = BTreeMap::new();
+        dev.insert(
+            "serde_json".into(),
+            DependencyInfo {
+                version: "1.0.82".into(),
+                features: None,
+            },
+        );
+
         Self {
             package,
             dependencies,
+            dev,
+            workspace: WorkspaceInfo { members: vec![] },
         }
     }
 }
 
 pub fn write_cargo_toml<P: AsRef<Path>>(
     path: &P,
-    crate_name: &String,
+    crate_name: &str,
     sql_version: &SqlVersion,
 ) -> io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");

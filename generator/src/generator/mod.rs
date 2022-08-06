@@ -1,5 +1,5 @@
-use std::path::Path;
 use proc_macro2::TokenStream;
+use std::path::Path;
 
 use quote::quote;
 use seaography_types::enum_meta::EnumMeta;
@@ -21,10 +21,10 @@ pub mod type_filter;
 /// Used to generate graphql folder with all entities, enums and module structure
 pub fn write_graphql<P: AsRef<Path>>(
     path: &P,
-    tables_meta: &Vec<TableMeta>,
-    enums_meta: &Vec<EnumMeta>,
+    tables_meta: &[TableMeta],
+    enums_meta: &[EnumMeta],
 ) -> std::io::Result<()> {
-    if enums_meta.len() > 0 {
+    if !enums_meta.is_empty() {
         std::fs::create_dir_all(&path.as_ref().join("enums"))?;
         for enum_meta in enums_meta.iter() {
             write_graphql_enum(&path.as_ref().join("enums"), enum_meta)?;
@@ -50,7 +50,7 @@ pub fn write_graphql<P: AsRef<Path>>(
 }
 
 /// Used to write project/src/graphql/mod.rs
-pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>,) -> std::io::Result<()> {
+pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std::io::Result<()> {
     let mod_tokens = generate_graphql_mod(enums_meta.len());
 
     std::fs::write(path.as_ref().join("mod.rs"), mod_tokens.to_string())?;
@@ -100,11 +100,11 @@ pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &Vec<EnumMeta>,) -> std::
 /// ```
 pub fn generate_graphql_mod(enums_meta_len: usize) -> TokenStream {
     let enums_mod = if enums_meta_len > 0 {
-        quote!{
+        quote! {
             pub mod enums;
         }
     } else {
-        quote!{}
+        quote! {}
     };
 
     quote! {
@@ -120,10 +120,7 @@ pub fn generate_graphql_mod(enums_meta_len: usize) -> TokenStream {
 }
 
 /// Used to write project/src/graphql/enums/mod.rs
-pub fn write_enums_mod<P: AsRef<Path>>(
-    path: &P,
-    enums_meta: &Vec<EnumMeta>,
-) -> std::io::Result<()> {
+pub fn write_enums_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std::io::Result<()> {
     let mod_tokens = generate_enums_mod(enums_meta);
 
     std::fs::write(path.as_ref().join("enums/mod.rs"), mod_tokens.to_string())?;
@@ -152,7 +149,7 @@ pub fn write_enums_mod<P: AsRef<Path>>(
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_enums_mod(enums_meta: &Vec<EnumMeta>) -> TokenStream {
+pub fn generate_enums_mod(enums_meta: &[EnumMeta]) -> TokenStream {
     let enum_names: Vec<proc_macro2::TokenStream> = enums_meta
         .iter()
         .map(|enumeration| enumeration.snake_case().parse().unwrap())
@@ -168,7 +165,7 @@ pub fn generate_enums_mod(enums_meta: &Vec<EnumMeta>) -> TokenStream {
 /// Used to write project/src/graphql/entities/mod.rs
 pub fn write_entities_mod<P: AsRef<Path>>(
     path: &P,
-    tables_meta: &Vec<TableMeta>,
+    tables_meta: &[TableMeta],
 ) -> std::io::Result<()> {
     let mod_tokens = generate_entities_mod(tables_meta);
 
@@ -207,7 +204,7 @@ pub fn write_entities_mod<P: AsRef<Path>>(
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
-pub fn generate_entities_mod(tables_meta: &Vec<TableMeta>) -> TokenStream {
+pub fn generate_entities_mod(tables_meta: &[TableMeta]) -> TokenStream {
     let entity_names: Vec<proc_macro2::TokenStream> = tables_meta
         .iter()
         .map(|table_meta| table_meta.snake_case_ident())
