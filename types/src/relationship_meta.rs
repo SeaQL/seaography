@@ -61,8 +61,8 @@ use crate::column_meta::ColumnMeta;
 /// assert_eq!(relation_meta.extract_source_name(true), "id_item");
 /// assert_eq!(relation_meta.extract_source_name(false), "product_product_item");
 ///
-/// assert_eq!(relation_meta.retrieve_name(true), "id_item_order_items");
-/// assert_eq!(relation_meta.retrieve_name(false), "product_product_item_product_items");
+/// assert_eq!(relation_meta.retrieve_name(true), "product_items_item_order_items");
+/// assert_eq!(relation_meta.retrieve_name(false), "order_items_product_product_item_product_items");
 ///
 /// assert_eq!(relation_meta.retrieve_foreign_key(true), "IdItemOrderItemsFK");
 /// assert_eq!(relation_meta.retrieve_foreign_key(false), "ProductProductItemProductItemsFK");
@@ -102,8 +102,8 @@ use crate::column_meta::ColumnMeta;
 /// assert_eq!(relation_meta.extract_source_name(true), "id");
 /// assert_eq!(relation_meta.extract_source_name(false), "product");
 ///
-/// assert_eq!(relation_meta.retrieve_name(true), "id_order_items");
-/// assert_eq!(relation_meta.retrieve_name(false), "product_product_items");
+/// assert_eq!(relation_meta.retrieve_name(true), "product_items_order_items");
+/// assert_eq!(relation_meta.retrieve_name(false), "order_items_product_product_items");
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
 pub struct RelationshipMeta {
@@ -184,9 +184,13 @@ impl RelationshipMeta {
     pub fn retrieve_name(&self, is_reverse: bool) -> String {
         let destination_entity = self.snake_case(is_reverse);
 
+        let source_entity = self.snake_case(!is_reverse);
+
         let source_name = self.extract_source_name(is_reverse).to_snake_case();
 
-        format!("{}_{}", source_name, destination_entity)
+        let name = format!("{}_{}_{}", source_entity, source_name, destination_entity);
+
+        name.replace("_id", "")
     }
 
     pub fn retrieve_foreign_key(&self, is_reverse: bool) -> String {
