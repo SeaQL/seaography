@@ -124,47 +124,47 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn customer_rental<'a>(
+    pub async fn customer_customer_rental<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::rental::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CustomerRentalFK(self.customer_id.clone());
+        let key = CustomerRentalFK(self.customer_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
-    pub async fn address_address<'a>(
+    pub async fn customer_address_address<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::address::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = AddressAddressFK(self.address_id.clone());
+        let key = AddressAddressFK(self.address_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn store_store<'a>(
+    pub async fn customer_store_store<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::store::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = StoreStoreFK(self.store_id.clone());
+        let key = StoreStoreFK(self.store_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn customer_payment<'a>(
+    pub async fn customer_customer_payment<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::payment::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CustomerPaymentFK(self.customer_id.clone());
+        let key = CustomerPaymentFK(self.customer_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
@@ -217,7 +217,7 @@ impl async_graphql::dataloader::Loader<CustomerRentalFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = CustomerRentalFK(model.customer_id.clone());
+                let key = CustomerRentalFK(model.customer_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())
@@ -255,7 +255,7 @@ impl async_graphql::dataloader::Loader<AddressAddressFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = AddressAddressFK(model.address_id.clone());
+                let key = AddressAddressFK(model.address_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -291,7 +291,7 @@ impl async_graphql::dataloader::Loader<StoreStoreFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = StoreStoreFK(model.store_id.clone());
+                let key = StoreStoreFK(model.store_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -330,7 +330,7 @@ impl async_graphql::dataloader::Loader<CustomerPaymentFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = CustomerPaymentFK(model.customer_id.clone());
+                let key = CustomerPaymentFK(model.customer_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())

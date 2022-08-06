@@ -102,47 +102,47 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn customer_customer<'a>(
+    pub async fn rental_customer_customer<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::customer::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CustomerCustomerFK(self.customer_id.clone());
+        let key = CustomerCustomerFK(self.customer_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn inventory_inventory<'a>(
+    pub async fn rental_inventory_inventory<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::inventory::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = InventoryInventoryFK(self.inventory_id.clone());
+        let key = InventoryInventoryFK(self.inventory_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn staff_staff<'a>(
+    pub async fn rental_staff_staff<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::staff::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = StaffStaffFK(self.staff_id.clone());
+        let key = StaffStaffFK(self.staff_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn rental_payment<'a>(
+    pub async fn rental_rental_payment<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::payment::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = RentalPaymentFK(self.rental_id.clone());
+        let key = RentalPaymentFK(self.rental_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
@@ -192,7 +192,7 @@ impl async_graphql::dataloader::Loader<CustomerCustomerFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = CustomerCustomerFK(model.customer_id.clone());
+                let key = CustomerCustomerFK(model.customer_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -230,7 +230,7 @@ impl async_graphql::dataloader::Loader<InventoryInventoryFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = InventoryInventoryFK(model.inventory_id.clone());
+                let key = InventoryInventoryFK(model.inventory_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -266,7 +266,7 @@ impl async_graphql::dataloader::Loader<StaffStaffFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = StaffStaffFK(model.staff_id.clone());
+                let key = StaffStaffFK(model.staff_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -305,7 +305,15 @@ impl async_graphql::dataloader::Loader<RentalPaymentFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = RentalPaymentFK(model.rental_id.unwrap().clone());
+                let key = RentalPaymentFK(
+                    model
+                        .rental_id
+                        .as_ref()
+                        .unwrap()
+                        .clone()
+                        .try_into()
+                        .unwrap(),
+                );
                 (key, model)
             })
             .into_group_map())

@@ -161,60 +161,60 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn film_film_category<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::film_category::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = FilmFilmCategoryFK(self.film_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
-    pub async fn film_film_actor<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::film_actor::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = FilmFilmActorFK(self.film_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
-    pub async fn film_inventory<'a>(
+    pub async fn film_film_inventory<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::inventory::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = FilmInventoryFK(self.film_id.clone());
+        let key = FilmInventoryFK(self.film_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
-    pub async fn language_language<'a>(
+    pub async fn film_film_film_category<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::film_category::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = FilmFilmCategoryFK(self.film_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
+    }
+    pub async fn film_language_language<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::language::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = LanguageLanguageFK(self.language_id.clone());
+        let key = LanguageLanguageFK(self.language_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn original_language_language<'a>(
+    pub async fn film_original_language_language<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Option<crate::orm::language::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = OriginalLanguageLanguageFK(self.original_language_id.clone());
+        let key = OriginalLanguageLanguageFK(self.original_language_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data
+    }
+    pub async fn film_film_film_actor<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::film_actor::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = FilmFilmActorFK(self.film_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
     }
 }
 #[derive(async_graphql :: InputObject, Debug)]
@@ -234,84 +234,6 @@ pub struct Filter {
     pub replacement_cost: Option<TypeFilter<Decimal>>,
     pub special_features: Option<TypeFilter<String>>,
     pub last_update: Option<TypeFilter<DateTimeUtc>>,
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct FilmFilmCategoryFK(u16);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<FilmFilmCategoryFK> for OrmDataloader {
-    type Value = Vec<crate::orm::film_category::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[FilmFilmCategoryFK],
-    ) -> Result<std::collections::HashMap<FilmFilmCategoryFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::film_category::Column::FilmId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::film_category::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = FilmFilmCategoryFK(model.film_id.clone());
-                (key, model)
-            })
-            .into_group_map())
-    }
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct FilmFilmActorFK(u16);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<FilmFilmActorFK> for OrmDataloader {
-    type Value = Vec<crate::orm::film_actor::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[FilmFilmActorFK],
-    ) -> Result<std::collections::HashMap<FilmFilmActorFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::film_actor::Column::FilmId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::film_actor::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = FilmFilmActorFK(model.film_id.clone());
-                (key, model)
-            })
-            .into_group_map())
-    }
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct FilmInventoryFK(u16);
@@ -346,7 +268,46 @@ impl async_graphql::dataloader::Loader<FilmInventoryFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = FilmInventoryFK(model.film_id.clone());
+                let key = FilmInventoryFK(model.film_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct FilmFilmCategoryFK(u16);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<FilmFilmCategoryFK> for OrmDataloader {
+    type Value = Vec<crate::orm::film_category::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[FilmFilmCategoryFK],
+    ) -> Result<std::collections::HashMap<FilmFilmCategoryFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::film_category::Column::FilmId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::film_category::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = FilmFilmCategoryFK(model.film_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())
@@ -384,7 +345,7 @@ impl async_graphql::dataloader::Loader<LanguageLanguageFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = LanguageLanguageFK(model.language_id.clone());
+                let key = LanguageLanguageFK(model.language_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -423,9 +384,50 @@ impl async_graphql::dataloader::Loader<OriginalLanguageLanguageFK> for OrmDatalo
             .await?
             .into_iter()
             .map(|model| {
-                let key = OriginalLanguageLanguageFK(Some(model.language_id).clone());
+                let key = OriginalLanguageLanguageFK(
+                    Some(model.language_id.clone()).clone().try_into().unwrap(),
+                );
                 (key, model)
             })
             .collect())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct FilmFilmActorFK(u16);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<FilmFilmActorFK> for OrmDataloader {
+    type Value = Vec<crate::orm::film_actor::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[FilmFilmActorFK],
+    ) -> Result<std::collections::HashMap<FilmFilmActorFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::film_actor::Column::FilmId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::film_actor::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = FilmFilmActorFK(model.film_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
     }
 }

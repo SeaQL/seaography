@@ -102,36 +102,36 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn customer_customer<'a>(
+    pub async fn payment_customer_customer<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::customer::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CustomerCustomerFK(self.customer_id.clone());
+        let key = CustomerCustomerFK(self.customer_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn rental_rental<'a>(
+    pub async fn payment_rental_rental<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Option<crate::orm::rental::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = RentalRentalFK(self.rental_id.clone());
+        let key = RentalRentalFK(self.rental_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data
     }
-    pub async fn staff_staff<'a>(
+    pub async fn payment_staff_staff<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::staff::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = StaffStaffFK(self.staff_id.clone());
+        let key = StaffStaffFK(self.staff_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
@@ -181,7 +181,7 @@ impl async_graphql::dataloader::Loader<CustomerCustomerFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = CustomerCustomerFK(model.customer_id.clone());
+                let key = CustomerCustomerFK(model.customer_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -217,7 +217,7 @@ impl async_graphql::dataloader::Loader<RentalRentalFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = RentalRentalFK(Some(model.rental_id).clone());
+                let key = RentalRentalFK(Some(model.rental_id.clone()).clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -253,7 +253,7 @@ impl async_graphql::dataloader::Loader<StaffStaffFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = StaffStaffFK(model.staff_id.clone());
+                let key = StaffStaffFK(model.staff_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())

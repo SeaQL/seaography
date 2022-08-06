@@ -58,14 +58,14 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn language_film<'a>(
+    pub async fn language_language_film<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::film::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = LanguageFilmFK(self.language_id.clone());
+        let key = LanguageFilmFK(self.language_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
@@ -110,7 +110,7 @@ impl async_graphql::dataloader::Loader<LanguageFilmFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = LanguageFilmFK(model.language_id.clone());
+                let key = LanguageFilmFK(model.language_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())

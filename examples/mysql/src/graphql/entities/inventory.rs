@@ -69,35 +69,38 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn inventory_rental<'a>(
+    pub async fn inventory_film_film<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::rental::Model> {
+    ) -> crate::orm::film::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = InventoryRentalFK(self.inventory_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
-    pub async fn film_film<'a>(&self, ctx: &async_graphql::Context<'a>) -> crate::orm::film::Model {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = FilmFilmFK(self.film_id.clone());
+        let key = FilmFilmFK(self.film_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn store_store<'a>(
+    pub async fn inventory_store_store<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::store::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = StoreStoreFK(self.store_id.clone());
+        let key = StoreStoreFK(self.store_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
+    }
+    pub async fn inventory_inventory_rental<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::rental::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = InventoryRentalFK(self.inventory_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
     }
 }
 #[derive(async_graphql :: InputObject, Debug)]
@@ -109,45 +112,6 @@ pub struct Filter {
     pub film_id: Option<TypeFilter<u16>>,
     pub store_id: Option<TypeFilter<u8>>,
     pub last_update: Option<TypeFilter<DateTimeUtc>>,
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct InventoryRentalFK(String);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<InventoryRentalFK> for OrmDataloader {
-    type Value = Vec<crate::orm::rental::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[InventoryRentalFK],
-    ) -> Result<std::collections::HashMap<InventoryRentalFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::rental::Column::InventoryId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::rental::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = InventoryRentalFK(model.inventory_id.clone());
-                (key, model)
-            })
-            .into_group_map())
-    }
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct FilmFilmFK(u16);
@@ -179,7 +143,7 @@ impl async_graphql::dataloader::Loader<FilmFilmFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = FilmFilmFK(model.film_id.clone());
+                let key = FilmFilmFK(model.film_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -215,9 +179,48 @@ impl async_graphql::dataloader::Loader<StoreStoreFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = StoreStoreFK(model.store_id.clone());
+                let key = StoreStoreFK(model.store_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct InventoryRentalFK(String);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<InventoryRentalFK> for OrmDataloader {
+    type Value = Vec<crate::orm::rental::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[InventoryRentalFK],
+    ) -> Result<std::collections::HashMap<InventoryRentalFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::rental::Column::InventoryId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::rental::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = InventoryRentalFK(model.inventory_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
     }
 }

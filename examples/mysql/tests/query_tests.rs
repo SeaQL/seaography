@@ -40,58 +40,42 @@ async fn test_simple_query() {
               store {
                 data {
                   storeId
-                  lastUpdate
-                  addressAddress {
-                    address
-                  }
-                  storeStaff {
+                  storeStoreStaff {
                     firstName
                     lastName
                   }
                 }
-                pages
-                current
               }
             }
-        "#,
+            "#,
             )
             .await,
         r#"
-        {
-            "store": {
-              "data": [
-                {
-                  "storeId": 1,
-                  "lastUpdate": "2006-02-15T04:57:12+00:00",
-                  "addressAddress": {
-                    "address": "47 MySakila Drive"
+            {
+              "store": {
+                "data": [
+                  {
+                    "storeId": 1,
+                    "storeStoreStaff": [
+                      {
+                        "firstName": "Mike",
+                        "lastName": "Hillyer"
+                      }
+                    ]
                   },
-                  "storeStaff": [
-                    {
-                      "firstName": "Mike",
-                      "lastName": "Hillyer"
-                    }
-                  ]
-                },
-                {
-                  "storeId": 2,
-                  "lastUpdate": "2006-02-15T04:57:12+00:00",
-                  "addressAddress": {
-                    "address": "28 MySQL Boulevard"
-                  },
-                  "storeStaff": [
-                    {
-                      "firstName": "Jon",
-                      "lastName": "Stephens"
-                    }
-                  ]
-                }
-              ],
-              "pages": 1,
-              "current": 1
+                  {
+                    "storeId": 2,
+                    "storeStoreStaff": [
+                      {
+                        "firstName": "Jon",
+                        "lastName": "Stephens"
+                      }
+                    ]
+                  }
+                ]
+              }
             }
-        }
-        "#,
+            "#,
     )
 }
 
@@ -103,48 +87,36 @@ async fn test_simple_query_with_filter() {
         schema
             .execute(
                 r#"
-                {
-                  store(filters: {storeId:{eq: 1}}) {
-                    data {
-                      storeId
-                      lastUpdate
-                      addressAddress {
-                        address
-                      }
-                      storeStaff {
-                        firstName
-                        lastName
-                      }
+            {
+                store(filters: {storeId:{eq: 1}}) {
+                  data {
+                    storeId
+                    storeStoreStaff {
+                      firstName
+                      lastName
                     }
-                    pages
-                    current
                   }
                 }
-        "#,
+            }
+            "#,
             )
             .await,
         r#"
-        {
-          "store": {
-              "data": [
-                {
-                  "storeId": 1,
-                  "lastUpdate": "2006-02-15T04:57:12+00:00",
-                  "addressAddress": {
-                    "address": "47 MySakila Drive"
-                  },
-                  "storeStaff": [
+            {
+                "store": {
+                  "data": [
                     {
-                      "firstName": "Mike",
-                      "lastName": "Hillyer"
+                      "storeId": 1,
+                      "storeStoreStaff": [
+                        {
+                          "firstName": "Mike",
+                          "lastName": "Hillyer"
+                        }
+                      ]
                     }
                   ]
                 }
-              ],
-              "pages": 1,
-              "current": 1
-          }
-        }
-        "#,
+            }
+            "#,
     )
 }

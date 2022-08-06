@@ -20,6 +20,7 @@ pub struct Model {
     pub city_id: u16,
     pub postal_code: Option<String>,
     pub phone: String,
+    pub location: String,
     pub last_update: DateTimeUtc,
 }
 
@@ -32,6 +33,7 @@ pub enum Column {
     CityId,
     PostalCode,
     Phone,
+    Location,
     LastUpdate,
 }
 
@@ -50,9 +52,9 @@ impl PrimaryKeyTrait for PrimaryKey {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
     City,
+    Staff,
     Customer,
     Store,
-    Staff,
 }
 
 impl ColumnTrait for Column {
@@ -66,6 +68,7 @@ impl ColumnTrait for Column {
             Self::CityId => ColumnType::SmallUnsigned.def(),
             Self::PostalCode => ColumnType::String(Some(10u32)).def().null(),
             Self::Phone => ColumnType::String(Some(20u32)).def(),
+            Self::Location => ColumnType::Custom("GEOMETRY".to_owned()).def(),
             Self::LastUpdate => ColumnType::Timestamp.def(),
         }
     }
@@ -78,9 +81,9 @@ impl RelationTrait for Relation {
                 .from(Column::CityId)
                 .to(super::city::Column::CityId)
                 .into(),
+            Self::Staff => Entity::has_many(super::staff::Entity).into(),
             Self::Customer => Entity::has_many(super::customer::Entity).into(),
             Self::Store => Entity::has_many(super::store::Entity).into(),
-            Self::Staff => Entity::has_many(super::staff::Entity).into(),
         }
     }
 }
@@ -88,6 +91,12 @@ impl RelationTrait for Relation {
 impl Related<super::city::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::City.def()
+    }
+}
+
+impl Related<super::staff::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Staff.def()
     }
 }
 
@@ -100,12 +109,6 @@ impl Related<super::customer::Entity> for Entity {
 impl Related<super::store::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Store.def()
-    }
-}
-
-impl Related<super::staff::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Staff.def()
     }
 }
 

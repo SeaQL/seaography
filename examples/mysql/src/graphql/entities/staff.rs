@@ -138,60 +138,60 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn staff_rental<'a>(
+    pub async fn staff_staff_rental<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::rental::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = StaffRentalFK(self.staff_id.clone());
+        let key = StaffRentalFK(self.staff_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
-    pub async fn staff_store<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::store::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = StaffStoreFK(self.staff_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
-    pub async fn staff_payment<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::payment::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = StaffPaymentFK(self.staff_id.clone());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
-    pub async fn address_address<'a>(
+    pub async fn staff_address_address<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::address::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = AddressAddressFK(self.address_id.clone());
+        let key = AddressAddressFK(self.address_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn store_store<'a>(
+    pub async fn staff_store_store<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::store::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = StoreStoreFK(self.store_id.clone());
+        let key = StoreStoreFK(self.store_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
+    }
+    pub async fn staff_staff_store<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::store::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = StaffStoreFK(self.staff_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
+    }
+    pub async fn staff_staff_payment<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::payment::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = StaffPaymentFK(self.staff_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
     }
 }
 #[derive(async_graphql :: InputObject, Debug)]
@@ -241,83 +241,7 @@ impl async_graphql::dataloader::Loader<StaffRentalFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = StaffRentalFK(model.staff_id.clone());
-                (key, model)
-            })
-            .into_group_map())
-    }
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct StaffStoreFK(u8);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<StaffStoreFK> for OrmDataloader {
-    type Value = Vec<crate::orm::store::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[StaffStoreFK],
-    ) -> Result<std::collections::HashMap<StaffStoreFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::store::Column::ManagerStaffId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::store::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = StaffStoreFK(model.manager_staff_id.clone());
-                (key, model)
-            })
-            .into_group_map())
-    }
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct StaffPaymentFK(u8);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<StaffPaymentFK> for OrmDataloader {
-    type Value = Vec<crate::orm::payment::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[StaffPaymentFK],
-    ) -> Result<std::collections::HashMap<StaffPaymentFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(crate::orm::payment::Column::StaffId.as_column_ref())
-                    .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::payment::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = StaffPaymentFK(model.staff_id.clone());
+                let key = StaffRentalFK(model.staff_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())
@@ -355,7 +279,7 @@ impl async_graphql::dataloader::Loader<AddressAddressFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = AddressAddressFK(model.address_id.clone());
+                let key = AddressAddressFK(model.address_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -391,9 +315,85 @@ impl async_graphql::dataloader::Loader<StoreStoreFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = StoreStoreFK(model.store_id.clone());
+                let key = StoreStoreFK(model.store_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct StaffStoreFK(u8);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<StaffStoreFK> for OrmDataloader {
+    type Value = Vec<crate::orm::store::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[StaffStoreFK],
+    ) -> Result<std::collections::HashMap<StaffStoreFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::store::Column::ManagerStaffId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::store::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = StaffStoreFK(model.manager_staff_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct StaffPaymentFK(u8);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<StaffPaymentFK> for OrmDataloader {
+    type Value = Vec<crate::orm::payment::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[StaffPaymentFK],
+    ) -> Result<std::collections::HashMap<StaffPaymentFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(crate::orm::payment::Column::StaffId.as_column_ref())
+                    .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::payment::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = StaffPaymentFK(model.staff_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
     }
 }

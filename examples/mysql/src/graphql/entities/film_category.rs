@@ -58,22 +58,25 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn category_category<'a>(
+    pub async fn film_category_category_category<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::category::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CategoryCategoryFK(self.category_id.clone());
+        let key = CategoryCategoryFK(self.category_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn film_film<'a>(&self, ctx: &async_graphql::Context<'a>) -> crate::orm::film::Model {
+    pub async fn film_category_film_film<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> crate::orm::film::Model {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = FilmFilmFK(self.film_id.clone());
+        let key = FilmFilmFK(self.film_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
@@ -119,7 +122,7 @@ impl async_graphql::dataloader::Loader<CategoryCategoryFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = CategoryCategoryFK(model.category_id.clone());
+                let key = CategoryCategoryFK(model.category_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())
@@ -155,7 +158,7 @@ impl async_graphql::dataloader::Loader<FilmFilmFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = FilmFilmFK(model.film_id.clone());
+                let key = FilmFilmFK(model.film_id.clone().try_into().unwrap());
                 (key, model)
             })
             .collect())

@@ -58,14 +58,14 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn country_city<'a>(
+    pub async fn country_country_city<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::city::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CountryCityFK(self.country_id.clone());
+        let key = CountryCityFK(self.country_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
@@ -110,7 +110,7 @@ impl async_graphql::dataloader::Loader<CountryCityFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = CountryCityFK(model.country_id.clone());
+                let key = CountryCityFK(model.country_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())

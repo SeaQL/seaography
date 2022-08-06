@@ -58,14 +58,14 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn category_film_category<'a>(
+    pub async fn category_category_film_category<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::film_category::Model> {
         let data_loader = ctx
             .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
             .unwrap();
-        let key = CategoryFilmCategoryFK(self.category_id.clone());
+        let key = CategoryFilmCategoryFK(self.category_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
@@ -112,7 +112,7 @@ impl async_graphql::dataloader::Loader<CategoryFilmCategoryFK> for OrmDataloader
             .await?
             .into_iter()
             .map(|model| {
-                let key = CategoryFilmCategoryFK(model.category_id.clone());
+                let key = CategoryFilmCategoryFK(model.category_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())

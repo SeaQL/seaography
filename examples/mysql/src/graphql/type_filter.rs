@@ -11,6 +11,7 @@ use sea_orm::prelude::*;
 #[graphql(concrete(name = "BigUnsignedFilter", params(u64)))]
 #[graphql(concrete(name = "FloatFilter", params(f32)))]
 #[graphql(concrete(name = "DoubleFilter", params(f64)))]
+#[graphql(concrete(name = "DateFilter", params(Date)))]
 #[graphql(concrete(name = "DateTimeFilter", params(DateTime)))]
 #[graphql(concrete(name = "DateTimeUtcFilter", params(DateTimeUtc)))]
 #[graphql(concrete(name = "DecimalFilter", params(Decimal)))]
