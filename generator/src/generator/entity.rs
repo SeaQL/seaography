@@ -462,6 +462,10 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
 ///
 /// assert_eq!(left.to_string(), right.to_string());
 /// ```
+///
+/// TODO support all query expressions
+/// https://docs.rs/sea-query/latest/sea_query/expr/struct.Expr.html
+///
 pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
     let columns_filters: Vec<TokenStream> = table_meta
         .columns
@@ -479,6 +483,36 @@ pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
 
                     if let Some(ne_value) = #column_name.ne {
                         condition = condition.add(Column::#column_enum_name.ne(ne_value))
+                    }
+
+                    if let Some(gt_value) = #column_name.gt {
+                        condition = condition.add(Column::#column_enum_name.gt(gt_value))
+                    }
+
+                    if let Some(gte_value) = #column_name.gte {
+                        condition = condition.add(Column::#column_enum_name.gte(gte_value))
+                    }
+
+                    if let Some(lt_value) = #column_name.lt {
+                        condition = condition.add(Column::#column_enum_name.lt(lt_value))
+                    }
+
+                    if let Some(lte_value) = #column_name.lte {
+                        condition = condition.add(Column::#column_enum_name.lte(lte_value))
+                    }
+
+                    if let Some(is_in_value) = #column_name.is_in {
+                        condition = condition.add(Column::#column_enum_name.is_in(is_in_value))
+                    }
+
+                    if let Some(is_not_in_value) = #column_name.is_not_in {
+                        condition = condition.add(Column::#column_enum_name.is_not_in(is_not_in_value))
+                    }
+
+                    if let Some(is_null_value) = #column_name.is_null {
+                        if is_null_value {
+                            condition = condition.add(Column::#column_enum_name.is_null())
+                        }
                     }
                 }
             }
