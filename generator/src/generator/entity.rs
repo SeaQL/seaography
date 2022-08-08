@@ -289,15 +289,15 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
 
                     if source_optional && !destination_optional {
                         quote! {
-                            model.#name.as_ref().unwrap()
+                            model.#name.as_ref().unwrap().clone()
                         }
                     } else if !source_optional && destination_optional {
                         quote! {
-                            Some(model.#name.clone())
+                            Some(model.#name.clone().try_into().unwrap())
                         }
                     } else {
                         quote! {
-                            model.#name
+                            model.#name.clone().try_into().unwrap()
                         }
                     }
                 })
@@ -364,7 +364,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
                                 .await?
                                 .into_iter()
                                 .map(|model| {
-                                    let key = #fk_name(#(#destination_fields.clone().try_into().unwrap()),*);
+                                    let key = #fk_name(#(#destination_fields),*);
 
                                     (key, model)
                                 })
