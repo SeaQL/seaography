@@ -25,6 +25,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = rental_id.ne {
                 condition = condition.add(Column::RentalId.ne(ne_value))
             }
+            if let Some(gt_value) = rental_id.gt {
+                condition = condition.add(Column::RentalId.gt(gt_value))
+            }
+            if let Some(gte_value) = rental_id.gte {
+                condition = condition.add(Column::RentalId.gte(gte_value))
+            }
+            if let Some(lt_value) = rental_id.lt {
+                condition = condition.add(Column::RentalId.lt(lt_value))
+            }
+            if let Some(lte_value) = rental_id.lte {
+                condition = condition.add(Column::RentalId.lte(lte_value))
+            }
+            if let Some(is_in_value) = rental_id.is_in {
+                condition = condition.add(Column::RentalId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = rental_id.is_not_in {
+                condition = condition.add(Column::RentalId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = rental_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::RentalId.is_null())
+                }
+            }
         }
         if let Some(rental_date) = current_filter.rental_date {
             if let Some(eq_value) = rental_date.eq {
@@ -32,6 +55,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = rental_date.ne {
                 condition = condition.add(Column::RentalDate.ne(ne_value))
+            }
+            if let Some(gt_value) = rental_date.gt {
+                condition = condition.add(Column::RentalDate.gt(gt_value))
+            }
+            if let Some(gte_value) = rental_date.gte {
+                condition = condition.add(Column::RentalDate.gte(gte_value))
+            }
+            if let Some(lt_value) = rental_date.lt {
+                condition = condition.add(Column::RentalDate.lt(lt_value))
+            }
+            if let Some(lte_value) = rental_date.lte {
+                condition = condition.add(Column::RentalDate.lte(lte_value))
+            }
+            if let Some(is_in_value) = rental_date.is_in {
+                condition = condition.add(Column::RentalDate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = rental_date.is_not_in {
+                condition = condition.add(Column::RentalDate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = rental_date.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::RentalDate.is_null())
+                }
             }
         }
         if let Some(inventory_id) = current_filter.inventory_id {
@@ -41,6 +87,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = inventory_id.ne {
                 condition = condition.add(Column::InventoryId.ne(ne_value))
             }
+            if let Some(gt_value) = inventory_id.gt {
+                condition = condition.add(Column::InventoryId.gt(gt_value))
+            }
+            if let Some(gte_value) = inventory_id.gte {
+                condition = condition.add(Column::InventoryId.gte(gte_value))
+            }
+            if let Some(lt_value) = inventory_id.lt {
+                condition = condition.add(Column::InventoryId.lt(lt_value))
+            }
+            if let Some(lte_value) = inventory_id.lte {
+                condition = condition.add(Column::InventoryId.lte(lte_value))
+            }
+            if let Some(is_in_value) = inventory_id.is_in {
+                condition = condition.add(Column::InventoryId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = inventory_id.is_not_in {
+                condition = condition.add(Column::InventoryId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = inventory_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::InventoryId.is_null())
+                }
+            }
         }
         if let Some(customer_id) = current_filter.customer_id {
             if let Some(eq_value) = customer_id.eq {
@@ -48,6 +117,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = customer_id.ne {
                 condition = condition.add(Column::CustomerId.ne(ne_value))
+            }
+            if let Some(gt_value) = customer_id.gt {
+                condition = condition.add(Column::CustomerId.gt(gt_value))
+            }
+            if let Some(gte_value) = customer_id.gte {
+                condition = condition.add(Column::CustomerId.gte(gte_value))
+            }
+            if let Some(lt_value) = customer_id.lt {
+                condition = condition.add(Column::CustomerId.lt(lt_value))
+            }
+            if let Some(lte_value) = customer_id.lte {
+                condition = condition.add(Column::CustomerId.lte(lte_value))
+            }
+            if let Some(is_in_value) = customer_id.is_in {
+                condition = condition.add(Column::CustomerId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = customer_id.is_not_in {
+                condition = condition.add(Column::CustomerId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = customer_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::CustomerId.is_null())
+                }
             }
         }
         if let Some(return_date) = current_filter.return_date {
@@ -57,6 +149,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = return_date.ne {
                 condition = condition.add(Column::ReturnDate.ne(ne_value))
             }
+            if let Some(gt_value) = return_date.gt {
+                condition = condition.add(Column::ReturnDate.gt(gt_value))
+            }
+            if let Some(gte_value) = return_date.gte {
+                condition = condition.add(Column::ReturnDate.gte(gte_value))
+            }
+            if let Some(lt_value) = return_date.lt {
+                condition = condition.add(Column::ReturnDate.lt(lt_value))
+            }
+            if let Some(lte_value) = return_date.lte {
+                condition = condition.add(Column::ReturnDate.lte(lte_value))
+            }
+            if let Some(is_in_value) = return_date.is_in {
+                condition = condition.add(Column::ReturnDate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = return_date.is_not_in {
+                condition = condition.add(Column::ReturnDate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = return_date.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::ReturnDate.is_null())
+                }
+            }
         }
         if let Some(staff_id) = current_filter.staff_id {
             if let Some(eq_value) = staff_id.eq {
@@ -65,6 +180,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = staff_id.ne {
                 condition = condition.add(Column::StaffId.ne(ne_value))
             }
+            if let Some(gt_value) = staff_id.gt {
+                condition = condition.add(Column::StaffId.gt(gt_value))
+            }
+            if let Some(gte_value) = staff_id.gte {
+                condition = condition.add(Column::StaffId.gte(gte_value))
+            }
+            if let Some(lt_value) = staff_id.lt {
+                condition = condition.add(Column::StaffId.lt(lt_value))
+            }
+            if let Some(lte_value) = staff_id.lte {
+                condition = condition.add(Column::StaffId.lte(lte_value))
+            }
+            if let Some(is_in_value) = staff_id.is_in {
+                condition = condition.add(Column::StaffId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = staff_id.is_not_in {
+                condition = condition.add(Column::StaffId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = staff_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::StaffId.is_null())
+                }
+            }
         }
         if let Some(last_update) = current_filter.last_update {
             if let Some(eq_value) = last_update.eq {
@@ -72,6 +210,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = last_update.ne {
                 condition = condition.add(Column::LastUpdate.ne(ne_value))
+            }
+            if let Some(gt_value) = last_update.gt {
+                condition = condition.add(Column::LastUpdate.gt(gt_value))
+            }
+            if let Some(gte_value) = last_update.gte {
+                condition = condition.add(Column::LastUpdate.gte(gte_value))
+            }
+            if let Some(lt_value) = last_update.lt {
+                condition = condition.add(Column::LastUpdate.lt(lt_value))
+            }
+            if let Some(lte_value) = last_update.lte {
+                condition = condition.add(Column::LastUpdate.lte(lte_value))
+            }
+            if let Some(is_in_value) = last_update.is_in {
+                condition = condition.add(Column::LastUpdate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = last_update.is_not_in {
+                condition = condition.add(Column::LastUpdate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = last_update.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LastUpdate.is_null())
+                }
             }
         }
     }

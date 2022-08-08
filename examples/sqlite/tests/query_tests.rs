@@ -105,160 +105,162 @@ async fn test_simple_query_with_filter() {
         schema
             .execute(
                 r#"
-            {
-              playlists(filters: { or: [{playlistId:{eq: 16}}, {playlistId:{eq: 2}}]}) {
-                data {
-                  playlistId
-                  playlistPlaylistTrack {
-                    playlistId
-                    trackId
-                    trackTracks {
-                      trackId
-                      name
+                {
+                  playlists(
+                    filters: { or: [{ playlistId: { eq: 16 } }, { playlistId: { eq: 2 } }] }
+                  ) {
+                    data {
+                      playlistId
+                      playlistsPlaylistPlaylistTrack {
+                        playlistId
+                        trackId
+                        playlistTrackTrackTracks {
+                          trackId
+                          name
+                        }
+                      }
                     }
                   }
                 }
-              }
-            }
         "#,
             )
             .await,
         r#"
-          {
-            "playlists": {
-              "data": [
-                {
-                  "playlistId": 2,
-                  "playlistPlaylistTrack": []
-                },
-                {
-                  "playlistId": 16,
-                  "playlistPlaylistTrack": [
-                    {
-                      "playlistId": 16,
+        {
+          "playlists": {
+            "data": [
+              {
+                "playlistId": 2,
+                "playlistsPlaylistPlaylistTrack": []
+              },
+              {
+                "playlistId": 16,
+                "playlistsPlaylistPlaylistTrack": [
+                  {
+                    "playlistId": 16,
+                    "trackId": 52,
+                    "playlistTrackTrackTracks": {
                       "trackId": 52,
-                      "trackTracks": {
-                        "trackId": 52,
-                        "name": "Man In The Box"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2003,
-                      "trackTracks": {
-                        "trackId": 2003,
-                        "name": "Smells Like Teen Spirit"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2004,
-                      "trackTracks": {
-                        "trackId": 2004,
-                        "name": "In Bloom"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2005,
-                      "trackTracks": {
-                        "trackId": 2005,
-                        "name": "Come As You Are"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2007,
-                      "trackTracks": {
-                        "trackId": 2007,
-                        "name": "Lithium"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2010,
-                      "trackTracks": {
-                        "trackId": 2010,
-                        "name": "Drain You"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2013,
-                      "trackTracks": {
-                        "trackId": 2013,
-                        "name": "On A Plain"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2194,
-                      "trackTracks": {
-                        "trackId": 2194,
-                        "name": "Evenflow"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2195,
-                      "trackTracks": {
-                        "trackId": 2195,
-                        "name": "Alive"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2198,
-                      "trackTracks": {
-                        "trackId": 2198,
-                        "name": "Jeremy"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2206,
-                      "trackTracks": {
-                        "trackId": 2206,
-                        "name": "Daughter"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2512,
-                      "trackTracks": {
-                        "trackId": 2512,
-                        "name": "Outshined"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2516,
-                      "trackTracks": {
-                        "trackId": 2516,
-                        "name": "Black Hole Sun"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 2550,
-                      "trackTracks": {
-                        "trackId": 2550,
-                        "name": "Plush"
-                      }
-                    },
-                    {
-                      "playlistId": 16,
-                      "trackId": 3367,
-                      "trackTracks": {
-                        "trackId": 3367,
-                        "name": "Hunger Strike"
-                      }
+                      "name": "Man In The Box"
                     }
-                  ]
-                }
-              ]
-            }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2003,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2003,
+                      "name": "Smells Like Teen Spirit"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2004,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2004,
+                      "name": "In Bloom"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2005,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2005,
+                      "name": "Come As You Are"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2007,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2007,
+                      "name": "Lithium"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2010,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2010,
+                      "name": "Drain You"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2013,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2013,
+                      "name": "On A Plain"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2194,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2194,
+                      "name": "Evenflow"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2195,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2195,
+                      "name": "Alive"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2198,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2198,
+                      "name": "Jeremy"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2206,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2206,
+                      "name": "Daughter"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2512,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2512,
+                      "name": "Outshined"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2516,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2516,
+                      "name": "Black Hole Sun"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 2550,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 2550,
+                      "name": "Plush"
+                    }
+                  },
+                  {
+                    "playlistId": 16,
+                    "trackId": 3367,
+                    "playlistTrackTrackTracks": {
+                      "trackId": 3367,
+                      "name": "Hunger Strike"
+                    }
+                  }
+                ]
+              }
+            ]
           }
+        }
         "#,
     )
 }
@@ -286,24 +288,24 @@ async fn test_simple_pagination() {
             )
             .await,
         r#"
-          {
-            "employees": {
-              "data": [
-                {
-                  "employeeId": 1,
-                  "lastName": "Adams",
-                  "title": "General Manager"
-                },
-                {
-                  "employeeId": 2,
-                  "lastName": "Edwards",
-                  "title": "Sales Manager"
-                }
-              ],
-              "pages": 4,
-              "current": 0
-            }
+        {
+          "employees": {
+            "data": [
+              {
+                "employeeId": 1,
+                "lastName": "Adams",
+                "title": "General Manager"
+              },
+              {
+                "employeeId": 2,
+                "lastName": "Edwards",
+                "title": "Sales Manager"
+              }
+            ],
+            "pages": 4,
+            "current": 0
           }
+        }
         "#,
     )
 }
@@ -316,99 +318,98 @@ async fn test_complex_string_filtering() {
         schema
             .execute(
                 r#"
-            {
-              artists( filters: { name:{ eq:"AC/DC", }}) {
-                data {
-                  name
-                  artistAlbums {
-                    title
-                    albumTracks {
+                {
+                  artists(filters: { name: { eq: "AC/DC" } }) {
+                    data {
                       name
+                      artistsArtistAlbums {
+                        title
+                        albumsAlbumTracks {
+                          name
+                        }
+                      }
                     }
                   }
                 }
-              }
-            }
-
         "#,
             )
             .await,
         r#"
-          {
-            "artists": {
-              "data": [
-                {
-                  "name": "AC/DC",
-                  "artistAlbums": [
-                    {
-                      "title": "For Those About To Rock We Salute You",
-                      "albumTracks": [
-                        {
-                          "name": "For Those About To Rock (We Salute You)"
-                        },
-                        {
-                          "name": "Put The Finger On You"
-                        },
-                        {
-                          "name": "Let's Get It Up"
-                        },
-                        {
-                          "name": "Inject The Venom"
-                        },
-                        {
-                          "name": "Snowballed"
-                        },
-                        {
-                          "name": "Evil Walks"
-                        },
-                        {
-                          "name": "C.O.D."
-                        },
-                        {
-                          "name": "Breaking The Rules"
-                        },
-                        {
-                          "name": "Night Of The Long Knives"
-                        },
-                        {
-                          "name": "Spellbound"
-                        }
-                      ]
-                    },
-                    {
-                      "title": "Let There Be Rock",
-                      "albumTracks": [
-                        {
-                          "name": "Go Down"
-                        },
-                        {
-                          "name": "Dog Eat Dog"
-                        },
-                        {
-                          "name": "Let There Be Rock"
-                        },
-                        {
-                          "name": "Bad Boy Boogie"
-                        },
-                        {
-                          "name": "Problem Child"
-                        },
-                        {
-                          "name": "Overdose"
-                        },
-                        {
-                          "name": "Hell Ain't A Bad Place To Be"
-                        },
-                        {
-                          "name": "Whole Lotta Rosie"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
+        {
+          "artists": {
+            "data": [
+              {
+                "name": "AC/DC",
+                "artistsArtistAlbums": [
+                  {
+                    "title": "For Those About To Rock We Salute You",
+                    "albumsAlbumTracks": [
+                      {
+                        "name": "For Those About To Rock (We Salute You)"
+                      },
+                      {
+                        "name": "Put The Finger On You"
+                      },
+                      {
+                        "name": "Let's Get It Up"
+                      },
+                      {
+                        "name": "Inject The Venom"
+                      },
+                      {
+                        "name": "Snowballed"
+                      },
+                      {
+                        "name": "Evil Walks"
+                      },
+                      {
+                        "name": "C.O.D."
+                      },
+                      {
+                        "name": "Breaking The Rules"
+                      },
+                      {
+                        "name": "Night Of The Long Knives"
+                      },
+                      {
+                        "name": "Spellbound"
+                      }
+                    ]
+                  },
+                  {
+                    "title": "Let There Be Rock",
+                    "albumsAlbumTracks": [
+                      {
+                        "name": "Go Down"
+                      },
+                      {
+                        "name": "Dog Eat Dog"
+                      },
+                      {
+                        "name": "Let There Be Rock"
+                      },
+                      {
+                        "name": "Bad Boy Boogie"
+                      },
+                      {
+                        "name": "Problem Child"
+                      },
+                      {
+                        "name": "Overdose"
+                      },
+                      {
+                        "name": "Hell Ain't A Bad Place To Be"
+                      },
+                      {
+                        "name": "Whole Lotta Rosie"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
+        }
         "#,
     )
 }
@@ -421,19 +422,17 @@ async fn test_number_filtering() {
         schema
             .execute(
                 r#"
-            {
-              tracks ( filters:{ milliseconds:{gt: 3000000 }}) {
-                data {
-                  milliseconds
-                  name
-                  albumAlbums {
-                    artistArtists {
+                {
+                  tracks (filters: { milliseconds: {gt: 3000000}}) {
+                    data {
+                      milliseconds
                       name
+                      tracksAlbumAlbums {
+                        title
+                      }
                     }
                   }
                 }
-              }
-            }
         "#,
             )
             .await,
@@ -444,19 +443,15 @@ async fn test_number_filtering() {
               {
                 "milliseconds": 5286953,
                 "name": "Occupation / Precipice",
-                "albumAlbums": {
-                  "artistArtists": {
-                    "name": "Battlestar Galactica"
-                  }
+                "tracksAlbumAlbums": {
+                  "title": "Battlestar Galactica, Season 3"
                 }
               },
               {
                 "milliseconds": 5088838,
                 "name": "Through a Looking Glass",
-                "albumAlbums": {
-                  "artistArtists": {
-                    "name": "Lost"
-                  }
+                "tracksAlbumAlbums": {
+                  "title": "Lost, Season 3"
                 }
               }
             ]

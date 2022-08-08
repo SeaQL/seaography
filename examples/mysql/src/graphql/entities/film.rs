@@ -26,6 +26,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = film_id.ne {
                 condition = condition.add(Column::FilmId.ne(ne_value))
             }
+            if let Some(gt_value) = film_id.gt {
+                condition = condition.add(Column::FilmId.gt(gt_value))
+            }
+            if let Some(gte_value) = film_id.gte {
+                condition = condition.add(Column::FilmId.gte(gte_value))
+            }
+            if let Some(lt_value) = film_id.lt {
+                condition = condition.add(Column::FilmId.lt(lt_value))
+            }
+            if let Some(lte_value) = film_id.lte {
+                condition = condition.add(Column::FilmId.lte(lte_value))
+            }
+            if let Some(is_in_value) = film_id.is_in {
+                condition = condition.add(Column::FilmId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = film_id.is_not_in {
+                condition = condition.add(Column::FilmId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = film_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::FilmId.is_null())
+                }
+            }
         }
         if let Some(title) = current_filter.title {
             if let Some(eq_value) = title.eq {
@@ -33,6 +56,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = title.ne {
                 condition = condition.add(Column::Title.ne(ne_value))
+            }
+            if let Some(gt_value) = title.gt {
+                condition = condition.add(Column::Title.gt(gt_value))
+            }
+            if let Some(gte_value) = title.gte {
+                condition = condition.add(Column::Title.gte(gte_value))
+            }
+            if let Some(lt_value) = title.lt {
+                condition = condition.add(Column::Title.lt(lt_value))
+            }
+            if let Some(lte_value) = title.lte {
+                condition = condition.add(Column::Title.lte(lte_value))
+            }
+            if let Some(is_in_value) = title.is_in {
+                condition = condition.add(Column::Title.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = title.is_not_in {
+                condition = condition.add(Column::Title.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = title.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::Title.is_null())
+                }
             }
         }
         if let Some(description) = current_filter.description {
@@ -42,6 +88,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = description.ne {
                 condition = condition.add(Column::Description.ne(ne_value))
             }
+            if let Some(gt_value) = description.gt {
+                condition = condition.add(Column::Description.gt(gt_value))
+            }
+            if let Some(gte_value) = description.gte {
+                condition = condition.add(Column::Description.gte(gte_value))
+            }
+            if let Some(lt_value) = description.lt {
+                condition = condition.add(Column::Description.lt(lt_value))
+            }
+            if let Some(lte_value) = description.lte {
+                condition = condition.add(Column::Description.lte(lte_value))
+            }
+            if let Some(is_in_value) = description.is_in {
+                condition = condition.add(Column::Description.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = description.is_not_in {
+                condition = condition.add(Column::Description.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = description.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::Description.is_null())
+                }
+            }
         }
         if let Some(release_year) = current_filter.release_year {
             if let Some(eq_value) = release_year.eq {
@@ -49,6 +118,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = release_year.ne {
                 condition = condition.add(Column::ReleaseYear.ne(ne_value))
+            }
+            if let Some(gt_value) = release_year.gt {
+                condition = condition.add(Column::ReleaseYear.gt(gt_value))
+            }
+            if let Some(gte_value) = release_year.gte {
+                condition = condition.add(Column::ReleaseYear.gte(gte_value))
+            }
+            if let Some(lt_value) = release_year.lt {
+                condition = condition.add(Column::ReleaseYear.lt(lt_value))
+            }
+            if let Some(lte_value) = release_year.lte {
+                condition = condition.add(Column::ReleaseYear.lte(lte_value))
+            }
+            if let Some(is_in_value) = release_year.is_in {
+                condition = condition.add(Column::ReleaseYear.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = release_year.is_not_in {
+                condition = condition.add(Column::ReleaseYear.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = release_year.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::ReleaseYear.is_null())
+                }
             }
         }
         if let Some(language_id) = current_filter.language_id {
@@ -58,6 +150,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = language_id.ne {
                 condition = condition.add(Column::LanguageId.ne(ne_value))
             }
+            if let Some(gt_value) = language_id.gt {
+                condition = condition.add(Column::LanguageId.gt(gt_value))
+            }
+            if let Some(gte_value) = language_id.gte {
+                condition = condition.add(Column::LanguageId.gte(gte_value))
+            }
+            if let Some(lt_value) = language_id.lt {
+                condition = condition.add(Column::LanguageId.lt(lt_value))
+            }
+            if let Some(lte_value) = language_id.lte {
+                condition = condition.add(Column::LanguageId.lte(lte_value))
+            }
+            if let Some(is_in_value) = language_id.is_in {
+                condition = condition.add(Column::LanguageId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = language_id.is_not_in {
+                condition = condition.add(Column::LanguageId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = language_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LanguageId.is_null())
+                }
+            }
         }
         if let Some(original_language_id) = current_filter.original_language_id {
             if let Some(eq_value) = original_language_id.eq {
@@ -65,6 +180,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = original_language_id.ne {
                 condition = condition.add(Column::OriginalLanguageId.ne(ne_value))
+            }
+            if let Some(gt_value) = original_language_id.gt {
+                condition = condition.add(Column::OriginalLanguageId.gt(gt_value))
+            }
+            if let Some(gte_value) = original_language_id.gte {
+                condition = condition.add(Column::OriginalLanguageId.gte(gte_value))
+            }
+            if let Some(lt_value) = original_language_id.lt {
+                condition = condition.add(Column::OriginalLanguageId.lt(lt_value))
+            }
+            if let Some(lte_value) = original_language_id.lte {
+                condition = condition.add(Column::OriginalLanguageId.lte(lte_value))
+            }
+            if let Some(is_in_value) = original_language_id.is_in {
+                condition = condition.add(Column::OriginalLanguageId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = original_language_id.is_not_in {
+                condition = condition.add(Column::OriginalLanguageId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = original_language_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::OriginalLanguageId.is_null())
+                }
             }
         }
         if let Some(rental_duration) = current_filter.rental_duration {
@@ -74,6 +212,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = rental_duration.ne {
                 condition = condition.add(Column::RentalDuration.ne(ne_value))
             }
+            if let Some(gt_value) = rental_duration.gt {
+                condition = condition.add(Column::RentalDuration.gt(gt_value))
+            }
+            if let Some(gte_value) = rental_duration.gte {
+                condition = condition.add(Column::RentalDuration.gte(gte_value))
+            }
+            if let Some(lt_value) = rental_duration.lt {
+                condition = condition.add(Column::RentalDuration.lt(lt_value))
+            }
+            if let Some(lte_value) = rental_duration.lte {
+                condition = condition.add(Column::RentalDuration.lte(lte_value))
+            }
+            if let Some(is_in_value) = rental_duration.is_in {
+                condition = condition.add(Column::RentalDuration.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = rental_duration.is_not_in {
+                condition = condition.add(Column::RentalDuration.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = rental_duration.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::RentalDuration.is_null())
+                }
+            }
         }
         if let Some(rental_rate) = current_filter.rental_rate {
             if let Some(eq_value) = rental_rate.eq {
@@ -81,6 +242,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = rental_rate.ne {
                 condition = condition.add(Column::RentalRate.ne(ne_value))
+            }
+            if let Some(gt_value) = rental_rate.gt {
+                condition = condition.add(Column::RentalRate.gt(gt_value))
+            }
+            if let Some(gte_value) = rental_rate.gte {
+                condition = condition.add(Column::RentalRate.gte(gte_value))
+            }
+            if let Some(lt_value) = rental_rate.lt {
+                condition = condition.add(Column::RentalRate.lt(lt_value))
+            }
+            if let Some(lte_value) = rental_rate.lte {
+                condition = condition.add(Column::RentalRate.lte(lte_value))
+            }
+            if let Some(is_in_value) = rental_rate.is_in {
+                condition = condition.add(Column::RentalRate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = rental_rate.is_not_in {
+                condition = condition.add(Column::RentalRate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = rental_rate.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::RentalRate.is_null())
+                }
             }
         }
         if let Some(length) = current_filter.length {
@@ -90,6 +274,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = length.ne {
                 condition = condition.add(Column::Length.ne(ne_value))
             }
+            if let Some(gt_value) = length.gt {
+                condition = condition.add(Column::Length.gt(gt_value))
+            }
+            if let Some(gte_value) = length.gte {
+                condition = condition.add(Column::Length.gte(gte_value))
+            }
+            if let Some(lt_value) = length.lt {
+                condition = condition.add(Column::Length.lt(lt_value))
+            }
+            if let Some(lte_value) = length.lte {
+                condition = condition.add(Column::Length.lte(lte_value))
+            }
+            if let Some(is_in_value) = length.is_in {
+                condition = condition.add(Column::Length.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = length.is_not_in {
+                condition = condition.add(Column::Length.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = length.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::Length.is_null())
+                }
+            }
         }
         if let Some(replacement_cost) = current_filter.replacement_cost {
             if let Some(eq_value) = replacement_cost.eq {
@@ -97,6 +304,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = replacement_cost.ne {
                 condition = condition.add(Column::ReplacementCost.ne(ne_value))
+            }
+            if let Some(gt_value) = replacement_cost.gt {
+                condition = condition.add(Column::ReplacementCost.gt(gt_value))
+            }
+            if let Some(gte_value) = replacement_cost.gte {
+                condition = condition.add(Column::ReplacementCost.gte(gte_value))
+            }
+            if let Some(lt_value) = replacement_cost.lt {
+                condition = condition.add(Column::ReplacementCost.lt(lt_value))
+            }
+            if let Some(lte_value) = replacement_cost.lte {
+                condition = condition.add(Column::ReplacementCost.lte(lte_value))
+            }
+            if let Some(is_in_value) = replacement_cost.is_in {
+                condition = condition.add(Column::ReplacementCost.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = replacement_cost.is_not_in {
+                condition = condition.add(Column::ReplacementCost.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = replacement_cost.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::ReplacementCost.is_null())
+                }
             }
         }
         if let Some(special_features) = current_filter.special_features {
@@ -106,6 +336,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = special_features.ne {
                 condition = condition.add(Column::SpecialFeatures.ne(ne_value))
             }
+            if let Some(gt_value) = special_features.gt {
+                condition = condition.add(Column::SpecialFeatures.gt(gt_value))
+            }
+            if let Some(gte_value) = special_features.gte {
+                condition = condition.add(Column::SpecialFeatures.gte(gte_value))
+            }
+            if let Some(lt_value) = special_features.lt {
+                condition = condition.add(Column::SpecialFeatures.lt(lt_value))
+            }
+            if let Some(lte_value) = special_features.lte {
+                condition = condition.add(Column::SpecialFeatures.lte(lte_value))
+            }
+            if let Some(is_in_value) = special_features.is_in {
+                condition = condition.add(Column::SpecialFeatures.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = special_features.is_not_in {
+                condition = condition.add(Column::SpecialFeatures.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = special_features.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::SpecialFeatures.is_null())
+                }
+            }
         }
         if let Some(last_update) = current_filter.last_update {
             if let Some(eq_value) = last_update.eq {
@@ -113,6 +366,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = last_update.ne {
                 condition = condition.add(Column::LastUpdate.ne(ne_value))
+            }
+            if let Some(gt_value) = last_update.gt {
+                condition = condition.add(Column::LastUpdate.gt(gt_value))
+            }
+            if let Some(gte_value) = last_update.gte {
+                condition = condition.add(Column::LastUpdate.gte(gte_value))
+            }
+            if let Some(lt_value) = last_update.lt {
+                condition = condition.add(Column::LastUpdate.lt(lt_value))
+            }
+            if let Some(lte_value) = last_update.lte {
+                condition = condition.add(Column::LastUpdate.lte(lte_value))
+            }
+            if let Some(is_in_value) = last_update.is_in {
+                condition = condition.add(Column::LastUpdate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = last_update.is_not_in {
+                condition = condition.add(Column::LastUpdate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = last_update.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LastUpdate.is_null())
+                }
             }
         }
     }
@@ -172,17 +448,6 @@ impl Model {
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
-    pub async fn film_film_film_category<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::film_category::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = FilmFilmCategoryFK(self.film_id.clone().try_into().unwrap());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
     pub async fn film_language_language<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -204,6 +469,17 @@ impl Model {
         let key = OriginalLanguageLanguageFK(self.original_language_id.clone().try_into().unwrap());
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data
+    }
+    pub async fn film_film_film_category<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::film_category::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = FilmFilmCategoryFK(self.film_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
     }
     pub async fn film_film_film_actor<'a>(
         &self,
@@ -269,45 +545,6 @@ impl async_graphql::dataloader::Loader<FilmInventoryFK> for OrmDataloader {
             .into_iter()
             .map(|model| {
                 let key = FilmInventoryFK(model.film_id.clone().try_into().unwrap());
-                (key, model)
-            })
-            .into_group_map())
-    }
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct FilmFilmCategoryFK(u16);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<FilmFilmCategoryFK> for OrmDataloader {
-    type Value = Vec<crate::orm::film_category::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[FilmFilmCategoryFK],
-    ) -> Result<std::collections::HashMap<FilmFilmCategoryFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::film_category::Column::FilmId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::film_category::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = FilmFilmCategoryFK(model.film_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())
@@ -390,6 +627,45 @@ impl async_graphql::dataloader::Loader<OriginalLanguageLanguageFK> for OrmDatalo
                 (key, model)
             })
             .collect())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct FilmFilmCategoryFK(u16);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<FilmFilmCategoryFK> for OrmDataloader {
+    type Value = Vec<crate::orm::film_category::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[FilmFilmCategoryFK],
+    ) -> Result<std::collections::HashMap<FilmFilmCategoryFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::film_category::Column::FilmId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::film_category::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = FilmFilmCategoryFK(model.film_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
     }
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]

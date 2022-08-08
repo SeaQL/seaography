@@ -25,6 +25,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = inventory_id.ne {
                 condition = condition.add(Column::InventoryId.ne(ne_value))
             }
+            if let Some(gt_value) = inventory_id.gt {
+                condition = condition.add(Column::InventoryId.gt(gt_value))
+            }
+            if let Some(gte_value) = inventory_id.gte {
+                condition = condition.add(Column::InventoryId.gte(gte_value))
+            }
+            if let Some(lt_value) = inventory_id.lt {
+                condition = condition.add(Column::InventoryId.lt(lt_value))
+            }
+            if let Some(lte_value) = inventory_id.lte {
+                condition = condition.add(Column::InventoryId.lte(lte_value))
+            }
+            if let Some(is_in_value) = inventory_id.is_in {
+                condition = condition.add(Column::InventoryId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = inventory_id.is_not_in {
+                condition = condition.add(Column::InventoryId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = inventory_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::InventoryId.is_null())
+                }
+            }
         }
         if let Some(film_id) = current_filter.film_id {
             if let Some(eq_value) = film_id.eq {
@@ -32,6 +55,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = film_id.ne {
                 condition = condition.add(Column::FilmId.ne(ne_value))
+            }
+            if let Some(gt_value) = film_id.gt {
+                condition = condition.add(Column::FilmId.gt(gt_value))
+            }
+            if let Some(gte_value) = film_id.gte {
+                condition = condition.add(Column::FilmId.gte(gte_value))
+            }
+            if let Some(lt_value) = film_id.lt {
+                condition = condition.add(Column::FilmId.lt(lt_value))
+            }
+            if let Some(lte_value) = film_id.lte {
+                condition = condition.add(Column::FilmId.lte(lte_value))
+            }
+            if let Some(is_in_value) = film_id.is_in {
+                condition = condition.add(Column::FilmId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = film_id.is_not_in {
+                condition = condition.add(Column::FilmId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = film_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::FilmId.is_null())
+                }
             }
         }
         if let Some(store_id) = current_filter.store_id {
@@ -41,6 +87,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = store_id.ne {
                 condition = condition.add(Column::StoreId.ne(ne_value))
             }
+            if let Some(gt_value) = store_id.gt {
+                condition = condition.add(Column::StoreId.gt(gt_value))
+            }
+            if let Some(gte_value) = store_id.gte {
+                condition = condition.add(Column::StoreId.gte(gte_value))
+            }
+            if let Some(lt_value) = store_id.lt {
+                condition = condition.add(Column::StoreId.lt(lt_value))
+            }
+            if let Some(lte_value) = store_id.lte {
+                condition = condition.add(Column::StoreId.lte(lte_value))
+            }
+            if let Some(is_in_value) = store_id.is_in {
+                condition = condition.add(Column::StoreId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = store_id.is_not_in {
+                condition = condition.add(Column::StoreId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = store_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::StoreId.is_null())
+                }
+            }
         }
         if let Some(last_update) = current_filter.last_update {
             if let Some(eq_value) = last_update.eq {
@@ -48,6 +117,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = last_update.ne {
                 condition = condition.add(Column::LastUpdate.ne(ne_value))
+            }
+            if let Some(gt_value) = last_update.gt {
+                condition = condition.add(Column::LastUpdate.gt(gt_value))
+            }
+            if let Some(gte_value) = last_update.gte {
+                condition = condition.add(Column::LastUpdate.gte(gte_value))
+            }
+            if let Some(lt_value) = last_update.lt {
+                condition = condition.add(Column::LastUpdate.lt(lt_value))
+            }
+            if let Some(lte_value) = last_update.lte {
+                condition = condition.add(Column::LastUpdate.lte(lte_value))
+            }
+            if let Some(is_in_value) = last_update.is_in {
+                condition = condition.add(Column::LastUpdate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = last_update.is_not_in {
+                condition = condition.add(Column::LastUpdate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = last_update.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LastUpdate.is_null())
+                }
             }
         }
     }
