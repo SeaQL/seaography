@@ -115,7 +115,7 @@ pub fn generate_orm<P: AsRef<std::path::Path>>(
     table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>,
 ) -> Result<()> {
     let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
-    // TODO: read postgres database schema from CLI params
+
     let entity_writer_ctx = EntityWriterContext::new(
         true,
         sea_orm_codegen::WithSerde::None,
