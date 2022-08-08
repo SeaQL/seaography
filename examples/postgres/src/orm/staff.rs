@@ -56,8 +56,8 @@ impl PrimaryKeyTrait for PrimaryKey {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
     Address,
-    Payment,
     Store,
+    Payment,
     Rental,
 }
 
@@ -87,8 +87,11 @@ impl RelationTrait for Relation {
                 .from(Column::AddressId)
                 .to(super::address::Column::AddressId)
                 .into(),
+            Self::Store => Entity::belongs_to(super::store::Entity)
+                .from(Column::StoreId)
+                .to(super::store::Column::StoreId)
+                .into(),
             Self::Payment => Entity::has_many(super::payment::Entity).into(),
-            Self::Store => Entity::has_many(super::store::Entity).into(),
             Self::Rental => Entity::has_many(super::rental::Entity).into(),
         }
     }
@@ -100,15 +103,15 @@ impl Related<super::address::Entity> for Entity {
     }
 }
 
-impl Related<super::payment::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Payment.def()
-    }
-}
-
 impl Related<super::store::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Store.def()
+    }
+}
+
+impl Related<super::payment::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Payment.def()
     }
 }
 

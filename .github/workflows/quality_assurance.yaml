@@ -157,17 +157,17 @@ jobs:
             - name: Remove generated folder
               run: rm -rf ./examples/postgres/src
             - name: Create DB
-              run: psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE "dvdrental"'
+              run: psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE "sakila"'
             - name: Import DB Schema
-              run: psql -q postgres://sea:sea@localhost/dvdrental < dvdrental-schema.sql
+              run: psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql
               working-directory: ./examples/postgres
             - name: Import DB Data
-              run: psql -q postgres://sea:sea@localhost/dvdrental < dvdrental-data.sql
+              run: psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
               working-directory: ./examples/postgres
             - uses: actions-rs/cargo@v1
               with:
                   command: run
-                  args: "postgres://sea:sea@127.0.0.1/dvdrental?currentSchema=public generated ./examples/postgres"
+                  args: "postgres://sea:sea@127.0.0.1/sakila?currentSchema=public generated ./examples/postgres"
             - name: Integration tests
               working-directory: ./examples/postgres
               run: cargo test

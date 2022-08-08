@@ -331,28 +331,6 @@ impl Model {
     pub async fn last_update(&self) -> &DateTimeUtc {
         &self.last_update
     }
-    pub async fn address_address_customer<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> Vec<crate::orm::customer::Model> {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = AddressCustomerFK(self.address_id.clone().try_into().unwrap());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap_or(vec![])
-    }
-    pub async fn address_city_city<'a>(
-        &self,
-        ctx: &async_graphql::Context<'a>,
-    ) -> crate::orm::city::Model {
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
-            .unwrap();
-        let key = CityCityFK(self.city_id.clone().try_into().unwrap());
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data.unwrap()
-    }
     pub async fn address_address_store<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
@@ -375,6 +353,28 @@ impl Model {
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap_or(vec![])
     }
+    pub async fn address_city_city<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> crate::orm::city::Model {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = CityCityFK(self.city_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap()
+    }
+    pub async fn address_address_customer<'a>(
+        &self,
+        ctx: &async_graphql::Context<'a>,
+    ) -> Vec<crate::orm::customer::Model> {
+        let data_loader = ctx
+            .data::<async_graphql::dataloader::DataLoader<OrmDataloader>>()
+            .unwrap();
+        let key = AddressCustomerFK(self.address_id.clone().try_into().unwrap());
+        let data: Option<_> = data_loader.load_one(key).await.unwrap();
+        data.unwrap_or(vec![])
+    }
 }
 #[derive(async_graphql :: InputObject, Debug)]
 #[graphql(name = "AddressFilter")]
@@ -390,81 +390,6 @@ pub struct Filter {
     pub phone: Option<TypeFilter<String>>,
     pub location: Option<TypeFilter<String>>,
     pub last_update: Option<TypeFilter<DateTimeUtc>>,
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct AddressCustomerFK(u16);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<AddressCustomerFK> for OrmDataloader {
-    type Value = Vec<crate::orm::customer::Model>;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[AddressCustomerFK],
-    ) -> Result<std::collections::HashMap<AddressCustomerFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(
-                    crate::orm::customer::Column::AddressId.as_column_ref(),
-                )
-                .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        use itertools::Itertools;
-        Ok(crate::orm::customer::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = AddressCustomerFK(model.address_id.clone().try_into().unwrap());
-                (key, model)
-            })
-            .into_group_map())
-    }
-}
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct CityCityFK(u16);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<CityCityFK> for OrmDataloader {
-    type Value = crate::orm::city::Model;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[CityCityFK],
-    ) -> Result<std::collections::HashMap<CityCityFK, Self::Value>, Self::Error> {
-        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
-                sea_orm::sea_query::Expr::col(crate::orm::city::Column::CityId.as_column_ref())
-                    .into_simple_expr(),
-            ])),
-            sea_orm::sea_query::BinOper::In,
-            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
-                keys.iter()
-                    .map(|tuple| {
-                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
-                    })
-                    .collect(),
-            )),
-        ));
-        Ok(crate::orm::city::Entity::find()
-            .filter(filter)
-            .all(&self.db)
-            .await?
-            .into_iter()
-            .map(|model| {
-                let key = CityCityFK(model.city_id.clone().try_into().unwrap());
-                (key, model)
-            })
-            .collect())
-    }
 }
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct AddressStoreFK(u16);
@@ -535,6 +460,81 @@ impl async_graphql::dataloader::Loader<AddressStaffFK> for OrmDataloader {
             .into_iter()
             .map(|model| {
                 let key = AddressStaffFK(model.address_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .into_group_map())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct CityCityFK(u16);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<CityCityFK> for OrmDataloader {
+    type Value = crate::orm::city::Model;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[CityCityFK],
+    ) -> Result<std::collections::HashMap<CityCityFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(crate::orm::city::Column::CityId.as_column_ref())
+                    .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        Ok(crate::orm::city::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = CityCityFK(model.city_id.clone().try_into().unwrap());
+                (key, model)
+            })
+            .collect())
+    }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct AddressCustomerFK(u16);
+#[async_trait::async_trait]
+impl async_graphql::dataloader::Loader<AddressCustomerFK> for OrmDataloader {
+    type Value = Vec<crate::orm::customer::Model>;
+    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+    async fn load(
+        &self,
+        keys: &[AddressCustomerFK],
+    ) -> Result<std::collections::HashMap<AddressCustomerFK, Self::Value>, Self::Error> {
+        let filter = sea_orm::Condition::all().add(sea_orm::sea_query::SimpleExpr::Binary(
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(vec![
+                sea_orm::sea_query::Expr::col(
+                    crate::orm::customer::Column::AddressId.as_column_ref(),
+                )
+                .into_simple_expr(),
+            ])),
+            sea_orm::sea_query::BinOper::In,
+            Box::new(sea_orm::sea_query::SimpleExpr::Tuple(
+                keys.iter()
+                    .map(|tuple| {
+                        sea_orm::sea_query::SimpleExpr::Values(vec![tuple.0.clone().into()])
+                    })
+                    .collect(),
+            )),
+        ));
+        use itertools::Itertools;
+        Ok(crate::orm::customer::Entity::find()
+            .filter(filter)
+            .all(&self.db)
+            .await?
+            .into_iter()
+            .map(|model| {
+                let key = AddressCustomerFK(model.address_id.clone().try_into().unwrap());
                 (key, model)
             })
             .into_group_map())

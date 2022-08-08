@@ -120,3 +120,87 @@ async fn test_simple_query_with_filter() {
             "#,
     )
 }
+
+#[tokio::test]
+async fn test_filter_with_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+              {
+                customer (filters:{active:{eq: 0}}, pagination:{page: 2, limit: 3}) {
+                  data {
+                    customerId
+                  }
+                  pages
+                  current
+                }
+              }
+            "#,
+            )
+            .await,
+        r#"
+            {
+              "customer": {
+                "data": [
+                  {
+                    "customerId": 315
+                  },
+                  {
+                    "customerId": 368
+                  },
+                  {
+                    "customerId": 406
+                  }
+                ],
+                "pages": 5,
+                "current": 2
+              }
+            }
+            "#,
+    )
+}
+
+#[tokio::test]
+async fn test_complex_filter_with_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  payment(filters:{amount: { gt: "11.1" }}, pagination: {limit: 2, page: 3}) {
+                    data {
+                      paymentId
+                      amount
+                    }
+                    pages
+                    current
+                  }
+                }
+            "#,
+            )
+            .await,
+        r#"
+            {
+              "payment": {
+                "data": [
+                  {
+                    "paymentId": 8272,
+                    "amount": "11.99"
+                  },
+                  {
+                    "paymentId": 9803,
+                    "amount": "11.99"
+                  }
+                ],
+                "pages": 5,
+                "current": 3
+              }
+            }
+            "#,
+    )
+}

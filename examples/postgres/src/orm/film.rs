@@ -19,6 +19,7 @@ pub struct Model {
     pub description: Option<String>,
     pub release_year: Option<i32>,
     pub language_id: i16,
+    pub original_language_id: Option<i16>,
     pub rental_duration: i16,
     pub rental_rate: Decimal,
     pub length: Option<i16>,
@@ -36,6 +37,7 @@ pub enum Column {
     Description,
     ReleaseYear,
     LanguageId,
+    OriginalLanguageId,
     RentalDuration,
     RentalRate,
     Length,
@@ -60,10 +62,11 @@ impl PrimaryKeyTrait for PrimaryKey {
 
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
-    Language,
+    Language2,
+    Language1,
     Inventory,
-    FilmCategory,
     FilmActor,
+    FilmCategory,
 }
 
 impl ColumnTrait for Column {
@@ -75,6 +78,7 @@ impl ColumnTrait for Column {
             Self::Description => ColumnType::Text.def().null(),
             Self::ReleaseYear => ColumnType::Integer.def().null(),
             Self::LanguageId => ColumnType::SmallInteger.def(),
+            Self::OriginalLanguageId => ColumnType::SmallInteger.def().null(),
             Self::RentalDuration => ColumnType::SmallInteger.def(),
             Self::RentalRate => ColumnType::Decimal(Some((4u32, 2u32))).def(),
             Self::Length => ColumnType::SmallInteger.def().null(),
@@ -90,20 +94,18 @@ impl ColumnTrait for Column {
 impl RelationTrait for Relation {
     fn def(&self) -> RelationDef {
         match self {
-            Self::Language => Entity::belongs_to(super::language::Entity)
+            Self::Language2 => Entity::belongs_to(super::language::Entity)
                 .from(Column::LanguageId)
                 .to(super::language::Column::LanguageId)
                 .into(),
+            Self::Language1 => Entity::belongs_to(super::language::Entity)
+                .from(Column::OriginalLanguageId)
+                .to(super::language::Column::LanguageId)
+                .into(),
             Self::Inventory => Entity::has_many(super::inventory::Entity).into(),
-            Self::FilmCategory => Entity::has_many(super::film_category::Entity).into(),
             Self::FilmActor => Entity::has_many(super::film_actor::Entity).into(),
+            Self::FilmCategory => Entity::has_many(super::film_category::Entity).into(),
         }
-    }
-}
-
-impl Related<super::language::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Language.def()
     }
 }
 
@@ -113,15 +115,15 @@ impl Related<super::inventory::Entity> for Entity {
     }
 }
 
-impl Related<super::film_category::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::FilmCategory.def()
-    }
-}
-
 impl Related<super::film_actor::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::FilmActor.def()
+    }
+}
+
+impl Related<super::film_category::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::FilmCategory.def()
     }
 }
 

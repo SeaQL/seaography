@@ -63,8 +63,8 @@ pub enum Relation {
     Language2,
     Language1,
     Inventory,
-    FilmCategory,
     FilmActor,
+    FilmCategory,
 }
 
 impl ColumnTrait for Column {
@@ -105,8 +105,8 @@ impl RelationTrait for Relation {
                 .to(super::language::Column::LanguageId)
                 .into(),
             Self::Inventory => Entity::has_many(super::inventory::Entity).into(),
-            Self::FilmCategory => Entity::has_many(super::film_category::Entity).into(),
             Self::FilmActor => Entity::has_many(super::film_actor::Entity).into(),
+            Self::FilmCategory => Entity::has_many(super::film_category::Entity).into(),
         }
     }
 }
@@ -117,15 +117,15 @@ impl Related<super::inventory::Entity> for Entity {
     }
 }
 
-impl Related<super::film_category::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::FilmCategory.def()
-    }
-}
-
 impl Related<super::film_actor::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::FilmActor.def()
+    }
+}
+
+impl Related<super::film_category::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::FilmCategory.def()
     }
 }
 

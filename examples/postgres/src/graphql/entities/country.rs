@@ -25,6 +25,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = country_id.ne {
                 condition = condition.add(Column::CountryId.ne(ne_value))
             }
+            if let Some(gt_value) = country_id.gt {
+                condition = condition.add(Column::CountryId.gt(gt_value))
+            }
+            if let Some(gte_value) = country_id.gte {
+                condition = condition.add(Column::CountryId.gte(gte_value))
+            }
+            if let Some(lt_value) = country_id.lt {
+                condition = condition.add(Column::CountryId.lt(lt_value))
+            }
+            if let Some(lte_value) = country_id.lte {
+                condition = condition.add(Column::CountryId.lte(lte_value))
+            }
+            if let Some(is_in_value) = country_id.is_in {
+                condition = condition.add(Column::CountryId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = country_id.is_not_in {
+                condition = condition.add(Column::CountryId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = country_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::CountryId.is_null())
+                }
+            }
         }
         if let Some(country) = current_filter.country {
             if let Some(eq_value) = country.eq {
@@ -33,6 +56,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = country.ne {
                 condition = condition.add(Column::Country.ne(ne_value))
             }
+            if let Some(gt_value) = country.gt {
+                condition = condition.add(Column::Country.gt(gt_value))
+            }
+            if let Some(gte_value) = country.gte {
+                condition = condition.add(Column::Country.gte(gte_value))
+            }
+            if let Some(lt_value) = country.lt {
+                condition = condition.add(Column::Country.lt(lt_value))
+            }
+            if let Some(lte_value) = country.lte {
+                condition = condition.add(Column::Country.lte(lte_value))
+            }
+            if let Some(is_in_value) = country.is_in {
+                condition = condition.add(Column::Country.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = country.is_not_in {
+                condition = condition.add(Column::Country.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = country.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::Country.is_null())
+                }
+            }
         }
         if let Some(last_update) = current_filter.last_update {
             if let Some(eq_value) = last_update.eq {
@@ -40,6 +86,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = last_update.ne {
                 condition = condition.add(Column::LastUpdate.ne(ne_value))
+            }
+            if let Some(gt_value) = last_update.gt {
+                condition = condition.add(Column::LastUpdate.gt(gt_value))
+            }
+            if let Some(gte_value) = last_update.gte {
+                condition = condition.add(Column::LastUpdate.gte(gte_value))
+            }
+            if let Some(lt_value) = last_update.lt {
+                condition = condition.add(Column::LastUpdate.lt(lt_value))
+            }
+            if let Some(lte_value) = last_update.lte {
+                condition = condition.add(Column::LastUpdate.lte(lte_value))
+            }
+            if let Some(is_in_value) = last_update.is_in {
+                condition = condition.add(Column::LastUpdate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = last_update.is_not_in {
+                condition = condition.add(Column::LastUpdate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = last_update.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LastUpdate.is_null())
+                }
             }
         }
     }
@@ -58,7 +127,7 @@ impl Model {
     pub async fn last_update(&self) -> &DateTime {
         &self.last_update
     }
-    pub async fn country_city<'a>(
+    pub async fn country_country_city<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::city::Model> {

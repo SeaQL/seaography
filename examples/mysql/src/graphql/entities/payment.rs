@@ -378,7 +378,7 @@ impl async_graphql::dataloader::Loader<RentalRentalFK> for OrmDataloader {
             .await?
             .into_iter()
             .map(|model| {
-                let key = RentalRentalFK(Some(model.rental_id.clone()).clone().try_into().unwrap());
+                let key = RentalRentalFK(Some(model.rental_id.clone().try_into().unwrap()));
                 (key, model)
             })
             .collect())

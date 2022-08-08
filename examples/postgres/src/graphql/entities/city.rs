@@ -25,6 +25,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = city_id.ne {
                 condition = condition.add(Column::CityId.ne(ne_value))
             }
+            if let Some(gt_value) = city_id.gt {
+                condition = condition.add(Column::CityId.gt(gt_value))
+            }
+            if let Some(gte_value) = city_id.gte {
+                condition = condition.add(Column::CityId.gte(gte_value))
+            }
+            if let Some(lt_value) = city_id.lt {
+                condition = condition.add(Column::CityId.lt(lt_value))
+            }
+            if let Some(lte_value) = city_id.lte {
+                condition = condition.add(Column::CityId.lte(lte_value))
+            }
+            if let Some(is_in_value) = city_id.is_in {
+                condition = condition.add(Column::CityId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = city_id.is_not_in {
+                condition = condition.add(Column::CityId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = city_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::CityId.is_null())
+                }
+            }
         }
         if let Some(city) = current_filter.city {
             if let Some(eq_value) = city.eq {
@@ -32,6 +55,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = city.ne {
                 condition = condition.add(Column::City.ne(ne_value))
+            }
+            if let Some(gt_value) = city.gt {
+                condition = condition.add(Column::City.gt(gt_value))
+            }
+            if let Some(gte_value) = city.gte {
+                condition = condition.add(Column::City.gte(gte_value))
+            }
+            if let Some(lt_value) = city.lt {
+                condition = condition.add(Column::City.lt(lt_value))
+            }
+            if let Some(lte_value) = city.lte {
+                condition = condition.add(Column::City.lte(lte_value))
+            }
+            if let Some(is_in_value) = city.is_in {
+                condition = condition.add(Column::City.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = city.is_not_in {
+                condition = condition.add(Column::City.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = city.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::City.is_null())
+                }
             }
         }
         if let Some(country_id) = current_filter.country_id {
@@ -41,6 +87,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = country_id.ne {
                 condition = condition.add(Column::CountryId.ne(ne_value))
             }
+            if let Some(gt_value) = country_id.gt {
+                condition = condition.add(Column::CountryId.gt(gt_value))
+            }
+            if let Some(gte_value) = country_id.gte {
+                condition = condition.add(Column::CountryId.gte(gte_value))
+            }
+            if let Some(lt_value) = country_id.lt {
+                condition = condition.add(Column::CountryId.lt(lt_value))
+            }
+            if let Some(lte_value) = country_id.lte {
+                condition = condition.add(Column::CountryId.lte(lte_value))
+            }
+            if let Some(is_in_value) = country_id.is_in {
+                condition = condition.add(Column::CountryId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = country_id.is_not_in {
+                condition = condition.add(Column::CountryId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = country_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::CountryId.is_null())
+                }
+            }
         }
         if let Some(last_update) = current_filter.last_update {
             if let Some(eq_value) = last_update.eq {
@@ -48,6 +117,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = last_update.ne {
                 condition = condition.add(Column::LastUpdate.ne(ne_value))
+            }
+            if let Some(gt_value) = last_update.gt {
+                condition = condition.add(Column::LastUpdate.gt(gt_value))
+            }
+            if let Some(gte_value) = last_update.gte {
+                condition = condition.add(Column::LastUpdate.gte(gte_value))
+            }
+            if let Some(lt_value) = last_update.lt {
+                condition = condition.add(Column::LastUpdate.lt(lt_value))
+            }
+            if let Some(lte_value) = last_update.lte {
+                condition = condition.add(Column::LastUpdate.lte(lte_value))
+            }
+            if let Some(is_in_value) = last_update.is_in {
+                condition = condition.add(Column::LastUpdate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = last_update.is_not_in {
+                condition = condition.add(Column::LastUpdate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = last_update.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LastUpdate.is_null())
+                }
             }
         }
     }
@@ -69,7 +161,7 @@ impl Model {
     pub async fn last_update(&self) -> &DateTime {
         &self.last_update
     }
-    pub async fn country_country<'a>(
+    pub async fn city_country_country<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> crate::orm::country::Model {
@@ -80,7 +172,7 @@ impl Model {
         let data: Option<_> = data_loader.load_one(key).await.unwrap();
         data.unwrap()
     }
-    pub async fn city_address<'a>(
+    pub async fn city_city_address<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::address::Model> {

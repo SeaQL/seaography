@@ -43,6 +43,8 @@ impl PrimaryKeyTrait for PrimaryKey {
 pub enum Relation {
     Address,
     Staff,
+    Inventory,
+    Customer,
 }
 
 impl ColumnTrait for Column {
@@ -68,6 +70,8 @@ impl RelationTrait for Relation {
                 .from(Column::ManagerStaffId)
                 .to(super::staff::Column::StaffId)
                 .into(),
+            Self::Inventory => Entity::has_many(super::inventory::Entity).into(),
+            Self::Customer => Entity::has_many(super::customer::Entity).into(),
         }
     }
 }
@@ -81,6 +85,18 @@ impl Related<super::address::Entity> for Entity {
 impl Related<super::staff::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Staff.def()
+    }
+}
+
+impl Related<super::inventory::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Inventory.def()
+    }
+}
+
+impl Related<super::customer::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Customer.def()
     }
 }
 

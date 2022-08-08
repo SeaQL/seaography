@@ -25,6 +25,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = category_id.ne {
                 condition = condition.add(Column::CategoryId.ne(ne_value))
             }
+            if let Some(gt_value) = category_id.gt {
+                condition = condition.add(Column::CategoryId.gt(gt_value))
+            }
+            if let Some(gte_value) = category_id.gte {
+                condition = condition.add(Column::CategoryId.gte(gte_value))
+            }
+            if let Some(lt_value) = category_id.lt {
+                condition = condition.add(Column::CategoryId.lt(lt_value))
+            }
+            if let Some(lte_value) = category_id.lte {
+                condition = condition.add(Column::CategoryId.lte(lte_value))
+            }
+            if let Some(is_in_value) = category_id.is_in {
+                condition = condition.add(Column::CategoryId.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = category_id.is_not_in {
+                condition = condition.add(Column::CategoryId.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = category_id.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::CategoryId.is_null())
+                }
+            }
         }
         if let Some(name) = current_filter.name {
             if let Some(eq_value) = name.eq {
@@ -33,6 +56,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             if let Some(ne_value) = name.ne {
                 condition = condition.add(Column::Name.ne(ne_value))
             }
+            if let Some(gt_value) = name.gt {
+                condition = condition.add(Column::Name.gt(gt_value))
+            }
+            if let Some(gte_value) = name.gte {
+                condition = condition.add(Column::Name.gte(gte_value))
+            }
+            if let Some(lt_value) = name.lt {
+                condition = condition.add(Column::Name.lt(lt_value))
+            }
+            if let Some(lte_value) = name.lte {
+                condition = condition.add(Column::Name.lte(lte_value))
+            }
+            if let Some(is_in_value) = name.is_in {
+                condition = condition.add(Column::Name.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = name.is_not_in {
+                condition = condition.add(Column::Name.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = name.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::Name.is_null())
+                }
+            }
         }
         if let Some(last_update) = current_filter.last_update {
             if let Some(eq_value) = last_update.eq {
@@ -40,6 +86,29 @@ pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
             }
             if let Some(ne_value) = last_update.ne {
                 condition = condition.add(Column::LastUpdate.ne(ne_value))
+            }
+            if let Some(gt_value) = last_update.gt {
+                condition = condition.add(Column::LastUpdate.gt(gt_value))
+            }
+            if let Some(gte_value) = last_update.gte {
+                condition = condition.add(Column::LastUpdate.gte(gte_value))
+            }
+            if let Some(lt_value) = last_update.lt {
+                condition = condition.add(Column::LastUpdate.lt(lt_value))
+            }
+            if let Some(lte_value) = last_update.lte {
+                condition = condition.add(Column::LastUpdate.lte(lte_value))
+            }
+            if let Some(is_in_value) = last_update.is_in {
+                condition = condition.add(Column::LastUpdate.is_in(is_in_value))
+            }
+            if let Some(is_not_in_value) = last_update.is_not_in {
+                condition = condition.add(Column::LastUpdate.is_not_in(is_not_in_value))
+            }
+            if let Some(is_null_value) = last_update.is_null {
+                if is_null_value {
+                    condition = condition.add(Column::LastUpdate.is_null())
+                }
             }
         }
     }
@@ -58,7 +127,7 @@ impl Model {
     pub async fn last_update(&self) -> &DateTime {
         &self.last_update
     }
-    pub async fn category_film_category<'a>(
+    pub async fn category_category_film_category<'a>(
         &self,
         ctx: &async_graphql::Context<'a>,
     ) -> Vec<crate::orm::film_category::Model> {

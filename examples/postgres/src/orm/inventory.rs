@@ -42,6 +42,7 @@ impl PrimaryKeyTrait for PrimaryKey {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
     Film,
+    Store,
     Rental,
 }
 
@@ -64,6 +65,10 @@ impl RelationTrait for Relation {
                 .from(Column::FilmId)
                 .to(super::film::Column::FilmId)
                 .into(),
+            Self::Store => Entity::belongs_to(super::store::Entity)
+                .from(Column::StoreId)
+                .to(super::store::Column::StoreId)
+                .into(),
             Self::Rental => Entity::has_many(super::rental::Entity).into(),
         }
     }
@@ -72,6 +77,12 @@ impl RelationTrait for Relation {
 impl Related<super::film::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Film.def()
+    }
+}
+
+impl Related<super::store::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Store.def()
     }
 }
 

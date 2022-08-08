@@ -18,7 +18,7 @@ async fn main() {
         .with_test_writer()
         .init();
     let database =
-        Database::connect("postgres://postgres:postgres@127.0.0.1/dvdrental?currentSchema=public")
+        Database::connect("postgres://postgres:postgres@127.0.0.1/sakila?currentSchema=public")
             .await
             .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
