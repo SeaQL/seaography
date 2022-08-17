@@ -5,9 +5,12 @@ use quote::quote;
 use seaography_types::schema_meta::SchemaMeta;
 use std::path::Path;
 
+pub mod error;
+pub use error::{Error, Result};
 pub mod core;
 pub mod files;
 pub mod test_cfg;
+pub mod sea_orm_codegen;
 
 pub fn write_project<P: AsRef<Path>>(
     path: &P,

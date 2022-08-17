@@ -14,3 +14,5 @@ serde = { version = "1.0.137", features = ["derive"] }
 clap = { version = "3.2.6", features = ["derive"] }
 seaography_types = { path = "../types" }
 itertools = "0.10.3"
+sea-orm-codegen = { version = "^0.9.1"}
+seaography_discoverer = { path = "../discoverer" }

@@ -1,4 +1,3 @@
-use sea_orm_codegen::EntityWriterContext;
 use url::ParseError;
 
 #[derive(clap::Parser)]
@@ -18,7 +17,6 @@ pub struct Args {
 pub enum Error {
     Error(String),
     DiscovererError(seaography_discoverer::Error),
-    SeaCodegenError(sea_orm_codegen::Error),
     IoError(std::io::Error),
     ParseError(url::ParseError),
 }
@@ -26,12 +24,6 @@ pub enum Error {
 impl From<seaography_discoverer::Error> for Error {
     fn from(err: seaography_discoverer::Error) -> Self {
         Self::DiscovererError(err)
-    }
-}
-
-impl From<sea_orm_codegen::Error> for Error {
-    fn from(err: sea_orm_codegen::Error) -> Self {
-        Self::SeaCodegenError(err)
     }
 }
 
@@ -108,27 +100,4 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url> {
     }
 
     Ok(url)
-}
-
-pub fn generate_orm<P: AsRef<std::path::Path>>(
-    path: &P,
-    table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>,
-) -> Result<()> {
-    let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
-
-    let entity_writer_ctx = EntityWriterContext::new(
-        true,
-        sea_orm_codegen::WithSerde::None,
-        sea_orm_codegen::DateTimeCrate::Chrono,
-        None,
-    );
-
-    let writer_output = entity_writer.generate(&entity_writer_ctx);
-
-    for sea_orm_codegen::OutputFile { name, content } in writer_output.files.iter() {
-        let file_path = path.as_ref().join(name);
-        std::fs::write(file_path, content.as_bytes())?;
-    }
-
-    Ok(())
 }

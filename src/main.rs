@@ -1,8 +1,6 @@
 use clap::Parser;
-use seaography::{generate_orm, parse_database_url, Args, Result};
-use seaography_discoverer::{extract_database_metadata, extract_schema};
-use seaography_generator::write_project;
-use seaography_types::SchemaMeta;
+use seaography::{parse_database_url, Args, Result};
+use seaography_discoverer::{extract_database_metadata};
 
 #[async_std::main]
 async fn main() -> Result<()> {
@@ -10,19 +8,15 @@ async fn main() -> Result<()> {
 
     let database_url = parse_database_url(&args.database_url)?;
 
-    let (tables, version) = extract_database_metadata(&database_url).await?;
-
-    let schema: SchemaMeta = extract_schema(&database_url, &tables, &version).await?;
-
     let path = std::path::Path::new(&args.destination);
 
-    std::fs::create_dir_all(&path.join("src/orm"))?;
+    let (tables, _version) = extract_database_metadata(&database_url).await?;
 
-    println!("{:#?}", schema);
+    let writer_output = seaography_generator::sea_orm_codegen::generate_entities(tables.values().cloned().collect()).unwrap();
 
-    generate_orm(&path.join("src/orm"), tables.values().cloned().collect())?;
+    std::fs::create_dir_all(&path.join("src/entities"))?;
 
-    write_project(&path, &schema, &args.crate_name)?;
+    seaography_generator::sea_orm_codegen::write_entities(&path.join("src/entities"), writer_output).unwrap();
 
     Ok(())
 }
