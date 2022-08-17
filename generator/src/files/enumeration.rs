@@ -4,11 +4,15 @@ use quote::{format_ident, quote};
 use seaography_types::enum_meta::EnumMeta;
 use std::path::Path;
 
+
+// TODO: DEPRECATE FILE
+// TODO: inject derive into sea orm cli generated code
+
 /// Used to generate graphql enumeration
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::enumeration::generate_enumeration;
+/// use seaography_generator::files::enumeration::generate_enumeration;
 /// use seaography_types::EnumMeta;
 /// let enum_meta = EnumMeta {
 ///     enum_name: "Size".into(),

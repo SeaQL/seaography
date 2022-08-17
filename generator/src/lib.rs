@@ -1,11 +1,12 @@
-use crate::extended::toml::write_cargo_toml;
-use crate::extended::write_graphql;
+use crate::files::toml::write_cargo_toml;
+use crate::files::write_graphql;
 use proc_macro2::TokenStream;
 use quote::quote;
 use seaography_types::schema_meta::SchemaMeta;
 use std::path::Path;
 
-pub mod extended;
+pub mod core;
+pub mod files;
 pub mod test_cfg;
 
 pub fn write_project<P: AsRef<Path>>(

@@ -27,7 +27,7 @@ impl TomlStructure {
     /// Used to contract a new rust toml project configuration
     ///
     /// ```
-    /// use seaography_generator::extended::toml::TomlStructure;
+    /// use seaography_generator::files::toml::TomlStructure;
     /// use seaography_types::SqlVersion;
     ///
     /// let left = TomlStructure::new("generated", &SqlVersion::Sqlite);

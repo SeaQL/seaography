@@ -7,7 +7,7 @@ use quote::quote;
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::orm_dataloader::generate_orm_dataloader;
+/// use seaography_generator::files::orm_dataloader::generate_orm_dataloader;
 ///
 /// let left = generate_orm_dataloader();
 ///

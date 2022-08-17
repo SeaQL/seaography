@@ -7,7 +7,7 @@ use quote::quote;
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::type_filter::generate_type_filter;
+/// use seaography_generator::files::type_filter::generate_type_filter;
 ///
 /// let left = generate_type_filter();
 /// let right = quote!{

@@ -20,5 +20,6 @@ members = [
     "discoverer",
     "types",
     "generator",
+    "derive"
 ]
 exclude = ["generated"]

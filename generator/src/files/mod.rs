@@ -62,7 +62,7 @@ pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std::io::
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::generate_graphql_mod;
+/// use seaography_generator::files::generate_graphql_mod;
 ///
 /// let left = generate_graphql_mod(0);
 ///
@@ -81,7 +81,7 @@ pub fn write_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std::io::
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::generate_graphql_mod;
+/// use seaography_generator::files::generate_graphql_mod;
 ///
 /// let left = generate_graphql_mod(1);
 ///
@@ -132,7 +132,7 @@ pub fn write_enums_mod<P: AsRef<Path>>(path: &P, enums_meta: &[EnumMeta]) -> std
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::generate_enums_mod;
+/// use seaography_generator::files::generate_enums_mod;
 /// use seaography_types::EnumMeta;
 ///
 /// let left = generate_enums_mod(&vec![
@@ -181,7 +181,7 @@ pub fn write_entities_mod<P: AsRef<Path>>(
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::extended::generate_entities_mod;
+/// use seaography_generator::files::generate_entities_mod;
 /// use seaography_types::TableMeta;
 ///
 /// let left = generate_entities_mod(&vec![
