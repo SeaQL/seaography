@@ -11,6 +11,7 @@ pub mod core;
 pub mod files;
 pub mod test_cfg;
 pub mod sea_orm_codegen;
+pub mod inject_graphql;
 
 pub fn write_project<P: AsRef<Path>>(
     path: &P,

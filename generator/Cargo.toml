@@ -7,8 +7,9 @@ edition = "2021"
 
 [dependencies]
 quote = "1.0.18"
-heck = "0.4.0"
 proc-macro2 = "1.0.37"
+syn = { version = "1.0.99", features = ["full"] }
+heck = "0.4.0"
 toml = "0.5.9"
 serde = { version = "1.0.137", features = ["derive"] }
 clap = { version = "3.2.6", features = ["derive"] }
