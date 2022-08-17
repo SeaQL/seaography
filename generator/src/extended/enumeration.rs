@@ -8,7 +8,7 @@ use std::path::Path;
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::enumeration::generate_enumeration;
+/// use seaography_generator::extended::enumeration::generate_enumeration;
 /// use seaography_types::EnumMeta;
 /// let enum_meta = EnumMeta {
 ///     enum_name: "Size".into(),

@@ -54,7 +54,7 @@ pub fn generate_entity(table_meta: &TableMeta) -> TokenStream {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::entity::generate_entity_filters;
+/// use seaography_generator::extended::entity::generate_entity_filters;
 /// use seaography_generator::test_cfg::get_font_table;
 ///
 /// let left: Vec<_> = generate_entity_filters(&get_font_table()).iter().map(|t| t.to_string()).collect();
@@ -90,7 +90,7 @@ pub fn generate_entity_filters(table_meta: &TableMeta) -> Vec<TokenStream> {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::entity::generate_entity_getters;
+/// use seaography_generator::extended::entity::generate_entity_getters;
 /// use seaography_generator::test_cfg::get_font_table;
 ///
 /// let left: Vec<_> = generate_entity_getters(&get_font_table()).iter().map(|t| t.to_string()).collect();;
@@ -147,7 +147,7 @@ pub fn generate_entity_getters(table_meta: &TableMeta) -> Vec<TokenStream> {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::entity::generate_entity_relations;
+/// use seaography_generator::extended::entity::generate_entity_relations;
 /// use seaography_generator::test_cfg::get_font_table;
 ///
 /// let left: Vec<_> = generate_entity_relations(&get_font_table()).iter().map(|t| t.to_string()).collect();;
@@ -385,7 +385,7 @@ pub fn generate_foreign_keys_and_loaders(table_meta: &TableMeta) -> Vec<TokenStr
 ///
 /// ```no_run
 /// use quote::quote;
-/// use seaography_generator::generator::entity::generate_recursive_filter_fn;
+/// use seaography_generator::extended::entity::generate_recursive_filter_fn;
 /// use seaography_generator::test_cfg::get_char_table;
 ///
 /// let left = generate_recursive_filter_fn(&get_char_table());
@@ -535,7 +535,7 @@ pub fn generate_recursive_filter_fn(table_meta: &TableMeta) -> TokenStream {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::entity::extract_enums;
+/// use seaography_generator::extended::entity::extract_enums;
 /// use seaography_generator::test_cfg::get_font_table;
 ///
 /// let left: Vec<_> = extract_enums(&get_font_table()).iter().map(|t| t.to_string()).collect();

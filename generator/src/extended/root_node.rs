@@ -39,7 +39,7 @@ pub fn generate_single_queries(tables_meta: &[TableMeta]) -> Vec<TokenStream> {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::root_node::generate_table_query;
+/// use seaography_generator::extended::root_node::generate_table_query;
 /// use seaography_generator::test_cfg::get_char_table;
 ///
 /// let char_table_meta = get_char_table();
@@ -150,7 +150,7 @@ pub fn generate_table_query(table_meta: &TableMeta) -> TokenStream {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::root_node::generate_pagination_input;
+/// use seaography_generator::extended::root_node::generate_pagination_input;
 ///
 /// let left = generate_pagination_input();
 ///
@@ -178,7 +178,7 @@ pub fn generate_pagination_input() -> TokenStream {
 ///
 /// ```
 /// use quote::quote;
-/// use seaography_generator::generator::root_node::generate_paginated_result;
+/// use seaography_generator::extended::root_node::generate_paginated_result;
 /// use seaography_generator::test_cfg::get_tables_meta;
 ///
 /// let left = generate_paginated_result(&get_tables_meta());
