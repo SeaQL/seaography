@@ -15,14 +15,11 @@ async fn main() -> Result<()> {
 
     let entities_hashmap = seaography_generator::sea_orm_codegen::generate_entities(tables.values().cloned().collect()).unwrap();
 
-    inject_graphql(entities_hashmap);
-
-
-    // println!("a", entities_hashmap);
+    let entities_hashmap = inject_graphql(entities_hashmap);
 
     std::fs::create_dir_all(&path.join("src/entities"))?;
 
-    // seaography_generator::sea_orm_codegen::write_entities(&path.join("src/entities"), writer_output).unwrap();
+    seaography_generator::sea_orm_codegen::write_entities(&path.join("src/entities"), entities_hashmap).unwrap();
 
     Ok(())
 }

@@ -1,8 +1,8 @@
 use crate::files::toml::write_cargo_toml;
-use crate::files::write_graphql;
 use proc_macro2::TokenStream;
 use quote::quote;
-use seaography_types::schema_meta::SchemaMeta;
+use seaography_discoverer::sea_schema::sea_query::TableCreateStatement;
+use seaography_types::SqlVersion;
 use std::path::Path;
 
 pub mod error;
@@ -15,28 +15,21 @@ pub mod inject_graphql;
 
 pub fn write_project<P: AsRef<Path>>(
     path: &P,
-    schema: &SchemaMeta,
+    tables: std::collections::HashMap<String, TableCreateStatement>,
+    sql_version: &SqlVersion,
     crate_name: &str,
 ) -> std::io::Result<()> {
-    std::fs::create_dir_all(path.as_ref().join("src/graphql"))?;
+    let entities_path = &path.as_ref().join("src/entities");
 
-    write_cargo_toml(path, crate_name, &schema.version)?;
+    let entities_hashmap = crate::sea_orm_codegen::generate_entities(tables.values().cloned().collect()).unwrap();
 
-    write_graphql(
-        &path.as_ref().join("src/graphql"),
-        &schema.tables,
-        &schema.enums,
-    )?;
+    let entities_hashmap = crate::inject_graphql::inject_graphql(entities_hashmap);
 
-    let lib_tokens = generate_lib();
+    std::fs::create_dir_all(entities_path)?;
 
-    std::fs::write(&path.as_ref().join("src/lib.rs"), lib_tokens.to_string())?;
+    crate::sea_orm_codegen::write_entities(entities_path, entities_hashmap).unwrap();
 
-    let db_url = &schema.url;
-
-    let main_tokens = generate_main(db_url, crate_name);
-
-    std::fs::write(&path.as_ref().join("src/main.rs"), main_tokens.to_string())?;
+    write_cargo_toml(path, crate_name, sql_version)?;
 
     Ok(())
 }
