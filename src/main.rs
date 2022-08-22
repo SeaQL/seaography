@@ -11,11 +11,13 @@ async fn main() -> Result<()> {
 
     let path = std::path::Path::new(&args.destination);
 
+    let expanded_format = false;
+
     let (tables, _version) = extract_database_metadata(&database_url).await?;
 
-    let entities_hashmap = seaography_generator::sea_orm_codegen::generate_entities(tables.values().cloned().collect()).unwrap();
+    let entities_hashmap = seaography_generator::sea_orm_codegen::generate_entities(tables.values().cloned().collect(), expanded_format).unwrap();
 
-    let entities_hashmap = inject_graphql(entities_hashmap);
+    let entities_hashmap = inject_graphql(entities_hashmap, expanded_format);
 
     std::fs::create_dir_all(&path.join("src/entities"))?;
 

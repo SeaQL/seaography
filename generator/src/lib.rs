@@ -21,9 +21,9 @@ pub fn write_project<P: AsRef<Path>>(
 ) -> std::io::Result<()> {
     let entities_path = &path.as_ref().join("src/entities");
 
-    let entities_hashmap = crate::sea_orm_codegen::generate_entities(tables.values().cloned().collect()).unwrap();
+    let entities_hashmap = crate::sea_orm_codegen::generate_entities(tables.values().cloned().collect(), true).unwrap();
 
-    let entities_hashmap = crate::inject_graphql::inject_graphql(entities_hashmap);
+    let entities_hashmap = crate::inject_graphql::inject_graphql(entities_hashmap, true);
 
     std::fs::create_dir_all(entities_path)?;
 

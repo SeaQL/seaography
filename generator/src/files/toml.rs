@@ -37,7 +37,7 @@ impl TomlStructure {
     /// name = 'generated'
     /// version = '0.1.0'
     /// [dependencies.async-graphql]
-    /// version = '3.0.38'
+    /// version = '4.0.10'
     /// features = [
     ///     'decimal',
     ///     'chrono',
@@ -45,7 +45,7 @@ impl TomlStructure {
     /// ]
     ///
     /// [dependencies.async-graphql-poem]
-    /// version = '3.0.38'
+    /// version = '4.0.10'
     ///
     /// [dependencies.async-trait]
     /// version = '0.1.53'
@@ -111,14 +111,21 @@ impl TomlStructure {
         dependencies.insert(
             "async-graphql".into(),
             DependencyInfo {
-                version: "3.0.38".into(),
+                version: "4.0.10".into(),
                 features: Some(vec!["decimal".into(), "chrono".into(), "dataloader".into()]),
             },
         );
         dependencies.insert(
             "async-graphql-poem".into(),
             DependencyInfo {
-                version: "3.0.38".into(),
+                version: "4.0.10".into(),
+                features: None,
+            },
+        );
+        dependencies.insert(
+            "heck".into(),
+            DependencyInfo {
+                version: "0.4.0".into(),
                 features: None,
             },
         );
