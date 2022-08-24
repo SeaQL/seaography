@@ -11,7 +11,7 @@ async fn main() -> Result<()> {
 
     let path = std::path::Path::new(&args.destination);
 
-    let expanded_format = false;
+    let expanded_format = true;
 
     let (tables, _version) = extract_database_metadata(&database_url).await?;
 

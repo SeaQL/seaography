@@ -1,6 +1,8 @@
 use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident, ToTokens};
+use quote::{format_ident, quote, ToTokens};
+
+use crate::relation;
 
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
 pub struct SeaOrm {
@@ -13,25 +15,30 @@ pub struct SeaOrm {
 }
 
 pub fn compact_relation_fn(item: &syn::DataEnum) -> Result<TokenStream, crate::error::Error> {
-    let (loaders, functions): (Vec<_>, Vec<_>) = item.variants.iter().map(|variant| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-        let attrs = SeaOrm::from_attributes(&variant.attrs)?;
+    let (loaders, functions): (Vec<_>, Vec<_>) = item
+        .variants
+        .iter()
+        .map(
+            |variant| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+                let attrs = SeaOrm::from_attributes(&variant.attrs)?;
 
-        let belongs_to = match attrs.belongs_to {
-            Some(syn::Lit::Str(belongs_to)) => Some(belongs_to.value()),
-            _ => None
-        };
+                let belongs_to = match attrs.belongs_to {
+                    Some(syn::Lit::Str(belongs_to)) => Some(belongs_to.value()),
+                    _ => None,
+                };
 
-        let has_many = match attrs.has_many {
-            Some(syn::Lit::Str(has_many)) => Some(has_many.value()),
-            _ => None
-        };
+                let has_many = match attrs.has_many {
+                    Some(syn::Lit::Str(has_many)) => Some(has_many.value()),
+                    _ => None,
+                };
 
-        relation_fn(variant.ident.to_string(), belongs_to, has_many)
-    })
-    .collect::<Result<Vec<_>, crate::error::Error>>()?
-    .into_iter()
-    .map(|(loader, func)| (loader, func))
-    .unzip();
+                relation_fn(variant.ident.to_string(), belongs_to, has_many)
+            },
+        )
+        .collect::<Result<Vec<_>, crate::error::Error>>()?
+        .into_iter()
+        .map(|(loader, func)| (loader, func))
+        .unzip();
 
     Ok(quote! {
         #(#loaders)*
@@ -43,10 +50,110 @@ pub fn compact_relation_fn(item: &syn::DataEnum) -> Result<TokenStream, crate::e
     })
 }
 
+#[derive(Debug)]
+struct ExpandedParams {
+    variant: syn::Ident,
+    relation_type: syn::Ident,
+    related_type: syn::Path,
+}
+
+impl syn::parse::Parse for ExpandedParams {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let variant_path = input.parse::<syn::Path>()?;
+
+        let variant = variant_path.segments[1].ident.clone();
+
+        input.parse::<syn::token::FatArrow>()?;
+
+        let method_path = input.parse::<syn::Path>()?;
+        let relation_type = method_path.segments[1].ident.clone();
+
+        let group;
+        syn::parenthesized!(group in input);
+
+        let related_type: syn::Path = group.parse()?;
+
+        // Used to purge remaining buffer
+        input
+            .step(|cursor| {
+                let mut rest = *cursor;
+
+                while let Some((_, next)) = rest.token_tree() {
+                    rest = next;
+                }
+
+                Ok(
+                    ((), rest)
+                )
+            })?;
+
+        Ok(
+            Self {
+                variant,
+                relation_type,
+                related_type
+            }
+        )
+    }
+}
+
+pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::error::Error> {
+    let method_tokens = item.items[0].to_token_stream();
+    let method_item: syn::ImplItemMethod = syn::parse2(method_tokens)?;
+
+    let match_tokens = method_item.block.stmts[0].to_token_stream();
+    let match_item: syn::ExprMatch = syn::parse2(match_tokens)?;
+
+    let expanded_params: Vec<ExpandedParams> = match_item
+        .arms
+        .iter()
+        .map(|arm| -> Result<ExpandedParams, crate::error::Error> {
+            let params: ExpandedParams = syn::parse_str(arm.to_token_stream().to_string().as_str())?;
+
+            Ok(params)
+        }).collect::<Result<Vec<ExpandedParams>, crate::error::Error>>()?;
+
+        let (loaders, functions): (Vec<_>, Vec<_>) = expanded_params
+            .iter()
+            .map(
+                |params| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+                    let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
+                        Some(params.related_type.to_token_stream().to_string())
+                    } else {
+                        None
+                    };
+
+                    let has_many = if params.relation_type.to_string().ne("belongs_to") {
+                        Some(params.related_type.to_token_stream().to_string())
+                    } else {
+                        None
+                    };
+
+                    relation_fn(params.variant.to_string(), belongs_to, has_many)
+                },
+            )
+            .collect::<Result<Vec<_>, crate::error::Error>>()?
+            .into_iter()
+            .map(|(loader, func)| (loader, func))
+            .unzip();
+
+
+        Ok(quote! {
+            #item
+
+            #(#loaders)*
+
+            #[async_graphql::ComplexObject]
+            impl Model {
+                #(#functions)*
+            }
+        })
+}
+
 pub fn relation_fn(
     relation_name: String,
     belongs_to: Option<String>,
-    has_many: Option<String>
+    has_many: Option<String>,
 ) -> Result<(TokenStream, TokenStream), crate::error::Error> {
     let relation_ident = format_ident!("{}", relation_name.to_upper_camel_case());
 
@@ -55,33 +162,37 @@ pub fn relation_fn(
     } else if let Some(target_path) = &belongs_to {
         target_path
     } else {
-        return Err(crate::error::Error::Error("Cannot map relation: neither one-many or many-one".into()))
+        return Err(crate::error::Error::Error(
+            "Cannot map relation: neither one-many or many-one".into(),
+        ));
     };
 
     let target_path = if target_path.ne("Entity") {
-        &target_path.as_str()[..target_path.len()-6]
+        &target_path.as_str()[..target_path.len() - 6]
     } else {
         ""
     };
-
-    println!("{}", target_path);
 
     let target_entity: TokenStream = format!("{}Entity", target_path).parse()?;
     let target_column: TokenStream = format!("{}Column", target_path).parse()?;
     let target_model: TokenStream = format!("{}Model", target_path).parse()?;
 
     let (return_type, extra_imports, map_method) = if let Some(_) = &has_many {
-        (quote!{ Vec<#target_model> }, quote!{ use itertools::Itertools; }, quote!{ .into_group_map() })
+        (
+            quote! { Vec<#target_model> },
+            quote! { use itertools::Itertools; },
+            quote! { .into_group_map() },
+        )
     } else if let Some(_) = &belongs_to {
-        (quote!{ #target_model }, quote!{ }, quote!{ .collect() })
+        (quote! { #target_model }, quote! {}, quote! { .collect() })
     } else {
-        return Err(crate::error::Error::Error("Cannot map relation: neither one-many or many-one".into()))
+        return Err(crate::error::Error::Error(
+            "Cannot map relation: neither one-many or many-one".into(),
+        ));
     };
 
-    let relation_enum = quote!{Relation::#relation_ident};
+    let relation_enum = quote! {Relation::#relation_ident};
     let foreign_key_name = format_ident!("{}FK", relation_ident).to_token_stream();
-
-    println!("{} {}", target_model.to_string(), return_type.to_string());
 
     Ok((
         quote! {
@@ -186,6 +297,6 @@ pub fn relation_fn(
 
                 data
             }
-        }
+        },
     ))
 }
