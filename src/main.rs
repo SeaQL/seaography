@@ -7,7 +7,7 @@ async fn main() {
 
     let path = std::path::Path::new(&args.destination);
 
-    let expanded_format = true;
+    let expanded_format = false;
 
     let db_url = &args.database_url;
 

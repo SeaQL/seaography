@@ -5,6 +5,7 @@ mod error;
 mod filter;
 mod relation;
 mod root_query;
+mod enumeration;
 
 #[proc_macro_derive(Filter, attributes(sea_orm))]
 pub fn derive_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -132,4 +133,18 @@ pub fn derive_root_query_fn(input: proc_macro::TokenStream) -> proc_macro::Token
     });
 
     res.into()
+}
+
+#[proc_macro_derive(EnumFilter, attributes())]
+pub fn derive_enum_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let DeriveInput {
+        ident, data, ..
+    } = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    let _ = match data {
+        syn::Data::Enum(enumeration) => enumeration,
+        _ => return quote::quote! { compile_error!("Input not enumeration") }.into(),
+    };
+
+    enumeration::enum_filter_fn(ident).into()
 }

@@ -91,6 +91,16 @@ impl syn::parse::Parse for ExpandedParams {
 }
 
 pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::error::Error> {
+    if item.to_token_stream().to_string().contains("No RelationDef") {
+        return Ok(quote! {
+            #item
+
+            #[async_graphql::ComplexObject]
+            impl Model {
+            }
+        })
+    }
+
     let method_tokens = item.items[0].to_token_stream();
     let method_item: syn::ImplItemMethod = syn::parse2(method_tokens)?;
 

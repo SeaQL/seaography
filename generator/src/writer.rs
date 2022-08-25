@@ -69,6 +69,8 @@ pub fn generate_lib() -> TokenStream {
             pub db: DatabaseConnection,
         }
 
+        pub type BinaryVector = Vec<u8>;
+
         #[derive(async_graphql::InputObject, Debug)]
         #[graphql(concrete(name = "StringFilter", params(String)))]
         #[graphql(concrete(name = "TinyIntegerFilter", params(i8)))]
@@ -91,7 +93,7 @@ pub fn generate_lib() -> TokenStream {
         // TODO #[graphql(concrete(name = "TimestampWithTimeZoneFilter", params()))]
         #[graphql(concrete(name = "DecimalFilter", params(Decimal)))]
         // TODO #[graphql(concrete(name = "UuidFilter", params(uuid::Uuid)))]
-        // TODO #[graphql(concrete(name = "BinaryFilter", params()))]
+        #[graphql(concrete(name = "BinaryFilter", params(BinaryVector)))]
         #[graphql(concrete(name = "BooleanFilter", params(bool)))]
         // TODO #[graphql(concrete(name = "EnumFilter", params()))]
         pub struct TypeFilter<T: async_graphql::InputType> {

@@ -1,6 +1,6 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
 pub struct SeaOrm {
@@ -40,8 +40,41 @@ pub fn filter_struct(
     let fields: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, ty)| {
+            let type_literal = ty.to_token_stream().to_string();
+
+            let default_filters = vec![
+                "String",
+                "i8",
+                "i16",
+                "i32",
+                "i64",
+                "u8",
+                "u16",
+                "u32",
+                "u64",
+                "f32",
+                "f64",
+                "Date",
+                "DateTime",
+                "DateTimeUtc",
+                "Decimal",
+                "BinaryVector",
+                "bool",
+            ];
+
+            let filter_item = if default_filters.contains(&type_literal.as_str()) || type_literal.starts_with("Vec") {
+                quote! {
+                    crate::TypeFilter<#ty>
+                }
+            } else {
+                let ident = format_ident!("{}EnumFilter", type_literal);
+                quote! {
+                    crate::entities::sea_orm_active_enums::#ident
+                }
+            };
+
             quote! {
-                #ident: Option<crate::TypeFilter<#ty>>
+                #ident: Option<#filter_item>
             }
         })
         .collect();
@@ -82,10 +115,6 @@ pub fn recursive_filter_fn(
 ) -> Result<TokenStream, crate::error::Error> {
     let columns_filters: Vec<TokenStream> = fields
         .iter()
-        .filter(|(_, _ty)| {
-            // TODO skip binary and enum
-            true
-        })
         .map(|(ident, _)| {
             let column_name = format_ident!("{}", ident.to_string().to_snake_case());
 

@@ -7,10 +7,35 @@ pub fn inject_graphql(
 ) -> crate::sea_orm_codegen::EntityHashMap {
     let sea_orm_active_enums = entities_hashmap
         .get("sea_orm_active_enums.rs")
-        .map(|_enums| {
-            // TODO add enums
-            // println!("{:?}", enums);
-            quote! {}
+        .map(|tokens| {
+            let file_parsed: syn::File = syn::parse2(tokens.clone()).unwrap();
+
+            let items: Vec<syn::Item> = file_parsed
+                .items
+                .into_iter()
+                .map(|item| -> syn::Item {
+                    if let syn::Item::Enum(enumeration) = item {
+                        let derive_attr: syn::Attribute = syn::parse_quote! {
+                            #[derive(Debug, Clone, PartialEq, EnumIter, DeriveActiveEnum, Eq, Copy, async_graphql::Enum, seaography_derive::EnumFilter)]
+                        };
+                        syn::Item::Enum(
+                            syn::ItemEnum {
+                                attrs: [vec![derive_attr], enumeration.attrs[1..].to_vec()].concat(),
+                                ..enumeration
+                            }
+                        )
+                    } else {
+                        item
+                    }
+                })
+                .collect();
+
+            let file_parsed = syn::File {
+                items,
+                ..file_parsed
+            };
+
+            file_parsed.to_token_stream()
         });
 
     let mut entities: crate::sea_orm_codegen::EntityHashMap = entities_hashmap
