@@ -1,6 +1,6 @@
-use heck::{ToUpperCamelCase, ToSnakeCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
+use quote::{format_ident, quote};
 
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
 pub struct SeaOrm {
@@ -15,7 +15,10 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
         .fields
         .into_iter()
         .map(|field| {
-            (field.ident.unwrap(), remove_optional_from_type(field.ty).unwrap())
+            (
+                field.ident.unwrap(),
+                remove_optional_from_type(field.ty).unwrap(),
+            )
         })
         .collect();
 
@@ -23,16 +26,17 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
 
     let recursive_filter_fn = recursive_filter_fn(&fields)?;
 
-    Ok(
-        quote! {
-            #filter_struct
+    Ok(quote! {
+        #filter_struct
 
-            #recursive_filter_fn
-        }
-    )
+        #recursive_filter_fn
+    })
 }
 
-pub fn filter_struct(fields: &Vec<IdentTypeTuple>, attrs: &SeaOrm) -> Result<TokenStream, crate::error::Error> {
+pub fn filter_struct(
+    fields: &Vec<IdentTypeTuple>,
+    attrs: &SeaOrm,
+) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, ty)| {
@@ -62,23 +66,23 @@ pub fn filter_struct(fields: &Vec<IdentTypeTuple>, attrs: &SeaOrm) -> Result<Tok
     //     }
     // }
 
-    Ok(
-        quote! {
-            #[derive(Debug, async_graphql::InputObject)]
-            #[graphql(name = #filter_name)]
-            pub struct Filter {
-                pub or: Option<Vec<Box<Filter>>>,
-                pub and: Option<Vec<Box<Filter>>>,
-                #(#fields),*
-            }
+    Ok(quote! {
+        #[derive(Debug, async_graphql::InputObject)]
+        #[graphql(name = #filter_name)]
+        pub struct Filter {
+            pub or: Option<Vec<Box<Filter>>>,
+            pub and: Option<Vec<Box<Filter>>>,
+            #(#fields),*
         }
-    )
+    })
 }
 
-pub fn recursive_filter_fn(fields: &Vec<IdentTypeTuple>) -> Result<TokenStream, crate::error::Error> {
+pub fn recursive_filter_fn(
+    fields: &Vec<IdentTypeTuple>,
+) -> Result<TokenStream, crate::error::Error> {
     let columns_filters: Vec<TokenStream> = fields
         .iter()
-        .filter(|(_, ty)| {
+        .filter(|(_, _ty)| {
             // TODO skip binary and enum
             true
         })
@@ -131,39 +135,37 @@ pub fn recursive_filter_fn(fields: &Vec<IdentTypeTuple>) -> Result<TokenStream, 
         })
         .collect();
 
-    Ok(
-        quote! {
-            pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
-                let mut condition = sea_orm::Condition::all();
+    Ok(quote! {
+        pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
+            let mut condition = sea_orm::Condition::all();
 
-                if let Some(current_filter) = root_filter {
-                    if let Some(or_filters) = current_filter.or {
-                        let or_condition = or_filters
-                            .into_iter()
-                            .fold(
-                                sea_orm::Condition::any(),
-                                |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
-                            );
-                        condition = condition.add(or_condition);
-                    }
-
-                    if let Some(and_filters) = current_filter.and {
-                        let and_condition = and_filters
-                            .into_iter()
-                            .fold(
-                                sea_orm::Condition::all(),
-                                |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
-                            );
-                        condition = condition.add(and_condition);
-                    }
-
-                    #(#columns_filters)*
+            if let Some(current_filter) = root_filter {
+                if let Some(or_filters) = current_filter.or {
+                    let or_condition = or_filters
+                        .into_iter()
+                        .fold(
+                            sea_orm::Condition::any(),
+                            |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
+                        );
+                    condition = condition.add(or_condition);
                 }
 
-                condition
+                if let Some(and_filters) = current_filter.and {
+                    let and_condition = and_filters
+                        .into_iter()
+                        .fold(
+                            sea_orm::Condition::all(),
+                            |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
+                        );
+                    condition = condition.add(and_condition);
+                }
+
+                #(#columns_filters)*
             }
+
+            condition
         }
-    )
+    })
 }
 
 pub fn remove_optional_from_type(ty: syn::Type) -> Result<syn::Type, crate::error::Error> {

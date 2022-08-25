@@ -1,3 +1,4 @@
+use heck::ToUpperCamelCase;
 use quote::{quote, ToTokens};
 
 pub fn inject_graphql(
@@ -6,7 +7,8 @@ pub fn inject_graphql(
 ) -> crate::sea_orm_codegen::EntityHashMap {
     let sea_orm_active_enums = entities_hashmap
         .get("sea_orm_active_enums.rs")
-        .map(|enums| {
+        .map(|_enums| {
+            // TODO add enums
             // println!("{:?}", enums);
             quote! {}
         });
@@ -28,61 +30,85 @@ pub fn inject_graphql(
                             let mut derives = attributes[0].tokens.to_string();
                             derives.truncate(derives.len() - 1);
 
-                            attributes[0] = syn::Attribute{
-                                tokens: format!("{}, async_graphql::SimpleObject, seaography_derive::Filter)", derives).parse().unwrap(),
+                            attributes[0] = syn::Attribute {
+                                tokens: format!(
+                                    "{}, async_graphql::SimpleObject, seaography_derive::Filter)",
+                                    derives
+                                )
+                                .parse()
+                                .unwrap(),
                                 ..attributes[0].clone()
                             };
 
                             if expanded_format {
                                 let entity_name = &name[0..name.len() - 3];
 
-                                let table_name_attr: syn::Attribute = syn::parse_quote! { #[sea_orm(table_name=#entity_name)] };
+                                let table_name_attr: syn::Attribute =
+                                    syn::parse_quote! { #[sea_orm(table_name=#entity_name)] };
 
                                 attributes.push(table_name_attr);
                             }
 
                             {
-                                let complex_graphql_attr: syn::Attribute = syn::parse_quote! { #[graphql(complex)] };
+                                let complex_graphql_attr: syn::Attribute =
+                                    syn::parse_quote! { #[graphql(complex)] };
 
                                 attributes.push(complex_graphql_attr);
                             }
 
-                            syn::Item::Struct(
-                                syn::ItemStruct{
-                                    attrs: attributes,
-                                    ..structure.clone()
-                                }
-                            )
-                        },
-                        syn::Item::Enum(enumeration) if enumeration.ident.eq("Relation") && !expanded_format => {
+                            {
+                                let entity_name = &name[0..name.len() - 3];
+
+                                let name = format!("{}", entity_name.to_upper_camel_case());
+
+                                let complex_graphql_attr: syn::Attribute =
+                                    syn::parse_quote! { #[graphql(name=#name)] };
+
+                                attributes.push(complex_graphql_attr);
+                            }
+
+                            syn::Item::Struct(syn::ItemStruct {
+                                attrs: attributes,
+                                ..structure.clone()
+                            })
+                        }
+                        syn::Item::Enum(enumeration)
+                            if enumeration.ident.eq("Relation") && !expanded_format =>
+                        {
                             let mut attributes = enumeration.attrs.clone();
 
                             let mut derives = attributes[0].tokens.to_string();
                             derives.truncate(derives.len() - 1);
 
-                            attributes[0] = syn::Attribute{
-                                tokens: format!("{}, seaography_derive::RelationsCompact)", derives).parse().unwrap(),
+                            attributes[0] = syn::Attribute {
+                                tokens: format!(
+                                    "{}, seaography_derive::RelationsCompact)",
+                                    derives
+                                )
+                                .parse()
+                                .unwrap(),
                                 ..attributes[0].clone()
                             };
 
-                            syn::Item::Enum(
-                                syn::ItemEnum{
-                                    attrs: attributes,
-                                    ..enumeration.clone()
-                                }
-                            )
-                        },
-                        syn::Item::Impl(implementation) if implementation.to_token_stream().to_string().starts_with("impl RelationTrait") && expanded_format => {
-                            let relation_macro_attr: syn::Attribute = syn::parse_quote! { #[seaography_derive::relation] };
+                            syn::Item::Enum(syn::ItemEnum {
+                                attrs: attributes,
+                                ..enumeration.clone()
+                            })
+                        }
+                        syn::Item::Impl(implementation)
+                            if implementation
+                                .to_token_stream()
+                                .to_string()
+                                .starts_with("impl RelationTrait")
+                                && expanded_format =>
+                        {
+                            let relation_macro_attr: syn::Attribute =
+                                syn::parse_quote! { #[seaography_derive::relation] };
 
-                            syn::Item::Impl(
-                                syn::ItemImpl {
-                                    attrs: vec![
-                                        relation_macro_attr
-                                    ],
-                                    ..implementation.clone()
-                                }
-                            )
+                            syn::Item::Impl(syn::ItemImpl {
+                                attrs: vec![relation_macro_attr],
+                                ..implementation.clone()
+                            })
                         }
                         _ => item,
                     })

@@ -2,7 +2,7 @@ pub type EntityHashMap = std::collections::HashMap<String, proc_macro2::TokenStr
 
 pub fn generate_entities(
     table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>,
-    expanded_format: bool
+    expanded_format: bool,
 ) -> crate::Result<EntityHashMap> {
     let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
 
@@ -19,7 +19,10 @@ pub fn generate_entities(
         .files
         .iter()
         .map(|output_file| {
-            (output_file.name.clone(), output_file.content.parse().unwrap())
+            (
+                output_file.name.clone(),
+                output_file.content.parse().unwrap(),
+            )
         })
         .collect();
 

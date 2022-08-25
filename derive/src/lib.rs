@@ -4,6 +4,7 @@ use syn::DeriveInput;
 mod error;
 mod filter;
 mod relation;
+mod root_query;
 
 #[proc_macro_derive(Filter, attributes(sea_orm))]
 pub fn derive_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -41,11 +42,10 @@ pub fn derive_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStre
         .into()
 }
 
+// TODO use attrs to skip relations
 #[proc_macro_derive(RelationsCompact, attributes(sea_orm))]
 pub fn derive_relations_compact_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let DeriveInput {
-        ident, data, attrs, ..
-    } = syn::parse_macro_input!(input as syn::DeriveInput);
+    let DeriveInput { ident, data, .. } = syn::parse_macro_input!(input as syn::DeriveInput);
 
     let item = match data {
         syn::Data::Enum(item) => item,
@@ -66,8 +66,6 @@ pub fn derive_relations_compact_fn(input: proc_macro::TokenStream) -> proc_macro
             compile_error!(#error)
         }
     });
-
-    println!("{}", res.to_string());
 
     res.into()
 }
@@ -92,15 +90,40 @@ pub fn relation(
 
     let item = match implementation {
         syn::Item::Impl(implementation) => implementation,
-        _ => {
-            return quote::quote! {
-                compile_error!("Macro should be applied on the implementation of RelationTrait trait")
-            }
-            .into()
+        _ => return quote::quote! {
+            compile_error!("Macro should be applied on the implementation of RelationTrait trait")
         }
+        .into(),
     };
 
     let res = relation::expanded_relation_fn(&item).unwrap_or_else(|err| {
+        let error = format!("{:?}", err);
+
+        quote::quote! {
+            compile_error!(#error)
+        }
+    });
+
+    res.into()
+}
+
+#[proc_macro_derive(QueryRoot, attributes(seaography))]
+pub fn derive_root_query_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let DeriveInput {
+        ident, data, attrs, ..
+    } = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    match data {
+        syn::Data::Struct(_) => (),
+        _ => return quote::quote! { compile_error!("Input not structure") }.into(),
+    };
+
+    let attrs: Vec<root_query::Seaography> = attrs
+        .into_iter()
+        .map(|attribute| root_query::Seaography::from_attributes(&vec![attribute]).unwrap())
+        .collect();
+
+    let res = root_query::root_query_fn(&ident, &attrs).unwrap_or_else(|err| {
         let error = format!("{:?}", err);
 
         quote::quote! {

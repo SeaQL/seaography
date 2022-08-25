@@ -2,8 +2,6 @@ use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
-use crate::relation;
-
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
 pub struct SeaOrm {
     belongs_to: Option<syn::Lit>,
@@ -74,26 +72,21 @@ impl syn::parse::Parse for ExpandedParams {
         let related_type: syn::Path = group.parse()?;
 
         // Used to purge remaining buffer
-        input
-            .step(|cursor| {
-                let mut rest = *cursor;
+        input.step(|cursor| {
+            let mut rest = *cursor;
 
-                while let Some((_, next)) = rest.token_tree() {
-                    rest = next;
-                }
-
-                Ok(
-                    ((), rest)
-                )
-            })?;
-
-        Ok(
-            Self {
-                variant,
-                relation_type,
-                related_type
+            while let Some((_, next)) = rest.token_tree() {
+                rest = next;
             }
-        )
+
+            Ok(((), rest))
+        })?;
+
+        Ok(Self {
+            variant,
+            relation_type,
+            related_type,
+        })
     }
 }
 
@@ -108,46 +101,47 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
         .arms
         .iter()
         .map(|arm| -> Result<ExpandedParams, crate::error::Error> {
-            let params: ExpandedParams = syn::parse_str(arm.to_token_stream().to_string().as_str())?;
+            let params: ExpandedParams =
+                syn::parse_str(arm.to_token_stream().to_string().as_str())?;
 
             Ok(params)
-        }).collect::<Result<Vec<ExpandedParams>, crate::error::Error>>()?;
-
-        let (loaders, functions): (Vec<_>, Vec<_>) = expanded_params
-            .iter()
-            .map(
-                |params| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-                    let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
-                        Some(params.related_type.to_token_stream().to_string())
-                    } else {
-                        None
-                    };
-
-                    let has_many = if params.relation_type.to_string().ne("belongs_to") {
-                        Some(params.related_type.to_token_stream().to_string())
-                    } else {
-                        None
-                    };
-
-                    relation_fn(params.variant.to_string(), belongs_to, has_many)
-                },
-            )
-            .collect::<Result<Vec<_>, crate::error::Error>>()?
-            .into_iter()
-            .map(|(loader, func)| (loader, func))
-            .unzip();
-
-
-        Ok(quote! {
-            #item
-
-            #(#loaders)*
-
-            #[async_graphql::ComplexObject]
-            impl Model {
-                #(#functions)*
-            }
         })
+        .collect::<Result<Vec<ExpandedParams>, crate::error::Error>>()?;
+
+    let (loaders, functions): (Vec<_>, Vec<_>) = expanded_params
+        .iter()
+        .map(
+            |params| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+                let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
+                    Some(params.related_type.to_token_stream().to_string())
+                } else {
+                    None
+                };
+
+                let has_many = if params.relation_type.to_string().ne("belongs_to") {
+                    Some(params.related_type.to_token_stream().to_string())
+                } else {
+                    None
+                };
+
+                relation_fn(params.variant.to_string(), belongs_to, has_many)
+            },
+        )
+        .collect::<Result<Vec<_>, crate::error::Error>>()?
+        .into_iter()
+        .map(|(loader, func)| (loader, func))
+        .unzip();
+
+    Ok(quote! {
+        #item
+
+        #(#loaders)*
+
+        #[async_graphql::ComplexObject]
+        impl Model {
+            #(#functions)*
+        }
+    })
 }
 
 pub fn relation_fn(

@@ -28,7 +28,7 @@ pub fn extract_enums(table_meta: &TableMeta) -> Vec<TokenStream> {
             if let ColumnType::Enum(name) = &col.col_type {
                 name.to_upper_camel_case().parse().unwrap()
             } else {
-                panic!("UNREACHABLE")
+                compile_error!("UNREACHABLE")
             }
         })
         .collect()

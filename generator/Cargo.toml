@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 quote = "1.0.18"
+url = "2.2.2"
 proc-macro2 = "1.0.37"
 syn = { version = "1.0.99", features = ["full"] }
 heck = "0.4.0"
