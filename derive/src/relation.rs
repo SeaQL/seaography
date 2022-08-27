@@ -217,11 +217,9 @@ pub fn relation_fn(
 
                     let a = format!("{:?}", self.0);
                     let b = format!("{:?}", other.0);
-                    println!("AAAAAAAAA: {:?}={:?}: {}", a, b, a.eq(&b));
 
                     let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
                     let b = split_at_nth_char(b.as_str(), '(', 1).map(|v| v.1);
-                    println!("BBBBBBBBBBB: {:?}={:?}: {}", a, b, a.eq(&b));
 
                     a.eq(&b)
                 }
