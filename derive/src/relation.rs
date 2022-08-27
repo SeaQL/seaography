@@ -200,16 +200,48 @@ pub fn relation_fn(
 
     Ok((
         quote! {
-            #[derive(Clone, PartialEq, Debug)]
+            #[derive(Clone, Debug)]
             pub struct #foreign_key_name(pub sea_orm::Value);
+
+            impl PartialEq for #foreign_key_name {
+                fn eq(&self, other: &Self) -> bool {
+                    // TODO temporary hack to solve the following problem
+                    // let v1 = TestFK(sea_orm::Value::TinyInt(Some(1)));
+                    // let v2 = TestFK(sea_orm::Value::Int(Some(1)));
+                    // println!("Result: {}", v1.eq(&v2));
+
+                    fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
+                        s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
+                    }
+
+
+                    let a = format!("{:?}", self.0);
+                    let b = format!("{:?}", other.0);
+                    println!("AAAAAAAAA: {:?}={:?}: {}", a, b, a.eq(&b));
+
+                    let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
+                    let b = split_at_nth_char(b.as_str(), '(', 1).map(|v| v.1);
+                    println!("BBBBBBBBBBB: {:?}={:?}: {}", a, b, a.eq(&b));
+
+                    a.eq(&b)
+                }
+            }
 
             impl Eq for #foreign_key_name {
             }
 
             impl std::hash::Hash for #foreign_key_name {
                 fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-                    // TODO if this works we are amazing
-                    format!("{:?}", self.0).hash(state)
+                    // TODO this is a hack
+
+                    fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
+                        s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
+                    }
+
+                    let a = format!("{:?}", self.0);
+                    let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
+
+                    a.hash(state)
                     // TODO else do the following
                     // match self.0 {
                     //     sea_orm::Value::TinyInt(int) => int.unwrap().hash(state),
@@ -255,6 +287,7 @@ pub fn relation_fn(
                     ).unwrap();
 
                     #extra_imports
+
                     let data: std::collections::HashMap<#foreign_key_name, Self::Value> = #target_entity::find()
                         .filter(
                             to_column.is_in(key_values)
@@ -263,7 +296,6 @@ pub fn relation_fn(
                         .await?
                         .into_iter()
                         .map(|model| {
-
                             let key = #foreign_key_name(model.get(to_column));
 
                             (key, model)

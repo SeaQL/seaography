@@ -36,7 +36,7 @@ pub async fn extract_database_metadata(
             explore_sqlite(database_url.as_ref()).await?,
             SqlVersion::Sqlite,
         ),
-        "postgres" | "postgresql" | "pgsql" => (
+        "postgres" | "postgresql" => (
             explore_postgres(database_url.as_ref()).await?,
             SqlVersion::Postgres,
         ),
