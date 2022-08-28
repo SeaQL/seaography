@@ -4,7 +4,6 @@ pub mod error;
 pub use error::{Error, Result};
 pub mod inject_graphql;
 pub mod sea_orm_codegen;
-pub mod test_cfg;
 pub mod toml;
 pub mod writer;
 

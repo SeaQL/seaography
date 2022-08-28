@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use seaography_types::schema_meta::SqlVersion;
+use seaography_discoverer::SqlVersion;
 use serde::Serialize;
 
 #[derive(Serialize)]

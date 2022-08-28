@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use seaography_types::SqlVersion;
+use seaography_discoverer::SqlVersion;
 
 pub fn generate_query_root(
     entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
