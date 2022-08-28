@@ -26,10 +26,18 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
 
     let recursive_filter_fn = recursive_filter_fn(&fields)?;
 
+    let order_by_struct = order_by_struct(&fields, &attrs)?;
+
+    let order_by_fn = order_by_fn(&fields)?;
+
     Ok(quote! {
         #filter_struct
 
         #recursive_filter_fn
+
+        #order_by_struct
+
+        #order_by_fn
     })
 }
 
@@ -106,6 +114,70 @@ pub fn filter_struct(
             pub or: Option<Vec<Box<Filter>>>,
             pub and: Option<Vec<Box<Filter>>>,
             #(#fields),*
+        }
+    })
+}
+
+pub fn order_by_struct(
+    fields: &Vec<IdentTypeTuple>,
+    attrs: &SeaOrm,
+)  -> Result<TokenStream, crate::error::Error> {
+    let fields: Vec<TokenStream> = fields
+        .iter()
+        .map(|(ident, _)| {
+            quote! {
+                #ident: Option<crate::OrderByEnum>
+            }
+        })
+        .collect();
+
+    let entity_name = match &attrs.table_name {
+        Some(syn::Lit::Str(name)) => name,
+        _ => return Err(crate::error::Error::Error("Invalid entity name".into())),
+    };
+
+    let filter_name = format!("{}OrderBy", entity_name.value().to_upper_camel_case());
+
+    Ok(quote! {
+        #[derive(Debug, async_graphql::InputObject)]
+        #[graphql(name = #filter_name)]
+        pub struct OrderBy {
+            #(#fields),*
+        }
+    })
+}
+
+pub fn order_by_fn(
+    fields: &Vec<IdentTypeTuple>,
+)  -> Result<TokenStream, crate::error::Error> {
+    let fields: Vec<TokenStream> = fields
+        .iter()
+        .map(|(ident, _)| {
+            let column = format_ident!("{}", ident.to_string().to_upper_camel_case());
+
+            quote! {
+                let stmt = if let Some(order_by) = order_by_struct.#ident {
+                    match order_by {
+                        crate::OrderByEnum::Asc => stmt.order_by(Column::#column, sea_orm::query::Order::Asc),
+                        crate::OrderByEnum::Desc => stmt.order_by(Column::#column, sea_orm::query::Order::Desc),
+                    }
+                } else {
+                    stmt
+                };
+            }
+        })
+        .collect();
+
+    Ok(quote! {
+        pub fn order_by(stmt: sea_orm::Select<Entity>, order_by_struct: Option<OrderBy>) -> sea_orm::Select<Entity> {
+            use sea_orm::QueryOrder;
+
+            if let Some(order_by_struct) = order_by_struct {
+                #(#fields)*
+                stmt
+            } else {
+                stmt
+            }
         }
     })
 }

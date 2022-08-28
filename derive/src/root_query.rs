@@ -48,6 +48,7 @@ pub fn root_query_fn(
                     ctx: &async_graphql::Context<'a>,
                     filters: Option<#path::Filter>,
                     pagination: Option<PaginationInput>,
+                    order_by: Option<#path::OrderBy>,
                     // TODO sorting
                 ) -> PaginatedResult<#path::Model> {
                     use sea_orm::prelude::*;
@@ -56,6 +57,8 @@ pub fn root_query_fn(
                     let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
                     let stmt = #path::Entity::find()
                         .filter(#path::filter_recursive(filters));
+
+                    let stmt = #path::order_by(stmt, order_by);
 
                     if let Some(pagination) = pagination {
                         let paginator = stmt.paginate(db, pagination.limit);

@@ -69,6 +69,12 @@ pub fn generate_lib() -> TokenStream {
             pub db: DatabaseConnection,
         }
 
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]
+        pub enum OrderByEnum {
+            Asc,
+            Desc,
+        }
+
         pub type BinaryVector = Vec<u8>;
 
         #[derive(async_graphql::InputObject, Debug)]
