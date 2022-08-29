@@ -49,7 +49,6 @@ pub fn root_query_fn(
                     filters: Option<#path::Filter>,
                     pagination: Option<PaginationInput>,
                     order_by: Option<#path::OrderBy>,
-                    // TODO sorting
                 ) -> PaginatedResult<#path::Model> {
                     use sea_orm::prelude::*;
 

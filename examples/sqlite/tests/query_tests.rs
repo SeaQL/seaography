@@ -106,15 +106,13 @@ async fn test_simple_query_with_filter() {
             .execute(
                 r#"
                 {
-                  playlists(
-                    filters: { or: [{ playlistId: { eq: 16 } }, { playlistId: { eq: 2 } }] }
-                  ) {
+                  playlists(filters:{or:[{playlistId: {eq: 16}}, {playlistId:{eq: 2}}]}) {
                     data {
                       playlistId
-                      playlistsPlaylistPlaylistTrack {
+                      playlistTrack{
                         playlistId
                         trackId
-                        playlistTrackTrackTracks {
+                        tracks {
                           trackId
                           name
                         }
@@ -131,15 +129,15 @@ async fn test_simple_query_with_filter() {
             "data": [
               {
                 "playlistId": 2,
-                "playlistsPlaylistPlaylistTrack": []
+                "playlistTrack": null
               },
               {
                 "playlistId": 16,
-                "playlistsPlaylistPlaylistTrack": [
+                "playlistTrack": [
                   {
                     "playlistId": 16,
                     "trackId": 52,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 52,
                       "name": "Man In The Box"
                     }
@@ -147,7 +145,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2003,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2003,
                       "name": "Smells Like Teen Spirit"
                     }
@@ -155,7 +153,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2004,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2004,
                       "name": "In Bloom"
                     }
@@ -163,7 +161,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2005,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2005,
                       "name": "Come As You Are"
                     }
@@ -171,7 +169,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2007,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2007,
                       "name": "Lithium"
                     }
@@ -179,7 +177,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2010,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2010,
                       "name": "Drain You"
                     }
@@ -187,7 +185,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2013,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2013,
                       "name": "On A Plain"
                     }
@@ -195,7 +193,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2194,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2194,
                       "name": "Evenflow"
                     }
@@ -203,7 +201,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2195,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2195,
                       "name": "Alive"
                     }
@@ -211,7 +209,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2198,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2198,
                       "name": "Jeremy"
                     }
@@ -219,7 +217,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2206,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2206,
                       "name": "Daughter"
                     }
@@ -227,7 +225,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2512,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2512,
                       "name": "Outshined"
                     }
@@ -235,7 +233,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2516,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2516,
                       "name": "Black Hole Sun"
                     }
@@ -243,7 +241,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 2550,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 2550,
                       "name": "Plush"
                     }
@@ -251,7 +249,7 @@ async fn test_simple_query_with_filter() {
                   {
                     "playlistId": 16,
                     "trackId": 3367,
-                    "playlistTrackTrackTracks": {
+                    "tracks": {
                       "trackId": 3367,
                       "name": "Hunger Strike"
                     }
@@ -319,12 +317,12 @@ async fn test_complex_string_filtering() {
             .execute(
                 r#"
                 {
-                  artists(filters: { name: { eq: "AC/DC" } }) {
+                  artists(filters: {name: {eq:"AC/DC"}}) {
                     data {
                       name
-                      artistsArtistAlbums {
+                      albums {
                         title
-                        albumsAlbumTracks {
+                        tracks {
                           name
                         }
                       }
@@ -340,10 +338,10 @@ async fn test_complex_string_filtering() {
             "data": [
               {
                 "name": "AC/DC",
-                "artistsArtistAlbums": [
+                "albums": [
                   {
                     "title": "For Those About To Rock We Salute You",
-                    "albumsAlbumTracks": [
+                    "tracks": [
                       {
                         "name": "For Those About To Rock (We Salute You)"
                       },
@@ -378,7 +376,7 @@ async fn test_complex_string_filtering() {
                   },
                   {
                     "title": "Let There Be Rock",
-                    "albumsAlbumTracks": [
+                    "tracks": [
                       {
                         "name": "Go Down"
                       },
@@ -423,11 +421,11 @@ async fn test_number_filtering() {
             .execute(
                 r#"
                 {
-                  tracks (filters: { milliseconds: {gt: 3000000}}) {
+                  tracks(filters: { milliseconds: { gt: 3000000 } }) {
                     data {
                       milliseconds
                       name
-                      tracksAlbumAlbums {
+                      albums {
                         title
                       }
                     }
@@ -443,14 +441,14 @@ async fn test_number_filtering() {
               {
                 "milliseconds": 5286953,
                 "name": "Occupation / Precipice",
-                "tracksAlbumAlbums": {
+                "albums": {
                   "title": "Battlestar Galactica, Season 3"
                 }
               },
               {
                 "milliseconds": 5088838,
                 "name": "Through a Looking Glass",
-                "tracksAlbumAlbums": {
+                "albums": {
                   "title": "Lost, Season 3"
                 }
               }

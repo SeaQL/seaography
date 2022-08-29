@@ -283,11 +283,11 @@ pub fn remove_optional_from_type(ty: syn::Type) -> Result<syn::Type, crate::erro
             let type_params = &type_path.path.segments.first().unwrap().arguments;
             let generic_arg = match type_params {
                 syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
-                _ => return Err(crate::error::Error::Error("TODO: error handling".into())),
+                _ => return Err(crate::error::Error::Error("Cannot parse type brackets".into())),
             };
             match generic_arg {
                 syn::GenericArgument::Type(ty) => ty.to_owned(),
-                _ => return Err(crate::error::Error::Error("TODO: error handling".into())),
+                _ => return Err(crate::error::Error::Error("Cannot parse type".into())),
             }
         }
         _ => ty,
