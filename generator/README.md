@@ -1,0 +1,1 @@
+The core library of the CLI tool. Uses database schema and various parameters to generate the ORM-GraphQL project.
