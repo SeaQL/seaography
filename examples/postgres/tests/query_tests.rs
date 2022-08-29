@@ -40,7 +40,7 @@ async fn test_simple_query() {
               store {
                 data {
                   storeId
-                  storeStoreStaff {
+                  staff {
                     firstName
                     lastName
                   }
@@ -50,27 +50,23 @@ async fn test_simple_query() {
             "#,
             )
             .await,
-        r#"
+            r#"
             {
               "store": {
                 "data": [
                   {
                     "storeId": 1,
-                    "storeStoreStaff": [
-                      {
-                        "firstName": "Mike",
-                        "lastName": "Hillyer"
-                      }
-                    ]
+                    "staff": {
+                      "firstName": "Mike",
+                      "lastName": "Hillyer"
+                    }
                   },
                   {
                     "storeId": 2,
-                    "storeStoreStaff": [
-                      {
-                        "firstName": "Jon",
-                        "lastName": "Stephens"
-                      }
-                    ]
+                    "staff": {
+                      "firstName": "Jon",
+                      "lastName": "Stephens"
+                    }
                   }
                 ]
               }
@@ -91,7 +87,7 @@ async fn test_simple_query_with_filter() {
                 store(filters: {storeId:{eq: 1}}) {
                   data {
                     storeId
-                    storeStoreStaff {
+                    staff {
                       firstName
                       lastName
                     }
@@ -101,21 +97,19 @@ async fn test_simple_query_with_filter() {
             "#,
             )
             .await,
-        r#"
+            r#"
             {
-                "store": {
-                  "data": [
-                    {
-                      "storeId": 1,
-                      "storeStoreStaff": [
-                        {
-                          "firstName": "Mike",
-                          "lastName": "Hillyer"
-                        }
-                      ]
+              "store": {
+                "data": [
+                  {
+                    "storeId": 1,
+                    "staff": {
+                      "firstName": "Mike",
+                      "lastName": "Hillyer"
                     }
-                  ]
-                }
+                  }
+                ]
+              }
             }
             "#,
     )
