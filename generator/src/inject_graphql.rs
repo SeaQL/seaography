@@ -84,7 +84,7 @@ pub fn inject_graphql(
                             {
                                 let entity_name = &name[0..name.len() - 3];
 
-                                let name = format!("{}", entity_name.to_upper_camel_case());
+                                let name = entity_name.to_upper_camel_case();
 
                                 let complex_graphql_attr: syn::Attribute =
                                     syn::parse_quote! { #[graphql(name=#name)] };
