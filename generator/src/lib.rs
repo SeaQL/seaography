@@ -1,170 +1,101 @@
-use crate::generator::toml::write_cargo_toml;
-use crate::generator::write_graphql;
-use proc_macro2::TokenStream;
-use quote::quote;
-use seaography_types::schema_meta::SchemaMeta;
 use std::path::Path;
 
-pub mod generator;
-pub mod test_cfg;
+pub mod error;
+pub use error::{Error, Result};
+pub mod inject_graphql;
+pub mod sea_orm_codegen;
+pub mod toml;
+pub mod writer;
 
-pub fn write_project<P: AsRef<Path>>(
+/**
+ * Most code depends from here
+ * https://github.com/SeaQL/sea-orm/blob/master/sea-orm-cli/src/commands.rs
+ */
+pub fn parse_database_url(database_url: &str) -> Result<url::Url> {
+    let url = url::Url::parse(database_url)?;
+
+    // Make sure we have all the required url components
+    //
+    // Missing scheme will have been caught by the Url::parse() call
+    // above
+    let url_username = url.username();
+    let url_host = url.host_str();
+
+    let is_sqlite = url.scheme() == "sqlite";
+
+    // Skip checking if it's SQLite
+    if !is_sqlite {
+        // Panic on any that are missing
+        if url_username.is_empty() {
+            return Err(Error::Error(
+                "No username was found in the database url".into(),
+            ));
+        }
+        if url_host.is_none() {
+            return Err(Error::Error("No host was found in the database url".into()));
+        }
+    }
+
+    //
+    // Make sure we have database name
+    //
+    if !is_sqlite {
+        // The database name should be the first element of the path string
+        //
+        // Throwing an error if there is no database name since it might be
+        // accepted by the database without it, while we're looking to dump
+        // information from a particular database
+        let database_name = url
+            .path_segments()
+            .ok_or_else(|| {
+                Error::Error(format!(
+                    "There is no database name as part of the url path: {}",
+                    url.as_str()
+                ))
+            })?
+            .next()
+            .unwrap();
+
+        // An empty string as the database name is also an error
+        if database_name.is_empty() {
+            return Err(Error::Error(format!(
+                "There is no database name as part of the url path: {}",
+                url.as_str()
+            )));
+        }
+    }
+
+    Ok(url)
+}
+
+pub async fn write_project<P: AsRef<Path>>(
     path: &P,
-    schema: &SchemaMeta,
+    db_url: &str,
     crate_name: &str,
-) -> std::io::Result<()> {
-    std::fs::create_dir_all(path.as_ref().join("src/graphql"))?;
+    expanded_format: bool,
+) -> Result<()> {
+    let database_url = parse_database_url(db_url)?;
 
-    write_cargo_toml(path, crate_name, &schema.version)?;
+    let (tables, sql_version) =
+        seaography_discoverer::extract_database_metadata(&database_url).await?;
 
-    write_graphql(
-        &path.as_ref().join("src/graphql"),
-        &schema.tables,
-        &schema.enums,
-    )?;
+    writer::write_cargo_toml(path, crate_name, &sql_version)?;
 
-    let lib_tokens = generate_lib();
+    std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
 
-    std::fs::write(&path.as_ref().join("src/lib.rs"), lib_tokens.to_string())?;
+    let src_path = &path.as_ref().join("src");
 
-    let db_url = &schema.url;
+    let entities_hashmap =
+        sea_orm_codegen::generate_entities(tables.values().cloned().collect(), expanded_format)
+            .unwrap();
 
-    let main_tokens = generate_main(db_url, crate_name);
+    let entities_hashmap = inject_graphql::inject_graphql(entities_hashmap, expanded_format);
 
-    std::fs::write(&path.as_ref().join("src/main.rs"), main_tokens.to_string())?;
+    writer::write_query_root(src_path, &entities_hashmap).unwrap();
+    writer::write_lib(src_path)?;
+    writer::write_main(src_path, db_url, crate_name)?;
+
+    sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap).unwrap();
 
     Ok(())
-}
-
-/// Used to generate project/src/lib.rs file content
-///
-/// ```
-/// use quote::quote;
-/// use seaography_generator::generate_lib;
-///
-/// let left = generate_lib();
-///
-/// let right = quote!{
-///     pub mod orm;
-///     pub mod graphql;
-///
-///     pub use graphql::QueryRoot;
-///     pub use graphql::OrmDataloader;
-/// };
-///
-/// assert_eq!(left.to_string(), right.to_string());
-/// ```
-pub fn generate_lib() -> TokenStream {
-    quote! {
-        pub mod orm;
-        pub mod graphql;
-
-        pub use graphql::QueryRoot;
-        pub use graphql::OrmDataloader;
-    }
-}
-
-/// Used to generate project/src/main.rs file content
-///
-/// ```
-/// use quote::quote;
-/// use seaography_generator::generate_main;
-///
-/// let left = generate_main("sqlite://test.db", "generated");
-///
-/// let right = quote! {
-///     use async_graphql::{
-///         http::{playground_source, GraphQLPlaygroundConfig},
-///         EmptyMutation, EmptySubscription, Schema,
-///         dataloader::DataLoader
-///     };
-///     use async_graphql_poem::GraphQL;
-///     use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
-///     use sea_orm::Database;
-///     use generated::*;
-///     #[handler]
-///     async fn graphql_playground() -> impl IntoResponse {
-///         Html(playground_source(GraphQLPlaygroundConfig::new("/")))
-///     }
-///     #[tokio::main]
-///     async fn main() {
-///         tracing_subscriber::fmt()
-///             .with_max_level(tracing::Level::DEBUG)
-///             .with_test_writer()
-///             .init();
-///         let database = Database::connect("sqlite://test.db").await.unwrap();
-///         let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-///             OrmDataloader {
-///                 db: database.clone()
-///             },
-///             tokio::spawn
-///         );
-///         let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-///             .data(database)
-///             .data(orm_dataloader)
-///             .finish();
-///         let app = Route::new().at("/", get(graphql_playground).post(GraphQL::new(schema)));
-///         println!("Playground: http://localhost:8000");
-///         Server::new(TcpListener::bind("0.0.0.0:8000"))
-///             .run(app)
-///             .await
-///             .unwrap();
-///     }
-/// };
-///
-/// assert_eq!(left.to_string(), right.to_string());
-/// ```
-pub fn generate_main(db_url: &str, crate_name: &str) -> TokenStream {
-    let crate_name_token: TokenStream = crate_name.parse().unwrap();
-
-    quote! {
-        use async_graphql::{
-            http::{playground_source, GraphQLPlaygroundConfig},
-            EmptyMutation, EmptySubscription, Schema, dataloader::DataLoader
-        };
-        use async_graphql_poem::GraphQL;
-        use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
-        use sea_orm::Database;
-
-        use #crate_name_token::*;
-
-        #[handler]
-        async fn graphql_playground() -> impl IntoResponse {
-            Html(playground_source(GraphQLPlaygroundConfig::new("/")))
-        }
-
-        #[tokio::main]
-        async fn main() {
-            tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::DEBUG)
-                .with_test_writer()
-                .init();
-
-            // TODO: use .env file to configure url
-            let database = Database::connect(#db_url).await.unwrap();
-
-            // TODO use environment variables to configure dataloader batch size
-            let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-                OrmDataloader {
-                    db: database.clone()
-                },
-                tokio::spawn
-            ) ;
-
-            let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-                .data(database)
-                .data(orm_dataloader)
-                .finish();
-
-            let app = Route::new().at("/", get(graphql_playground).post(GraphQL::new(schema)));
-
-            println!("Playground: http://localhost:8000");
-
-            Server::new(TcpListener::bind("0.0.0.0:8000"))
-                .run(app)
-                .await
-                .unwrap();
-        }
-
-    }
 }

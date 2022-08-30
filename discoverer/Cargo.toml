@@ -11,7 +11,6 @@ serde_json = "1.0.81"
 serde = "1.0.137"
 sea-schema = { version = "^0.9.3", default-features = false, features = ["sqlx-sqlite", "sqlx-mysql", "sqlx-postgres", "runtime-async-std-native-tls", "discovery", "writer" ] }
 sqlx = { version = "0.6.0", features = [ "sqlite", "mysql", "postgres", "runtime-async-std-native-tls" ] }
-seaography_types = { path = "../types" }
 itertools = "0.10.3"
 heck = "0.4.0"
 url = "2.2.2"

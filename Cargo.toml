@@ -6,19 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-url = "2.2.2"
-seaography_types = { path = "./types" }
-seaography_discoverer = { path = "./discoverer" }
 seaography_generator = { path = "./generator" }
 clap = { version = "3.2.6", features = ["derive"] }
 async-std = { version = "1.12.0", features = [ "attributes", "tokio1" ] }
-sea-orm-codegen = { version = "^0.9.1"}
 
 [workspace]
 members = [
     ".",
     "discoverer",
-    "types",
     "generator",
+    "derive"
 ]
 exclude = ["generated"]
