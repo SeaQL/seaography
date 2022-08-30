@@ -1,10 +1,10 @@
 use proc_macro2::TokenStream;
-use quote::{quote, format_ident};
+use quote::{format_ident, quote};
 
 pub fn enum_filter_fn(ident: syn::Ident) -> TokenStream {
     let name = format_ident!("{}EnumFilter", ident);
 
-    quote!{
+    quote! {
         #[derive(Debug, async_graphql::InputObject)]
         pub struct #name {
             pub eq: Option<#ident>,

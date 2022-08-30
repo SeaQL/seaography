@@ -70,7 +70,9 @@ pub fn filter_struct(
                 "bool",
             ];
 
-            let filter_item = if default_filters.contains(&type_literal.as_str()) || type_literal.starts_with("Vec") {
+            let filter_item = if default_filters.contains(&type_literal.as_str())
+                || type_literal.starts_with("Vec")
+            {
                 quote! {
                     crate::TypeFilter<#ty>
                 }
@@ -121,7 +123,7 @@ pub fn filter_struct(
 pub fn order_by_struct(
     fields: &Vec<IdentTypeTuple>,
     attrs: &SeaOrm,
-)  -> Result<TokenStream, crate::error::Error> {
+) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, _)| {
@@ -147,9 +149,7 @@ pub fn order_by_struct(
     })
 }
 
-pub fn order_by_fn(
-    fields: &Vec<IdentTypeTuple>,
-)  -> Result<TokenStream, crate::error::Error> {
+pub fn order_by_fn(fields: &Vec<IdentTypeTuple>) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, _)| {
@@ -283,7 +283,11 @@ pub fn remove_optional_from_type(ty: syn::Type) -> Result<syn::Type, crate::erro
             let type_params = &type_path.path.segments.first().unwrap().arguments;
             let generic_arg = match type_params {
                 syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
-                _ => return Err(crate::error::Error::Error("Cannot parse type brackets".into())),
+                _ => {
+                    return Err(crate::error::Error::Error(
+                        "Cannot parse type brackets".into(),
+                    ))
+                }
             };
             match generic_arg {
                 syn::GenericArgument::Type(ty) => ty.to_owned(),
