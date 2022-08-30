@@ -9,6 +9,7 @@ pub fn generate_entities(
     let entity_writer_ctx = sea_orm_codegen::EntityWriterContext::new(
         expanded_format,
         sea_orm_codegen::WithSerde::None,
+        true,
         sea_orm_codegen::DateTimeCrate::Chrono,
         None,
     );
