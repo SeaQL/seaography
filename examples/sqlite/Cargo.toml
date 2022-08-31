@@ -32,8 +32,8 @@ features = [
     'runtime-async-std-native-tls',
 ]
 
-[dependencies.seaography_derive]
-path = '../../derive'
+[dependencies.seaography]
+path = '../../'
 
 [dependencies.tokio]
 version = '1.17.0'

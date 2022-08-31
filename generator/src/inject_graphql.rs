@@ -16,7 +16,7 @@ pub fn inject_graphql(
                 .map(|item| -> syn::Item {
                     if let syn::Item::Enum(enumeration) = item {
                         let derive_attr: syn::Attribute = syn::parse_quote! {
-                            #[derive(Debug, Clone, PartialEq, EnumIter, DeriveActiveEnum, Eq, Copy, async_graphql::Enum, seaography_derive::EnumFilter)]
+                            #[derive(Debug, Clone, PartialEq, EnumIter, DeriveActiveEnum, Eq, Copy, async_graphql::Enum, seaography::macros::EnumFilter)]
                         };
                         syn::Item::Enum(
                             syn::ItemEnum {
@@ -57,7 +57,7 @@ pub fn inject_graphql(
 
                             attributes[0] = syn::Attribute {
                                 tokens: format!(
-                                    "{}, async_graphql::SimpleObject, seaography_derive::Filter)",
+                                    "{}, async_graphql::SimpleObject, seaography::macros::Filter)",
                                     derives
                                 )
                                 .parse()
@@ -107,7 +107,7 @@ pub fn inject_graphql(
 
                             attributes[0] = syn::Attribute {
                                 tokens: format!(
-                                    "{}, seaography_derive::RelationsCompact)",
+                                    "{}, seaography::macros::RelationsCompact)",
                                     derives
                                 )
                                 .parse()
@@ -128,7 +128,7 @@ pub fn inject_graphql(
                                 && expanded_format =>
                         {
                             let relation_macro_attr: syn::Attribute =
-                                syn::parse_quote! { #[seaography_derive::relation] };
+                                syn::parse_quote! { #[seaography::macros::relation] };
 
                             syn::Item::Impl(syn::ItemImpl {
                                 attrs: vec![relation_macro_attr],

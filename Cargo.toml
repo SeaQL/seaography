@@ -7,8 +7,11 @@ edition = "2021"
 
 [dependencies]
 seaography_generator = { path = "./generator" }
+seaography_derive = { path = "./derive" }
 clap = { version = "3.2.6", features = ["derive"] }
 async-std = { version = "1.12.0", features = [ "attributes", "tokio1" ] }
+async-graphql = { version = "4.0.10", features = [ "decimal", "chrono", "dataloader" ] }
+sea-orm = '0.7.0'
 
 [workspace]
 members = [

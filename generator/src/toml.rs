@@ -131,11 +131,11 @@ impl TomlStructure {
         );
 
         dependencies.insert(
-            "seaography_derive".into(),
+            "seaography".into(),
             DependencyInfo {
                 version: None,
                 features: None,
-                path: Some("../../derive".into()),
+                path: Some("../../".into()),
             },
         );
 
