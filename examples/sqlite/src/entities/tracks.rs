@@ -59,10 +59,10 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Albums,
-    #[sea_orm(has_many = "super::playlist_track::Entity")]
-    PlaylistTrack,
     #[sea_orm(has_many = "super::invoice_items::Entity")]
     InvoiceItems,
+    #[sea_orm(has_many = "super::playlist_track::Entity")]
+    PlaylistTrack,
 }
 impl Related<super::media_types::Entity> for Entity {
     fn to() -> RelationDef {
@@ -79,14 +79,14 @@ impl Related<super::albums::Entity> for Entity {
         Relation::Albums.def()
     }
 }
-impl Related<super::playlist_track::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::PlaylistTrack.def()
-    }
-}
 impl Related<super::invoice_items::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::InvoiceItems.def()
+    }
+}
+impl Related<super::playlist_track::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PlaylistTrack.def()
     }
 }
 impl ActiveModelBehavior for ActiveModel {}

@@ -46,9 +46,20 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ) -> std::io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
-    let data = crate::toml::TomlStructure::new(crate_name, sql_version);
+    let content = std::fs::read_to_string("./generator/src/_Cargo.toml")?;
 
-    std::fs::write(file_path, toml::to_string_pretty(&data).unwrap())?;
+    let content = content.replace("<seaography-package-name>", crate_name);
+
+    let sql_library = match sql_version {
+        seaography_discoverer::SqlVersion::Sqlite => "sqlx-sqlite",
+        seaography_discoverer::SqlVersion::Mysql => "sqlx-mysql",
+        seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
+    };
+
+
+    let content = content.replace("<seaography-sql-library>", sql_library);
+
+    std::fs::write(file_path, content.as_bytes())?;
 
     Ok(())
 }
