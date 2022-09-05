@@ -72,6 +72,8 @@ pub async fn write_project<P: AsRef<Path>>(
     db_url: &str,
     crate_name: &str,
     expanded_format: bool,
+    depth_limit: Option<usize>,
+    complexity_limit: Option<usize>,
 ) -> Result<()> {
     let database_url = parse_database_url(db_url)?;
 
@@ -92,7 +94,8 @@ pub async fn write_project<P: AsRef<Path>>(
 
     writer::write_query_root(src_path, &entities_hashmap).unwrap();
     writer::write_lib(src_path)?;
-    writer::write_main(src_path, db_url, crate_name)?;
+    writer::write_main(src_path, crate_name)?;
+    writer::write_env(&path.as_ref(), db_url, depth_limit, complexity_limit)?;
 
     sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap.clone()).unwrap();
 

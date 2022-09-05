@@ -7,11 +7,14 @@ async fn main() {
 
     let path = std::path::Path::new(&args.destination);
 
-    let expanded_format = false;
-
-    let db_url = &args.database_url;
-
-    write_project(&path, db_url, &args.crate_name, expanded_format)
+    write_project(
+        &path,
+        &args.database_url,
+        &args.crate_name,
+        args.expanded_format.unwrap_or(false),
+        args.depth_limit,
+        args.complexity_limit
+    )
         .await
         .unwrap();
 }

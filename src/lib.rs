@@ -11,6 +11,15 @@ pub struct Args {
 
     #[clap(value_parser)]
     pub destination: String,
+
+    #[clap(short, long)]
+    pub expanded_format: Option<bool>,
+
+    #[clap(short, long)]
+    pub depth_limit: Option<usize>,
+
+    #[clap(short, long)]
+    pub complexity_limit: Option<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]
