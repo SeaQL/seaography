@@ -2,6 +2,7 @@
 name = "seaography_derive"
 version = "0.1.0"
 edition = "2021"
+authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
 
 [lib]
 proc-macro = true
