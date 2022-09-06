@@ -1,3 +1,5 @@
+use crate::util::add_line_break;
+
 pub type EntityHashMap = std::collections::HashMap<String, proc_macro2::TokenStream>;
 
 pub fn generate_entities(
@@ -36,7 +38,7 @@ pub fn write_entities<P: AsRef<std::path::Path>>(
 ) -> crate::Result<()> {
     for (name, content) in entities_hashmap.iter() {
         let file_path = path.as_ref().join(name);
-        std::fs::write(file_path, content.to_string().as_bytes())?;
+        std::fs::write(file_path, add_line_break(content.clone()))?;
     }
 
     Ok(())

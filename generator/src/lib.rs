@@ -6,6 +6,8 @@ pub mod inject_graphql;
 pub mod sea_orm_codegen;
 pub mod writer;
 
+mod util;
+
 /**
  * Most code depends from here
  * https://github.com/SeaQL/sea-orm/blob/master/sea-orm-cli/src/commands.rs
