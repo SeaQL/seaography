@@ -82,9 +82,10 @@ pub async fn write_project<P: AsRef<Path>>(
     let (tables, sql_version) =
         seaography_discoverer::extract_database_metadata(&database_url).await?;
 
+    std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
+
     writer::write_cargo_toml(path, crate_name, &sql_version)?;
 
-    std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
 
     let src_path = &path.as_ref().join("src");
 
