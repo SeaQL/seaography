@@ -51,10 +51,9 @@ pub type BinaryVector = Vec<u8>;
 // TODO #[graphql(concrete(name = "TimestampFilter", params()))]
 // TODO #[graphql(concrete(name = "TimestampWithTimeZoneFilter", params()))]
 #[cfg_attr(feature = "with-decimal", graphql(concrete(name = "DecimalFilter", params(sea_orm::prelude::Decimal))))]
-// TODO #[graphql(concrete(name = "UuidFilter", params(uuid::Uuid)))]
+#[cfg_attr(feature = "with-uuid", graphql(concrete(name = "UuidFilter", params(sea_orm::prelude::Uuid))))]
 #[graphql(concrete(name = "BinaryFilter", params(BinaryVector)))]
 #[graphql(concrete(name = "BooleanFilter", params(bool)))]
-// TODO #[graphql(concrete(name = "EnumFilter", params()))]
 pub struct TypeFilter<T: async_graphql::InputType> {
     pub eq: Option<T>,
     pub ne: Option<T>,

@@ -24,6 +24,7 @@ members = [
 exclude = ["generated"]
 
 [features]
-default = ["with-json", "with-decimal"]
-with-json = ["sea-orm/with-json"]
-with-decimal = ["sea-orm/with-rust_decimal"]
+default = []
+with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
+with-decimal = ["sea-orm/with-rust_decimal", "async-graphql/decimal"]
+with-uuid = ["sea-orm/with-uuid"]
