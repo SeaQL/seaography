@@ -2,6 +2,8 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use seaography_discoverer::SqlVersion;
 
+use crate::util::add_line_break;
+
 pub fn generate_query_root(
     entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
 ) -> Result<TokenStream, crate::error::Error> {
@@ -34,7 +36,7 @@ pub fn write_query_root<P: AsRef<std::path::Path>>(
 
     let file_name = path.as_ref().join("query_root.rs");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
@@ -87,7 +89,7 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 
     let file_name = path.as_ref().join("lib.rs");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
@@ -181,7 +183,7 @@ pub fn write_main<P: AsRef<std::path::Path>>(
 
     let file_name = path.as_ref().join("main.rs");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
@@ -195,15 +197,16 @@ pub fn write_env<P: AsRef<std::path::Path>>(
     let depth_limit = depth_limit.map_or("".into(), |value| value.to_string());
     let complexity_limit = complexity_limit.map_or("".into(), |value| value.to_string());
 
-    let tokens = format!(r#"
-    DATABASE_URL="{db_url}"
-    # COMPLEXITY_LIMIT={depth_limit}
-    # DEPTH_LIMIT={complexity_limit}
-    "#);
+    let tokens = [
+        format!(r#"DATABASE_URL="{}""#, db_url),
+        format!(r#"# COMPLEXITY_LIMIT={}"#, depth_limit),
+        format!(r#"# DEPTH_LIMIT={}"#, complexity_limit),
+    ]
+    .join("\n");
 
     let file_name = path.as_ref().join(".env");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, tokens)?;
 
     Ok(())
 }
