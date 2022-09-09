@@ -2,6 +2,8 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use seaography_discoverer::SqlVersion;
 
+use crate::util::add_line_break;
+
 pub fn generate_query_root(
     entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
 ) -> Result<TokenStream, crate::error::Error> {
@@ -20,7 +22,7 @@ pub fn generate_query_root(
         .collect();
 
     Ok(quote! {
-      #[derive(Debug, seaography_derive::QueryRoot)]
+      #[derive(Debug, seaography::macros::QueryRoot)]
       #(#[seaography(entity = #items)])*
       pub struct QueryRoot;
     })
@@ -34,7 +36,7 @@ pub fn write_query_root<P: AsRef<std::path::Path>>(
 
     let file_name = path.as_ref().join("query_root.rs");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
@@ -46,9 +48,20 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ) -> std::io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
-    let data = crate::toml::TomlStructure::new(crate_name, sql_version);
+    let content = std::fs::read_to_string("./generator/src/_Cargo.toml")?;
 
-    std::fs::write(file_path, toml::to_string_pretty(&data).unwrap())?;
+    let content = content.replace("<seaography-package-name>", crate_name);
+
+    let sql_library = match sql_version {
+        seaography_discoverer::SqlVersion::Sqlite => "sqlx-sqlite",
+        seaography_discoverer::SqlVersion::Mysql => "sqlx-mysql",
+        seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
+    };
+
+
+    let content = content.replace("<seaography-sql-library>", sql_library);
+
+    std::fs::write(file_path, content.as_bytes())?;
 
     Ok(())
 }
@@ -68,51 +81,6 @@ pub fn generate_lib() -> TokenStream {
         pub struct OrmDataloader {
             pub db: DatabaseConnection,
         }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]
-        pub enum OrderByEnum {
-            Asc,
-            Desc,
-        }
-
-        pub type BinaryVector = Vec<u8>;
-
-        #[derive(async_graphql::InputObject, Debug)]
-        #[graphql(concrete(name = "StringFilter", params(String)))]
-        #[graphql(concrete(name = "TinyIntegerFilter", params(i8)))]
-        #[graphql(concrete(name = "SmallIntegerFilter", params(i16)))]
-        #[graphql(concrete(name = "IntegerFilter", params(i32)))]
-        #[graphql(concrete(name = "BigIntegerFilter", params(i64)))]
-        #[graphql(concrete(name = "TinyUnsignedFilter", params(u8)))]
-        #[graphql(concrete(name = "SmallUnsignedFilter", params(u16)))]
-        #[graphql(concrete(name = "UnsignedFilter", params(u32)))]
-        #[graphql(concrete(name = "BigUnsignedFilter", params(u64)))]
-        #[graphql(concrete(name = "FloatFilter", params(f32)))]
-        #[graphql(concrete(name = "DoubleFilter", params(f64)))]
-        // TODO #[graphql(concrete(name = "JsonFilter", params()))]
-        // TODO #[graphql(concrete(name = "DateFilter", params()))]
-        // TODO #[graphql(concrete(name = "TimeFilter", params()))]
-        #[graphql(concrete(name = "DateFilter", params(Date)))]
-        #[graphql(concrete(name = "DateTimeFilter", params(DateTime)))]
-        #[graphql(concrete(name = "DateTimeUtcFilter", params(DateTimeUtc)))]
-        // TODO #[graphql(concrete(name = "TimestampFilter", params()))]
-        // TODO #[graphql(concrete(name = "TimestampWithTimeZoneFilter", params()))]
-        #[graphql(concrete(name = "DecimalFilter", params(Decimal)))]
-        // TODO #[graphql(concrete(name = "UuidFilter", params(uuid::Uuid)))]
-        #[graphql(concrete(name = "BinaryFilter", params(BinaryVector)))]
-        #[graphql(concrete(name = "BooleanFilter", params(bool)))]
-        // TODO #[graphql(concrete(name = "EnumFilter", params()))]
-        pub struct TypeFilter<T: async_graphql::InputType> {
-            pub eq: Option<T>,
-            pub ne: Option<T>,
-            pub gt: Option<T>,
-            pub gte: Option<T>,
-            pub lt: Option<T>,
-            pub lte: Option<T>,
-            pub is_in: Option<Vec<T>>,
-            pub is_not_in: Option<Vec<T>>,
-            pub is_null: Option<bool>,
-        }
     }
 }
 
@@ -121,7 +89,7 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 
     let file_name = path.as_ref().join("lib.rs");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
@@ -129,17 +97,20 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 ///
 /// Used to generate project/src/main.rs file content
 ///
-pub fn generate_main(db_url: &str, crate_name: &str) -> TokenStream {
+pub fn generate_main(crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.parse().unwrap();
 
     quote! {
         use async_graphql::{
+            dataloader::DataLoader,
             http::{playground_source, GraphQLPlaygroundConfig},
-            EmptyMutation, EmptySubscription, Schema, dataloader::DataLoader
+            EmptyMutation, EmptySubscription, Schema,
         };
         use async_graphql_poem::GraphQL;
+        use dotenv::dotenv;
         use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
         use sea_orm::Database;
+        use std::env;
 
         use #crate_name_token::*;
 
@@ -147,34 +118,54 @@ pub fn generate_main(db_url: &str, crate_name: &str) -> TokenStream {
         async fn graphql_playground() -> impl IntoResponse {
             Html(playground_source(GraphQLPlaygroundConfig::new("/")))
         }
-
         #[tokio::main]
         async fn main() {
+            dotenv().ok();
+
+            let db_url = env::var("DATABASE_URL").expect("DATABASE_URL environment variable not set");
+
+            let depth_limit = env::var("DEPTH_LIMIT")
+                .map(|data| data.parse::<usize>().expect("DEPTH_LIMIT is not a number"))
+                .map_or(None, |data| Some(data));
+
+            let complexity_limit = env::var("COMPLEXITY_LIMIT")
+                .map(|data| {
+                    data.parse::<usize>()
+                        .expect("COMPLEXITY_LIMIT is not a number")
+                })
+                .map_or(None, |data| Some(data));
+
             tracing_subscriber::fmt()
                 .with_max_level(tracing::Level::DEBUG)
                 .with_test_writer()
                 .init();
-
-            // TODO: use .env file to configure url
-            let database = Database::connect(#db_url).await.unwrap();
-
-            // TODO use environment variables to configure dataloader batch size
+            let database = Database::connect(db_url).await.unwrap();
             let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
                 OrmDataloader {
-                    db: database.clone()
+                    db: database.clone(),
                 },
-                tokio::spawn
-            ) ;
-
+                tokio::spawn,
+            );
             let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
                 .data(database)
-                .data(orm_dataloader)
-                .finish();
+                .data(orm_dataloader);
+
+            let schema = if let Some(depth) = depth_limit {
+                schema.limit_depth(depth)
+            } else {
+                schema
+            };
+
+            let schema = if let Some(complexity) = complexity_limit {
+                schema.limit_complexity(complexity)
+            } else {
+                schema
+            };
+
+            let schema = schema.finish();
 
             let app = Route::new().at("/", get(graphql_playground).post(GraphQL::new(schema)));
-
             println!("Playground: http://localhost:8000");
-
             Server::new(TcpListener::bind("0.0.0.0:8000"))
                 .run(app)
                 .await
@@ -186,14 +177,36 @@ pub fn generate_main(db_url: &str, crate_name: &str) -> TokenStream {
 
 pub fn write_main<P: AsRef<std::path::Path>>(
     path: &P,
-    db_url: &str,
     crate_name: &str,
 ) -> std::io::Result<()> {
-    let tokens = generate_main(db_url, crate_name);
+    let tokens = generate_main(crate_name);
 
     let file_name = path.as_ref().join("main.rs");
 
-    std::fs::write(file_name, tokens.to_string())?;
+    std::fs::write(file_name, add_line_break(tokens))?;
+
+    Ok(())
+}
+
+pub fn write_env<P: AsRef<std::path::Path>>(
+    path: &P,
+    db_url: &str,
+    depth_limit: Option<usize>,
+    complexity_limit: Option<usize>,
+) -> std::io::Result<()> {
+    let depth_limit = depth_limit.map_or("".into(), |value| value.to_string());
+    let complexity_limit = complexity_limit.map_or("".into(), |value| value.to_string());
+
+    let tokens = [
+        format!(r#"DATABASE_URL="{}""#, db_url),
+        format!(r#"# COMPLEXITY_LIMIT={}"#, depth_limit),
+        format!(r#"# DEPTH_LIMIT={}"#, complexity_limit),
+    ]
+    .join("\n");
+
+    let file_name = path.as_ref().join(".env");
+
+    std::fs::write(file_name, tokens)?;
 
     Ok(())
 }

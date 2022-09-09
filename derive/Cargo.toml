@@ -2,6 +2,7 @@
 name = "seaography_derive"
 version = "0.1.0"
 edition = "2021"
+authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
 
 [lib]
 proc-macro = true
@@ -9,8 +10,8 @@ proc-macro = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-quote = "1.0.18"
+quote = "1.0.21"
 syn = { version = "1.0.99" }
-proc-macro2 = "1.0.37"
+proc-macro2 = "1.0.43"
 bae = "0.1.7"
 heck = "0.4.0"

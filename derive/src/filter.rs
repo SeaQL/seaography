@@ -74,7 +74,7 @@ pub fn filter_struct(
                 || type_literal.starts_with("Vec")
             {
                 quote! {
-                    crate::TypeFilter<#ty>
+                    seaography::TypeFilter<#ty>
                 }
             } else {
                 let ident = format_ident!("{}EnumFilter", type_literal);
@@ -128,7 +128,7 @@ pub fn order_by_struct(
         .iter()
         .map(|(ident, _)| {
             quote! {
-                #ident: Option<crate::OrderByEnum>
+                #ident: Option<seaography::OrderByEnum>
             }
         })
         .collect();
@@ -158,8 +158,8 @@ pub fn order_by_fn(fields: &Vec<IdentTypeTuple>) -> Result<TokenStream, crate::e
             quote! {
                 let stmt = if let Some(order_by) = order_by_struct.#ident {
                     match order_by {
-                        crate::OrderByEnum::Asc => stmt.order_by(Column::#column, sea_orm::query::Order::Asc),
-                        crate::OrderByEnum::Desc => stmt.order_by(Column::#column, sea_orm::query::Order::Desc),
+                        seaography::OrderByEnum::Asc => stmt.order_by(Column::#column, sea_orm::query::Order::Asc),
+                        seaography::OrderByEnum::Desc => stmt.order_by(Column::#column, sea_orm::query::Order::Desc),
                     }
                 } else {
                     stmt

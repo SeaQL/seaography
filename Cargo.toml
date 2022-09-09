@@ -2,13 +2,17 @@
 name = "seaography"
 version = "0.1.0"
 edition = "2021"
+authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 seaography_generator = { path = "./generator" }
-clap = { version = "3.2.6", features = ["derive"] }
+seaography_derive = { path = "./derive" }
+clap = { version = "3.2.20", features = ["derive"] }
 async-std = { version = "1.12.0", features = [ "attributes", "tokio1" ] }
+async-graphql = { version = "4.0.12", features = [ "decimal", "chrono", "dataloader" ] }
+sea-orm = '0.9.2'
 
 [workspace]
 members = [

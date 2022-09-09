@@ -4,8 +4,9 @@ pub mod error;
 pub use error::{Error, Result};
 pub mod inject_graphql;
 pub mod sea_orm_codegen;
-pub mod toml;
 pub mod writer;
+
+mod util;
 
 /**
  * Most code depends from here
@@ -73,15 +74,18 @@ pub async fn write_project<P: AsRef<Path>>(
     db_url: &str,
     crate_name: &str,
     expanded_format: bool,
+    depth_limit: Option<usize>,
+    complexity_limit: Option<usize>,
 ) -> Result<()> {
     let database_url = parse_database_url(db_url)?;
 
     let (tables, sql_version) =
         seaography_discoverer::extract_database_metadata(&database_url).await?;
 
+    std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
+
     writer::write_cargo_toml(path, crate_name, &sql_version)?;
 
-    std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
 
     let src_path = &path.as_ref().join("src");
 
@@ -93,9 +97,16 @@ pub async fn write_project<P: AsRef<Path>>(
 
     writer::write_query_root(src_path, &entities_hashmap).unwrap();
     writer::write_lib(src_path)?;
-    writer::write_main(src_path, db_url, crate_name)?;
+    writer::write_main(src_path, crate_name)?;
+    writer::write_env(&path.as_ref(), db_url, depth_limit, complexity_limit)?;
 
-    sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap).unwrap();
+    sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap.clone()).unwrap();
+
+    std::process::Command::new("cargo")
+        .arg("fmt")
+        .current_dir(&path)
+        .spawn()?
+        .wait()?;
 
     Ok(())
 }
