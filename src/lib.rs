@@ -1,27 +1,5 @@
 pub use seaography_derive as macros;
 
-#[derive(clap::Parser)]
-#[clap(author, version, about, long_about = None)]
-pub struct Args {
-    #[clap(value_parser)]
-    pub database_url: String,
-
-    #[clap(value_parser)]
-    pub crate_name: String,
-
-    #[clap(value_parser)]
-    pub destination: String,
-
-    #[clap(short, long)]
-    pub expanded_format: Option<bool>,
-
-    #[clap(short, long)]
-    pub depth_limit: Option<usize>,
-
-    #[clap(short, long)]
-    pub complexity_limit: Option<usize>,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]
 pub enum OrderByEnum {
     Asc,
