@@ -170,7 +170,7 @@ pub fn relation_fn(
     } else if let Some(target_path) = &belongs_to {
         target_path
     } else {
-        return Err(crate::error::Error::Error(
+        return Err(crate::error::Error::Internal(
             "Cannot map relation: neither one-many or many-one".into(),
         ));
     };
@@ -185,16 +185,16 @@ pub fn relation_fn(
     let target_column: TokenStream = format!("{}Column", target_path).parse()?;
     let target_model: TokenStream = format!("{}Model", target_path).parse()?;
 
-    let (return_type, extra_imports, map_method) = if let Some(_) = &has_many {
+    let (return_type, extra_imports, map_method) = if has_many.is_some() {
         (
             quote! { Vec<#target_model> },
             quote! { use itertools::Itertools; },
             quote! { .into_group_map() },
         )
-    } else if let Some(_) = &belongs_to {
+    } else if belongs_to.is_some() {
         (quote! { #target_model }, quote! {}, quote! { .collect() })
     } else {
-        return Err(crate::error::Error::Error(
+        return Err(crate::error::Error::Internal(
             "Cannot map relation: neither one-many or many-one".into(),
         ));
     };

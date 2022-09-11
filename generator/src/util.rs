@@ -20,10 +20,10 @@ pub(crate) fn add_line_break(content: proc_macro2::TokenStream) -> String {
 }
 
 pub(crate) fn no_line_break_in_between(this: &syn::Item, that: &syn::Item) -> bool {
-    match (this, that) {
-        (syn::Item::Mod(_), syn::Item::Mod(_)) | (syn::Item::Use(_), syn::Item::Use(_)) => true,
-        _ => false,
-    }
+    matches!(
+        (this, that),
+        (syn::Item::Mod(_), syn::Item::Mod(_)) | (syn::Item::Use(_), syn::Item::Use(_))
+    )
 }
 
 pub(crate) fn replace_fully_qualified_spaces(mut str: String) -> String {

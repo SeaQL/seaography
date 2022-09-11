@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub enum Error {
-    Error(String),
+    Internal(String),
     Syn(syn::Error),
     LexError(proc_macro2::LexError),
 }

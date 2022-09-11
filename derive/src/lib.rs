@@ -121,7 +121,7 @@ pub fn derive_root_query_fn(input: proc_macro::TokenStream) -> proc_macro::Token
 
     let attrs: Vec<root_query::Seaography> = attrs
         .into_iter()
-        .map(|attribute| root_query::Seaography::from_attributes(&vec![attribute]).unwrap())
+        .map(|attribute| root_query::Seaography::from_attributes(&[attribute]).unwrap())
         .collect();
 
     let res = root_query::root_query_fn(&ident, &attrs).unwrap_or_else(|err| {

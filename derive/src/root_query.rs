@@ -9,7 +9,7 @@ pub struct Seaography {
 
 pub fn root_query_fn(
     ident: &syn::Ident,
-    attrs: &Vec<Seaography>,
+    attrs: &[Seaography],
 ) -> Result<TokenStream, crate::error::Error> {
     let paths = attrs
         .iter()
@@ -17,7 +17,7 @@ pub fn root_query_fn(
             if let syn::Lit::Str(item) = &attribute.entity {
                 Ok(item.value().parse::<TokenStream>()?)
             } else {
-                Err(crate::error::Error::Error(
+                Err(crate::error::Error::Internal(
                     "Unreachable parse of query entities".into(),
                 ))
             }

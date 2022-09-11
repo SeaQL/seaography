@@ -42,7 +42,7 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
 }
 
 pub fn filter_struct(
-    fields: &Vec<IdentTypeTuple>,
+    fields: &[IdentTypeTuple],
     attrs: &SeaOrm,
 ) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
@@ -91,7 +91,7 @@ pub fn filter_struct(
 
     let entity_name = match &attrs.table_name {
         Some(syn::Lit::Str(name)) => name,
-        _ => return Err(crate::error::Error::Error("Invalid entity name".into())),
+        _ => return Err(crate::error::Error::Internal("Invalid entity name".into())),
     };
 
     let filter_name = format!("{}Filter", entity_name.value().to_upper_camel_case());
@@ -121,7 +121,7 @@ pub fn filter_struct(
 }
 
 pub fn order_by_struct(
-    fields: &Vec<IdentTypeTuple>,
+    fields: &[IdentTypeTuple],
     attrs: &SeaOrm,
 ) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
@@ -135,7 +135,7 @@ pub fn order_by_struct(
 
     let entity_name = match &attrs.table_name {
         Some(syn::Lit::Str(name)) => name,
-        _ => return Err(crate::error::Error::Error("Invalid entity name".into())),
+        _ => return Err(crate::error::Error::Internal("Invalid entity name".into())),
     };
 
     let filter_name = format!("{}OrderBy", entity_name.value().to_upper_camel_case());
@@ -149,7 +149,7 @@ pub fn order_by_struct(
     })
 }
 
-pub fn order_by_fn(fields: &Vec<IdentTypeTuple>) -> Result<TokenStream, crate::error::Error> {
+pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, _)| {
@@ -182,9 +182,7 @@ pub fn order_by_fn(fields: &Vec<IdentTypeTuple>) -> Result<TokenStream, crate::e
     })
 }
 
-pub fn recursive_filter_fn(
-    fields: &Vec<IdentTypeTuple>,
-) -> Result<TokenStream, crate::error::Error> {
+pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::error::Error> {
     let columns_filters: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, _)| {
@@ -284,14 +282,14 @@ pub fn remove_optional_from_type(ty: syn::Type) -> Result<syn::Type, crate::erro
             let generic_arg = match type_params {
                 syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
                 _ => {
-                    return Err(crate::error::Error::Error(
+                    return Err(crate::error::Error::Internal(
                         "Cannot parse type brackets".into(),
                     ))
                 }
             };
             match generic_arg {
                 syn::GenericArgument::Type(ty) => ty.to_owned(),
-                _ => return Err(crate::error::Error::Error("Cannot parse type".into())),
+                _ => return Err(crate::error::Error::Internal("Cannot parse type".into())),
             }
         }
         _ => ty,

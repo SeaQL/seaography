@@ -99,7 +99,7 @@ pub async fn write_project<P: AsRef<Path>>(
     writer::write_main(src_path, crate_name)?;
     writer::write_env(&path.as_ref(), db_url, depth_limit, complexity_limit)?;
 
-    sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap.clone()).unwrap();
+    sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap).unwrap();
 
     std::process::Command::new("cargo")
         .arg("fmt")
