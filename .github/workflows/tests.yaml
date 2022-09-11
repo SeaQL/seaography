@@ -84,7 +84,7 @@ jobs:
                   command: run
                   args: >
                     --package seaography-cli --
-                    "sqlite://chinook.db seaography-sqlite-example ./examples/sqlite"
+                    sqlite://chinook.db seaography-sqlite-example ./examples/sqlite
             - name: Integration tests
               working-directory: ./examples/sqlite
               run: cargo test
@@ -133,7 +133,7 @@ jobs:
                   command: run
                   args: >
                     --package seaography-cli --
-                    "mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example ./examples/mysql"
+                    mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example ./examples/mysql
             - name: Integration tests
               working-directory: ./examples/mysql
               run: cargo test
@@ -179,7 +179,7 @@ jobs:
                   command: run
                   args: >
                     --package seaography-cli --
-                    "postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example ./examples/postgres"
+                    postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example ./examples/postgres
             - name: Integration tests
               working-directory: ./examples/postgres
               run: cargo test
