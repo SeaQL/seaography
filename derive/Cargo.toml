@@ -1,13 +1,18 @@
 [package]
-name = "seaography_derive"
+name = "seaography-derive"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.60"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
+description = "🧭 A GraphQL framework and code generator for SeaORM"
+license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/seaography"
+repository = "https://github.com/SeaQL/seaography"
+keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
+categories = ["database"]
 
 [lib]
 proc-macro = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 quote = "1.0.21"

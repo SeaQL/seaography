@@ -1,3 +1,5 @@
+//! Seaography - 🧭 A GraphQL framework and code generator for SeaORM
+
 pub use seaography_derive as macros;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]

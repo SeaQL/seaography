@@ -1,9 +1,12 @@
 ## SeaQL Open Source Projects
+
+This project is a result of SeaQL Summer of Code 2022, funded by SeaQL.org.
+
 ### Joint Copyright Assignment by Contributor
 
 -----
 
-To SeaQL.org, Inc. ("the Org")
+To SeaQL.org ("the Org")
 
 Project: Seaography - GraphQL framework on top of SeaORM (the "Project")
 
