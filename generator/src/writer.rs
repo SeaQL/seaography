@@ -48,7 +48,7 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ) -> std::io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
-    let content = std::fs::read_to_string("./generator/src/_Cargo.toml")?;
+    let content = include_str!("_Cargo.toml");
 
     let content = content.replace("<seaography-package-name>", crate_name);
 
@@ -97,7 +97,7 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 /// Used to generate project/src/main.rs file content
 ///
 pub fn generate_main(crate_name: &str) -> TokenStream {
-    let crate_name_token: TokenStream = crate_name.parse().unwrap();
+    let crate_name_token: TokenStream = crate_name.replace('-', "_").parse().unwrap();
 
     quote! {
         use async_graphql::{
@@ -135,7 +135,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .map_or(None, |data| Some(data));
 
             tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::DEBUG)
+                .with_max_level(tracing::Level::INFO)
                 .with_test_writer()
                 .init();
             let database = Database::connect(db_url).await.unwrap();
