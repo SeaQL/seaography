@@ -42,10 +42,10 @@ pub enum Relation {
         on_delete = "Restrict"
     )]
     Store,
-    #[sea_orm(has_many = "super::rental::Entity")]
-    Rental,
     #[sea_orm(has_many = "super::payment::Entity")]
     Payment,
+    #[sea_orm(has_many = "super::rental::Entity")]
+    Rental,
 }
 
 impl Related<super::address::Entity> for Entity {
@@ -60,15 +60,15 @@ impl Related<super::store::Entity> for Entity {
     }
 }
 
-impl Related<super::rental::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Rental.def()
-    }
-}
-
 impl Related<super::payment::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Payment.def()
+    }
+}
+
+impl Related<super::rental::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Rental.def()
     }
 }
 

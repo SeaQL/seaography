@@ -18,7 +18,6 @@ pub struct Model {
     pub title: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub description: Option<String>,
-    #[sea_orm(column_type = "Custom(\"YEAR\".to_owned())", nullable)]
     pub release_year: Option<String>,
     pub language_id: u8,
     pub original_language_id: Option<u8>,

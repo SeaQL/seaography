@@ -6,10 +6,3 @@
 2. `mysql -uroot -h 127.0.0.1 sakila < sakila-schema.sql`
 3. `mysql -uroot -h 127.0.0.1 sakila < sakila-data.sql`
 4. `cargo run`
-
-
-
-### Troubleshooting
-
-#### Different database username and password
-Replace `root:root` with `username:password` in src/main.rs
