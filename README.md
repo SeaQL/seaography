@@ -10,7 +10,7 @@
 
   [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
   [![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
-  [![build status](https://github.com/SeaQL/seaography/actions/workflows/rust.yml/badge.svg)](https://github.com/SeaQL/seaography/actions/workflows/rust.yml)
+  [![build status](https://github.com/SeaQL/seaography/actions/workflows/tests.yml/badge.svg)](https://github.com/SeaQL/seaography/actions/workflows/tests.yml)
 
 </div>
 
@@ -32,7 +32,7 @@ Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/mysql/
 
 ```sh
 cd examples/mysql
-seaography-cli mysql://user:pw@localhost/sakila seaography-example-mysql .
+seaography-cli mysql://user:pw@localhost/sakila seaography-mysql-example .
 cargo run
 ```
 
@@ -70,7 +70,7 @@ cargo run
 
 ```sh
 cd examples/sqlite
-seaography-cli sqlite://chinook.db seaography-example-sqlite .
+seaography-cli sqlite://chinook.db seaography-sqlite-example .
 cargo run
 ```
 

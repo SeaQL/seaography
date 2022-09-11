@@ -1,6 +1,6 @@
 [package]
 edition = '2021'
-name = 'generated'
+name = 'seaography-postgres-example'
 version = '0.1.0'
 [dependencies.async-graphql]
 version = '4.0.10'

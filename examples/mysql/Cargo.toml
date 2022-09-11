@@ -1,6 +1,6 @@
 [package]
 edition = '2021'
-name = 'seaography-example-mysql'
+name = 'seaography-mysql-example'
 version = '0.1.0'
 
 [dependencies]
