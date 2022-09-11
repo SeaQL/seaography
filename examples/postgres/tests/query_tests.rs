@@ -1,6 +1,6 @@
 use async_graphql::dataloader::DataLoader;
 use async_graphql::{EmptyMutation, EmptySubscription, Response, Schema};
-use generated::{OrmDataloader, QueryRoot};
+use seaography_postgres_example::{OrmDataloader, QueryRoot};
 use sea_orm::Database;
 
 pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
