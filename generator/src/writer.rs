@@ -58,7 +58,6 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
         seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
     };
 
-
     let content = content.replace("<seaography-sql-library>", sql_library);
 
     std::fs::write(file_path, content.as_bytes())?;
@@ -175,10 +174,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     }
 }
 
-pub fn write_main<P: AsRef<std::path::Path>>(
-    path: &P,
-    crate_name: &str,
-) -> std::io::Result<()> {
+pub fn write_main<P: AsRef<std::path::Path>>(path: &P, crate_name: &str) -> std::io::Result<()> {
     let tokens = generate_main(crate_name);
 
     let file_name = path.as_ref().join("main.rs");

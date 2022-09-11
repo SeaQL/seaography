@@ -45,13 +45,28 @@ pub type BinaryVector = Vec<u8>;
 // TODO #[graphql(concrete(name = "JsonFilter", params()))]
 // TODO #[graphql(concrete(name = "DateFilter", params()))]
 // TODO #[graphql(concrete(name = "TimeFilter", params()))]
-#[cfg_attr(feature = "with-chrono", graphql(concrete(name = "DateFilter", params(sea_orm::prelude::Date))))]
-#[cfg_attr(feature = "with-chrono", graphql(concrete(name = "DateTimeFilter", params(sea_orm::prelude::DateTime))))]
-#[cfg_attr(feature = "with-chrono", graphql(concrete(name = "DateTimeUtcFilter", params(sea_orm::prelude::DateTimeUtc))))]
+#[cfg_attr(
+    feature = "with-chrono",
+    graphql(concrete(name = "DateFilter", params(sea_orm::prelude::Date)))
+)]
+#[cfg_attr(
+    feature = "with-chrono",
+    graphql(concrete(name = "DateTimeFilter", params(sea_orm::prelude::DateTime)))
+)]
+#[cfg_attr(
+    feature = "with-chrono",
+    graphql(concrete(name = "DateTimeUtcFilter", params(sea_orm::prelude::DateTimeUtc)))
+)]
 // TODO #[graphql(concrete(name = "TimestampFilter", params()))]
 // TODO #[graphql(concrete(name = "TimestampWithTimeZoneFilter", params()))]
-#[cfg_attr(feature = "with-decimal", graphql(concrete(name = "DecimalFilter", params(sea_orm::prelude::Decimal))))]
-#[cfg_attr(feature = "with-uuid", graphql(concrete(name = "UuidFilter", params(sea_orm::prelude::Uuid))))]
+#[cfg_attr(
+    feature = "with-decimal",
+    graphql(concrete(name = "DecimalFilter", params(sea_orm::prelude::Decimal)))
+)]
+#[cfg_attr(
+    feature = "with-uuid",
+    graphql(concrete(name = "UuidFilter", params(sea_orm::prelude::Uuid)))
+)]
 #[graphql(concrete(name = "BinaryFilter", params(BinaryVector)))]
 #[graphql(concrete(name = "BooleanFilter", params(bool)))]
 pub struct TypeFilter<T: async_graphql::InputType> {

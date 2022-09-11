@@ -13,8 +13,8 @@ async fn main() {
         &args.crate_name,
         args.expanded_format.unwrap_or(false),
         args.depth_limit,
-        args.complexity_limit
+        args.complexity_limit,
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 }

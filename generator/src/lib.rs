@@ -86,7 +86,6 @@ pub async fn write_project<P: AsRef<Path>>(
 
     writer::write_cargo_toml(path, crate_name, &sql_version)?;
 
-
     let src_path = &path.as_ref().join("src");
 
     let entities_hashmap =
