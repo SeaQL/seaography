@@ -1,7 +1,6 @@
-use async_graphql::dataloader::DataLoader;
-use async_graphql::{EmptyMutation, EmptySubscription, Response, Schema};
-use seaography_sqlite_example::{OrmDataloader, QueryRoot};
+use async_graphql::{dataloader::DataLoader, EmptyMutation, EmptySubscription, Response, Schema};
 use sea_orm::Database;
+use seaography_sqlite_example::{OrmDataloader, QueryRoot};
 
 pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
     let database = Database::connect("sqlite://chinook.db").await.unwrap();

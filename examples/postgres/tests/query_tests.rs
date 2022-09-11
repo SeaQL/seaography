@@ -1,5 +1,4 @@
-use async_graphql::dataloader::DataLoader;
-use async_graphql::{EmptyMutation, EmptySubscription, Response, Schema};
+use async_graphql::{dataloader::DataLoader, EmptyMutation, EmptySubscription, Response, Schema};
 use seaography_postgres_example::{OrmDataloader, QueryRoot};
 use sea_orm::Database;
 
