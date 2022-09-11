@@ -7,7 +7,7 @@ use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
-use seaography_example_sqlite::*;
+use seaography_sqlite_example::*;
 use std::env;
 
 #[handler]

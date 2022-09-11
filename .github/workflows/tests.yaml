@@ -79,6 +79,8 @@ jobs:
                   override: true
             - name: Remove generated folder
               run: rm -rf ./examples/sqlite/src
+            - name: Copy sample database
+              run: cp ./examples/sqlite/chinook.db .
             - uses: actions-rs/cargo@v1
               with:
                   command: run
@@ -88,6 +90,7 @@ jobs:
             - name: Integration tests
               working-directory: ./examples/sqlite
               run: cargo test
+
     integration-mysql:
         name: MySQL integration tests
         runs-on: ubuntu-latest
@@ -96,7 +99,7 @@ jobs:
             - test
         services:
             mysql:
-                image: "mysql:5.7"
+                image: "mysql:8.0"
                 env:
                     MYSQL_HOST: 127.0.0.1
                     MYSQL_DB: mysql
@@ -137,6 +140,7 @@ jobs:
             - name: Integration tests
               working-directory: ./examples/mysql
               run: cargo test
+
     integration-postgres:
         name: Postgres integration tests
         runs-on: ubuntu-latest

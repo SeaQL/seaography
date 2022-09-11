@@ -7,7 +7,7 @@ use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
-use seaography_example_mysql::*;
+use seaography_mysql_example::*;
 use std::env;
 
 #[handler]
