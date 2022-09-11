@@ -1,6 +1,6 @@
 use crate::util::add_line_break;
 
-pub type EntityHashMap = std::collections::HashMap<String, proc_macro2::TokenStream>;
+pub type EntityHashMap = std::collections::BTreeMap<String, proc_macro2::TokenStream>;
 
 pub fn generate_entities(
     table_crate_stmts: Vec<seaography_discoverer::sea_schema::sea_query::TableCreateStatement>,
