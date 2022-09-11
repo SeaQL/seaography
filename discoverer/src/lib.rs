@@ -1,5 +1,5 @@
 use sea_schema::sea_query::TableCreateStatement;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SqlVersion {
@@ -22,7 +22,7 @@ pub use error::{Error, Result};
 
 pub use sea_schema;
 
-pub type TablesHashMap = HashMap<String, TableCreateStatement>;
+pub type TablesHashMap = BTreeMap<String, TableCreateStatement>;
 
 pub async fn extract_database_metadata(
     database_url: &url::Url,
