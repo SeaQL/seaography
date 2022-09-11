@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="https://raw.githubusercontent.com/SeaQL/seaography/master/docs/SeaQL logo.png" width="280"/>
+  <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/SeaQL logo.png" width="280"/>
 
   <h1>Seaography</h1>
 
