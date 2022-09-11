@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
 
 jobs:
     check:
@@ -82,7 +82,9 @@ jobs:
             - uses: actions-rs/cargo@v1
               with:
                   command: run
-                  args: "sqlite://chinook.db seaography-sqlite-example ./examples/sqlite"
+                  args: >
+                    --package seaography-cli --
+                    "sqlite://chinook.db seaography-sqlite-example ./examples/sqlite"
             - name: Integration tests
               working-directory: ./examples/sqlite
               run: cargo test
@@ -129,7 +131,9 @@ jobs:
             - uses: actions-rs/cargo@v1
               with:
                   command: run
-                  args: "mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example ./examples/mysql"
+                  args: >
+                    --package seaography-cli --
+                    "mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example ./examples/mysql"
             - name: Integration tests
               working-directory: ./examples/mysql
               run: cargo test
@@ -173,7 +177,9 @@ jobs:
             - uses: actions-rs/cargo@v1
               with:
                   command: run
-                  args: "postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example ./examples/postgres"
+                  args: >
+                    --package seaography-cli --
+                    "postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example ./examples/postgres"
             - name: Integration tests
               working-directory: ./examples/postgres
               run: cargo test
