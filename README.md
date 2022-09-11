@@ -10,7 +10,7 @@
 
   [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
   [![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
-  [![build status](https://github.com/SeaQL/seaography/actions/workflows/tests.yml/badge.svg)](https://github.com/SeaQL/seaography/actions/workflows/tests.yml)
+  [![build status](https://github.com/SeaQL/seaography/actions/workflows/tests.yaml/badge.svg)](https://github.com/SeaQL/seaography/actions/workflows/tests.yaml)
 
 </div>
 
