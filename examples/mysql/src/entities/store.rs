@@ -38,10 +38,10 @@ pub enum Relation {
         on_delete = "Restrict"
     )]
     Staff,
-    #[sea_orm(has_many = "super::inventory::Entity")]
-    Inventory,
     #[sea_orm(has_many = "super::customer::Entity")]
     Customer,
+    #[sea_orm(has_many = "super::inventory::Entity")]
+    Inventory,
 }
 
 impl Related<super::address::Entity> for Entity {
@@ -56,15 +56,15 @@ impl Related<super::staff::Entity> for Entity {
     }
 }
 
-impl Related<super::inventory::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Inventory.def()
-    }
-}
-
 impl Related<super::customer::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Customer.def()
+    }
+}
+
+impl Related<super::inventory::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Inventory.def()
     }
 }
 

@@ -56,10 +56,10 @@ pub enum Relation {
     Language1,
     #[sea_orm(has_many = "super::film_actor::Entity")]
     FilmActor,
-    #[sea_orm(has_many = "super::inventory::Entity")]
-    Inventory,
     #[sea_orm(has_many = "super::film_category::Entity")]
     FilmCategory,
+    #[sea_orm(has_many = "super::inventory::Entity")]
+    Inventory,
 }
 
 impl Related<super::film_actor::Entity> for Entity {
@@ -68,15 +68,15 @@ impl Related<super::film_actor::Entity> for Entity {
     }
 }
 
-impl Related<super::inventory::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Inventory.def()
-    }
-}
-
 impl Related<super::film_category::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::FilmCategory.def()
+    }
+}
+
+impl Related<super::inventory::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Inventory.def()
     }
 }
 
