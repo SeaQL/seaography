@@ -61,9 +61,7 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
         // information from a particular database
         let database_name = url
             .path_segments()
-            .expect(
-                format!("There is no database name as part of the url path: {}", url).as_str()
-            )
+            .expect(format!("There is no database name as part of the url path: {}", url).as_str())
             .next()
             .unwrap();
 
@@ -87,8 +85,9 @@ async fn main() {
 
     let database_url = parse_database_url(&args.database_url).unwrap();
 
-    let (tables, sql_version) =
-        seaography_discoverer::extract_database_metadata(&database_url).await.unwrap();
+    let (tables, sql_version) = seaography_discoverer::extract_database_metadata(&database_url)
+        .await
+        .unwrap();
 
     let sql_library = match sql_version {
         seaography_discoverer::SqlVersion::Sqlite => "sqlx-sqlite",
