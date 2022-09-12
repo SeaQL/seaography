@@ -12,3 +12,5 @@ Cargo.lock
 # IDE and misc
 /.idea/
 *.db-*
+
+.env
