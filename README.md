@@ -80,7 +80,7 @@ Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/postgr
 
 ```sh
 cd examples/postgres
-seaography-cli postgres://user:pw@localhost/sakila seaography-example-postgres .
+seaography-cli postgres://user:pw@localhost/sakila seaography-postgres-example .
 cargo run
 ```
 
