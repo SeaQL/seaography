@@ -42,7 +42,7 @@ USE sakila;
 --
 
 CREATE TABLE actor (
-  actor_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  actor_id INT NOT NULL AUTO_INCREMENT,
   first_name VARCHAR(45) NOT NULL,
   last_name VARCHAR(45) NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -55,20 +55,21 @@ CREATE TABLE actor (
 --
 
 CREATE TABLE address (
-  address_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  address_id INT NOT NULL AUTO_INCREMENT,
   address VARCHAR(50) NOT NULL,
   address2 VARCHAR(50) DEFAULT NULL,
   district VARCHAR(20) NOT NULL,
-  city_id SMALLINT UNSIGNED NOT NULL,
+  city_id INT NOT NULL,
   postal_code VARCHAR(10) DEFAULT NULL,
   phone VARCHAR(20) NOT NULL,
   -- Add GEOMETRY column for MySQL 5.7.5 and higher
   -- Also include SRID attribute for MySQL 8.0.3 and higher
-  /*!50705 location GEOMETRY */ /*!80003 SRID 0 */ /*!50705 NOT NULL,*/
+  -- GEOMETRY is unsupported by SeaORM so we change the type to binary for now
+  /*!50705 location VARBINARY(25),*/ -- /*!80003 SRID 0 */ /*!50705 NOT NULL,*/
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY  (address_id),
   KEY idx_fk_city_id (city_id),
-  /*!50705 SPATIAL KEY `idx_location` (location),*/
+  -- /*!50705 SPATIAL KEY `idx_location` (location),*/
   CONSTRAINT `fk_address_city` FOREIGN KEY (city_id) REFERENCES city (city_id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -88,9 +89,9 @@ CREATE TABLE category (
 --
 
 CREATE TABLE city (
-  city_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  city_id INT NOT NULL AUTO_INCREMENT,
   city VARCHAR(50) NOT NULL,
-  country_id SMALLINT UNSIGNED NOT NULL,
+  country_id INT NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY  (city_id),
   KEY idx_fk_country_id (country_id),
@@ -102,7 +103,7 @@ CREATE TABLE city (
 --
 
 CREATE TABLE country (
-  country_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  country_id INT NOT NULL AUTO_INCREMENT,
   country VARCHAR(50) NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY  (country_id)
@@ -113,12 +114,12 @@ CREATE TABLE country (
 --
 
 CREATE TABLE customer (
-  customer_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  store_id TINYINT UNSIGNED NOT NULL,
+  customer_id INT NOT NULL AUTO_INCREMENT,
+  store_id INT NOT NULL,
   first_name VARCHAR(45) NOT NULL,
   last_name VARCHAR(45) NOT NULL,
   email VARCHAR(50) DEFAULT NULL,
-  address_id SMALLINT UNSIGNED NOT NULL,
+  address_id INT NOT NULL,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   create_date DATETIME NOT NULL,
   last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -135,15 +136,15 @@ CREATE TABLE customer (
 --
 
 CREATE TABLE film (
-  film_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  film_id INT NOT NULL AUTO_INCREMENT,
   title VARCHAR(128) NOT NULL,
   description TEXT DEFAULT NULL,
-  release_year VARCHAR(4) DEFAULT NULL,
-  language_id TINYINT UNSIGNED NOT NULL,
-  original_language_id TINYINT UNSIGNED DEFAULT NULL,
-  rental_duration TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  release_year SMALLINT UNSIGNED DEFAULT NULL,
+  language_id INT NOT NULL,
+  original_language_id INT DEFAULT NULL,
+  rental_duration INT NOT NULL DEFAULT 3,
   rental_rate DECIMAL(4,2) NOT NULL DEFAULT 4.99,
-  length SMALLINT UNSIGNED DEFAULT NULL,
+  length INT DEFAULT NULL,
   replacement_cost DECIMAL(5,2) NOT NULL DEFAULT 19.99,
   rating ENUM('G','PG','PG-13','R','NC-17') DEFAULT 'G',
   special_features SET('Trailers','Commentaries','Deleted Scenes','Behind the Scenes') DEFAULT NULL,
@@ -161,8 +162,8 @@ CREATE TABLE film (
 --
 
 CREATE TABLE film_actor (
-  actor_id SMALLINT UNSIGNED NOT NULL,
-  film_id SMALLINT UNSIGNED NOT NULL,
+  actor_id INT NOT NULL,
+  film_id INT NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY  (actor_id,film_id),
   KEY idx_fk_film_id (`film_id`),
@@ -175,7 +176,7 @@ CREATE TABLE film_actor (
 --
 
 CREATE TABLE film_category (
-  film_id SMALLINT UNSIGNED NOT NULL,
+  film_id INT NOT NULL,
   category_id TINYINT UNSIGNED NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (film_id, category_id),
@@ -240,9 +241,9 @@ DELIMITER ;
 --
 
 CREATE TABLE inventory (
-  inventory_id MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  film_id SMALLINT UNSIGNED NOT NULL,
-  store_id TINYINT UNSIGNED NOT NULL,
+  inventory_id INT NOT NULL AUTO_INCREMENT,
+  film_id INT NOT NULL,
+  store_id INT NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY  (inventory_id),
   KEY idx_fk_film_id (film_id),
@@ -256,7 +257,7 @@ CREATE TABLE inventory (
 --
 
 CREATE TABLE language (
-  language_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  language_id INT NOT NULL AUTO_INCREMENT,
   name CHAR(20) NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (language_id)
@@ -267,9 +268,9 @@ CREATE TABLE language (
 --
 
 CREATE TABLE payment (
-  payment_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  customer_id SMALLINT UNSIGNED NOT NULL,
-  staff_id TINYINT UNSIGNED NOT NULL,
+  payment_id INT NOT NULL AUTO_INCREMENT,
+  customer_id INT NOT NULL,
+  staff_id INT NOT NULL,
   rental_id INT DEFAULT NULL,
   amount DECIMAL(5,2) NOT NULL,
   payment_date DATETIME NOT NULL,
@@ -290,10 +291,10 @@ CREATE TABLE payment (
 CREATE TABLE rental (
   rental_id INT NOT NULL AUTO_INCREMENT,
   rental_date DATETIME NOT NULL,
-  inventory_id MEDIUMINT UNSIGNED NOT NULL,
-  customer_id SMALLINT UNSIGNED NOT NULL,
+  inventory_id INT NOT NULL,
+  customer_id INT NOT NULL,
   return_date DATETIME DEFAULT NULL,
-  staff_id TINYINT UNSIGNED NOT NULL,
+  staff_id INT NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (rental_id),
   UNIQUE KEY  (rental_date,inventory_id,customer_id),
@@ -310,13 +311,13 @@ CREATE TABLE rental (
 --
 
 CREATE TABLE staff (
-  staff_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  staff_id INT NOT NULL AUTO_INCREMENT,
   first_name VARCHAR(45) NOT NULL,
   last_name VARCHAR(45) NOT NULL,
-  address_id SMALLINT UNSIGNED NOT NULL,
+  address_id INT NOT NULL,
   picture BLOB DEFAULT NULL,
   email VARCHAR(50) DEFAULT NULL,
-  store_id TINYINT UNSIGNED NOT NULL,
+  store_id INT NOT NULL,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   username VARCHAR(16) NOT NULL,
   password VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
@@ -333,9 +334,9 @@ CREATE TABLE staff (
 --
 
 CREATE TABLE store (
-  store_id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  manager_staff_id TINYINT UNSIGNED NOT NULL,
-  address_id SMALLINT UNSIGNED NOT NULL,
+  store_id INT NOT NULL AUTO_INCREMENT,
+  manager_staff_id INT NOT NULL,
+  address_id INT NOT NULL,
   last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY  (store_id),
   UNIQUE KEY idx_unique_manager (manager_staff_id),
@@ -475,7 +476,7 @@ GROUP BY a.actor_id, a.first_name, a.last_name;
 DELIMITER //
 
 CREATE PROCEDURE rewards_report (
-    IN min_monthly_purchases TINYINT UNSIGNED
+    IN min_monthly_purchases INT
     , IN min_dollar_amount_purchased DECIMAL(10,2)
     , OUT count_rewardees INT
 )
@@ -508,7 +509,7 @@ proc: BEGIN
         Create a temporary storage area for
         Customer IDs.
     */
-    CREATE TEMPORARY TABLE tmpCustomer (customer_id SMALLINT UNSIGNED NOT NULL PRIMARY KEY);
+    CREATE TEMPORARY TABLE tmpCustomer (customer_id INT NOT NULL PRIMARY KEY);
 
     /*
         Find all customers meeting the
