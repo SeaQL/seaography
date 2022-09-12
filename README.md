@@ -18,6 +18,15 @@
 
 #### Seaography is a GraphQL framework for building GraphQL resolvers using SeaORM entities. It ships with a CLI tool that can generate ready-to-compile Rust GraphQL servers from existing MySQL, Postgres and SQLite databases.
 
+## Features
+
+* Relational query (1-to-1, 1-to-N)
+* Pagination on query's root entity
+* Filter with operators (e.g. gt, lt, eq)
+* Order by any column
+
+(Right now there is no mutation, but it's on our plan!)
+
 ## Quick start - ready to serve in 3 minutes!
 
 ### Install
@@ -38,6 +47,8 @@ cargo run
 
 Go to http://localhost:8000/ and try out the following queries:
 
+#### Fetch films and their actors
+
 ```graphql
 {
   film(pagination: { limit: 10, page: 0 }, orderBy: { title: ASC }) {
@@ -55,6 +66,8 @@ Go to http://localhost:8000/ and try out the following queries:
   }
 }
 ```
+
+#### Fetch store and its employee
 
 ```graphql
 {
@@ -93,6 +106,8 @@ cargo run
 ```
 
 Go to http://localhost:8000/ and try out the following query:
+
+#### Fetch albums and their artists
 
 ```graphql
 {
