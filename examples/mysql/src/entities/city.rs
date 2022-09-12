@@ -13,9 +13,9 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "City")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub city_id: u16,
+    pub city_id: i32,
     pub city: String,
-    pub country_id: u16,
+    pub country_id: i32,
     pub last_update: DateTimeUtc,
 }
 

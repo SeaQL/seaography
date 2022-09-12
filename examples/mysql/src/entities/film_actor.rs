@@ -13,9 +13,9 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "FilmActor")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub actor_id: u16,
+    pub actor_id: i32,
     #[sea_orm(primary_key, auto_increment = false)]
-    pub film_id: u16,
+    pub film_id: i32,
     pub last_update: DateTimeUtc,
 }
 

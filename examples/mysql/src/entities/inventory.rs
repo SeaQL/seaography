@@ -12,10 +12,10 @@ use sea_orm::entity::prelude::*;
 #[graphql(complex)]
 #[graphql(name = "Inventory")]
 pub struct Model {
-    #[sea_orm(primary_key, column_type = "Custom(\"MEDIUMINT UNSIGNED\".to_owned())")]
-    pub inventory_id: String,
-    pub film_id: u16,
-    pub store_id: u8,
+    #[sea_orm(primary_key)]
+    pub inventory_id: i32,
+    pub film_id: i32,
+    pub store_id: i32,
     pub last_update: DateTimeUtc,
 }
 

@@ -13,7 +13,7 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "Country")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub country_id: u16,
+    pub country_id: i32,
     pub country: String,
     pub last_update: DateTimeUtc,
 }

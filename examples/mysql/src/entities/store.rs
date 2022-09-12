@@ -13,10 +13,10 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "Store")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub store_id: u8,
+    pub store_id: i32,
     #[sea_orm(unique)]
-    pub manager_staff_id: u8,
-    pub address_id: u16,
+    pub manager_staff_id: i32,
+    pub address_id: i32,
     pub last_update: DateTimeUtc,
 }
 
@@ -38,10 +38,10 @@ pub enum Relation {
         on_delete = "Restrict"
     )]
     Staff,
-    #[sea_orm(has_many = "super::customer::Entity")]
-    Customer,
     #[sea_orm(has_many = "super::inventory::Entity")]
     Inventory,
+    #[sea_orm(has_many = "super::customer::Entity")]
+    Customer,
 }
 
 impl Related<super::address::Entity> for Entity {
@@ -56,15 +56,15 @@ impl Related<super::staff::Entity> for Entity {
     }
 }
 
-impl Related<super::customer::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Customer.def()
-    }
-}
-
 impl Related<super::inventory::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Inventory.def()
+    }
+}
+
+impl Related<super::customer::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Customer.def()
     }
 }
 

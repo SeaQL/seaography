@@ -14,17 +14,17 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "Film")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub film_id: u16,
+    pub film_id: i32,
     pub title: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub description: Option<String>,
-    pub release_year: Option<String>,
-    pub language_id: u8,
-    pub original_language_id: Option<u8>,
-    pub rental_duration: u8,
+    pub release_year: Option<u16>,
+    pub language_id: i32,
+    pub original_language_id: Option<i32>,
+    pub rental_duration: i32,
     #[sea_orm(column_type = "Decimal(Some((4, 2)))")]
     pub rental_rate: Decimal,
-    pub length: Option<u16>,
+    pub length: Option<i32>,
     #[sea_orm(column_type = "Decimal(Some((5, 2)))")]
     pub replacement_cost: Decimal,
     pub rating: Option<Rating>,

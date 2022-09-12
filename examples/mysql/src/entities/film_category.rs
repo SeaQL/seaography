@@ -13,7 +13,7 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "FilmCategory")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub film_id: u16,
+    pub film_id: i32,
     #[sea_orm(primary_key, auto_increment = false)]
     pub category_id: u8,
     pub last_update: DateTimeUtc,

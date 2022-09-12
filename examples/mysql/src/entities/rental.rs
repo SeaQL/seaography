@@ -15,11 +15,10 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub rental_id: i32,
     pub rental_date: DateTime,
-    #[sea_orm(column_type = "Custom(\"MEDIUMINT UNSIGNED\".to_owned())")]
-    pub inventory_id: String,
-    pub customer_id: u16,
+    pub inventory_id: i32,
+    pub customer_id: i32,
     pub return_date: Option<DateTime>,
-    pub staff_id: u8,
+    pub staff_id: i32,
     pub last_update: DateTimeUtc,
 }
 

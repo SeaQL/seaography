@@ -13,15 +13,14 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "Address")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub address_id: u16,
+    pub address_id: i32,
     pub address: String,
     pub address2: Option<String>,
     pub district: String,
-    pub city_id: u16,
+    pub city_id: i32,
     pub postal_code: Option<String>,
     pub phone: String,
-    #[sea_orm(column_type = "Custom(\"GEOMETRY\".to_owned())")]
-    pub location: String,
+    pub location: Option<Vec<u8>>,
     pub last_update: DateTimeUtc,
 }
 

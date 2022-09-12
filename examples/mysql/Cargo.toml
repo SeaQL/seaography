@@ -12,7 +12,7 @@ heck = { version = "0.4.0" }
 itertools = { version = "0.10.3" }
 poem = { version = "1.3.29" }
 sea-orm = { version = "^0.9", features = ["sqlx-mysql", "runtime-async-std-native-tls"] }
-seaography = { version = "^0.1", path = "../../", features = [ "with-decimal", "with-chrono" ] } # TODO before production place version here
+seaography = { version = "^0.1", features = [ "with-decimal", "with-chrono" ] }
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.34" }
 tracing-subscriber = { version = "0.3.11" }

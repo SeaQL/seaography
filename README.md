@@ -36,7 +36,7 @@ seaography-cli mysql://user:pw@localhost/sakila seaography-mysql-example .
 cargo run
 ```
 
-Go to http://localhost:8000/ and try out the following query:
+Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
@@ -50,6 +50,24 @@ Go to http://localhost:8000/ and try out the following query:
           firstName
           lastName
         }
+      }
+    }
+  }
+}
+```
+
+```graphql
+{
+  store(filters: { storeId: { eq: 1 } }) {
+    data {
+      storeId
+      address {
+        address
+        address2
+      }
+      staff {
+        firstName
+        lastName
       }
     }
   }

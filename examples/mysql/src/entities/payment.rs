@@ -13,9 +13,9 @@ use sea_orm::entity::prelude::*;
 #[graphql(name = "Payment")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub payment_id: u16,
-    pub customer_id: u16,
-    pub staff_id: u8,
+    pub payment_id: i32,
+    pub customer_id: i32,
+    pub staff_id: i32,
     pub rental_id: Option<i32>,
     #[sea_orm(column_type = "Decimal(Some((5, 2)))")]
     pub amount: Decimal,
