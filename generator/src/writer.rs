@@ -1,6 +1,5 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use seaography_discoverer::SqlVersion;
 
 use crate::util::add_line_break;
 
@@ -44,19 +43,13 @@ pub fn write_query_root<P: AsRef<std::path::Path>>(
 pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
     path: &P,
     crate_name: &str,
-    sql_version: &SqlVersion,
+    sql_library: &str,
 ) -> std::io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
     let content = include_str!("_Cargo.toml");
 
     let content = content.replace("<seaography-package-name>", crate_name);
-
-    let sql_library = match sql_version {
-        seaography_discoverer::SqlVersion::Sqlite => "sqlx-sqlite",
-        seaography_discoverer::SqlVersion::Mysql => "sqlx-mysql",
-        seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
-    };
 
     let content = content.replace("<seaography-sql-library>", sql_library);
 
