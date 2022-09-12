@@ -1,8 +1,8 @@
 <div align="center">
 
-  <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/SeaQL logo.png" width="280"/>
-
-  <h1>Seaography</h1>
+  <h1>
+    <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280 alt="Seaography"/>
+  </h1>
 
   <p>
     <strong>🧭 A GraphQL framework and code generator for SeaORM</strong>
