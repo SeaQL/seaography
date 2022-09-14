@@ -1,6 +1,6 @@
 use async_graphql::{dataloader::DataLoader, EmptyMutation, EmptySubscription, Response, Schema};
-use seaography_postgres_example::{OrmDataloader, QueryRoot};
 use sea_orm::Database;
+use seaography_postgres_example::{OrmDataloader, QueryRoot};
 
 pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
@@ -49,7 +49,7 @@ async fn test_simple_query() {
             "#,
             )
             .await,
-            r#"
+        r#"
             {
               "store": {
                 "data": [
@@ -96,7 +96,7 @@ async fn test_simple_query_with_filter() {
             "#,
             )
             .await,
-            r#"
+        r#"
             {
               "store": {
                 "data": [
