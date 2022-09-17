@@ -16,6 +16,7 @@ seaography = { version = "^0.1", features = [ "with-decimal", "with-chrono" ] }
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.34" }
 tracing-subscriber = { version = "0.3.11" }
+lazy_static = { version = "1.4.0" }
 
 [dev-dependencies]
 serde_json = { version = '1.0.82' }
