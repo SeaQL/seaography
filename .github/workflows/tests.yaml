@@ -87,13 +87,13 @@ jobs:
             - name: Remove generated folder
               run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
-              run: cp ./examples/sqlite/chinook.db .
+              run: cp ./examples/sqlite/sakila.db .
             - uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
                     --package seaography-cli --
-                    sqlite://chinook.db seaography-sqlite-example ./examples/sqlite
+                    sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
             - name: Integration tests
               working-directory: ./examples/sqlite
               run: cargo test
