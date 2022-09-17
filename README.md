@@ -18,6 +18,13 @@
 
 #### Seaography is a GraphQL framework for building GraphQL resolvers using SeaORM entities. It ships with a CLI tool that can generate ready-to-compile Rust GraphQL servers from existing MySQL, Postgres and SQLite databases.
 
+## Benefits
+
+* Quick and easy to get started
+* Generates readable code
+* Extensible project structure
+* Based on popular async libraries: [async-graphql](https://github.com/async-graphql/async-graphql) and [SeaORM](https://github.com/SeaQL/sea-orm)
+
 ## Features
 
 * Relational query (1-to-1, 1-to-N)
