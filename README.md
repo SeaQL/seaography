@@ -87,6 +87,22 @@ Go to http://localhost:8000/ and try out the following queries:
 }
 ```
 
+### Fetch inactive customers with pagination
+
+```grahpql
+{
+  customer(filters: { active: { eq: 0 } }, pagination: { page: 2, limit: 3 }) {
+    data {
+      customerId
+      lastName
+      email
+    }
+    pages
+    current
+  }
+}
+```
+
 ### Postgres
 
 Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/postgres/sakila-schema.sql) sample database.
@@ -101,25 +117,8 @@ cargo run
 
 ```sh
 cd examples/sqlite
-seaography-cli sqlite://chinook.db seaography-sqlite-example .
+seaography-cli sqlite://sakila.db seaography-sqlite-example .
 cargo run
-```
-
-Go to http://localhost:8000/ and try out the following query:
-
-#### Fetch albums and their artists
-
-```graphql
-{
-  albums(pagination: { limit: 10, page: 0 }) {
-    data {
-      title
-      artists {
-        name
-      }
-    }
-  }
-}
 ```
 
 ## Contribution

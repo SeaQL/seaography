@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub film_id: i32,
     pub title: String,
-    pub description: Option<Vec<u8>>,
+    pub description: Option<String>,
     pub release_year: Option<String>,
     pub language_id: i16,
     pub original_language_id: Option<i16>,

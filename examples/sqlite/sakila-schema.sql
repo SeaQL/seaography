@@ -218,7 +218,7 @@ CREATE TRIGGER customer_trigger_au AFTER UPDATE ON customer
 CREATE TABLE film (
   film_id int NOT NULL,
   title VARCHAR(255) NOT NULL,
-  description BLOB SUB_TYPE TEXT DEFAULT NULL,
+  description TEXT DEFAULT NULL,
   release_year VARCHAR(4) DEFAULT NULL,
   language_id SMALLINT NOT NULL,
   original_language_id SMALLINT DEFAULT NULL,
@@ -329,7 +329,7 @@ CREATE TRIGGER film_category_trigger_au AFTER UPDATE ON film_category
 CREATE TABLE film_text (
   film_id SMALLINT NOT NULL,
   title VARCHAR(255) NOT NULL,
-  description BLOB SUB_TYPE TEXT,
+  description TEXT,
   PRIMARY KEY  (film_id)
 )
 ;

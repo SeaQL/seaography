@@ -15,7 +15,7 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub film_id: i16,
     pub title: String,
-    pub description: Option<Vec<u8>>,
+    pub description: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, seaography::macros::RelationsCompact)]
