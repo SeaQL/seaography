@@ -28,6 +28,6 @@ sea-orm = { version = "^0.9", default-features = false }
 
 [features]
 default = []
-with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
-with-decimal = ["sea-orm/with-rust_decimal", "async-graphql/decimal"]
-with-uuid = ["sea-orm/with-uuid"]
+with-chrono = ["seaography-derive/with-chrono", "sea-orm/with-chrono", "async-graphql/chrono"]
+with-decimal = ["seaography-derive/with-decimal", "sea-orm/with-rust_decimal", "async-graphql/decimal"]
+with-uuid = ["seaography-derive/with-uuid", "sea-orm/with-uuid"]
