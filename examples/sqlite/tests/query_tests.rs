@@ -195,3 +195,69 @@ async fn test_complex_filter_with_pagination() {
           "#,
     )
 }
+
+#[tokio::test]
+async fn test_cursor_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  tracksCursor(cursor:{limit: 4, cursor: "Int[4]:2822"}, filters:{milliseconds: { gt: 2573031}}) {
+                    edges {
+                      node {
+                        trackId
+                        name
+                        milliseconds
+                      }
+                      cursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "tracksCursor": {
+            "edges": [
+              {
+                "node": {
+                  "trackId": 2823,
+                  "name": "Collaborators",
+                  "milliseconds": 2626626
+                },
+                "cursor": "Int[4]:2823"
+              },
+              {
+                "node": {
+                  "trackId": 2824,
+                  "name": "Torn",
+                  "milliseconds": 2631291
+                },
+                "cursor": "Int[4]:2824"
+              },
+              {
+                "node": {
+                  "trackId": 2826,
+                  "name": "Hero",
+                  "milliseconds": 2713755
+                },
+                "cursor": "Int[4]:2826"
+              },
+              {
+                "node": {
+                  "trackId": 2827,
+                  "name": "Unfinished Business",
+                  "milliseconds": 2622038
+                },
+                "cursor": "Int[4]:2827"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
