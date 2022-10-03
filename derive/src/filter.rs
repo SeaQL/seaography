@@ -100,7 +100,7 @@ pub fn filter_struct(
     // let type_name = quote!{
     //     impl async_graphql::TypeName for Filter {
     //         fn type_name() -> ::std::borrow::Cow<'static, str> {
-    //             use heck::ToUpperCamelCase;
+    //             use seaography::heck::ToUpperCamelCase;
 
     //             let filter_name = format!("{}Filter", Entity::default().table_name().to_string().to_upper_camel_case());
 

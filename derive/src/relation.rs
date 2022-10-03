@@ -188,7 +188,7 @@ pub fn relation_fn(
     let (return_type, extra_imports, map_method) = if has_many.is_some() {
         (
             quote! { Vec<#target_model> },
-            quote! { use itertools::Itertools; },
+            quote! { use seaography::itertools::Itertools; },
             quote! { .into_group_map() },
         )
     } else if belongs_to.is_some() {
@@ -270,7 +270,7 @@ pub fn relation_fn(
                     &self,
                     keys: &[#foreign_key_name],
                 ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
-                    use heck::ToSnakeCase;
+                    use seaography::heck::ToSnakeCase;
                     use ::std::str::FromStr;
 
                     let key_values: Vec<_> = keys
@@ -313,7 +313,7 @@ pub fn relation_fn(
                 &self,
                 ctx: &async_graphql::Context<'a>,
             ) -> Option<#return_type> {
-                use heck::ToSnakeCase;
+                use seaography::heck::ToSnakeCase;
                 use ::std::str::FromStr;
 
                 let data_loader = ctx
