@@ -197,3 +197,234 @@ async fn test_complex_filter_with_pagination() {
             "#,
     )
 }
+
+#[tokio::test]
+async fn test_cursor_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 5}) {
+                    edges {
+                      node {
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      startCursor
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "paymentCursor": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 342,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "KAREN"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 3146,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "VICTORIA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5280,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "VANESSA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5281,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "ALMA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5550,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "ROSEMARY"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": false,
+              "hasNextPage": true,
+              "startCursor": "Int[3]:342",
+              "endCursor": "Int[4]:5550"
+            }
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn test_cursor_pagination_prev() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 3, cursor: "SmallUnsigned[4]:5550"}) {
+                    edges {
+                      node {
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      startCursor
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "paymentCursor": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 6409,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "TANYA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 8272,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "RICHARD"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 9803,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "NICHOLAS"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": true,
+              "hasNextPage": true,
+              "startCursor": "Int[4]:6409",
+              "endCursor": "Int[4]:9803"
+            }
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn test_cursor_pagination_no_next() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 3, cursor: "SmallUnsigned[4]:9803"}) {
+                    edges {
+                      node {
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      startCursor
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "paymentCursor": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 15821,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "KENT"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 15850,
+                  "amount": "11.9900",
+                  "customer": {
+                    "firstName": "TERRANCE"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": true,
+              "hasNextPage": false,
+              "startCursor": "Int[5]:15821",
+              "endCursor": "Int[5]:15850"
+            }
+          }
+        }
+        "#,
+    )
+}
