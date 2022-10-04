@@ -1,5 +1,5 @@
 use heck::ToUpperCamelCase;
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
@@ -40,145 +40,86 @@ pub fn root_query_fn(
         .iter()
         .map(|path| {
             let name = format_ident!("{}", path.clone().into_iter().last().unwrap().to_string());
-            let name_cursor = format_ident!("{}_cursor", path.clone().into_iter().last().unwrap().to_string());
+            let name_cursor = format_ident!(
+                "{}_cursor",
+                path.clone().into_iter().last().unwrap().to_string()
+            );
 
-            quote!{
-                pub async fn #name<'a>(
-                    &self,
-                    ctx: &async_graphql::Context<'a>,
-                    filters: Option<#path::Filter>,
-                    pagination: Option<PaginationInput>,
-                    order_by: Option<#path::OrderBy>,
-                ) -> PaginatedResult<#path::Model> {
-                    use sea_orm::prelude::*;
+            let basic_query = basic_query(&name, path);
 
-                    let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
-                    let stmt = #path::Entity::find()
-                        .filter(#path::filter_recursive(filters));
+            let cursor_query = cursor_query(&name_cursor, path);
 
-                    let stmt = #path::order_by(stmt, order_by);
+            quote! {
+                #basic_query
 
-                    if let Some(pagination) = pagination {
-                        let paginator = stmt.paginate(db, pagination.limit);
-                        let data: Vec<#path::Model> =
-                            paginator.fetch_page(pagination.page).await.unwrap();
-                        let pages = paginator.num_pages().await.unwrap();
-                        PaginatedResult {
-                            data,
-                            pages,
-                            current: pagination.page,
-                        }
-                    } else {
-                        let data: Vec<#path::Model> = stmt.all(db).await.unwrap();
-                        PaginatedResult {
-                            data,
-                            pages: 1,
-                            current: 1,
-                        }
-                    }
-                }
-
-                pub async fn #name_cursor<'a>(
-                    &self,
-                    ctx: &async_graphql::Context<'a>,
-                    filters: Option<#path::Filter>,
-                    cursor: CursorPaginationInput,
-                    order_by: Option<#path::OrderBy>,
-                ) -> async_graphql::types::connection::Connection<String, #path::Model, async_graphql::types::connection::EmptyFields, async_graphql::types::connection::EmptyFields> {
-                    use sea_orm::prelude::*;
-                    use sea_orm::Iterable;
-                    use itertools::Itertools;
-                    use async_graphql::types::connection::CursorType;
-
-                    println!("cursor_filters: {:?}", filters);
-
-                    let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
-                    let stmt = #path::Entity::find()
-                        .filter(#path::filter_recursive(filters));
-
-                    let stmt = #path::order_by(stmt, order_by);
-
-                    let mut stmt = if #path::PrimaryKey::iter().len() == 1 {
-                        let column = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect::<Vec<#path::Column>>()[0];
-                        stmt.cursor_by(column)
-                    } else if #path::PrimaryKey::iter().len() == 2 {
-                        let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column)>().unwrap();
-                        stmt.cursor_by(columns)
-                    } else if #path::PrimaryKey::iter().len() == 3 {
-                        let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column, #path::Column)>().unwrap();
-                        stmt.cursor_by(columns)
-                    } else {
-                        panic!("seaography does not support cursors with size greater than 3")
-                    };
-
-                    if let Some(cursor_string) = cursor.cursor {
-                        let values = CursorValues::decode_cursor(cursor_string.as_str()).unwrap();
-
-                        if values.0.len() == 1 {
-                            let value = values.0[0].clone();
-                            stmt.after(value);
-                        } else if values.0.len() == 2 {
-                            let values = values.0.into_iter().collect_tuple::<(sea_orm::Value, sea_orm::Value)>().unwrap();
-                            stmt.after(values);
-                        } else if values.0.len() == 3 {
-                            let values = values.0.into_iter().collect_tuple::<(sea_orm::Value, sea_orm::Value, sea_orm::Value)>().unwrap();
-                            stmt.after(values);
-                        } else {
-                            panic!("seaography does not support cursors values with size greater than 3");
-                        }
-                    }
-
-                    let mut stmt = stmt.first(cursor.limit);
-
-                    let data = stmt
-                        .all(db)
-                        .await
-                        .unwrap();
-
-                    let edges: Vec<async_graphql::types::connection::Edge<String, #path::Model, async_graphql::connection::EmptyFields>> = data
-                        .into_iter()
-                        .map(|node| {
-                            let values: Vec<sea_orm::Value> = #path::PrimaryKey::iter()
-                                .map(|variant| {
-                                    node.get(variant.into_column())
-                                })
-                                .collect();
-
-                            let cursor_string = CursorValues(values).encode_cursor();
-
-                            async_graphql::types::connection::Edge::new(cursor_string, node)
-                        })
-                        .collect();
-
-                    let mut result = async_graphql::types::connection::Connection::<
-                        String,
-                        #path::Model,
-                        async_graphql::types::connection::EmptyFields,
-                        async_graphql::types::connection::EmptyFields
-                    >::new(
-                        false, // has_previous_page: TODO test with cursor "before"
-                        false // has_next_page: TODO test with cursor "after" and last cursor
-                    );
-
-                    result.edges.extend(edges);
-
-                    result
-                }
+                #cursor_query
             }
         })
         .collect();
 
+    let basic_dependencies = basic_dependencies(names);
+
+    let cursor_dependencies = cursor_dependencies();
+
     Ok(quote! {
+        #basic_dependencies
+
+        #cursor_dependencies
+
+        #[async_graphql::Object]
+        impl #ident {
+            #(#queries)*
+        }
+    })
+}
+
+pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
+    quote! {
+        pub async fn #name<'a>(
+            &self,
+            ctx: &async_graphql::Context<'a>,
+            filters: Option<#path::Filter>,
+            pagination: Option<PaginationInput>,
+            order_by: Option<#path::OrderBy>,
+        ) -> PaginatedResult<#path::Model> {
+            use sea_orm::prelude::*;
+
+            println!("filters: {:?}", filters);
+
+            let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
+            let stmt = #path::Entity::find()
+                .filter(#path::filter_recursive(filters));
+
+            let stmt = #path::order_by(stmt, order_by);
+
+            if let Some(pagination) = pagination {
+                let paginator = stmt.paginate(db, pagination.limit);
+                let data: Vec<#path::Model> =
+                    paginator.fetch_page(pagination.page).await.unwrap();
+                let pages = paginator.num_pages().await.unwrap();
+                PaginatedResult {
+                    data,
+                    pages,
+                    current: pagination.page,
+                }
+            } else {
+                let data: Vec<#path::Model> = stmt.all(db).await.unwrap();
+                PaginatedResult {
+                    data,
+                    pages: 1,
+                    current: 1,
+                }
+            }
+        }
+    }
+}
+
+pub fn basic_dependencies(names: Vec<TokenStream>) -> TokenStream {
+    quote! {
         #[derive(Debug, async_graphql::InputObject)]
         pub struct PaginationInput {
             pub limit: usize,
             pub page: usize,
-        }
-
-        #[derive(Debug, async_graphql::InputObject)]
-        pub struct CursorPaginationInput {
-            pub cursor: Option<String>,
-            pub limit: u64,
         }
 
         #[derive(Debug, async_graphql::SimpleObject)]
@@ -187,6 +128,107 @@ pub fn root_query_fn(
             pub data: Vec<T>,
             pub pages: usize,
             pub current: usize,
+        }
+    }
+}
+
+pub fn cursor_query(name: &Ident, path: &TokenStream) -> TokenStream {
+    quote! {
+        pub async fn #name<'a>(
+            &self,
+            ctx: &async_graphql::Context<'a>,
+            filters: Option<#path::Filter>,
+            cursor: CursorPaginationInput,
+            order_by: Option<#path::OrderBy>,
+        ) -> async_graphql::types::connection::Connection<String, #path::Model, async_graphql::types::connection::EmptyFields, async_graphql::types::connection::EmptyFields> {
+            use sea_orm::prelude::*;
+            use sea_orm::Iterable;
+            use itertools::Itertools;
+            use async_graphql::types::connection::CursorType;
+
+            println!("cursor_filters: {:?}", filters);
+
+            let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
+            let stmt = #path::Entity::find()
+                .filter(#path::filter_recursive(filters));
+
+            let stmt = #path::order_by(stmt, order_by);
+
+            let mut stmt = if #path::PrimaryKey::iter().len() == 1 {
+                let column = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect::<Vec<#path::Column>>()[0];
+                stmt.cursor_by(column)
+            } else if #path::PrimaryKey::iter().len() == 2 {
+                let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column)>().unwrap();
+                stmt.cursor_by(columns)
+            } else if #path::PrimaryKey::iter().len() == 3 {
+                let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column, #path::Column)>().unwrap();
+                stmt.cursor_by(columns)
+            } else {
+                panic!("seaography does not support cursors with size greater than 3")
+            };
+
+            if let Some(cursor_string) = cursor.cursor {
+                let values = CursorValues::decode_cursor(cursor_string.as_str()).unwrap();
+
+                if values.0.len() == 1 {
+                    let value = values.0[0].clone();
+                    stmt.after(value);
+                } else if values.0.len() == 2 {
+                    let values = values.0.into_iter().collect_tuple::<(sea_orm::Value, sea_orm::Value)>().unwrap();
+                    stmt.after(values);
+                } else if values.0.len() == 3 {
+                    let values = values.0.into_iter().collect_tuple::<(sea_orm::Value, sea_orm::Value, sea_orm::Value)>().unwrap();
+                    stmt.after(values);
+                } else {
+                    panic!("seaography does not support cursors values with size greater than 3");
+                }
+            }
+
+            let mut stmt = stmt.first(cursor.limit);
+
+            let data = stmt
+                .all(db)
+                .await
+                .unwrap();
+
+            let edges: Vec<async_graphql::types::connection::Edge<String, #path::Model, async_graphql::connection::EmptyFields>> = data
+                .into_iter()
+                .map(|node| {
+                    let values: Vec<sea_orm::Value> = #path::PrimaryKey::iter()
+                        .map(|variant| {
+                            node.get(variant.into_column())
+                        })
+                        .collect();
+
+                    let cursor_string = CursorValues(values).encode_cursor();
+
+                    async_graphql::types::connection::Edge::new(cursor_string, node)
+                })
+                .collect();
+
+            let mut result = async_graphql::types::connection::Connection::<
+                String,
+                #path::Model,
+                async_graphql::types::connection::EmptyFields,
+                async_graphql::types::connection::EmptyFields
+            >::new(
+                false, // has_previous_page: TODO test with cursor "before"
+                false // has_next_page: TODO test with cursor "after" and last cursor
+            );
+
+            result.edges.extend(edges);
+
+            result
+        }
+    }
+}
+
+pub fn cursor_dependencies() -> TokenStream {
+    quote! {
+        #[derive(Debug, async_graphql::InputObject)]
+        pub struct CursorPaginationInput {
+            pub cursor: Option<String>,
+            pub limit: u64,
         }
 
         #[derive(Debug)]
@@ -432,10 +474,5 @@ pub fn root_query_fn(
                 .join(",")
             }
         }
-
-        #[async_graphql::Object]
-        impl #ident {
-            #(#queries)*
-        }
-    })
+    }
 }
