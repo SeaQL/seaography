@@ -154,42 +154,93 @@ pub fn cursor_query(name: &Ident, path: &TokenStream) -> TokenStream {
 
             let stmt = #path::order_by(stmt, order_by);
 
-            let mut stmt = if #path::PrimaryKey::iter().len() == 1 {
-                let column = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect::<Vec<#path::Column>>()[0];
-                stmt.cursor_by(column)
-            } else if #path::PrimaryKey::iter().len() == 2 {
-                let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column)>().unwrap();
-                stmt.cursor_by(columns)
-            } else if #path::PrimaryKey::iter().len() == 3 {
-                let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column, #path::Column)>().unwrap();
-                stmt.cursor_by(columns)
-            } else {
-                panic!("seaography does not support cursors with size greater than 3")
-            };
+            let next_stmt = stmt.clone();
+            let previous_stmt = stmt.clone();
+
+            fn apply_stmt_cursor_by(stmt: sea_orm::entity::prelude::Select<#path::Entity>) -> sea_orm::Cursor<sea_orm::SelectModel<#path::Model>> {
+                if #path::PrimaryKey::iter().len() == 1 {
+                    let column = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect::<Vec<#path::Column>>()[0];
+                    stmt.cursor_by(column)
+                } else if #path::PrimaryKey::iter().len() == 2 {
+                    let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column)>().unwrap();
+                    stmt.cursor_by(columns)
+                } else if #path::PrimaryKey::iter().len() == 3 {
+                    let columns = #path::PrimaryKey::iter().map(|variant| variant.into_column()).collect_tuple::<(#path::Column, #path::Column, #path::Column)>().unwrap();
+                    stmt.cursor_by(columns)
+                } else {
+                    panic!("seaography does not support cursors with size greater than 3")
+                }
+            }
+
+            let mut stmt = apply_stmt_cursor_by(stmt);
 
             if let Some(cursor_string) = cursor.cursor {
                 let values = CursorValues::decode_cursor(cursor_string.as_str()).unwrap();
 
-                if values.0.len() == 1 {
-                    let value = values.0[0].clone();
-                    stmt.after(value);
-                } else if values.0.len() == 2 {
-                    let values = values.0.into_iter().collect_tuple::<(sea_orm::Value, sea_orm::Value)>().unwrap();
-                    stmt.after(values);
-                } else if values.0.len() == 3 {
-                    let values = values.0.into_iter().collect_tuple::<(sea_orm::Value, sea_orm::Value, sea_orm::Value)>().unwrap();
-                    stmt.after(values);
-                } else {
-                    panic!("seaography does not support cursors values with size greater than 3");
-                }
+                let cursor_values: sea_orm::sea_query::value::ValueTuple = map_cursor_values(values.0);
+
+                stmt.after(cursor_values);
             }
 
-            let mut stmt = stmt.first(cursor.limit);
-
             let data = stmt
+                .first(cursor.limit)
                 .all(db)
                 .await
                 .unwrap();
+
+            let has_next_page: bool = {
+                let mut next_stmt = apply_stmt_cursor_by(next_stmt);
+
+                let last_node = data.last();
+
+                if let Some(node) = last_node {
+                    let values: Vec<sea_orm::Value> = #path::PrimaryKey::iter()
+                        .map(|variant| {
+                            node.get(variant.into_column())
+                        })
+                        .collect();
+
+                    let values = map_cursor_values(values);
+
+                    let next_data = next_stmt
+                        .first(cursor.limit)
+                        .after(values)
+                        .all(db)
+                        .await
+                        .unwrap();
+
+                    next_data.len() != 0
+                } else {
+                    false
+                }
+            };
+
+            let has_previous_page: bool = {
+                let mut previous_stmt = apply_stmt_cursor_by(previous_stmt);
+
+                let first_node = data.first();
+
+                if let Some(node) = first_node {
+                    let values: Vec<sea_orm::Value> = #path::PrimaryKey::iter()
+                        .map(|variant| {
+                            node.get(variant.into_column())
+                        })
+                        .collect();
+
+                    let values = map_cursor_values(values);
+
+                    let previous_data = previous_stmt
+                        .first(cursor.limit)
+                        .before(values)
+                        .all(db)
+                        .await
+                        .unwrap();
+
+                    previous_data.len() != 0
+                } else {
+                    false
+                }
+            };
 
             let edges: Vec<async_graphql::types::connection::Edge<String, #path::Model, async_graphql::connection::EmptyFields>> = data
                 .into_iter()
@@ -212,8 +263,8 @@ pub fn cursor_query(name: &Ident, path: &TokenStream) -> TokenStream {
                 async_graphql::types::connection::EmptyFields,
                 async_graphql::types::connection::EmptyFields
             >::new(
-                false, // has_previous_page: TODO test with cursor "before"
-                false // has_next_page: TODO test with cursor "after" and last cursor
+                has_previous_page,
+                has_next_page
             );
 
             result.edges.extend(edges);
@@ -237,6 +288,20 @@ pub fn cursor_dependencies() -> TokenStream {
             Length,
             ColonSkip,
             Data,
+        }
+
+        pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> sea_orm::sea_query::value::ValueTuple {
+            use itertools::Itertools;
+
+            if values.len() == 1 {
+                sea_orm::sea_query::value::ValueTuple::One(values[0].clone())
+            } else if values.len() == 2 {
+                sea_orm::sea_query::value::ValueTuple::Two(values[0].clone(), values[1].clone())
+            } else if values.len() == 3 {
+                sea_orm::sea_query::value::ValueTuple::Three(values[0].clone(), values[1].clone(), values[2].clone())
+            } else {
+                panic!("seaography does not support cursors values with size greater than 3")
+            }
         }
 
         #[derive(Debug)]
