@@ -62,10 +62,16 @@ pub fn filter_struct(
                 "u64",
                 "f32",
                 "f64",
+                #[cfg(feature = "with-chrono")]
                 "Date",
+                #[cfg(feature = "with-chrono")]
                 "DateTime",
+                #[cfg(feature = "with-chrono")]
                 "DateTimeUtc",
+                #[cfg(feature = "with-decimal")]
                 "Decimal",
+                #[cfg(feature = "with-uuid")]
+                "Uuid",
                 "BinaryVector",
                 "bool",
             ];
