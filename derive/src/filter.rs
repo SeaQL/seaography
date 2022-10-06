@@ -70,6 +70,8 @@ pub fn filter_struct(
                 "DateTimeUtc",
                 #[cfg(feature = "with-decimal")]
                 "Decimal",
+                #[cfg(feature = "with-json")]
+                "Json",
                 #[cfg(feature = "with-uuid")]
                 "Uuid",
                 "BinaryVector",
