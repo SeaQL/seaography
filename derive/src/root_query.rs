@@ -52,7 +52,6 @@ pub fn root_query_fn(
                 ) -> PaginatedResult<#path::Model> {
                     use sea_orm::prelude::*;
 
-                    println!("filters: {:?}", filters);
                     let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
                     let stmt = #path::Entity::find()
                         .filter(#path::filter_recursive(filters));
