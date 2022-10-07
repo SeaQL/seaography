@@ -47,11 +47,16 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ) -> std::io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
-    let content = include_str!("_Cargo.toml");
+    let ver = format!(
+        "^{}.{}.0",
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        env!("CARGO_PKG_VERSION_MINOR")
+    );
 
-    let content = content.replace("<seaography-package-name>", crate_name);
-
-    let content = content.replace("<seaography-sql-library>", sql_library);
+    let content = include_str!("_Cargo.toml")
+        .replace("<seaography-package-name>", crate_name)
+        .replace("<seaography-sql-library>", sql_library)
+        .replace("<seaography-version>", &ver);
 
     std::fs::write(file_path, content.as_bytes())?;
 
