@@ -128,6 +128,8 @@
 //!
 //! Seaography is a community driven project. We welcome you to participate, contribute and together build for Rust's future.
 
+pub use heck;
+pub use itertools;
 pub use seaography_derive as macros;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]

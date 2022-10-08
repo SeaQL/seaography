@@ -95,6 +95,8 @@ jobs:
                   args: >
                     --package seaography-cli --
                     sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Integration tests
               working-directory: ./examples/sqlite
               run: cargo test
@@ -145,6 +147,8 @@ jobs:
                   args: >
                     --package seaography-cli --
                     mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example ./examples/mysql
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
             - name: Integration tests
               working-directory: ./examples/mysql
               run: cargo test
@@ -192,6 +196,8 @@ jobs:
                   args: >
                     --package seaography-cli --
                     postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example ./examples/postgres
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
             - name: Integration tests
               working-directory: ./examples/postgres
               run: cargo test

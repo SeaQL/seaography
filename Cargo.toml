@@ -25,6 +25,8 @@ categories = ["database"]
 async-graphql = { version = "4.0.12", default-features = false }
 seaography-derive = { version = "^0.1", path = "./derive" }
 sea-orm = { version = "^0.9", default-features = false }
+itertools = { version = "0.10.3" }
+heck = { version = "0.4.0" }
 
 [features]
 default = []
