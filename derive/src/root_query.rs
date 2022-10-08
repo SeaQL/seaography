@@ -143,7 +143,7 @@ pub fn cursor_query(name: &Ident, path: &TokenStream) -> TokenStream {
         ) -> async_graphql::types::connection::Connection<String, #path::Model, async_graphql::types::connection::EmptyFields, async_graphql::types::connection::EmptyFields> {
             use sea_orm::prelude::*;
             use sea_orm::Iterable;
-            use itertools::Itertools;
+            use seaography::itertools::Itertools;
             use async_graphql::types::connection::CursorType;
 
             println!("cursor_filters: {:?}", filters);
@@ -291,7 +291,7 @@ pub fn cursor_dependencies() -> TokenStream {
         }
 
         pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> sea_orm::sea_query::value::ValueTuple {
-            use itertools::Itertools;
+            use seaography::itertools::Itertools;
 
             if values.len() == 1 {
                 sea_orm::sea_query::value::ValueTuple::One(values[0].clone())
@@ -445,7 +445,7 @@ pub fn cursor_dependencies() -> TokenStream {
             }
 
             fn encode_cursor(&self) -> String {
-                use itertools::Itertools;
+                use seaography::itertools::Itertools;
 
                 self.0.iter().map(|value| -> String {
                     match value {
