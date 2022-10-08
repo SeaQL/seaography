@@ -32,4 +32,5 @@ heck = { version = "0.4.0" }
 default = []
 with-chrono = ["seaography-derive/with-chrono", "sea-orm/with-chrono", "async-graphql/chrono"]
 with-decimal = ["seaography-derive/with-decimal", "sea-orm/with-rust_decimal", "async-graphql/decimal"]
+with-json = ["seaography-derive/with-json", "sea-orm/with-json"]
 with-uuid = ["seaography-derive/with-uuid", "sea-orm/with-uuid"]

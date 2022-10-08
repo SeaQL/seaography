@@ -152,7 +152,10 @@ pub type BinaryVector = Vec<u8>;
 #[graphql(concrete(name = "BigUnsignedFilter", params(u64)))]
 #[graphql(concrete(name = "FloatFilter", params(f32)))]
 #[graphql(concrete(name = "DoubleFilter", params(f64)))]
-// TODO #[graphql(concrete(name = "JsonFilter", params()))]
+#[cfg_attr(
+    feature = "with-json",
+    graphql(concrete(name = "JsonFilter", params(sea_orm::prelude::Json)))
+)]
 // TODO #[graphql(concrete(name = "DateFilter", params()))]
 // TODO #[graphql(concrete(name = "TimeFilter", params()))]
 #[cfg_attr(
