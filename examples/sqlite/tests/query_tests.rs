@@ -205,14 +205,15 @@ async fn test_cursor_pagination() {
             .execute(
                 r#"
                 {
-                  tracksCursor(cursor:{limit: 5}, filters:{milliseconds: { gt: 2573031}}) {
+                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 5}) {
                     edges {
                       node {
-                        trackId
-                        name
-                        milliseconds
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
                       }
-                      cursor
                     }
                     pageInfo {
                       hasPreviousPage
@@ -227,54 +228,59 @@ async fn test_cursor_pagination() {
             .await,
         r#"
         {
-          "tracksCursor": {
+          "paymentCursor": {
             "edges": [
               {
                 "node": {
-                  "trackId": 2819,
-                  "name": "Battlestar Galactica: The Story So Far",
-                  "milliseconds": 2622250
-                },
-                "cursor": "Int[4]:2819"
+                  "paymentId": 342,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "KAREN"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 2820,
-                  "name": "Occupation / Precipice",
-                  "milliseconds": 5286953
-                },
-                "cursor": "Int[4]:2820"
+                  "paymentId": 3146,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VICTORIA"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 2821,
-                  "name": "Exodus, Pt. 1",
-                  "milliseconds": 2621708
-                },
-                "cursor": "Int[4]:2821"
+                  "paymentId": 5280,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VANESSA"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 2822,
-                  "name": "Exodus, Pt. 2",
-                  "milliseconds": 2618000
-                },
-                "cursor": "Int[4]:2822"
+                  "paymentId": 5281,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ALMA"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 2823,
-                  "name": "Collaborators",
-                  "milliseconds": 2626626
-                },
-                "cursor": "Int[4]:2823"
+                  "paymentId": 5550,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ROSEMARY"
+                  }
+                }
               }
             ],
             "pageInfo": {
               "hasPreviousPage": false,
               "hasNextPage": true,
-              "startCursor": "Int[4]:2819",
-              "endCursor": "Int[4]:2823"
+              "startCursor": "Int[3]:342",
+              "endCursor": "Int[4]:5550"
             }
           }
         }
@@ -291,14 +297,15 @@ async fn test_cursor_pagination_prev() {
             .execute(
                 r#"
                 {
-                  tracksCursor(cursor:{limit: 5, cursor: "Int[4]:2823"}, filters:{milliseconds: { gt: 2573031}}) {
+                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 3, cursor: "SmallUnsigned[4]:5550"}) {
                     edges {
                       node {
-                        trackId
-                        name
-                        milliseconds
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
                       }
-                      cursor
                     }
                     pageInfo {
                       hasPreviousPage
@@ -313,54 +320,41 @@ async fn test_cursor_pagination_prev() {
             .await,
         r#"
         {
-          "tracksCursor": {
+          "paymentCursor": {
             "edges": [
               {
                 "node": {
-                  "trackId": 2824,
-                  "name": "Torn",
-                  "milliseconds": 2631291
-                },
-                "cursor": "Int[4]:2824"
+                  "paymentId": 6409,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "TANYA"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 2826,
-                  "name": "Hero",
-                  "milliseconds": 2713755
-                },
-                "cursor": "Int[4]:2826"
+                  "paymentId": 8272,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "RICHARD"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 2827,
-                  "name": "Unfinished Business",
-                  "milliseconds": 2622038
-                },
-                "cursor": "Int[4]:2827"
-              },
-              {
-                "node": {
-                  "trackId": 2828,
-                  "name": "The Passage",
-                  "milliseconds": 2623875
-                },
-                "cursor": "Int[4]:2828"
-              },
-              {
-                "node": {
-                  "trackId": 2829,
-                  "name": "The Eye of Jupiter",
-                  "milliseconds": 2618750
-                },
-                "cursor": "Int[4]:2829"
+                  "paymentId": 9803,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "NICHOLAS"
+                  }
+                }
               }
             ],
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": true,
-              "startCursor": "Int[4]:2824",
-              "endCursor": "Int[4]:2829"
+              "startCursor": "Int[4]:6409",
+              "endCursor": "Int[4]:9803"
             }
           }
         }
@@ -377,14 +371,15 @@ async fn test_cursor_pagination_no_next() {
             .execute(
                 r#"
                 {
-                  tracksCursor(cursor:{limit: 5, cursor: "Int[4]:3361"}, filters:{milliseconds: { gt: 2573031}}) {
+                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 3, cursor: "SmallUnsigned[4]:9803"}) {
                     edges {
                       node {
-                        trackId
-                        name
-                        milliseconds
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
                       }
-                      cursor
                     }
                     pageInfo {
                       hasPreviousPage
@@ -399,34 +394,35 @@ async fn test_cursor_pagination_no_next() {
             .await,
         r#"
         {
-          "tracksCursor": {
+          "paymentCursor": {
             "edges": [
               {
                 "node": {
-                  "trackId": 3362,
-                  "name": "There's No Place Like Home, Pt. 1",
-                  "milliseconds": 2609526
-                },
-                "cursor": "Int[4]:3362"
+                  "paymentId": 15821,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "KENT"
+                  }
+                }
               },
               {
                 "node": {
-                  "trackId": 3364,
-                  "name": "There's No Place Like Home, Pt. 3",
-                  "milliseconds": 2582957
-                },
-                "cursor": "Int[4]:3364"
+                  "paymentId": 15850,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "TERRANCE"
+                  }
+                }
               }
             ],
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": false,
-              "startCursor": "Int[4]:3362",
-              "endCursor": "Int[4]:3364"
+              "startCursor": "Int[5]:15821",
+              "endCursor": "Int[5]:15850"
             }
           }
         }
         "#,
     )
 }
-
