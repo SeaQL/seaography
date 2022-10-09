@@ -281,8 +281,8 @@ async fn test_cursor_pagination() {
             "pageInfo": {
               "hasPreviousPage": false,
               "hasNextPage": true,
-              "startCursor": "SmallUnsigned[3]:342",
-              "endCursor": "SmallUnsigned[4]:5550"
+              "startCursor": "Int[3]:342",
+              "endCursor": "Int[4]:5550"
             }
           }
         }
@@ -355,8 +355,8 @@ async fn test_cursor_pagination_prev() {
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": true,
-              "startCursor": "SmallUnsigned[4]:6409",
-              "endCursor": "SmallUnsigned[4]:9803"
+              "startCursor": "Int[4]:6409",
+              "endCursor": "Int[4]:9803"
             }
           }
         }
@@ -420,8 +420,8 @@ async fn test_cursor_pagination_no_next() {
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": false,
-              "startCursor": "SmallUnsigned[5]:15821",
-              "endCursor": "SmallUnsigned[5]:15850"
+              "startCursor": "Int[5]:15821",
+              "endCursor": "Int[5]:15850"
             }
           }
         }
