@@ -35,7 +35,7 @@ async fn test_simple_query() {
                 r#"
           {
             store {
-              data {
+              nodes {
                 storeId
                 staff {
                   firstName
@@ -50,7 +50,7 @@ async fn test_simple_query() {
         r#"
           {
             "store": {
-              "data": [
+              "nodes": [
                 {
                   "storeId": 1,
                   "staff": {
@@ -82,7 +82,7 @@ async fn test_simple_query_with_filter() {
                 r#"
           {
               store(filters: {storeId:{eq: 1}}) {
-                data {
+                nodes {
                   storeId
                   staff {
                     firstName
@@ -97,7 +97,7 @@ async fn test_simple_query_with_filter() {
         r#"
           {
             "store": {
-              "data": [
+              "nodes": [
                 {
                   "storeId": 1,
                   "staff": {
@@ -120,22 +120,25 @@ async fn test_filter_with_pagination() {
         schema
             .execute(
                 r#"
-            {
-              customer (filters:{active:{eq: 0}}, pagination:{page: 2, limit: 3}) {
-                data {
-                  customerId
+                {
+                  customer(
+                    filters: { active: { eq: 0 } }
+                    pagination: { pages: { page: 2, limit: 3 } }
+                  ) {
+                    nodes {
+                      customerId
+                    }
+                    pages
+                    current
+                  }
                 }
-                pages
-                current
-              }
-            }
           "#,
             )
             .await,
         r#"
           {
             "customer": {
-              "data": [
+              "nodes": [
                 {
                   "customerId": 315
                 },
@@ -162,23 +165,26 @@ async fn test_complex_filter_with_pagination() {
         schema
             .execute(
                 r#"
-              {
-                payment(filters:{amount: { gt: "11.1" }}, pagination: {limit: 2, page: 3}) {
-                  data {
-                    paymentId
-                    amount
+                {
+                  payment(
+                    filters: { amount: { gt: "11.1" } }
+                    pagination: { pages: { limit: 2, page: 3 } }
+                  ) {
+                    nodes {
+                      paymentId
+                      amount
+                    }
+                    pages
+                    current
                   }
-                  pages
-                  current
                 }
-              }
           "#,
             )
             .await,
         r#"
           {
             "payment": {
-              "data": [
+              "nodes": [
                 {
                   "paymentId": 8272,
                   "amount": "11.99"
@@ -205,7 +211,10 @@ async fn test_cursor_pagination() {
             .execute(
                 r#"
                 {
-                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 5}) {
+                  payment(
+                    filters: { amount: { gt: "11" } }
+                    pagination: { cursor: { limit: 5 } }
+                  ) {
                     edges {
                       node {
                         paymentId
@@ -228,7 +237,7 @@ async fn test_cursor_pagination() {
             .await,
         r#"
         {
-          "paymentCursor": {
+          "payment": {
             "edges": [
               {
                 "node": {
@@ -297,7 +306,10 @@ async fn test_cursor_pagination_prev() {
             .execute(
                 r#"
                 {
-                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 3, cursor: "SmallUnsigned[4]:5550"}) {
+                  payment(
+                    filters: { amount: { gt: "11" } }
+                    pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:5550" } }
+                  ) {
                     edges {
                       node {
                         paymentId
@@ -320,7 +332,7 @@ async fn test_cursor_pagination_prev() {
             .await,
         r#"
         {
-          "paymentCursor": {
+          "payment": {
             "edges": [
               {
                 "node": {
@@ -371,7 +383,10 @@ async fn test_cursor_pagination_no_next() {
             .execute(
                 r#"
                 {
-                  paymentCursor(filters: {amount: {gt: "11"}}, cursor: {limit: 3, cursor: "SmallUnsigned[4]:9803"}) {
+                  payment(
+                    filters: { amount: { gt: "11" } }
+                    pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:9803" } }
+                  ) {
                     edges {
                       node {
                         paymentId
@@ -394,7 +409,7 @@ async fn test_cursor_pagination_no_next() {
             .await,
         r#"
         {
-          "paymentCursor": {
+          "payment": {
             "edges": [
               {
                 "node": {
