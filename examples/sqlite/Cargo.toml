@@ -13,6 +13,7 @@ sea-orm = { version = "^0.9", features = ["sqlx-sqlite", "runtime-async-std-nati
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.34" }
 tracing-subscriber = { version = "0.3.11" }
+lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
 path = "../../" # remove this line in your own project
