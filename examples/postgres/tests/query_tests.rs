@@ -3,7 +3,7 @@ use sea_orm::Database;
 use seaography_postgres_example::{OrmDataloader, QueryRoot};
 
 pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
-    let database = Database::connect("postgres://postgres:postgres@127.0.0.1/sakila")
+    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
