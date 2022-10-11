@@ -72,7 +72,7 @@ jobs:
               with:
                   command: clippy
                   args: "-- -D warnings"
-    integration-sqlite:
+    integration-sqlite-poem:
         name: SQLite integration tests
         runs-on: ubuntu-latest
         needs:
@@ -94,7 +94,36 @@ jobs:
                   command: run
                   args: >
                     --package seaography-cli --
-                    sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
+                    -f poem sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
+            - name: Integration tests
+              working-directory: ./examples/sqlite
+              run: cargo test
+
+    integration-sqlite-actix:
+        name: SQLite integration tests
+        runs-on: ubuntu-latest
+        needs:
+            - check
+            - test
+        steps:
+            - uses: actions/checkout@v2
+            - uses: actions-rs/toolchain@v1
+              with:
+                  profile: minimal
+                  toolchain: stable
+                  override: true
+            - name: Remove generated folder
+              run: rm -rf ./examples/sqlite/src
+            - name: Copy sample database
+              run: cp ./examples/sqlite/sakila.db .
+            - uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: >
+                    --package seaography-cli --
+                    -f actix sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Integration tests

@@ -4,9 +4,40 @@ pub mod error;
 pub use error::{Error, Result};
 pub mod inject_graphql;
 pub mod sea_orm_codegen;
+pub mod templates;
 pub mod writer;
 
 mod util;
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum WebFrameworkEnum {
+    Actix,
+    Poem,
+}
+
+impl std::str::FromStr for WebFrameworkEnum {
+    type Err = String;
+
+    fn from_str(input: &str) -> std::result::Result<WebFrameworkEnum, Self::Err> {
+        match input {
+            "actix" => Ok(Self::Actix),
+            "poem" => Ok(Self::Poem),
+            _ => Err(format!(
+                "Invalid framework '{}', 'actix' and 'poem' are supported!",
+                input
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for WebFrameworkEnum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WebFrameworkEnum::Actix => f.write_str("actix"),
+            WebFrameworkEnum::Poem => f.write_str("poem"),
+        }
+    }
+}
 
 pub async fn write_project<P: AsRef<Path>>(
     path: &P,
@@ -15,12 +46,13 @@ pub async fn write_project<P: AsRef<Path>>(
     expanded_format: bool,
     tables: std::collections::BTreeMap<String, sea_query::TableCreateStatement>,
     sql_library: &str,
+    framework: WebFrameworkEnum,
     depth_limit: Option<usize>,
     complexity_limit: Option<usize>,
 ) -> Result<()> {
     std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
 
-    writer::write_cargo_toml(path, crate_name, &sql_library)?;
+    writer::write_cargo_toml(path, crate_name, &sql_library, framework)?;
 
     let src_path = &path.as_ref().join("src");
 
@@ -32,7 +64,14 @@ pub async fn write_project<P: AsRef<Path>>(
 
     writer::write_query_root(src_path, &entities_hashmap).unwrap();
     writer::write_lib(src_path)?;
-    writer::write_main(src_path, crate_name)?;
+
+    match framework {
+        WebFrameworkEnum::Actix => {
+            crate::templates::actix::write_main(src_path, crate_name).unwrap()
+        }
+        WebFrameworkEnum::Poem => crate::templates::poem::write_main(src_path, crate_name).unwrap(),
+    }
+
     writer::write_env(&path.as_ref(), db_url, depth_limit, complexity_limit)?;
 
     sea_orm_codegen::write_entities(&src_path.join("entities"), entities_hashmap).unwrap();
