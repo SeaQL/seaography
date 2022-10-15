@@ -68,6 +68,8 @@ pub fn filter_struct(
                 "DateTime",
                 #[cfg(feature = "with-chrono")]
                 "DateTimeUtc",
+                #[cfg(feature = "with-chrono")]
+                "DateTimeWithTimeZone",
                 #[cfg(feature = "with-decimal")]
                 "Decimal",
                 #[cfg(feature = "with-json")]
