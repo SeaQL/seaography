@@ -7,7 +7,7 @@ mod filter;
 mod relation;
 mod root_query;
 
-#[proc_macro_derive(Filter, attributes(sea_orm))]
+#[proc_macro_derive(Filter, attributes(sea_orm, filter))]
 pub fn derive_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let DeriveInput {
         ident, data, attrs, ..

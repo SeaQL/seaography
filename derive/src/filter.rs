@@ -6,8 +6,13 @@ use quote::{format_ident, quote, ToTokens};
 pub struct SeaOrm {
     table_name: Option<syn::Lit>,
 }
+#[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
+pub struct Filter {
+    use_alias: Option<syn::Lit>,
+    ignored: Option<syn::Lit>,
+}
 
-pub type IdentTypeTuple = (syn::Ident, syn::Type);
+pub type IdentTypeTuple = (syn::Ident, syn::Type, Option<Filter>);
 
 // TODO skip ignored fields
 pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, crate::error::Error> {
@@ -18,6 +23,7 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
             (
                 field.ident.unwrap(),
                 remove_optional_from_type(field.ty).unwrap(),
+                Filter::from_attributes(&field.attrs.clone()).ok(),
             )
         })
         .collect();
@@ -47,7 +53,7 @@ pub fn filter_struct(
 ) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, ty)| {
+        .map(|(ident, ty, field_attr)| {
             let type_literal = ty.to_token_stream().to_string();
 
             let default_filters = vec![
@@ -77,9 +83,19 @@ pub fn filter_struct(
                 "BinaryVector",
                 "bool",
             ];
+            let use_alias = if let Some(filter) = field_attr {
+                if let Some(syn::Lit::Bool(x)) = &filter.use_alias {
+                    x.value()
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
 
             let filter_item = if default_filters.contains(&type_literal.as_str())
                 || type_literal.starts_with("Vec")
+                || use_alias
             {
                 quote! {
                     seaography::TypeFilter<#ty>
@@ -134,7 +150,7 @@ pub fn order_by_struct(
 ) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, _)| {
+        .map(|(ident, _, _)| {
             quote! {
                 #ident: Option<seaography::OrderByEnum>
             }
@@ -160,7 +176,7 @@ pub fn order_by_struct(
 pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, _)| {
+        .map(|(ident, _,_)| {
             let column = format_ident!("{}", ident.to_string().to_upper_camel_case());
 
             quote! {
@@ -193,7 +209,7 @@ pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::erro
 pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::error::Error> {
     let columns_filters: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, _)| {
+        .map(|(ident, _,_)| {
             let column_name = format_ident!("{}", ident.to_string().to_snake_case());
 
             let column_enum_name = format_ident!("{}", ident.to_string().to_upper_camel_case());
