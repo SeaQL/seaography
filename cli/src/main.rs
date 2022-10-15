@@ -103,12 +103,17 @@ async fn main() {
 
     let expanded_format = args.expanded_format.unwrap_or(false);
 
-    let ignore_tables = args.ignore_tables.unwrap_or_else(|| "seaql_migrations".into());
+    let ignore_tables = args
+        .ignore_tables
+        .unwrap_or_else(|| "seaql_migrations".into());
     let ignore_tables: Vec<&str> = ignore_tables.split(",").collect();
 
     let hidden_tables = args.hidden_tables.unwrap_or(true);
 
-    let tables: std::collections::BTreeMap<String, seaography_discoverer::sea_schema::sea_query::TableCreateStatement> = tables
+    let tables: std::collections::BTreeMap<
+        String,
+        seaography_discoverer::sea_schema::sea_query::TableCreateStatement,
+    > = tables
         .into_iter()
         .filter(|(key, _)| {
             if hidden_tables {
