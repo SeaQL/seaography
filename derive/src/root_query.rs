@@ -1,9 +1,10 @@
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 
-#[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
+#[derive(Debug, Eq, PartialEq, bae::FromAttributes, Clone)]
 pub struct Seaography {
-    entity: syn::Lit,
+    entity: Option<syn::Lit>,
+    object_config: Option<syn::Expr>
 }
 
 pub fn root_query_fn(
@@ -12,8 +13,14 @@ pub fn root_query_fn(
 ) -> Result<TokenStream, crate::error::Error> {
     let paths = attrs
         .iter()
+        .filter(|attribute| {
+            match &attribute.entity {
+                Some(_) => true,
+                _ => false
+            }
+        })
         .map(|attribute| -> Result<TokenStream, crate::error::Error> {
-            if let syn::Lit::Str(item) = &attribute.entity {
+            if let syn::Lit::Str(item) = attribute.entity.as_ref().unwrap() {
                 Ok(item.value().parse::<TokenStream>()?)
             } else {
                 Err(crate::error::Error::Internal(
@@ -22,6 +29,29 @@ pub fn root_query_fn(
             }
         })
         .collect::<Result<Vec<TokenStream>, crate::error::Error>>()?;
+
+    let object_config = attrs
+        .iter()
+        .find(|attribute| {
+            match attribute.object_config {
+                Some(_) => true,
+                _ => false
+            }
+        })
+        .map(|attribute| attribute.object_config.as_ref().unwrap());
+
+    let implement_macros = match object_config {
+            Some(object_config) => {
+                quote! {
+                    #[async_graphql::Object(#object_config)]
+                }
+            },
+            _ => {
+                quote! {
+                    #[async_graphql::Object]
+                }
+            }
+        };
 
     let queries: Vec<TokenStream> = paths
         .iter()
@@ -37,7 +67,7 @@ pub fn root_query_fn(
         .collect();
 
     Ok(quote! {
-        #[async_graphql::Object]
+        #implement_macros
         impl #ident {
             #(#queries)*
         }
