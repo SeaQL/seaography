@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes, Clone)]
 pub struct Seaography {
     entity: Option<syn::Lit>,
-    object_config: Option<syn::Expr>
+    object_config: Option<syn::Expr>,
 }
 
 pub fn root_query_fn(
@@ -13,55 +13,53 @@ pub fn root_query_fn(
 ) -> Result<TokenStream, crate::error::Error> {
     let paths = attrs
         .iter()
-        .filter(|attribute| {
-            match &attribute.entity {
-                Some(_) => true,
-                _ => false
-            }
+        .filter(|attribute| match &attribute.entity {
+            Some(_) => true,
+            _ => false,
         })
-        .map(|attribute| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-            let entity_name = if let syn::Lit::Str(item) = attribute.entity.as_ref().unwrap() {
-                Ok(item.value().parse::<TokenStream>()?)
-            } else {
-                Err(crate::error::Error::Internal(
-                    "Unreachable parse of query entities".into(),
-                ))
-            }?;
+        .map(
+            |attribute| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+                let entity_name = if let syn::Lit::Str(item) = attribute.entity.as_ref().unwrap() {
+                    Ok(item.value().parse::<TokenStream>()?)
+                } else {
+                    Err(crate::error::Error::Internal(
+                        "Unreachable parse of query entities".into(),
+                    ))
+                }?;
 
-            let config = if let Some(config) = &attribute.object_config {
-                quote!{
-                    #[graphql(#config)]
-                }
-            } else {
-                quote!{}
-            };
+                let config = if let Some(config) = &attribute.object_config {
+                    quote! {
+                        #[graphql(#config)]
+                    }
+                } else {
+                    quote! {}
+                };
 
-            Ok((entity_name, config))
-        })
+                Ok((entity_name, config))
+            },
+        )
         .collect::<Result<Vec<(TokenStream, TokenStream)>, crate::error::Error>>()?;
 
     let object_config = attrs
         .iter()
-        .find(|attribute| {
-            match attribute.object_config {
-                Some(_) => true,
-                _ => false
-            }
+        .find(|attribute| match attribute.object_config {
+            Some(_) => true,
+            _ => false,
         })
         .map(|attribute| attribute.object_config.as_ref().unwrap());
 
     let implement_macros = match object_config {
-            Some(object_config) => {
-                quote! {
-                    #[async_graphql::Object(#object_config)]
-                }
-            },
-            _ => {
-                quote! {
-                    #[async_graphql::Object]
-                }
+        Some(object_config) => {
+            quote! {
+                #[async_graphql::Object(#object_config)]
             }
-        };
+        }
+        _ => {
+            quote! {
+                #[async_graphql::Object]
+            }
+        }
+    };
 
     let queries: Vec<TokenStream> = paths
         .iter()
