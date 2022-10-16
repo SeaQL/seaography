@@ -19,16 +19,26 @@ pub fn root_query_fn(
                 _ => false
             }
         })
-        .map(|attribute| -> Result<TokenStream, crate::error::Error> {
-            if let syn::Lit::Str(item) = attribute.entity.as_ref().unwrap() {
+        .map(|attribute| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+            let entity_name = if let syn::Lit::Str(item) = attribute.entity.as_ref().unwrap() {
                 Ok(item.value().parse::<TokenStream>()?)
             } else {
                 Err(crate::error::Error::Internal(
                     "Unreachable parse of query entities".into(),
                 ))
-            }
+            }?;
+
+            let config = if let Some(config) = &attribute.object_config {
+                quote!{
+                    #[graphql(#config)]
+                }
+            } else {
+                quote!{}
+            };
+
+            Ok((entity_name, config))
         })
-        .collect::<Result<Vec<TokenStream>, crate::error::Error>>()?;
+        .collect::<Result<Vec<(TokenStream, TokenStream)>, crate::error::Error>>()?;
 
     let object_config = attrs
         .iter()
@@ -55,12 +65,13 @@ pub fn root_query_fn(
 
     let queries: Vec<TokenStream> = paths
         .iter()
-        .map(|path| {
+        .map(|(path, config)| {
             let name = format_ident!("{}", path.clone().into_iter().last().unwrap().to_string());
 
             let basic_query = basic_query(&name, path);
 
             quote! {
+                #config
                 #basic_query
             }
         })
