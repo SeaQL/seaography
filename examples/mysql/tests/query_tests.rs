@@ -35,24 +35,24 @@ async fn test_simple_query() {
         schema
             .execute(
                 r#"
-                {
-                  store {
-                    data {
-                      storeId
-                      staff {
-                        firstName
-                        lastName
-                      }
-                    }
-                  }
+          {
+            store {
+              nodes {
+                storeId
+                staff {
+                  firstName
+                  lastName
                 }
-            "#,
+              }
+            }
+          }
+          "#,
             )
             .await,
         r#"
           {
             "store": {
-              "data": [
+              "nodes": [
                 {
                   "storeId": 1,
                   "staff": {
@@ -70,7 +70,7 @@ async fn test_simple_query() {
               ]
             }
           }
-            "#,
+          "#,
     )
 }
 
@@ -82,24 +82,24 @@ async fn test_simple_query_with_filter() {
         schema
             .execute(
                 r#"
-            {
-                store(filters: {storeId:{eq: 1}}) {
-                  data {
-                    storeId
-                    staff {
-                      firstName
-                      lastName
-                    }
+          {
+              store(filters: {storeId:{eq: 1}}) {
+                nodes {
+                  storeId
+                  staff {
+                    firstName
+                    lastName
                   }
                 }
-            }
-            "#,
+              }
+          }
+          "#,
             )
             .await,
         r#"
           {
             "store": {
-              "data": [
+              "nodes": [
                 {
                   "storeId": 1,
                   "staff": {
@@ -110,7 +110,7 @@ async fn test_simple_query_with_filter() {
               ]
             }
           }
-            "#,
+          "#,
     )
 }
 
@@ -122,37 +122,40 @@ async fn test_filter_with_pagination() {
         schema
             .execute(
                 r#"
-              {
-                customer (filters:{active:{eq: 0}}, pagination:{page: 2, limit: 3}) {
-                  data {
-                    customerId
+                {
+                  customer(
+                    filters: { active: { eq: 0 } }
+                    pagination: { pages: { page: 2, limit: 3 } }
+                  ) {
+                    nodes {
+                      customerId
+                    }
+                    pages
+                    current
                   }
-                  pages
-                  current
                 }
-              }
-            "#,
+          "#,
             )
             .await,
         r#"
-            {
-              "customer": {
-                "data": [
-                  {
-                    "customerId": 315
-                  },
-                  {
-                    "customerId": 368
-                  },
-                  {
-                    "customerId": 406
-                  }
-                ],
-                "pages": 5,
-                "current": 2
-              }
+          {
+            "customer": {
+              "nodes": [
+                {
+                  "customerId": 315
+                },
+                {
+                  "customerId": 368
+                },
+                {
+                  "customerId": 406
+                }
+              ],
+              "pages": 5,
+              "current": 2
             }
-            "#,
+          }
+          "#,
     )
 }
 
@@ -165,8 +168,11 @@ async fn test_complex_filter_with_pagination() {
             .execute(
                 r#"
                 {
-                  payment(filters:{amount: { gt: "11.1" }}, pagination: {limit: 2, page: 3}) {
-                    data {
+                  payment(
+                    filters: { amount: { gt: "11.1" } }
+                    pagination: { pages: { limit: 2, page: 3 } }
+                  ) {
+                    nodes {
                       paymentId
                       amount
                     }
@@ -174,26 +180,266 @@ async fn test_complex_filter_with_pagination() {
                     current
                   }
                 }
-            "#,
+          "#,
             )
             .await,
         r#"
-            {
-              "payment": {
-                "data": [
-                  {
-                    "paymentId": 8272,
-                    "amount": "11.99"
-                  },
-                  {
-                    "paymentId": 9803,
-                    "amount": "11.99"
-                  }
-                ],
-                "pages": 5,
-                "current": 3
-              }
+          {
+            "payment": {
+              "nodes": [
+                {
+                  "paymentId": 8272,
+                  "amount": "11.99"
+                },
+                {
+                  "paymentId": 9803,
+                  "amount": "11.99"
+                }
+              ],
+              "pages": 5,
+              "current": 3
             }
-            "#,
+          }
+          "#,
+    )
+}
+
+#[tokio::test]
+async fn test_cursor_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  payment(
+                    filters: { amount: { gt: "11" } }
+                    pagination: { cursor: { limit: 5 } }
+                  ) {
+                    edges {
+                      node {
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      startCursor
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "payment": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 342,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "KAREN"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 3146,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VICTORIA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5280,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VANESSA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5281,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ALMA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5550,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ROSEMARY"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": false,
+              "hasNextPage": true,
+              "startCursor": "Int[3]:342",
+              "endCursor": "Int[4]:5550"
+            }
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn test_cursor_pagination_prev() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  payment(
+                    filters: { amount: { gt: "11" } }
+                    pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:5550" } }
+                  ) {
+                    edges {
+                      node {
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      startCursor
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "payment": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 6409,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "TANYA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 8272,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "RICHARD"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 9803,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "NICHOLAS"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": true,
+              "hasNextPage": true,
+              "startCursor": "Int[4]:6409",
+              "endCursor": "Int[4]:9803"
+            }
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn test_cursor_pagination_no_next() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  payment(
+                    filters: { amount: { gt: "11" } }
+                    pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:9803" } }
+                  ) {
+                    edges {
+                      node {
+                        paymentId
+                        amount
+                        customer {
+                          firstName
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      startCursor
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "payment": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 15821,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "KENT"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 15850,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "TERRANCE"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": true,
+              "hasNextPage": false,
+              "startCursor": "Int[5]:15821",
+              "endCursor": "Int[5]:15850"
+            }
+          }
+        }
+        "#,
     )
 }

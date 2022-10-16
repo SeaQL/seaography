@@ -58,8 +58,8 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  film(pagination: { limit: 10, page: 0 }, orderBy: { title: ASC }) {
-    data {
+  film(pagination: { pages: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
+    nodes {
       title
       description
       releaseYear
@@ -79,7 +79,7 @@ Go to http://localhost:8000/ and try out the following queries:
 ```graphql
 {
   store(filters: { storeId: { eq: 1 } }) {
-    data {
+    nodes {
       storeId
       address {
         address
@@ -98,14 +98,39 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  customer(filters: { active: { eq: 0 } }, pagination: { page: 2, limit: 3 }) {
-    data {
+  customer(
+    filters: { active: { eq: 0 } }
+    pagination: { pages: { page: 2, limit: 3 } }
+  ) {
+    nodes {
       customerId
       lastName
       email
     }
     pages
     current
+  }
+}
+```
+
+### The query above using cursor pagination
+
+```graphql
+{
+  customer(
+    filters: { active: { eq: 0 } }
+    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+  ) {
+    nodes {
+      customerId
+      lastName
+      email
+    }
+    pageInfo {
+      hasPreviousPage
+      hasNextPage
+      endCursor
+    }
   }
 }
 ```
