@@ -412,7 +412,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("TinyInt[{}]:{}", value.len(), value)
                         } else {
-                            format!("TinyInt[-1]:")
+                            "TinyInt[-1]:".into()
                         }
                     }
                     sea_orm::Value::SmallInt(value) => {
@@ -420,7 +420,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("SmallInt[{}]:{}", value.len(), value)
                         } else {
-                            format!("SmallInt[-1]:")
+                            "SmallInt[-1]:".into()
                         }
                     }
                     sea_orm::Value::Int(value) => {
@@ -428,7 +428,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("Int[{}]:{}", value.len(), value)
                         } else {
-                            format!("Int[-1]:")
+                            "Int[-1]:".into()
                         }
                     }
                     sea_orm::Value::BigInt(value) => {
@@ -436,7 +436,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("BigInt[{}]:{}", value.len(), value)
                         } else {
-                            format!("BigInt[-1]:")
+                            "BigInt[-1]:".into()
                         }
                     }
                     sea_orm::Value::TinyUnsigned(value) => {
@@ -444,7 +444,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("TinyUnsigned[{}]:{}", value.len(), value)
                         } else {
-                            format!("TinyUnsigned[-1]:")
+                            "TinyUnsigned[-1]:".into()
                         }
                     }
                     sea_orm::Value::SmallUnsigned(value) => {
@@ -452,7 +452,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("SmallUnsigned[{}]:{}", value.len(), value)
                         } else {
-                            format!("SmallUnsigned[-1]:")
+                            "SmallUnsigned[-1]:".into()
                         }
                     }
                     sea_orm::Value::Unsigned(value) => {
@@ -460,7 +460,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("Unsigned[{}]:{}", value.len(), value)
                         } else {
-                            format!("Unsigned[-1]:")
+                            "Unsigned[-1]:".into()
                         }
                     }
                     sea_orm::Value::BigUnsigned(value) => {
@@ -468,7 +468,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.to_string();
                             format!("BigUnsigned[{}]:{}", value.len(), value)
                         } else {
-                            format!("BigUnsigned[-1]:")
+                            "BigUnsigned[-1]:".into()
                         }
                     }
                     sea_orm::Value::String(value) => {
@@ -476,7 +476,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.as_ref();
                             format!("String[{}]:{}", value.len(), value)
                         } else {
-                            format!("String[-1]:")
+                            "String[-1]:".into()
                         }
                     }
                     #[cfg(feature = "with-uuid")]
@@ -485,7 +485,7 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                             let value = value.as_ref().to_string();
                             format!("Uuid[{}]:{}", value.len(), value)
                         } else {
-                            format!("Uuid[-1]:")
+                            "Uuid[-1]:".into()
                         }
                     }
                     _ => {
