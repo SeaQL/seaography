@@ -13,10 +13,7 @@ pub fn root_query_fn(
 ) -> Result<TokenStream, crate::error::Error> {
     let paths = attrs
         .iter()
-        .filter(|attribute| match &attribute.entity {
-            Some(_) => true,
-            _ => false,
-        })
+        .filter(|attribute| matches!(&attribute.entity, Some(_)))
         .map(
             |attribute| -> Result<(TokenStream, TokenStream), crate::error::Error> {
                 let entity_name = if let syn::Lit::Str(item) = attribute.entity.as_ref().unwrap() {
@@ -42,10 +39,7 @@ pub fn root_query_fn(
 
     let object_config = attrs
         .iter()
-        .find(|attribute| match attribute.object_config {
-            Some(_) => true,
-            _ => false,
-        })
+        .find(|attribute| matches!(attribute.object_config, Some(_)))
         .map(|attribute| attribute.object_config.as_ref().unwrap());
 
     let implement_macros = match object_config {
