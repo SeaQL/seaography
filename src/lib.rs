@@ -171,6 +171,13 @@ pub type BinaryVector = Vec<u8>;
     feature = "with-chrono",
     graphql(concrete(name = "DateTimeUtcFilter", params(sea_orm::prelude::DateTimeUtc)))
 )]
+#[cfg_attr(
+    feature = "with-chrono",
+    graphql(concrete(
+        name = "DateTimeWithTimeZoneFilter",
+        params(sea_orm::prelude::DateTimeWithTimeZone)
+    ))
+)]
 // TODO #[graphql(concrete(name = "TimestampFilter", params()))]
 // TODO #[graphql(concrete(name = "TimestampWithTimeZoneFilter", params()))]
 #[cfg_attr(
