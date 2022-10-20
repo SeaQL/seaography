@@ -1,7 +1,7 @@
 use sea_schema::sea_query::TableCreateStatement;
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum SqlVersion {
     Sqlite,
     Mysql,

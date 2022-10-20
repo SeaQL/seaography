@@ -5,7 +5,7 @@ pub fn enum_filter_fn(ident: syn::Ident) -> TokenStream {
     let name = format_ident!("{}EnumFilter", ident);
 
     quote! {
-        #[derive(Debug, async_graphql::InputObject)]
+        #[derive(Debug, Clone, async_graphql::InputObject)]
         pub struct #name {
             pub eq: Option<#ident>,
             pub ne: Option<#ident>,

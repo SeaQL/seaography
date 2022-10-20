@@ -141,7 +141,7 @@ pub enum OrderByEnum {
 
 pub type BinaryVector = Vec<u8>;
 
-#[derive(Debug, async_graphql::InputObject)]
+#[derive(Debug, Clone, async_graphql::InputObject)]
 #[graphql(concrete(name = "StringFilter", params(String)))]
 #[graphql(concrete(name = "TinyIntegerFilter", params(i8)))]
 #[graphql(concrete(name = "SmallIntegerFilter", params(i16)))]
@@ -505,5 +505,62 @@ impl async_graphql::types::connection::CursorType for CursorValues {
                 }
             })
             .join(",")
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RelationKeyStruct<T, Y>(pub sea_orm::Value, pub T, pub Y);
+
+impl<T, Y> PartialEq for RelationKeyStruct<T, Y> {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO temporary hack to solve the following problem
+        // let v1 = TestFK(sea_orm::Value::TinyInt(Some(1)));
+        // let v2 = TestFK(sea_orm::Value::Int(Some(1)));
+        // println!("Result: {}", v1.eq(&v2));
+
+        fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
+            s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
+        }
+
+
+        let a = format!("{:?}", self.0);
+        let b = format!("{:?}", other.0);
+
+        let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
+        let b = split_at_nth_char(b.as_str(), '(', 1).map(|v| v.1);
+
+        a.eq(&b)
+    }
+}
+
+impl<T, Y> Eq for RelationKeyStruct<T, Y> {
+}
+
+impl<T, Y> std::hash::Hash for RelationKeyStruct<T, Y> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // TODO this is a hack
+
+        fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
+            s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
+        }
+
+        let a = format!("{:?}", self.0);
+        let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
+
+        a.hash(state)
+        // TODO else do the following
+        // match self.0 {
+        //     sea_orm::Value::TinyInt(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::SmallInt(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::Int(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::BigInt(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::TinyUnsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::SmallUnsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::Unsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::BigUnsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::String(str) => str.unwrap().hash(state),
+        //     sea_orm::Value::Uuid(uuid) => uuid.unwrap().hash(state),
+        //     _ => format!("{:?}", self.0).hash(state)
+        // }
     }
 }
