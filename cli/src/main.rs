@@ -117,14 +117,14 @@ async fn main() {
         .into_iter()
         .filter(|(key, _)| {
             if hidden_tables {
-                key.starts_with("_")
+                !key.starts_with("_")
             } else {
                 true
             }
         })
         .filter(|(key, _)| {
             if !ignore_tables.is_empty() {
-                ignore_tables.contains(&key.as_str())
+                !ignore_tables.contains(&key.as_str())
             } else {
                 true
             }
