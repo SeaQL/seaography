@@ -217,36 +217,23 @@ pub fn relation_fn(
                     use seaography::heck::ToSnakeCase;
                     use ::std::str::FromStr;
 
-                    let key_values: Vec<_> = keys
+                    let keys: Vec<_> = keys
                         .into_iter()
-                        .map(|key| key.0.0.to_owned())
+                        .map(|key| key.0.to_owned())
                         .collect();
-
-                    // TODO support multiple columns
-                    let to_column: #path::Column = #path::Column::from_str(
-                        #relation_enum
-                            .def()
-                            .to_col
-                            .to_string()
-                            .to_snake_case()
-                            .as_str()
-                    ).unwrap();
 
                     #extra_imports
 
-                    let data: std::collections::HashMap<#foreign_key_name, Self::Value> = #path::Entity::find()
-                        .filter(
-                            to_column.is_in(key_values)
-                        )
-                        .all(&self.db)
-                        .await?
+                    let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
+                        ::fetch_relation_data::<#path::Entity, #path::Filter, #path::OrderBy>(
+                            keys,
+                            #relation_enum.def(),
+                            &self.db,
+                        ).await?
                         .into_iter()
-                        .map(|model| {
-                            let key = #foreign_key_name(seaography::RelationKeyStruct(model.get(to_column), None, None));
-
-                            (key, model)
-                        })
+                        .map(|(key, model)| (#foreign_key_name(key), model))
                         #map_method;
+
 
                     Ok(data)
                 }
