@@ -175,24 +175,24 @@ pub fn relation_fn(
         ));
     };
 
-    let target_path = if target_path.ne("Entity") {
-        &target_path.as_str()[..target_path.len() - 6]
+    let path: TokenStream = if target_path.ne("Entity") {
+        target_path.as_str()[..target_path.len() - 8]
+            .parse()
+            .unwrap()
     } else {
-        ""
+        return Err(crate::error::Error::Internal(
+            "Cannot parse entity path".into(),
+        ));
     };
-
-    let target_entity: TokenStream = format!("{}Entity", target_path).parse()?;
-    let target_column: TokenStream = format!("{}Column", target_path).parse()?;
-    let target_model: TokenStream = format!("{}Model", target_path).parse()?;
 
     let (return_type, extra_imports, map_method) = if has_many.is_some() {
         (
-            quote! { Vec<#target_model> },
+            quote! { Vec<#path::Model> },
             quote! { use seaography::itertools::Itertools; },
             quote! { .into_group_map() },
         )
     } else if belongs_to.is_some() {
-        (quote! { #target_model }, quote! {}, quote! { .collect() })
+        (quote! { #path::Model }, quote! {}, quote! { .collect() })
     } else {
         return Err(crate::error::Error::Internal(
             "Cannot map relation: neither one-many or many-one".into(),
@@ -204,62 +204,8 @@ pub fn relation_fn(
 
     Ok((
         quote! {
-            #[derive(Clone, Debug)]
-            pub struct #foreign_key_name(pub sea_orm::Value);
-
-            impl PartialEq for #foreign_key_name {
-                fn eq(&self, other: &Self) -> bool {
-                    // TODO temporary hack to solve the following problem
-                    // let v1 = TestFK(sea_orm::Value::TinyInt(Some(1)));
-                    // let v2 = TestFK(sea_orm::Value::Int(Some(1)));
-                    // println!("Result: {}", v1.eq(&v2));
-
-                    fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
-                        s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
-                    }
-
-
-                    let a = format!("{:?}", self.0);
-                    let b = format!("{:?}", other.0);
-
-                    let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
-                    let b = split_at_nth_char(b.as_str(), '(', 1).map(|v| v.1);
-
-                    a.eq(&b)
-                }
-            }
-
-            impl Eq for #foreign_key_name {
-            }
-
-            impl std::hash::Hash for #foreign_key_name {
-                fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-                    // TODO this is a hack
-
-                    fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
-                        s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
-                    }
-
-                    let a = format!("{:?}", self.0);
-                    let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
-
-                    a.hash(state)
-                    // TODO else do the following
-                    // match self.0 {
-                    //     sea_orm::Value::TinyInt(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::SmallInt(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::Int(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::BigInt(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::TinyUnsigned(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::SmallUnsigned(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::Unsigned(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::BigUnsigned(int) => int.unwrap().hash(state),
-                    //     sea_orm::Value::String(str) => str.unwrap().hash(state),
-                    //     sea_orm::Value::Uuid(uuid) => uuid.unwrap().hash(state),
-                    //     _ => format!("{:?}", self.0).hash(state)
-                    // }
-                }
-            }
+            #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+            pub struct #foreign_key_name(pub seaography::RelationKeyStruct<Option<#path::Filter>, Option<#path::OrderBy>>);
 
             #[async_trait::async_trait]
             impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
@@ -273,36 +219,23 @@ pub fn relation_fn(
                     use seaography::heck::ToSnakeCase;
                     use ::std::str::FromStr;
 
-                    let key_values: Vec<_> = keys
+                    let keys: Vec<_> = keys
                         .into_iter()
                         .map(|key| key.0.to_owned())
                         .collect();
 
-                    // TODO support multiple columns
-                    let to_column: #target_column = #target_column::from_str(
-                        #relation_enum
-                            .def()
-                            .to_col
-                            .to_string()
-                            .to_snake_case()
-                            .as_str()
-                    ).unwrap();
-
                     #extra_imports
 
-                    let data: std::collections::HashMap<#foreign_key_name, Self::Value> = #target_entity::find()
-                        .filter(
-                            to_column.is_in(key_values)
-                        )
-                        .all(&self.db)
-                        .await?
+                    let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
+                        ::fetch_relation_data::<#path::Entity, #path::Filter, #path::OrderBy>(
+                            keys,
+                            #relation_enum.def(),
+                            &self.db,
+                        ).await?
                         .into_iter()
-                        .map(|model| {
-                            let key = #foreign_key_name(model.get(to_column));
-
-                            (key, model)
-                        })
+                        .map(|(key, model)| (#foreign_key_name(key), model))
                         #map_method;
+
 
                     Ok(data)
                 }
@@ -329,7 +262,7 @@ pub fn relation_fn(
                         .as_str()
                 ).unwrap();
 
-                let key = #foreign_key_name(self.get(from_column));
+                let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), None, None));
 
                 let data: Option<_> = data_loader.load_one(key).await.unwrap();
 

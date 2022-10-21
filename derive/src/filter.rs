@@ -120,7 +120,7 @@ pub fn filter_struct(
     // }
 
     Ok(quote! {
-        #[derive(Debug, async_graphql::InputObject)]
+        #[derive(Debug, Clone, async_graphql::InputObject)]
         #[graphql(name = #filter_name)]
         pub struct Filter {
             pub or: Option<Vec<Box<Filter>>>,
@@ -151,7 +151,7 @@ pub fn order_by_struct(
     let filter_name = format!("{}OrderBy", entity_name.value().to_upper_camel_case());
 
     Ok(quote! {
-        #[derive(Debug, async_graphql::InputObject)]
+        #[derive(Debug, Clone, async_graphql::InputObject)]
         #[graphql(name = #filter_name)]
         pub struct OrderBy {
             #(#fields),*

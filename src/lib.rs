@@ -128,6 +128,8 @@
 //!
 //! Seaography is a community driven project. We welcome you to participate, contribute and together build for Rust's future.
 
+use std::{fmt::Debug, str::FromStr};
+
 pub use heck;
 pub use itertools;
 use itertools::Itertools;
@@ -141,7 +143,7 @@ pub enum OrderByEnum {
 
 pub type BinaryVector = Vec<u8>;
 
-#[derive(Debug, async_graphql::InputObject)]
+#[derive(Debug, Clone, async_graphql::InputObject)]
 #[graphql(concrete(name = "StringFilter", params(String)))]
 #[graphql(concrete(name = "TinyIntegerFilter", params(i8)))]
 #[graphql(concrete(name = "SmallIntegerFilter", params(i16)))]
@@ -506,4 +508,111 @@ impl async_graphql::types::connection::CursorType for CursorValues {
             })
             .join(",")
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct RelationKeyStruct<Filter, Order>(pub sea_orm::Value, pub Filter, pub Order);
+
+impl<Filter, Order> PartialEq for RelationKeyStruct<Filter, Order> {
+    fn eq(&self, other: &Self) -> bool {
+        // TODO temporary hack to solve the following problem
+        // let v1 = TestFK(sea_orm::Value::TinyInt(Some(1)));
+        // let v2 = TestFK(sea_orm::Value::Int(Some(1)));
+        // println!("Result: {}", v1.eq(&v2));
+
+        fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
+            s.match_indices(p)
+                .nth(n)
+                .map(|(index, _)| s.split_at(index))
+        }
+
+        let a = format!("{:?}", self.0);
+        let b = format!("{:?}", other.0);
+
+        let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
+        let b = split_at_nth_char(b.as_str(), '(', 1).map(|v| v.1);
+
+        a.eq(&b)
+    }
+}
+
+impl<Filter, Order> Eq for RelationKeyStruct<Filter, Order> {}
+
+impl<Filter, Order> std::hash::Hash for RelationKeyStruct<Filter, Order> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // TODO this is a hack
+
+        fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
+            s.match_indices(p)
+                .nth(n)
+                .map(|(index, _)| s.split_at(index))
+        }
+
+        let a = format!("{:?}", self.0);
+        let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
+
+        a.hash(state)
+        // TODO else do the following
+        // match self.0 {
+        //     sea_orm::Value::TinyInt(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::SmallInt(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::Int(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::BigInt(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::TinyUnsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::SmallUnsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::Unsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::BigUnsigned(int) => int.unwrap().hash(state),
+        //     sea_orm::Value::String(str) => str.unwrap().hash(state),
+        //     sea_orm::Value::Uuid(uuid) => uuid.unwrap().hash(state),
+        //     _ => format!("{:?}", self.0).hash(state)
+        // }
+    }
+}
+
+pub async fn fetch_relation_data<Entity, Filter, Order>(
+    keys: Vec<RelationKeyStruct<Option<Filter>, Option<Order>>>,
+    relation: sea_orm::RelationDef,
+    db: &sea_orm::DatabaseConnection,
+) -> std::result::Result<
+    Vec<(
+        RelationKeyStruct<Option<Filter>, Option<Order>>,
+        <Entity as sea_orm::EntityTrait>::Model,
+    )>,
+    sea_orm::error::DbErr,
+>
+where
+    Entity: sea_orm::EntityTrait,
+    <Entity::Column as FromStr>::Err: Debug,
+{
+    use heck::ToSnakeCase;
+    use sea_orm::prelude::*;
+
+    let keys: Vec<sea_orm::Value> = keys.into_iter().map(|key| key.0).collect();
+
+    // TODO support multiple columns
+    let to_column =
+        <Entity::Column as FromStr>::from_str(relation.to_col.to_string().to_snake_case().as_str())
+            .unwrap();
+
+    let stmt = <Entity as sea_orm::EntityTrait>::find();
+
+    let stmt =
+        <sea_orm::Select<Entity> as sea_orm::QueryFilter>::filter(stmt, to_column.is_in(keys));
+
+    let data = stmt.all(db).await?.into_iter().map(
+        |model: <Entity as EntityTrait>::Model| -> (
+            RelationKeyStruct<Option<Filter>, Option<Order>>,
+            <Entity as EntityTrait>::Model,
+        ) {
+            let key = RelationKeyStruct::<Option<Filter>, Option<Order>>(
+                model.get(to_column),
+                None,
+                None,
+            );
+
+            (key, model)
+        },
+    );
+
+    Ok(data.collect())
 }
