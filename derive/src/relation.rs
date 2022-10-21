@@ -176,7 +176,9 @@ pub fn relation_fn(
     };
 
     let path: TokenStream = if target_path.ne("Entity") {
-        target_path.as_str()[..target_path.len() - 8].parse().unwrap()
+        target_path.as_str()[..target_path.len() - 8]
+            .parse()
+            .unwrap()
     } else {
         return Err(crate::error::Error::Internal(
             "Cannot parse entity path".into(),

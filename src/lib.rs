@@ -128,7 +128,7 @@
 //!
 //! Seaography is a community driven project. We welcome you to participate, contribute and together build for Rust's future.
 
-use std::{str::FromStr, fmt::Debug};
+use std::{fmt::Debug, str::FromStr};
 
 pub use heck;
 pub use itertools;
@@ -521,9 +521,10 @@ impl<Filter, Order> PartialEq for RelationKeyStruct<Filter, Order> {
         // println!("Result: {}", v1.eq(&v2));
 
         fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
-            s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
+            s.match_indices(p)
+                .nth(n)
+                .map(|(index, _)| s.split_at(index))
         }
-
 
         let a = format!("{:?}", self.0);
         let b = format!("{:?}", other.0);
@@ -535,15 +536,16 @@ impl<Filter, Order> PartialEq for RelationKeyStruct<Filter, Order> {
     }
 }
 
-impl<Filter, Order> Eq for RelationKeyStruct<Filter, Order> {
-}
+impl<Filter, Order> Eq for RelationKeyStruct<Filter, Order> {}
 
 impl<Filter, Order> std::hash::Hash for RelationKeyStruct<Filter, Order> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // TODO this is a hack
 
         fn split_at_nth_char(s: &str, p: char, n: usize) -> Option<(&str, &str)> {
-            s.match_indices(p).nth(n).map(|(index, _)| s.split_at(index))
+            s.match_indices(p)
+                .nth(n)
+                .map(|(index, _)| s.split_at(index))
         }
 
         let a = format!("{:?}", self.0);
@@ -571,43 +573,46 @@ pub async fn fetch_relation_data<Entity, Filter, Order>(
     keys: Vec<RelationKeyStruct<Option<Filter>, Option<Order>>>,
     relation: sea_orm::RelationDef,
     db: &sea_orm::DatabaseConnection,
-) -> std::result::Result<Vec<(RelationKeyStruct<Option<Filter>, Option<Order>>, <Entity as sea_orm::EntityTrait>::Model)>, sea_orm::error::DbErr
-    >
+) -> std::result::Result<
+    Vec<(
+        RelationKeyStruct<Option<Filter>, Option<Order>>,
+        <Entity as sea_orm::EntityTrait>::Model,
+    )>,
+    sea_orm::error::DbErr,
+>
 where
     Entity: sea_orm::EntityTrait,
-    <Entity::Column as FromStr>::Err: Debug
+    <Entity::Column as FromStr>::Err: Debug,
 {
     use heck::ToSnakeCase;
     use sea_orm::prelude::*;
 
-    let keys: Vec<sea_orm::Value> = keys
-        .into_iter()
-        .map(|key| key.0)
-        .collect();
+    let keys: Vec<sea_orm::Value> = keys.into_iter().map(|key| key.0).collect();
 
     // TODO support multiple columns
-    let to_column = <Entity::Column as FromStr>::from_str(
-        relation
-            .to_col
-            .to_string()
-            .to_snake_case()
-            .as_str()
-    ).unwrap();
+    let to_column =
+        <Entity::Column as FromStr>::from_str(relation.to_col.to_string().to_snake_case().as_str())
+            .unwrap();
 
     let stmt = <Entity as sea_orm::EntityTrait>::find();
 
-    let stmt = <sea_orm::Select<Entity> as sea_orm::QueryFilter>
-        ::filter(stmt, to_column.is_in(keys));
+    let stmt =
+        <sea_orm::Select<Entity> as sea_orm::QueryFilter>::filter(stmt, to_column.is_in(keys));
 
-    let data = stmt
-        .all(db)
-        .await?
-        .into_iter()
-        .map(|model: <Entity as EntityTrait>::Model| -> (RelationKeyStruct<Option<Filter>, Option<Order>>, <Entity as EntityTrait>::Model) {
-            let key = RelationKeyStruct::<Option<Filter>, Option<Order>>(model.get(to_column), None, None);
+    let data = stmt.all(db).await?.into_iter().map(
+        |model: <Entity as EntityTrait>::Model| -> (
+            RelationKeyStruct<Option<Filter>, Option<Order>>,
+            <Entity as EntityTrait>::Model,
+        ) {
+            let key = RelationKeyStruct::<Option<Filter>, Option<Order>>(
+                model.get(to_column),
+                None,
+                None,
+            );
 
             (key, model)
-        });
+        },
+    );
 
     Ok(data.collect())
 }
