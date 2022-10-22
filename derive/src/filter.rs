@@ -23,7 +23,7 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
             (
                 field.ident.unwrap(),
                 remove_optional_from_type(field.ty).unwrap(),
-                Filter::from_attributes(&field.attrs.clone()).ok(),
+                Filter::from_attributes(&field.attrs).ok(),
             )
         })
         .collect();
