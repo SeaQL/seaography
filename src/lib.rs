@@ -127,12 +127,8 @@
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 //!
 //! Seaography is a community driven project. We welcome you to participate, contribute and together build for Rust's future.
-
-use std::{fmt::Debug, str::FromStr};
-
 pub use heck;
 pub use itertools;
-use itertools::Itertools;
 pub use seaography_derive as macros;
 
 pub mod type_filter;
@@ -352,6 +348,8 @@ impl async_graphql::types::connection::CursorType for CursorValues {
     }
 
     fn encode_cursor(&self) -> String {
+        use itertools::Itertools;
+
         self.0
             .iter()
             .map(|value| -> String {
@@ -451,9 +449,9 @@ impl async_graphql::types::connection::CursorType for CursorValues {
 }
 
 #[derive(Debug, Clone)]
-pub struct RelationKeyStruct<Filter, Order>(pub sea_orm::Value, pub Filter, pub Order);
+pub struct RelationKeyStruct<Entity: EnchantedEntity>(pub sea_orm::Value, pub Option<Entity::Filter>, pub Option<Entity::OrderBy>);
 
-impl<Filter, Order> PartialEq for RelationKeyStruct<Filter, Order> {
+impl<Entity: EnchantedEntity> PartialEq for RelationKeyStruct<Entity> {
     fn eq(&self, other: &Self) -> bool {
         // TODO temporary hack to solve the following problem
         // let v1 = TestFK(sea_orm::Value::TinyInt(Some(1)));
@@ -476,9 +474,9 @@ impl<Filter, Order> PartialEq for RelationKeyStruct<Filter, Order> {
     }
 }
 
-impl<Filter, Order> Eq for RelationKeyStruct<Filter, Order> {}
+impl<Entity: EnchantedEntity> Eq for RelationKeyStruct<Entity> {}
 
-impl<Filter, Order> std::hash::Hash for RelationKeyStruct<Filter, Order> {
+impl<Entity: EnchantedEntity> std::hash::Hash for RelationKeyStruct<Entity> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // TODO this is a hack
 
@@ -509,49 +507,74 @@ impl<Filter, Order> std::hash::Hash for RelationKeyStruct<Filter, Order> {
     }
 }
 
-pub async fn fetch_relation_data<Entity, Filter, Order>(
-    keys: Vec<RelationKeyStruct<Option<Filter>, Option<Order>>>,
+pub async fn fetch_relation_data<Entity: EnchantedEntity>(
+    keys: Vec<RelationKeyStruct<Entity>>,
     relation: sea_orm::RelationDef,
     reverse: bool,
     db: &sea_orm::DatabaseConnection,
 ) -> std::result::Result<
     Vec<(
-        RelationKeyStruct<Option<Filter>, Option<Order>>,
+        RelationKeyStruct<Entity>,
         <Entity as sea_orm::EntityTrait>::Model,
     )>,
     sea_orm::error::DbErr,
 >
 where
-    Entity: sea_orm::EntityTrait,
-    <Entity::Column as FromStr>::Err: Debug,
+    Entity: sea_orm::EntityTrait + EnchantedEntity<Entity = Entity>,
+    <Entity::Column as std::str::FromStr>::Err: core::fmt::Debug,
 {
     use heck::ToSnakeCase;
     use sea_orm::prelude::*;
+
+    let filters = if keys.len() > 0 {
+        keys[0].clone().1
+    } else {
+        None
+    };
+
+    let order_by = if keys.len() > 0 {
+        keys[0].clone().2
+    } else {
+        None
+    };
 
     let keys: Vec<sea_orm::Value> = keys.into_iter().map(|key| key.0).collect();
 
     // TODO support multiple columns
     let to_column = if reverse {
-        <Entity::Column as FromStr>::from_str(
+        <Entity::Column as std::str::FromStr>::from_str(
             relation.from_col.to_string().to_snake_case().as_str(),
         )
         .unwrap()
     } else {
-        <Entity::Column as FromStr>::from_str(relation.to_col.to_string().to_snake_case().as_str())
+        <Entity::Column as std::str::FromStr>::from_str(relation.to_col.to_string().to_snake_case().as_str())
             .unwrap()
     };
 
     let stmt = <Entity as sea_orm::EntityTrait>::find();
 
-    let stmt =
-        <sea_orm::Select<Entity> as sea_orm::QueryFilter>::filter(stmt, to_column.is_in(keys));
+    let filter = sea_orm::Condition::all().add(to_column.is_in(keys));
+
+    let filter = if let Some(filters) = filters {
+        filter.add(filters.filter_condition())
+    } else {
+        filter
+    };
+
+    let stmt = sea_orm::QueryFilter::filter(stmt, filter);
+
+    let stmt = if let Some(order_by) = order_by {
+        order_by.order_by(stmt)
+    } else {
+        stmt
+    };
 
     let data = stmt.all(db).await?.into_iter().map(
         |model: <Entity as EntityTrait>::Model| -> (
-            RelationKeyStruct<Option<Filter>, Option<Order>>,
+            RelationKeyStruct<Entity>,
             <Entity as EntityTrait>::Model,
         ) {
-            let key = RelationKeyStruct::<Option<Filter>, Option<Order>>(
+            let key = RelationKeyStruct::<Entity>(
                 model.get(to_column),
                 None,
                 None,
@@ -562,4 +585,71 @@ where
     );
 
     Ok(data.collect())
+}
+
+pub trait EntityFilter {
+    fn filter_condition(&self) -> sea_orm::Condition;
+}
+
+pub trait EntityOrderBy<Entity>
+where
+    Entity: sea_orm::EntityTrait
+{
+    fn order_by(&self, stmt: sea_orm::Select<Entity>) -> sea_orm::Select<Entity>;
+}
+
+pub trait EnchantedEntity {
+    type Entity: sea_orm::EntityTrait;
+
+    type Filter: EntityFilter + Clone;
+
+    type OrderBy: EntityOrderBy<Self::Entity> + Clone;
+}
+
+pub fn data_to_connection<T>(
+    data: Vec<T::Model>,
+    has_previous_page: bool,
+    has_next_page: bool,
+    pages: Option<u64>,
+    current: Option<u64>,
+) -> async_graphql::types::connection::Connection<String, T::Model, ExtraPaginationFields, async_graphql::types::connection::EmptyFields>
+where
+    T: sea_orm::EntityTrait,
+    <T as sea_orm::EntityTrait>::Model: async_graphql::OutputType,
+{
+    use sea_orm::{Iterable, PrimaryKeyToColumn, ModelTrait};
+    use async_graphql::connection::CursorType;
+
+    let edges: Vec<async_graphql::types::connection::Edge<String, T::Model, async_graphql::types::connection::EmptyFields>> = data
+        .into_iter()
+        .map(|node| {
+            let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
+                .map(|variant| {
+                    node.get(variant.into_column())
+                })
+                .collect();
+
+            let cursor_string = CursorValues(values).encode_cursor();
+
+            async_graphql::types::connection::Edge::new(cursor_string, node)
+        })
+        .collect();
+
+    let mut result = async_graphql::types::connection::Connection::<
+        String,
+        T::Model,
+        ExtraPaginationFields,
+        async_graphql::types::connection::EmptyFields
+    >::with_additional_fields(
+        has_previous_page,
+        has_next_page,
+        ExtraPaginationFields {
+            pages,
+            current
+        }
+    );
+
+    result.edges.extend(edges);
+
+    result
 }

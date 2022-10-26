@@ -89,61 +89,25 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
             use sea_orm::prelude::*;
             use sea_orm::Iterable;
             use seaography::itertools::Itertools;
+            use seaography::{EntityOrderBy, EntityFilter};
             use async_graphql::types::connection::CursorType;
 
             println!("filters: {:?}", filters);
 
             let db: &crate::DatabaseConnection = ctx.data::<crate::DatabaseConnection>().unwrap();
-            let stmt = #path::Entity::find()
-                .filter(#path::filter_recursive(filters));
+            let stmt = #path::Entity::find();
 
-            let stmt = #path::order_by(stmt, order_by);
+            let stmt: sea_orm::Select<#path::Entity> = if let Some(filters) = filters {
+                stmt.filter(filters.filter_condition())
+            } else {
+                stmt
+            };
 
-            fn get_result(
-                data: Vec<#path::Model>,
-                has_previous_page: bool,
-                has_next_page: bool,
-                pages: Option<u64>,
-                current: Option<u64>
-            ) -> async_graphql::types::connection::Connection<
-                String,
-                #path::Model,
-                seaography::ExtraPaginationFields,
-                async_graphql::types::connection::EmptyFields
-            > {
-                let edges: Vec<async_graphql::types::connection::Edge<String, #path::Model, async_graphql::types::connection::EmptyFields>> = data
-                    .into_iter()
-                    .map(|node| {
-                        let values: Vec<sea_orm::Value> = #path::PrimaryKey::iter()
-                            .map(|variant| {
-                                node.get(variant.into_column())
-                            })
-                            .collect();
-
-                        let cursor_string = seaography::CursorValues(values).encode_cursor();
-
-                        async_graphql::types::connection::Edge::new(cursor_string, node)
-                    })
-                    .collect();
-
-                let mut result = async_graphql::types::connection::Connection::<
-                    String,
-                    #path::Model,
-                    seaography::ExtraPaginationFields,
-                    async_graphql::types::connection::EmptyFields
-                >::with_additional_fields(
-                    has_previous_page,
-                    has_next_page,
-                    seaography::ExtraPaginationFields {
-                        pages,
-                        current
-                    }
-                );
-
-                result.edges.extend(edges);
-
-                result
-            }
+            let stmt: sea_orm::Select<#path::Entity> = if let Some(order_by) = order_by {
+                order_by.order_by(stmt)
+            } else {
+                stmt
+            };
 
             if let Some(pagination) = pagination {
 
@@ -161,7 +125,7 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
                             .await
                             .unwrap();
 
-                        get_result(data, pagination.page != 1, pagination.page < pages, Some(pages), Some(pagination.page))
+                        seaography::data_to_connection::<#path::Entity>(data, pagination.page != 1, pagination.page < pages, Some(pages), Some(pagination.page))
                     },
                     seaography::Pagination::Cursor(cursor) => {
                         let next_stmt = stmt.clone();
@@ -252,13 +216,13 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
                             }
                         };
 
-                        get_result(data, has_previous_page, has_next_page, None, None)
+                        seaography::data_to_connection::<#path::Entity>(data, has_previous_page, has_next_page, None, None)
                     }
                 }
             } else {
                 let data: Vec<#path::Model> = stmt.all(db).await.unwrap();
 
-                get_result(data, false, false, Some(1), Some(1))
+                seaography::data_to_connection::<#path::Entity>(data, false, false, Some(1), Some(1))
             }
         }
     }

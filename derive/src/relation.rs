@@ -211,91 +211,163 @@ pub fn relation_fn(
         quote! { self }
     };
 
-    let (return_type, extra_imports, map_method) = if has_many.is_some() {
-        (
-            quote! { Vec<#path::Model> },
-            quote! { use seaography::itertools::Itertools; },
-            quote! { .into_group_map() },
-        )
-    } else if belongs_to.is_some() {
-        (quote! { #path::Model }, quote! {}, quote! { .collect() })
-    } else {
-        return Err(crate::error::Error::Internal(
-            "Cannot map relation: neither one-many or many-one".into(),
-        ));
-    };
-
     let relation_enum = quote! {Relation::#relation_ident};
     let foreign_key_name = format_ident!("{}FK", relation_name).to_token_stream();
 
-    Ok((
-        quote! {
-            #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-            pub struct #foreign_key_name(pub seaography::RelationKeyStruct<Option<#path::Filter>, Option<#path::OrderBy>>);
+    if has_many.is_some() && belongs_to.is_some() {
+        Err(crate::error::Error::Internal(
+            "Cannot map relation: cannot be both one-many and many-one".into(),
+        ))
+    } else if has_many.is_some() {
+        Ok((
+            quote! {
+                #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                pub struct #foreign_key_name(pub seaography::RelationKeyStruct<#path::Entity>);
 
-            #[async_trait::async_trait]
-            impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
-                type Value = #return_type;
-                type Error = std::sync::Arc<sea_orm::error::DbErr>;
+                #[async_trait::async_trait]
+                impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
+                    type Value = Vec<#path::Model>;
+                    type Error = std::sync::Arc<sea_orm::error::DbErr>;
 
-                async fn load(
+                    async fn load(
+                        &self,
+                        keys: &[#foreign_key_name],
+                    ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
+                        let keys: Vec<_> = keys
+                            .into_iter()
+                            .map(|key| key.0.to_owned())
+                            .collect();
+
+                        use seaography::itertools::Itertools;
+
+                        let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
+                            ::fetch_relation_data::<#path::Entity>(
+                                keys,
+                                #relation_enum.def(),
+                                #reverse,
+                                &self.db,
+                            ).await?
+                            .into_iter()
+                            .map(|(key, model)| (#foreign_key_name(key), model))
+                            .into_group_map();
+
+
+                        Ok(data)
+                    }
+                }
+            },
+            quote! {
+                pub async fn #relation_name<'a>(
                     &self,
-                    keys: &[#foreign_key_name],
-                ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
+                    ctx: &async_graphql::Context<'a>,
+                    filters: Option<#path::Filter>,
+                    order_by: Option<#path::OrderBy>,
+                ) -> Option<async_graphql::types::connection::Connection<String, #path::Model, seaography::ExtraPaginationFields, async_graphql::types::connection::EmptyFields>> {
                     use seaography::heck::ToSnakeCase;
                     use ::std::str::FromStr;
 
-                    let keys: Vec<_> = keys
-                        .into_iter()
-                        .map(|key| key.0.to_owned())
-                        .collect();
+                    let data_loader = ctx
+                        .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
+                        .unwrap();
 
-                    #extra_imports
+                    let from_column: Column = Column::from_str(
+                        #relation_enum
+                            .def()
+                            .#column_type
+                            .to_string()
+                            .to_snake_case()
+                            .as_str()
+                    ).unwrap();
 
-                    let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
-                        ::fetch_relation_data::<#path::Entity, #path::Filter, #path::OrderBy>(
-                            keys,
-                            #relation_enum.def(),
-                            #reverse,
-                            &self.db,
-                        ).await?
-                        .into_iter()
-                        .map(|(key, model)| (#foreign_key_name(key), model))
-                        #map_method;
+                    let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), filters, order_by));
 
+                    let option_nodes: Option<_> = data_loader.load_one(key).await.unwrap();
 
-                    Ok(data)
+                    if let Some(nodes) = option_nodes {
+                        // TODO pagination
+                        Some(
+                            seaography::data_to_connection::<#path::Entity>(
+                                nodes,
+                                false,
+                                false,
+                                Some(1),
+                                Some(1)
+                            )
+                        )
+                    } else {
+                        None
+                    }
                 }
-            }
-        },
-        quote! {
-            pub async fn #relation_name<'a>(
-                &self,
-                ctx: &async_graphql::Context<'a>,
-            ) -> Option<#return_type> {
-                use seaography::heck::ToSnakeCase;
-                use ::std::str::FromStr;
+            },
+        ))
+    } else if belongs_to.is_some() {
+        Ok((
+            quote! {
+                #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                pub struct #foreign_key_name(pub seaography::RelationKeyStruct<#path::Entity>);
 
-                let data_loader = ctx
-                    .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
-                    .unwrap();
+                #[async_trait::async_trait]
+                impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
+                    type Value = #path::Model;
+                    type Error = std::sync::Arc<sea_orm::error::DbErr>;
 
-                // TODO support multiple value keys
-                let target_column: Column = Column::from_str(
-                    #relation_enum
-                        .def()
-                        .#column_type
-                        .to_string()
-                        .to_snake_case()
-                        .as_str()
-                ).unwrap();
+                    async fn load(
+                        &self,
+                        keys: &[#foreign_key_name],
+                    ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
+                        let keys: Vec<_> = keys
+                            .into_iter()
+                            .map(|key| key.0.to_owned())
+                            .collect();
 
-                let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(target_column), None, None));
+                        let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
+                            ::fetch_relation_data::<#path::Entity>(
+                                keys,
+                                #relation_enum.def(),
+                                #reverse,
+                                &self.db,
+                            ).await?
+                            .into_iter()
+                            .map(|(key, model)| (#foreign_key_name(key), model))
+                            .collect();
 
-                let data: Option<_> = data_loader.load_one(key).await.unwrap();
 
-                data
-            }
-        },
-    ))
+                        Ok(data)
+                    }
+                }
+            },
+            quote! {
+                pub async fn #relation_name<'a>(
+                    &self,
+                    ctx: &async_graphql::Context<'a>,
+                ) -> Option<#path::Model> {
+                    use seaography::heck::ToSnakeCase;
+                    use ::std::str::FromStr;
+
+                    let data_loader = ctx
+                        .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
+                        .unwrap();
+
+                    let from_column: Column = Column::from_str(
+                        #relation_enum
+                            .def()
+                            .#column_type
+                            .to_string()
+                            .to_snake_case()
+                            .as_str()
+                    ).unwrap();
+
+                    let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), None, None));
+
+                    let data: Option<_> = data_loader.load_one(key).await.unwrap();
+
+                    data
+                }
+            },
+        ))
+    } else {
+        return Err(crate::error::Error::Internal(
+            "Cannot map relation: neither one-many or many-one".into(),
+        ))
+    }
 }
