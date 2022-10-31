@@ -1,4 +1,4 @@
-use heck::ToUpperCamelCase;
+use heck::{ToUpperCamelCase, ToSnakeCase};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
@@ -215,11 +215,13 @@ pub fn relation_fn(
     let foreign_key_name = format_ident!("{}FK", relation_name).to_token_stream();
 
     if has_many.is_some() && belongs_to.is_some() {
-        Err(crate::error::Error::Internal(
+        return Err(crate::error::Error::Internal(
             "Cannot map relation: cannot be both one-many and many-one".into(),
         ))
-    } else if has_many.is_some() {
-        Ok((
+    }
+
+    let (global_scope, object_scope) = if has_many.is_some() {
+        (
             quote! {
                 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
                 pub struct #foreign_key_name(pub seaography::RelationKeyStruct<#path::Entity>);
@@ -299,9 +301,9 @@ pub fn relation_fn(
                     }
                 }
             },
-        ))
+        )
     } else if belongs_to.is_some() {
-        Ok((
+        (
             quote! {
                 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
                 pub struct #foreign_key_name(pub seaography::RelationKeyStruct<#path::Entity>);
@@ -364,10 +366,12 @@ pub fn relation_fn(
                     data
                 }
             },
-        ))
+        )
     } else {
         return Err(crate::error::Error::Internal(
             "Cannot map relation: neither one-many or many-one".into(),
         ))
-    }
+    };
+
+    Ok((global_scope, object_scope))
 }
