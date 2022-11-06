@@ -80,7 +80,7 @@ pub fn filter_struct(
                 "bool",
             ];
 
-            if default_filters.contains(&type_literal.as_str())
+            let filter_item = if default_filters.contains(&type_literal.as_str())
                 || type_literal.starts_with("Vec")
             {
                 quote! {
