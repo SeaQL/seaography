@@ -80,12 +80,7 @@ pub fn filter_struct(
                 "bool",
             ];
 
-            println!("filter struct {}: {}", ident, type_literal);
-            let filter_item = if type_literal.as_str() == "String" {
-                quote! {
-                    seaography::StringFilter
-                }
-            } else if default_filters.contains(&type_literal.as_str())
+            if default_filters.contains(&type_literal.as_str())
                 || type_literal.starts_with("Vec")
             {
                 quote! {
@@ -202,6 +197,7 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
         .iter()
         .map(|(ident, _)| {
             let column_name = format_ident!("{}", ident.to_string().to_snake_case());
+
             let column_enum_name = format_ident!("{}", ident.to_string().to_upper_camel_case());
 
             quote! {
