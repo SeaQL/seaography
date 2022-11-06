@@ -200,37 +200,9 @@ pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::erro
 pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::error::Error> {
     let columns_filters: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, ty)| {
+        .map(|(ident, _)| {
             let column_name = format_ident!("{}", ident.to_string().to_snake_case());
-            let type_literal = ty.to_token_stream().to_string();
-
             let column_enum_name = format_ident!("{}", ident.to_string().to_upper_camel_case());
-
-            let ext = if type_literal == "String" {
-                quote! {
-                    if let Some(contains_value) = #column_name.contains {
-                        condition = condition.add(Column::#column_enum_name.contains(contains_value.as_str()))
-                    }
-
-                    if let Some(starts_with_value) = #column_name.starts_with {
-                        condition = condition.add(Column::#column_enum_name.starts_with(starts_with_value.as_str()))
-                    }
-
-                    if let Some(ends_with_value) = #column_name.ends_with {
-                        condition = condition.add(Column::#column_enum_name.ends_with(ends_with_value.as_str()))
-                    }
-
-                    if let Some(like_value) = #column_name.like {
-                        condition = condition.add(Column::#column_enum_name.like(like_value.as_str()))
-                    }
-
-                    if let Some(not_like_value) = #column_name.not_like {
-                        condition = condition.add(Column::#column_enum_name.not_like(not_like_value.as_str()))
-                    }
-                }
-            } else {
-                TokenStream::new()
-            };
 
             quote! {
                 if let Some(#column_name) = current_filter.#column_name {
@@ -272,7 +244,25 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
                         }
                     }
 
-                    #ext
+                    if let Some(contains_value) = #column_name.contains {
+                        condition = condition.add(Column::#column_enum_name.contains(contains_value.as_str()))
+                    }
+
+                    if let Some(starts_with_value) = #column_name.starts_with {
+                        condition = condition.add(Column::#column_enum_name.starts_with(starts_with_value.as_str()))
+                    }
+
+                    if let Some(ends_with_value) = #column_name.ends_with {
+                        condition = condition.add(Column::#column_enum_name.ends_with(ends_with_value.as_str()))
+                    }
+
+                    if let Some(like_value) = #column_name.like {
+                        condition = condition.add(Column::#column_enum_name.like(like_value.as_str()))
+                    }
+
+                    if let Some(not_like_value) = #column_name.not_like {
+                        condition = condition.add(Column::#column_enum_name.not_like(not_like_value.as_str()))
+                    }
                 }
             }
         })

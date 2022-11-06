@@ -144,6 +144,7 @@ pub enum OrderByEnum {
 pub type BinaryVector = Vec<u8>;
 
 #[derive(Debug, Clone, async_graphql::InputObject)]
+#[graphql(concrete(name = "StringFilter", params(String)))]
 #[graphql(concrete(name = "TinyIntegerFilter", params(i8)))]
 #[graphql(concrete(name = "SmallIntegerFilter", params(i16)))]
 #[graphql(concrete(name = "IntegerFilter", params(i32)))]
@@ -200,19 +201,6 @@ pub struct TypeFilter<T: async_graphql::InputType> {
     pub lte: Option<T>,
     pub is_in: Option<Vec<T>>,
     pub is_not_in: Option<Vec<T>>,
-    pub is_null: Option<bool>,
-}
-
-#[derive(Debug, Clone, async_graphql::InputObject)]
-pub struct StringFilter {
-    pub eq: Option<String>,
-    pub ne: Option<String>,
-    pub gt: Option<String>,
-    pub gte: Option<String>,
-    pub lt: Option<String>,
-    pub lte: Option<String>,
-    pub is_in: Option<Vec<String>>,
-    pub is_not_in: Option<Vec<String>>,
     pub is_null: Option<bool>,
     pub contains: Option<String>,
     pub starts_with: Option<String>,
