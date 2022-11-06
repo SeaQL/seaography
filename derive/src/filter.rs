@@ -80,7 +80,12 @@ pub fn filter_struct(
                 "bool",
             ];
 
-            let filter_item = if default_filters.contains(&type_literal.as_str())
+            println!("filter struct {}: {}", ident, type_literal);
+            let filter_item = if type_literal.as_str() == "String" {
+                quote! {
+                    seaography::StringFilter
+                }
+            } else if default_filters.contains(&type_literal.as_str())
                 || type_literal.starts_with("Vec")
             {
                 quote! {
@@ -195,12 +200,39 @@ pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::erro
 pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::error::Error> {
     let columns_filters: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, _)| {
+        .map(|(ident, ty)| {
             let column_name = format_ident!("{}", ident.to_string().to_snake_case());
+            let type_literal = ty.to_token_stream().to_string();
 
             let column_enum_name = format_ident!("{}", ident.to_string().to_upper_camel_case());
 
-            quote!{
+            let ext = if type_literal == "String" {
+                quote! {
+                    if let Some(contains_value) = #column_name.contains {
+                        condition = condition.add(Column::#column_enum_name.contains(contains_value.as_str()))
+                    }
+
+                    if let Some(starts_with_value) = #column_name.starts_with {
+                        condition = condition.add(Column::#column_enum_name.starts_with(starts_with_value.as_str()))
+                    }
+
+                    if let Some(ends_with_value) = #column_name.ends_with {
+                        condition = condition.add(Column::#column_enum_name.ends_with(ends_with_value.as_str()))
+                    }
+
+                    if let Some(like_value) = #column_name.like {
+                        condition = condition.add(Column::#column_enum_name.like(like_value.as_str()))
+                    }
+
+                    if let Some(not_like_value) = #column_name.not_like {
+                        condition = condition.add(Column::#column_enum_name.not_like(not_like_value.as_str()))
+                    }
+                }
+            } else {
+                TokenStream::new()
+            };
+
+            quote! {
                 if let Some(#column_name) = current_filter.#column_name {
                     if let Some(eq_value) = #column_name.eq {
                         condition = condition.add(Column::#column_enum_name.eq(eq_value))
@@ -239,6 +271,8 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
                             condition = condition.add(Column::#column_enum_name.is_null())
                         }
                     }
+
+                    #ext
                 }
             }
         })
