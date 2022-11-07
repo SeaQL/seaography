@@ -449,7 +449,11 @@ impl async_graphql::types::connection::CursorType for CursorValues {
 }
 
 #[derive(Debug, Clone)]
-pub struct RelationKeyStruct<Entity: EnchantedEntity>(pub sea_orm::Value, pub Option<Entity::Filter>, pub Option<Entity::OrderBy>);
+pub struct RelationKeyStruct<Entity: EnchantedEntity>(
+    pub sea_orm::Value,
+    pub Option<Entity::Filter>,
+    pub Option<Entity::OrderBy>,
+);
 
 impl<Entity: EnchantedEntity> PartialEq for RelationKeyStruct<Entity> {
     fn eq(&self, other: &Self) -> bool {
@@ -593,7 +597,7 @@ pub trait EntityFilter {
 
 pub trait EntityOrderBy<Entity>
 where
-    Entity: sea_orm::EntityTrait
+    Entity: sea_orm::EntityTrait,
 {
     fn order_by(&self, stmt: sea_orm::Select<Entity>) -> sea_orm::Select<Entity>;
 }
@@ -617,16 +621,20 @@ where
     T: sea_orm::EntityTrait,
     <T as sea_orm::EntityTrait>::Model: async_graphql::OutputType,
 {
-    use sea_orm::{Iterable, PrimaryKeyToColumn, ModelTrait};
     use async_graphql::connection::CursorType;
+    use sea_orm::{Iterable, ModelTrait, PrimaryKeyToColumn};
 
-    let edges: Vec<async_graphql::types::connection::Edge<String, T::Model, async_graphql::types::connection::EmptyFields>> = data
+    let edges: Vec<
+        async_graphql::types::connection::Edge<
+            String,
+            T::Model,
+            async_graphql::types::connection::EmptyFields,
+        >,
+    > = data
         .into_iter()
         .map(|node| {
             let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                .map(|variant| {
-                    node.get(variant.into_column())
-                })
+                .map(|variant| node.get(variant.into_column()))
                 .collect();
 
             let cursor_string = CursorValues(values).encode_cursor();
@@ -639,14 +647,11 @@ where
         String,
         T::Model,
         ExtraPaginationFields,
-        async_graphql::types::connection::EmptyFields
+        async_graphql::types::connection::EmptyFields,
     >::with_additional_fields(
         has_previous_page,
         has_next_page,
-        ExtraPaginationFields {
-            pages,
-            current
-        }
+        ExtraPaginationFields { pages, current },
     );
 
     result.edges.extend(edges);

@@ -1,4 +1,4 @@
-use heck::{ToUpperCamelCase, ToSnakeCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
@@ -217,7 +217,7 @@ pub fn relation_fn(
     if has_many.is_some() && belongs_to.is_some() {
         return Err(crate::error::Error::Internal(
             "Cannot map relation: cannot be both one-many and many-one".into(),
-        ))
+        ));
     }
 
     let (global_scope, object_scope) = if has_many.is_some() {
@@ -405,7 +405,7 @@ pub fn relation_fn(
     } else {
         return Err(crate::error::Error::Internal(
             "Cannot map relation: neither one-many or many-one".into(),
-        ))
+        ));
     };
 
     Ok((global_scope, object_scope))
