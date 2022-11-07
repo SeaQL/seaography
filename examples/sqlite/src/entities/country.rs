@@ -9,7 +9,7 @@ use sea_orm::entity::prelude::*;
     seaography::macros::Filter,
 )]
 #[sea_orm(table_name = "country")]
-// #[graphql(complex)]
+#[graphql(complex)]
 #[graphql(name = "Country")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -18,9 +18,7 @@ pub struct Model {
     pub last_update: Option<DateTimeUtc>,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation
-// , seaography::macros::RelationsCompact
-)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]
 pub enum Relation {
     #[sea_orm(has_many = "super::city::Entity")]
     City,

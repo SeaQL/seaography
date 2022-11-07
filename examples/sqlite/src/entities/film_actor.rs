@@ -19,9 +19,7 @@ pub struct Model {
     pub last_update: DateTimeUtc,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation,
-    // seaography::macros::RelationsCompact
-)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::film::Entity",
@@ -54,103 +52,3 @@ impl Related<super::actor::Entity> for Entity {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
-
-
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct FilmFK(pub seaography::RelationKeyStruct<super::film::Entity>);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<FilmFK> for crate::OrmDataloader {
-    type Value = super::film::Model;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[FilmFK],
-    ) -> Result<std::collections::HashMap<FilmFK, Self::Value>, Self::Error> {
-        let keys: Vec<_> = keys.into_iter().map(|key| key.0.to_owned()).collect();
-        let data: std::collections::HashMap<FilmFK, Self::Value> =
-            seaography::fetch_relation_data::<super::film::Entity>(
-                keys,
-                Relation::Film.def(),
-                &self.db,
-            )
-            .await?
-            .into_iter()
-            .map(|(key, model)| (FilmFK(key), model))
-            .collect();
-        Ok(data)
-    }
-}
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ActorFK(pub seaography::RelationKeyStruct<super::actor::Entity>);
-#[async_trait::async_trait]
-impl async_graphql::dataloader::Loader<ActorFK> for crate::OrmDataloader {
-    type Value = super::actor::Model;
-    type Error = std::sync::Arc<sea_orm::error::DbErr>;
-    async fn load(
-        &self,
-        keys: &[ActorFK],
-    ) -> Result<std::collections::HashMap<ActorFK, Self::Value>, Self::Error> {
-        let keys: Vec<_> = keys.into_iter().map(|key| key.0.to_owned()).collect();
-        let data: std::collections::HashMap<ActorFK, Self::Value> =
-            seaography::fetch_relation_data::<super::actor::Entity>(
-                keys,
-                Relation::Actor.def(),
-                &self.db,
-            )
-            .await?
-            .into_iter()
-            .map(|(key, model)| (ActorFK(key), model))
-            .collect();
-        Ok(data)
-    }
-}
-#[async_graphql::ComplexObject]
-impl Model {
-    pub async fn film<'a>(&self, ctx: &async_graphql::Context<'a>) -> Option<super::film::Model> {
-        use ::std::str::FromStr;
-        use seaography::heck::ToSnakeCase;
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
-            .unwrap();
-        let from_column: Column = Column::from_str(
-            Relation::Film
-                .def()
-                .from_col
-                .to_string()
-                .to_snake_case()
-                .as_str(),
-        )
-        .unwrap();
-        let key = FilmFK(seaography::RelationKeyStruct(
-            self.get(from_column),
-            None,
-            None,
-        ));
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data
-    }
-    pub async fn actor<'a>(&self, ctx: &async_graphql::Context<'a>) -> Option<super::actor::Model> {
-        use ::std::str::FromStr;
-        use seaography::heck::ToSnakeCase;
-        let data_loader = ctx
-            .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
-            .unwrap();
-        let from_column: Column = Column::from_str(
-            Relation::Actor
-                .def()
-                .from_col
-                .to_string()
-                .to_snake_case()
-                .as_str(),
-        )
-        .unwrap();
-        let key = ActorFK(seaography::RelationKeyStruct(
-            self.get(from_column),
-            None,
-            None,
-        ));
-        let data: Option<_> = data_loader.load_one(key).await.unwrap();
-        data
-    }
-}

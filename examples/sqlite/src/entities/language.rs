@@ -9,7 +9,7 @@ use sea_orm::entity::prelude::*;
     seaography::macros::Filter,
 )]
 #[sea_orm(table_name = "language")]
-// #[graphql(complex)]
+#[graphql(complex)]
 #[graphql(name = "Language")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
