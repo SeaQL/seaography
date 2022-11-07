@@ -1,12 +1,12 @@
-use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
 use async_graphql::{
     dataloader::DataLoader,
     http::{playground_source, GraphQLPlaygroundConfig},
     EmptyMutation, EmptySubscription, Schema,
 };
-use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
+use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
 use seaography_sqlite_example::*;
 use std::env;
@@ -25,22 +25,13 @@ lazy_static! {
         });
 }
 
-type AppSchema = Schema<QueryRoot, EmptyMutation, EmptySubscription>;
-
-async fn index(schema: web::Data<AppSchema>, req: GraphQLRequest) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
+#[handler]
+async fn graphql_playground() -> impl IntoResponse {
+    Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
 }
 
-async fn graphql_playground() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(playground_source(GraphQLPlaygroundConfig::new(
-            "http://localhost:8000",
-        ))))
-}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() {
     dotenv().ok();
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -65,18 +56,13 @@ async fn main() -> std::io::Result<()> {
         schema = schema.limit_complexity(complexity);
     }
     let schema = schema.finish();
+    let app = Route::new().at(
+        &*ENDPOINT,
+        get(graphql_playground).post(GraphQL::new(schema)),
+    );
     println!("Visit GraphQL Playground at http://{}", *URL);
-    HttpServer::new(move || {
-        App::new()
-            .app_data(Data::new(schema.clone()))
-            .service(web::resource("/").guard(guard::Post()).to(index))
-            .service(
-                web::resource("/")
-                    .guard(guard::Get())
-                    .to(graphql_playground),
-            )
-    })
-    .bind("127.0.0.1:8000")?
-    .run()
-    .await
+    Server::new(TcpListener::bind(&*URL))
+        .run(app)
+        .await
+        .expect("Fail to start web server");
 }

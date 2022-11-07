@@ -206,8 +206,8 @@ pub struct TypeFilter<T: async_graphql::InputType> {
 
 #[derive(Debug, async_graphql::InputObject)]
 pub struct PageInput {
-    pub limit: usize,
-    pub page: usize,
+    pub limit: u64,
+    pub page: u64,
 }
 
 #[derive(Debug, async_graphql::InputObject)]
@@ -224,8 +224,8 @@ pub enum Pagination {
 
 #[derive(async_graphql::SimpleObject)]
 pub struct ExtraPaginationFields {
-    pub pages: Option<usize>,
-    pub current: Option<usize>,
+    pub pages: Option<u64>,
+    pub current: Option<u64>,
 }
 
 #[derive(Debug)]
