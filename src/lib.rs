@@ -530,13 +530,13 @@ where
     use heck::ToSnakeCase;
     use sea_orm::prelude::*;
 
-    let filters = if keys.len() > 0 {
+    let filters = if !keys.is_empty() {
         keys[0].clone().1
     } else {
         None
     };
 
-    let order_by = if keys.len() > 0 {
+    let order_by = if !keys.is_empty() {
         keys[0].clone().2
     } else {
         None
