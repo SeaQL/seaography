@@ -28,6 +28,7 @@ pub struct Args {
     #[clap(short, long)]
     pub hidden_tables: Option<bool>,
 
+    #[clap(short, long)]
     pub framework: Option<WebFrameworkEnum>,
 }
 
