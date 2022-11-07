@@ -263,8 +263,9 @@ pub fn relation_fn(
                     &self,
                     ctx: &async_graphql::Context<'a>,
                     filters: Option<#path::Filter>,
+                    pagination: Option<seaography::Pagination>,
                     order_by: Option<#path::OrderBy>,
-                ) -> Option<async_graphql::types::connection::Connection<String, #path::Model, seaography::ExtraPaginationFields, async_graphql::types::connection::EmptyFields>> {
+                ) -> async_graphql::types::connection::Connection<String, #path::Model, seaography::ExtraPaginationFields, async_graphql::types::connection::EmptyFields> {
                     use seaography::heck::ToSnakeCase;
                     use ::std::str::FromStr;
 
@@ -283,22 +284,56 @@ pub fn relation_fn(
 
                     let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), filters, order_by));
 
-                    let option_nodes: Option<_> = data_loader.load_one(key).await.unwrap();
+                    let nodes: Vec<#path::Model> = data_loader
+                        .load_one(key)
+                        .await
+                        .unwrap()
+                        .unwrap();
 
-                    if let Some(nodes) = option_nodes {
-                        // TODO pagination
-                        Some(
-                            seaography::data_to_connection::<#path::Entity>(
-                                nodes,
-                                false,
-                                false,
-                                Some(1),
-                                Some(1)
-                            )
-                        )
-                    } else {
-                        None
+                    if let Some(pagination) = pagination {
+                        return match pagination {
+                            seaography::Pagination::Pages(pagination) => {
+                                let nodes_size = nodes.len();
+
+                                let nodes = nodes
+                                    .into_iter()
+                                    .skip(pagination.page * pagination.limit)
+                                    .take(pagination.limit)
+                                    .collect();
+
+                                let has_previous_page = pagination.page * pagination.limit > 0 && nodes_size != 0;
+                                let has_next_page = ((nodes_size / pagination.limit) as i64) - (pagination.page as i64) - 1 > 0;
+                                let pages: usize = nodes_size / pagination.limit;
+                                let current = pagination.page;
+
+                                seaography::data_to_connection::<#path::Entity>(
+                                    nodes,
+                                    has_previous_page,
+                                    has_next_page,
+                                    Some(pages),
+                                    Some(current)
+                                )
+                            },
+                            seaography::Pagination::Cursor(cursor) => {
+                                // TODO fix cursor related query pagination
+                                seaography::data_to_connection::<#path::Entity>(
+                                    nodes,
+                                    false,
+                                    false,
+                                    Some(1),
+                                    Some(1)
+                                )
+                            }
+                        }
                     }
+
+                    seaography::data_to_connection::<#path::Entity>(
+                        nodes,
+                        false,
+                        false,
+                        Some(1),
+                        Some(1)
+                    )
                 }
             },
         )

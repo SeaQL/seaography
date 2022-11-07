@@ -92,7 +92,7 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 
     let file_name = path.as_ref().join("lib.rs");
 
-    std::fs::write(file_name, add_line_break(tokens))?;
+    std::fs::write(file_name, format!("#![recursion_limit = \"1024\"]\n{}", add_line_break(tokens)))?;
 
     Ok(())
 }
