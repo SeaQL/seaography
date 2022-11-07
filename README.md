@@ -64,9 +64,11 @@ Go to http://localhost:8000/ and try out the following queries:
       description
       releaseYear
       filmActor {
-        actor {
-          firstName
-          lastName
+        nodes {
+          actor {
+            firstName
+            lastName
+          }
         }
       }
     }
@@ -125,6 +127,46 @@ Go to http://localhost:8000/ and try out the following queries:
       customerId
       lastName
       email
+    }
+    pageInfo {
+      hasPreviousPage
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+### Complex query with filters on relations
+Find all inactive customers, include their address, and their payments with amount greater than 7 ordered by amount the second result
+```graphql
+{
+  customer(
+    filters: { active: { eq: 0 } }
+  ) {
+    nodes {
+      customerId
+      lastName
+      email
+      address {
+        address
+      }
+      payment(
+        filters: { amount: { gt: "7" } }
+        orderBy: { amount: ASC }
+        pagination: { pages: { limit: 1, page: 1 } }
+      ) {
+        nodes {
+          paymentId
+          amount
+        }
+        pages
+        current
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+        }
+      }
     }
     pageInfo {
       hasPreviousPage
