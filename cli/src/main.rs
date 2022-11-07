@@ -1,5 +1,5 @@
 use clap::Parser;
-use seaography_generator::write_project;
+use seaography_generator::{write_project, WebFrameworkEnum};
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -27,6 +27,9 @@ pub struct Args {
 
     #[clap(short, long)]
     pub hidden_tables: Option<bool>,
+
+    #[clap(short, long)]
+    pub framework: Option<WebFrameworkEnum>,
 }
 
 /**
@@ -140,6 +143,7 @@ async fn main() {
         expanded_format,
         tables,
         sql_library,
+        args.framework.unwrap_or_else(|| WebFrameworkEnum::Poem),
         args.depth_limit,
         args.complexity_limit,
     )
