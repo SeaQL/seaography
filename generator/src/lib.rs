@@ -15,30 +15,6 @@ pub enum WebFrameworkEnum {
     Poem,
 }
 
-impl std::str::FromStr for WebFrameworkEnum {
-    type Err = String;
-
-    fn from_str(input: &str) -> std::result::Result<WebFrameworkEnum, Self::Err> {
-        match input {
-            "actix" => Ok(Self::Actix),
-            "poem" => Ok(Self::Poem),
-            _ => Err(format!(
-                "Invalid framework '{}', 'actix' and 'poem' are supported!",
-                input
-            )),
-        }
-    }
-}
-
-impl std::fmt::Display for WebFrameworkEnum {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WebFrameworkEnum::Actix => f.write_str("actix"),
-            WebFrameworkEnum::Poem => f.write_str("poem"),
-        }
-    }
-}
-
 pub async fn write_project<P: AsRef<Path>>(
     path: &P,
     db_url: &str,
