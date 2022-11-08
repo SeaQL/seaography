@@ -60,7 +60,11 @@ pub struct TypeFilter<T: async_graphql::InputType> {
     pub is_null: Option<bool>,
 }
 
-impl<T: async_graphql::InputType + Clone> FilterTrait for TypeFilter<T> {
+impl<T> FilterTrait<T> for TypeFilter<T>
+where
+    T: async_graphql::InputType + Clone,
+    TypeFilter<T>: async_graphql::InputType
+{
     type Ty = T;
 
     fn eq(&self) -> Option<Self::Ty> {
@@ -125,7 +129,7 @@ pub struct StringFilter {
     pub not_like: Option<String>,
 }
 
-impl FilterTrait for StringFilter {
+impl FilterTrait<String> for StringFilter {
     type Ty = String;
 
     fn eq(&self) -> Option<Self::Ty> {
@@ -173,7 +177,7 @@ impl FilterTrait for StringFilter {
 }
 
 
-pub trait FilterTrait {
+pub trait FilterTrait<T>: Sync + Send + async_graphql::InputType<RawValueType = T> {
     type Ty;
 
     fn eq(&self) -> Option<Self::Ty>;
