@@ -103,8 +103,8 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
                 data: Vec<#path::Model>,
                 has_previous_page: bool,
                 has_next_page: bool,
-                pages: Option<usize>,
-                current: Option<usize>
+                pages: Option<u64>,
+                current: Option<u64>
             ) -> async_graphql::types::connection::Connection<
                 String,
                 #path::Model,
