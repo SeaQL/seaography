@@ -1,5 +1,5 @@
-use clap::Parser;
-use seaography_generator::{write_project, WebFrameworkEnum};
+use clap::{ArgEnum, Parser};
+use seaography_generator::write_project;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -28,8 +28,8 @@ pub struct Args {
     #[clap(short, long)]
     pub hidden_tables: Option<bool>,
 
-    #[clap(short, long)]
-    pub framework: Option<WebFrameworkEnum>,
+    #[clap(short, long, arg_enum, value_parser, default_value = "poem")]
+    pub framework: WebFrameworkEnum,
 }
 
 /**
@@ -143,10 +143,25 @@ async fn main() {
         expanded_format,
         tables,
         sql_library,
-        args.framework.unwrap_or_else(|| WebFrameworkEnum::Poem),
+        args.framework.into(),
         args.depth_limit,
         args.complexity_limit,
     )
     .await
     .unwrap();
+}
+
+#[derive(ArgEnum, Debug, Clone, Copy, Eq, PartialEq)]
+pub enum WebFrameworkEnum {
+    Actix,
+    Poem,
+}
+
+impl From<WebFrameworkEnum> for seaography_generator::WebFrameworkEnum {
+    fn from(framework: WebFrameworkEnum) -> Self {
+        match framework {
+            WebFrameworkEnum::Actix => seaography_generator::WebFrameworkEnum::Actix,
+            WebFrameworkEnum::Poem => seaography_generator::WebFrameworkEnum::Poem,
+        }
+    }
 }
