@@ -180,9 +180,7 @@ pub fn relation_fn(
             .parse()
             .unwrap()
     } else {
-        return Err(crate::error::Error::Internal(
-            "Cannot parse entity path".into(),
-        ));
+        quote!{ self }
     };
 
     let (return_type, extra_imports, map_method) = if has_many.is_some() {
