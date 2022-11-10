@@ -1,6 +1,6 @@
 use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{format_ident, quote};
 
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes)]
 pub struct SeaOrm {
@@ -47,54 +47,9 @@ pub fn filter_struct(
 ) -> Result<TokenStream, crate::error::Error> {
     let fields: Vec<TokenStream> = fields
         .iter()
-        .map(|(ident, ty)| {
-            let type_literal = ty.to_token_stream().to_string();
-
-            let default_filters = vec![
-                "String",
-                "i8",
-                "i16",
-                "i32",
-                "i64",
-                "u8",
-                "u16",
-                "u32",
-                "u64",
-                "f32",
-                "f64",
-                #[cfg(feature = "with-chrono")]
-                "Date",
-                #[cfg(feature = "with-chrono")]
-                "DateTime",
-                #[cfg(feature = "with-chrono")]
-                "DateTimeUtc",
-                #[cfg(feature = "with-chrono")]
-                "DateTimeWithTimeZone",
-                #[cfg(feature = "with-decimal")]
-                "Decimal",
-                #[cfg(feature = "with-json")]
-                "Json",
-                #[cfg(feature = "with-uuid")]
-                "Uuid",
-                "BinaryVector",
-                "bool",
-            ];
-
-            let filter_item = if default_filters.contains(&type_literal.as_str())
-                || type_literal.starts_with("Vec")
-            {
-                quote! {
-                    seaography::TypeFilter<#ty>
-                }
-            } else {
-                let ident = format_ident!("{}EnumFilter", type_literal);
-                quote! {
-                    crate::entities::sea_orm_active_enums::#ident
-                }
-            };
-
+        .map(|(ident, type_ident)| {
             quote! {
-                #ident: Option<#filter_item>
+                #ident: Option<<#type_ident as seaography::FilterTypeTrait>::Filter>
             }
         })
         .collect();
@@ -202,39 +157,39 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
 
             quote!{
                 if let Some(#column_name) = current_filter.#column_name {
-                    if let Some(eq_value) = #column_name.eq {
+                    if let Some(eq_value) = seaography::FilterTrait::eq(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.eq(eq_value))
                     }
 
-                    if let Some(ne_value) = #column_name.ne {
+                    if let Some(ne_value) = seaography::FilterTrait::ne(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.ne(ne_value))
                     }
 
-                    if let Some(gt_value) = #column_name.gt {
+                    if let Some(gt_value) = seaography::FilterTrait::gt(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.gt(gt_value))
                     }
 
-                    if let Some(gte_value) = #column_name.gte {
+                    if let Some(gte_value) = seaography::FilterTrait::gte(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.gte(gte_value))
                     }
 
-                    if let Some(lt_value) = #column_name.lt {
+                    if let Some(lt_value) = seaography::FilterTrait::lt(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.lt(lt_value))
                     }
 
-                    if let Some(lte_value) = #column_name.lte {
+                    if let Some(lte_value) = seaography::FilterTrait::lte(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.lte(lte_value))
                     }
 
-                    if let Some(is_in_value) = #column_name.is_in {
+                    if let Some(is_in_value) = seaography::FilterTrait::is_in(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.is_in(is_in_value))
                     }
 
-                    if let Some(is_not_in_value) = #column_name.is_not_in {
+                    if let Some(is_not_in_value) = seaography::FilterTrait::is_not_in(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.is_not_in(is_not_in_value))
                     }
 
-                    if let Some(is_null_value) = #column_name.is_null {
+                    if let Some(is_null_value) = seaography::FilterTrait::is_null(&#column_name) {
                         if is_null_value {
                             condition = condition.add(Column::#column_enum_name.is_null())
                         }
