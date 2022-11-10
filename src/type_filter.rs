@@ -1,5 +1,28 @@
 pub type BinaryVector = Vec<u8>;
 
+pub trait FilterTrait {
+    type Ty: async_graphql::InputType;
+
+    fn eq(&self) -> Option<Self::Ty>;
+    fn ne(&self) -> Option<Self::Ty>;
+    fn gt(&self) -> Option<Self::Ty>;
+    fn gte(&self) -> Option<Self::Ty>;
+    fn lt(&self) -> Option<Self::Ty>;
+    fn lte(&self) -> Option<Self::Ty>;
+    fn is_in(&self) -> Option<Vec<Self::Ty>>;
+    fn is_not_in(&self) -> Option<Vec<Self::Ty>>;
+    fn is_null(&self) -> Option<bool>;
+    fn contains(&self) -> Option<String>;
+    fn starts_with(&self) -> Option<String>;
+    fn ends_with(&self) -> Option<String>;
+    fn like(&self) -> Option<String>;
+    fn not_like(&self) -> Option<String>;
+}
+
+pub trait FilterTypeTrait {
+    type Filter: async_graphql::InputType + FilterTrait;
+}
+
 #[derive(Debug, Clone, async_graphql::InputObject)]
 #[graphql(concrete(name = "TinyIntegerFilter", params(i8)))]
 #[graphql(concrete(name = "SmallIntegerFilter", params(i16)))]
@@ -48,7 +71,10 @@ pub type BinaryVector = Vec<u8>;
 )]
 #[graphql(concrete(name = "BinaryFilter", params(BinaryVector)))]
 #[graphql(concrete(name = "BooleanFilter", params(bool)))]
-pub struct TypeFilter<T: async_graphql::InputType> {
+pub struct TypeFilter<T>
+where
+    T: async_graphql::InputType,
+{
     pub eq: Option<T>,
     pub ne: Option<T>,
     pub gt: Option<T>,
@@ -60,52 +86,64 @@ pub struct TypeFilter<T: async_graphql::InputType> {
     pub is_null: Option<bool>,
 }
 
-impl<T: async_graphql::InputType> FilterTrait for TypeFilter<T>
+impl<T> FilterTrait for TypeFilter<T>
 where
-    T: async_graphql::InputType<RawValueType = T> + Clone,
-    TypeFilter<T>: async_graphql::InputType<RawValueType = Self>
+    T: async_graphql::InputType + Clone,
 {
     type Ty = T;
 
     fn eq(&self) -> Option<Self::Ty> {
         self.eq.clone()
     }
+
     fn ne(&self) -> Option<Self::Ty> {
         self.ne.clone()
     }
+
     fn gt(&self) -> Option<Self::Ty> {
         self.gt.clone()
     }
+
     fn gte(&self) -> Option<Self::Ty> {
         self.gte.clone()
     }
+
     fn lt(&self) -> Option<Self::Ty> {
         self.lt.clone()
     }
+
     fn lte(&self) -> Option<Self::Ty> {
         self.lte.clone()
     }
+
     fn is_in(&self) -> Option<Vec<Self::Ty>> {
         self.is_in.clone()
     }
+
     fn is_not_in(&self) -> Option<Vec<Self::Ty>> {
         self.is_not_in.clone()
     }
+
     fn is_null(&self) -> Option<bool> {
         self.is_null.clone()
     }
+
     fn contains(&self) -> Option<String> {
         panic!("FilterType does not support contains")
     }
+
     fn starts_with(&self) -> Option<String> {
         panic!("FilterType does not support starts_with")
     }
+
     fn ends_with(&self) -> Option<String> {
         panic!("FilterType does not support ends_with")
     }
+
     fn like(&self) -> Option<String> {
         panic!("FilterType does not support like")
     }
+
     fn not_like(&self) -> Option<String> {
         panic!("FilterType does not support not_like")
     }
@@ -135,63 +173,97 @@ impl FilterTrait for StringFilter {
     fn eq(&self) -> Option<Self::Ty> {
         self.eq.clone()
     }
+
     fn ne(&self) -> Option<Self::Ty> {
         self.ne.clone()
     }
+
     fn gt(&self) -> Option<Self::Ty> {
         self.gt.clone()
     }
+
     fn gte(&self) -> Option<Self::Ty> {
         self.gte.clone()
     }
+
     fn lt(&self) -> Option<Self::Ty> {
         self.lt.clone()
     }
+
     fn lte(&self) -> Option<Self::Ty> {
         self.lte.clone()
     }
+
     fn is_in(&self) -> Option<Vec<Self::Ty>> {
         self.is_in.clone()
     }
+
     fn is_not_in(&self) -> Option<Vec<Self::Ty>> {
         self.is_not_in.clone()
     }
+
     fn is_null(&self) -> Option<bool> {
         self.is_null.clone()
     }
+
     fn contains(&self) -> Option<String> {
         self.contains.clone()
     }
+
     fn starts_with(&self) -> Option<String> {
         self.starts_with.clone()
     }
+
     fn ends_with(&self) -> Option<String> {
         self.ends_with.clone()
     }
+
     fn like(&self) -> Option<String> {
         self.like.clone()
     }
+
     fn not_like(&self) -> Option<String> {
         self.not_like.clone()
     }
 }
 
-
-pub trait FilterTrait: Sync + Send {
-    type Ty: async_graphql::InputType;
-
-    fn eq(&self) -> Option<Self::Ty>;
-    fn ne(&self) -> Option<Self::Ty>;
-    fn gt(&self) -> Option<Self::Ty>;
-    fn gte(&self) -> Option<Self::Ty>;
-    fn lt(&self) -> Option<Self::Ty>;
-    fn lte(&self) -> Option<Self::Ty>;
-    fn is_in(&self) -> Option<Vec<Self::Ty>>;
-    fn is_not_in(&self) -> Option<Vec<Self::Ty>>;
-    fn is_null(&self) -> Option<bool>;
-    fn contains(&self) -> Option<String>;
-    fn starts_with(&self) -> Option<String>;
-    fn ends_with(&self) -> Option<String>;
-    fn like(&self) -> Option<String>;
-    fn not_like(&self) -> Option<String>;
+macro_rules! impl_filter_type_trait {
+    ( $type: ty ) => {
+        impl FilterTypeTrait for $type {
+            type Filter = TypeFilter<$type>;
+        }
+    };
+    ( $type: ty, $filter: ty ) => {
+        impl FilterTypeTrait for $type {
+            type Filter = $filter;
+        }
+    };
 }
+
+impl_filter_type_trait!(i8);
+impl_filter_type_trait!(i16);
+impl_filter_type_trait!(i32);
+impl_filter_type_trait!(i64);
+impl_filter_type_trait!(u8);
+impl_filter_type_trait!(u16);
+impl_filter_type_trait!(u32);
+impl_filter_type_trait!(u64);
+impl_filter_type_trait!(f32);
+impl_filter_type_trait!(f64);
+#[cfg(feature = "with-json")]
+impl_filter_type_trait!(sea_orm::prelude::Json);
+#[cfg(feature = "with-chrono")]
+impl_filter_type_trait!(sea_orm::prelude::Date);
+#[cfg(feature = "with-chrono")]
+impl_filter_type_trait!(sea_orm::prelude::DateTime);
+#[cfg(feature = "with-chrono")]
+impl_filter_type_trait!(sea_orm::prelude::DateTimeUtc);
+#[cfg(feature = "with-chrono")]
+impl_filter_type_trait!(sea_orm::prelude::DateTimeWithTimeZone);
+#[cfg(feature = "with-decimal")]
+impl_filter_type_trait!(sea_orm::prelude::Decimal);
+#[cfg(feature = "with-uuid")]
+impl_filter_type_trait!(sea_orm::prelude::Uuid);
+impl_filter_type_trait!(BinaryVector);
+impl_filter_type_trait!(bool);
+impl_filter_type_trait!(String, StringFilter);

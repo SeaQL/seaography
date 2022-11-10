@@ -64,5 +64,9 @@ pub fn enum_filter_fn(ident: syn::Ident) -> TokenStream {
                 panic!("not_like not supported for enumerations")
             }
         }
+
+        impl seaography::FilterTypeTrait for #ident {
+            type Filter = #name;
+        }
     }
 }

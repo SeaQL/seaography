@@ -136,7 +136,7 @@ use itertools::Itertools;
 pub use seaography_derive as macros;
 
 pub mod type_filter;
-pub use type_filter::{TypeFilter, FilterTrait, StringFilter};
+pub use type_filter::{FilterTrait, FilterTypeTrait, TypeFilter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, async_graphql::Enum)]
 pub enum OrderByEnum {

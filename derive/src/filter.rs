@@ -48,9 +48,8 @@ pub fn filter_struct(
     let fields: Vec<TokenStream> = fields
         .iter()
         .map(|(ident, type_ident)| {
-
             quote! {
-                #ident: Option<Box<dyn seaography::FilterTrait<Ty = #type_ident>>>
+                #ident: Option<<#type_ident as seaography::FilterTypeTrait>::Filter>
             }
         })
         .collect();
@@ -158,39 +157,39 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
 
             quote!{
                 if let Some(#column_name) = current_filter.#column_name {
-                    if let Some(eq_value) = #column_name.eq() {
+                    if let Some(eq_value) = seaography::FilterTrait::eq(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.eq(eq_value))
                     }
 
-                    if let Some(ne_value) = #column_name.ne() {
+                    if let Some(ne_value) = seaography::FilterTrait::ne(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.ne(ne_value))
                     }
 
-                    if let Some(gt_value) = #column_name.gt() {
+                    if let Some(gt_value) = seaography::FilterTrait::gt(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.gt(gt_value))
                     }
 
-                    if let Some(gte_value) = #column_name.gte() {
+                    if let Some(gte_value) = seaography::FilterTrait::gte(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.gte(gte_value))
                     }
 
-                    if let Some(lt_value) = #column_name.lt() {
+                    if let Some(lt_value) = seaography::FilterTrait::lt(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.lt(lt_value))
                     }
 
-                    if let Some(lte_value) = #column_name.lte() {
+                    if let Some(lte_value) = seaography::FilterTrait::lte(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.lte(lte_value))
                     }
 
-                    if let Some(is_in_value) = #column_name.is_in() {
+                    if let Some(is_in_value) = seaography::FilterTrait::is_in(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.is_in(is_in_value))
                     }
 
-                    if let Some(is_not_in_value) = #column_name.is_not_in() {
+                    if let Some(is_not_in_value) = seaography::FilterTrait::is_not_in(&#column_name) {
                         condition = condition.add(Column::#column_enum_name.is_not_in(is_not_in_value))
                     }
 
-                    if let Some(is_null_value) = #column_name.is_null() {
+                    if let Some(is_null_value) = seaography::FilterTrait::is_null(&#column_name) {
                         if is_null_value {
                             condition = condition.add(Column::#column_enum_name.is_null())
                         }
