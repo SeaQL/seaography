@@ -2,7 +2,13 @@ name: tests
 
 on:
   pull_request:
+    paths-ignore:
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
   push:
+    paths-ignore:
+      - '**.md'
+      - '.github/ISSUE_TEMPLATE/**'
     branches:
       - main
       - pr/**/ci
