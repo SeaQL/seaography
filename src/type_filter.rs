@@ -125,7 +125,7 @@ where
     }
 
     fn is_null(&self) -> Option<bool> {
-        self.is_null.clone()
+        self.is_null
     }
 
     fn contains(&self) -> Option<String> {
@@ -203,7 +203,7 @@ impl FilterTrait for StringFilter {
     }
 
     fn is_null(&self) -> Option<bool> {
-        self.is_null.clone()
+        self.is_null
     }
 
     fn contains(&self) -> Option<String> {

@@ -46,7 +46,7 @@ pub fn enum_filter_fn(ident: syn::Ident) -> TokenStream {
                 self.is_not_in.clone()
             }
             fn is_null(&self) -> Option<bool> {
-                self.is_null.clone()
+                self.is_null
             }
             fn contains(&self) -> Option<String> {
                 panic!("contains not supported for enumerations")
