@@ -293,17 +293,19 @@ pub fn relation_fn(
                     if let Some(pagination) = pagination {
                         return match pagination {
                             seaography::Pagination::Pages(pagination) => {
-                                let nodes_size = nodes.len();
+                                let nodes_size = nodes.len() as u64;
+                                let skip_size: usize = (pagination.page * pagination.limit).try_into().unwrap();
+                                let take_size: usize = pagination.limit.try_into().unwrap();
 
                                 let nodes = nodes
                                     .into_iter()
-                                    .skip(pagination.page * pagination.limit)
-                                    .take(pagination.limit)
+                                    .skip(skip_size)
+                                    .take(take_size)
                                     .collect();
 
                                 let has_previous_page = pagination.page * pagination.limit > 0 && nodes_size != 0;
-                                let has_next_page = ((nodes_size / pagination.limit) as i64) - (pagination.page as i64) - 1 > 0;
-                                let pages: usize = nodes_size / pagination.limit;
+                                let has_next_page = (nodes_size / pagination.limit) - pagination.page - 1 > 0;
+                                let pages = nodes_size / pagination.limit;
                                 let current = pagination.page;
 
                                 seaography::data_to_connection::<#path::Entity>(
