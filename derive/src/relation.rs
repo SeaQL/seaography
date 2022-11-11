@@ -13,11 +13,11 @@ pub struct SeaOrm {
 }
 
 pub fn compact_relation_fn(item: &syn::DataEnum) -> Result<TokenStream, crate::error::Error> {
-    let (loaders, functions): (Vec<_>, Vec<_>) = item
+    let relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>  = item
         .variants
         .iter()
         .map(
-            |variant| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+            |variant| -> Result<(String, Option<String>, Option<String>, bool), crate::error::Error> {
                 let attrs = SeaOrm::from_attributes(&variant.attrs)?;
 
                 let belongs_to = match attrs.belongs_to {
@@ -30,22 +30,12 @@ pub fn compact_relation_fn(item: &syn::DataEnum) -> Result<TokenStream, crate::e
                     _ => None,
                 };
 
-                relation_fn(variant.ident.to_string(), belongs_to, has_many)
+                Ok((variant.ident.to_string(), belongs_to, has_many, false))
             },
         )
-        .collect::<Result<Vec<_>, crate::error::Error>>()?
-        .into_iter()
-        .map(|(loader, func)| (loader, func))
-        .unzip();
+        .collect::<Result<Vec<_>, crate::error::Error>>()?;
 
-    Ok(quote! {
-        #(#loaders)*
-
-        #[async_graphql::ComplexObject]
-        impl Model {
-            #(#functions)*
-        }
-    })
+    produce_relations(relations_parameters)
 }
 
 #[derive(Debug)]
@@ -122,33 +112,63 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
         })
         .collect::<Result<Vec<ExpandedParams>, crate::error::Error>>()?;
 
-    let (loaders, functions): (Vec<_>, Vec<_>) = expanded_params
+    let relations_parameters: Vec<(String, Option<String>, Option<String>, bool)> = expanded_params
         .iter()
-        .map(
-            |params| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-                let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
-                    Some(params.related_type.to_token_stream().to_string())
-                } else {
-                    None
-                };
+        .map(|params| -> Result<(String, Option<String>, Option<String>, bool), crate::error::Error> {
+            let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
+                Some(params.related_type.to_token_stream().to_string())
+            } else {
+                None
+            };
 
-                let has_many = if params.relation_type.to_string().ne("belongs_to") {
-                    Some(params.related_type.to_token_stream().to_string())
-                } else {
-                    None
-                };
+            let has_many = if params.relation_type.to_string().ne("belongs_to") {
+                Some(params.related_type.to_token_stream().to_string())
+            } else {
+                None
+            };
 
-                relation_fn(params.variant.to_string(), belongs_to, has_many)
-            },
-        )
-        .collect::<Result<Vec<_>, crate::error::Error>>()?
-        .into_iter()
-        .map(|(loader, func)| (loader, func))
-        .unzip();
+            let relation_name = params.variant.to_string();
+
+            Ok((relation_name, belongs_to, has_many, false))
+        })
+        .collect::<Result<Vec<_>, crate::error::Error>>()?;
+
+    produce_relations(relations_parameters)
+}
+
+pub fn produce_relations(
+    relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>,
+) -> Result<TokenStream, crate::error::Error> {
+    let reverse_self_references_parameters: Vec<(String, Option<String>, Option<String>, bool)> =
+        relations_parameters
+            .iter()
+            .filter(|(_, belongs_to, has_one, _)| {
+                belongs_to.eq(&Some("Entity".into())) || has_one.eq(&Some("Entity".into()))
+            })
+            .map(|(relation_name, belongs_to, has_many, _)| {
+                (
+                    relation_name.clone(),
+                    has_many.clone(),
+                    belongs_to.clone(),
+                    true,
+                )
+            })
+            .collect();
+
+    let (loaders, functions): (Vec<_>, Vec<_>) = relations_parameters
+    .into_iter()
+    .chain(reverse_self_references_parameters.into_iter())
+    .map(
+        |(relation_name, belongs_to, has_many, reverse)| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+            relation_fn(relation_name, belongs_to, has_many, reverse)
+        },
+    )
+    .collect::<Result<Vec<_>, crate::error::Error>>()?
+    .into_iter()
+    .map(|(loader, func)| (loader, func))
+    .unzip();
 
     Ok(quote! {
-        #item
-
         #(#loaders)*
 
         #[async_graphql::ComplexObject]
@@ -162,8 +182,21 @@ pub fn relation_fn(
     relation_name: String,
     belongs_to: Option<String>,
     has_many: Option<String>,
+    reverse: bool,
 ) -> Result<(TokenStream, TokenStream), crate::error::Error> {
     let relation_ident = format_ident!("{}", relation_name.to_upper_camel_case());
+
+    let relation_name = if reverse {
+        format_ident!("{}Reverse", relation_name.to_upper_camel_case())
+    } else {
+        format_ident!("{}", relation_name.to_upper_camel_case())
+    };
+
+    let (reverse, column_type) = if reverse {
+        (quote! { true }, quote! { to_col })
+    } else {
+        (quote! { false }, quote! { from_col })
+    };
 
     let target_path = if let Some(target_path) = &has_many {
         target_path
@@ -180,7 +213,7 @@ pub fn relation_fn(
             .parse()
             .unwrap()
     } else {
-        quote!{ self }
+        quote! { self }
     };
 
     let (return_type, extra_imports, map_method) = if has_many.is_some() {
@@ -198,7 +231,7 @@ pub fn relation_fn(
     };
 
     let relation_enum = quote! {Relation::#relation_ident};
-    let foreign_key_name = format_ident!("{}FK", relation_ident).to_token_stream();
+    let foreign_key_name = format_ident!("{}FK", relation_name).to_token_stream();
 
     Ok((
         quote! {
@@ -228,6 +261,7 @@ pub fn relation_fn(
                         ::fetch_relation_data::<#path::Entity, #path::Filter, #path::OrderBy>(
                             keys,
                             #relation_enum.def(),
+                            #reverse,
                             &self.db,
                         ).await?
                         .into_iter()
@@ -240,7 +274,7 @@ pub fn relation_fn(
             }
         },
         quote! {
-            pub async fn #relation_ident<'a>(
+            pub async fn #relation_name<'a>(
                 &self,
                 ctx: &async_graphql::Context<'a>,
             ) -> Option<#return_type> {
@@ -251,16 +285,17 @@ pub fn relation_fn(
                     .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
                     .unwrap();
 
-                let from_column: Column = Column::from_str(
+                // TODO support multiple value keys
+                let target_column: Column = Column::from_str(
                     #relation_enum
                         .def()
-                        .from_col
+                        .#column_type
                         .to_string()
                         .to_snake_case()
                         .as_str()
                 ).unwrap();
 
-                let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), None, None));
+                let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(target_column), None, None));
 
                 let data: Option<_> = data_loader.load_one(key).await.unwrap();
 
