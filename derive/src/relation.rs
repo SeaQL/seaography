@@ -139,34 +139,34 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
 pub fn produce_relations(
     relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>,
 ) -> Result<TokenStream, crate::error::Error> {
-    let reverse_self_references_parameters: Vec<(String, Option<String>, Option<String>, bool)> =
-        relations_parameters
-            .iter()
+    let relations_copy = relations_parameters.clone();
+
+    let reverse_self_references_parameters = relations_copy
+            .into_iter()
             .filter(|(_, belongs_to, has_one, _)| {
                 belongs_to.eq(&Some("Entity".into())) || has_one.eq(&Some("Entity".into()))
             })
             .map(|(relation_name, belongs_to, has_many, _)| {
                 (
-                    relation_name.clone(),
-                    has_many.clone(),
-                    belongs_to.clone(),
+                    relation_name,
+                    has_many,
+                    belongs_to,
                     true,
                 )
-            })
-            .collect();
+            });
 
     let (loaders, functions): (Vec<_>, Vec<_>) = relations_parameters
-    .into_iter()
-    .chain(reverse_self_references_parameters.into_iter())
-    .map(
-        |(relation_name, belongs_to, has_many, reverse)| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-            relation_fn(relation_name, belongs_to, has_many, reverse)
-        },
-    )
-    .collect::<Result<Vec<_>, crate::error::Error>>()?
-    .into_iter()
-    .map(|(loader, func)| (loader, func))
-    .unzip();
+        .into_iter()
+        .chain(reverse_self_references_parameters)
+        .map(
+            |(relation_name, belongs_to, has_many, reverse)| -> Result<(TokenStream, TokenStream), crate::error::Error> {
+                relation_fn(relation_name, belongs_to, has_many, reverse)
+            },
+        )
+        .collect::<Result<Vec<_>, crate::error::Error>>()?
+        .into_iter()
+        .map(|(loader, func)| (loader, func))
+        .unzip();
 
     Ok(quote! {
         #(#loaders)*
