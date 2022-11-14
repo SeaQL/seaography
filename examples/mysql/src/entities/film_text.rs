@@ -19,13 +19,7 @@ pub struct Model {
     pub description: Option<String>,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, seaography::macros::RelationsCompact)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]
 pub enum Relation {}
-
-impl RelationTrait for Relation {
-    fn def(&self) -> RelationDef {
-        panic!("No RelationDef")
-    }
-}
 
 impl ActiveModelBehavior for ActiveModel {}

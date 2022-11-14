@@ -17,6 +17,7 @@ pub struct Model {
     pub first_name: String,
     pub last_name: String,
     pub address_id: i32,
+    pub reports_to_id: Option<i32>,
     pub picture: Option<Vec<u8>>,
     pub email: Option<String>,
     pub store_id: i32,
@@ -44,6 +45,14 @@ pub enum Relation {
         on_delete = "Restrict"
     )]
     Store,
+    #[sea_orm(
+        belongs_to = "Entity",
+        from = "Column::ReportsToId",
+        to = "Column::StaffId",
+        on_update = "Restrict",
+        on_delete = "Restrict"
+    )]
+    SelfRef,
     #[sea_orm(has_many = "super::payment::Entity")]
     Payment,
     #[sea_orm(has_many = "super::rental::Entity")]

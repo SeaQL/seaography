@@ -1,6 +1,6 @@
 /*
 
-Sakila for SQLite is a port of the Sakila example database available for MySQL, which was originally developed by Mike Hillyer of the MySQL AB documentation team. 
+Sakila for SQLite is a port of the Sakila example database available for MySQL, which was originally developed by Mike Hillyer of the MySQL AB documentation team.
 This project is designed to help database administrators to decide which database to use for development of new products
 The user can run the same SQL against different kind of databases and compare the performance
 
@@ -27,13 +27,13 @@ CREATE TABLE actor (
 
 CREATE  INDEX idx_actor_last_name ON actor(last_name)
 ;
- 
+
 CREATE TRIGGER actor_trigger_ai AFTER INSERT ON actor
  BEGIN
   UPDATE actor SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER actor_trigger_au AFTER UPDATE ON actor
  BEGIN
   UPDATE actor SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -57,7 +57,7 @@ CREATE TRIGGER country_trigger_ai AFTER INSERT ON country
   UPDATE country SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER country_trigger_au AFTER UPDATE ON country
  BEGIN
   UPDATE country SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -85,7 +85,7 @@ CREATE TRIGGER city_trigger_ai AFTER INSERT ON city
   UPDATE city SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER city_trigger_au AFTER UPDATE ON city
  BEGIN
   UPDATE city SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -118,7 +118,7 @@ CREATE TRIGGER address_trigger_ai AFTER INSERT ON address
   UPDATE address SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER address_trigger_au AFTER UPDATE ON address
  BEGIN
   UPDATE address SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -142,7 +142,7 @@ CREATE TRIGGER language_trigger_ai AFTER INSERT ON language
   UPDATE language SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER language_trigger_au AFTER UPDATE ON language
  BEGIN
   UPDATE language SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -165,7 +165,7 @@ CREATE TRIGGER category_trigger_ai AFTER INSERT ON category
   UPDATE category SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER category_trigger_au AFTER UPDATE ON category
  BEGIN
   UPDATE category SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -204,7 +204,7 @@ CREATE TRIGGER customer_trigger_ai AFTER INSERT ON customer
   UPDATE customer SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER customer_trigger_au AFTER UPDATE ON customer
  BEGIN
   UPDATE customer SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -250,7 +250,7 @@ CREATE TRIGGER film_trigger_ai AFTER INSERT ON film
   UPDATE film SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER film_trigger_au AFTER UPDATE ON film
  BEGIN
   UPDATE film SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -274,7 +274,7 @@ CREATE TABLE film_actor (
 CREATE  INDEX idx_fk_film_actor_film ON film_actor(film_id)
 ;
 
-CREATE  INDEX idx_fk_film_actor_actor ON film_actor(actor_id) 
+CREATE  INDEX idx_fk_film_actor_actor ON film_actor(actor_id)
 ;
 
 CREATE TRIGGER film_actor_trigger_ai AFTER INSERT ON film_actor
@@ -282,7 +282,7 @@ CREATE TRIGGER film_actor_trigger_ai AFTER INSERT ON film_actor
   UPDATE film_actor SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER film_actor_trigger_au AFTER UPDATE ON film_actor
  BEGIN
   UPDATE film_actor SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -315,7 +315,7 @@ CREATE TRIGGER film_category_trigger_ai AFTER INSERT ON film_category
   UPDATE film_category SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER film_category_trigger_au AFTER UPDATE ON film_category
  BEGIN
   UPDATE film_category SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -360,7 +360,7 @@ CREATE TRIGGER inventory_trigger_ai AFTER INSERT ON inventory
   UPDATE inventory SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER inventory_trigger_au AFTER UPDATE ON inventory
  BEGIN
   UPDATE inventory SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -376,6 +376,7 @@ CREATE TABLE staff (
   first_name VARCHAR(45) NOT NULL,
   last_name VARCHAR(45) NOT NULL,
   address_id INT NOT NULL,
+  reports_to_id SMALLINT DEFAULT NULL,
   picture BLOB DEFAULT NULL,
   email VARCHAR(50) DEFAULT NULL,
   store_id INT NOT NULL,
@@ -385,6 +386,7 @@ CREATE TABLE staff (
   last_update TIMESTAMP NOT NULL,
   PRIMARY KEY  (staff_id),
   CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE NO ACTION ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_staff FOREIGN KEY (reports_to_id) REFERENCES staff (staff_id) ON DELETE NO ACTION ON UPDATE CASCADE,
   CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE NO ACTION ON UPDATE CASCADE
 )
 ;
@@ -399,7 +401,7 @@ CREATE TRIGGER staff_trigger_ai AFTER INSERT ON staff
   UPDATE staff SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER staff_trigger_au AFTER UPDATE ON staff
  BEGIN
   UPDATE staff SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -432,7 +434,7 @@ CREATE TRIGGER store_trigger_ai AFTER INSERT ON store
   UPDATE store SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER store_trigger_au AFTER UPDATE ON store
  BEGIN
   UPDATE store SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -467,7 +469,7 @@ CREATE TRIGGER payment_trigger_ai AFTER INSERT ON payment
   UPDATE payment SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER payment_trigger_au AFTER UPDATE ON payment
  BEGIN
   UPDATE payment SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -502,7 +504,7 @@ CREATE TRIGGER rental_trigger_ai AFTER INSERT ON rental
   UPDATE rental SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
  END
 ;
- 
+
 CREATE TRIGGER rental_trigger_au AFTER UPDATE ON rental
  BEGIN
   UPDATE rental SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
@@ -581,7 +583,7 @@ INNER JOIN address AS a ON s.address_id = a.address_id
 INNER JOIN city AS c ON a.city_id = c.city_id
 INNER JOIN country AS cy ON c.country_id = cy.country_id
 INNER JOIN staff AS m ON s.manager_staff_id = m.staff_id
-GROUP BY  
+GROUP BY
   s.store_id
 , c.city||','||cy.country
 , m.first_name||' '||m.last_name

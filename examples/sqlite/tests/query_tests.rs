@@ -441,3 +441,61 @@ async fn test_cursor_pagination_no_next() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn test_self_ref() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  staff {
+                    nodes {
+                      firstName
+                      reportsToId
+                      selfRefReverse {
+                        staffId
+                        firstName
+                      }
+                      selfRef {
+                        staffId
+                        firstName
+                      }
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "staff": {
+            "nodes": [
+              {
+                "firstName": "Mike",
+                "reportsToId": null,
+                "selfRefReverse": [
+                  {
+                    "staffId": 2,
+                    "firstName": "Jon"
+                  }
+                ],
+                "selfRef": null
+              },
+              {
+                "firstName": "Jon",
+                "reportsToId": 1,
+                "selfRefReverse": null,
+                "selfRef": {
+                  "staffId": 1,
+                  "firstName": "Mike"
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}

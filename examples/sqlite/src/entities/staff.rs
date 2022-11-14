@@ -17,6 +17,7 @@ pub struct Model {
     pub first_name: String,
     pub last_name: String,
     pub address_id: i32,
+    pub reports_to_id: Option<i16>,
     pub picture: Option<Vec<u8>>,
     pub email: Option<String>,
     pub store_id: i32,
@@ -36,6 +37,14 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     Address,
+    #[sea_orm(
+        belongs_to = "Entity",
+        from = "Column::ReportsToId",
+        to = "Column::StaffId",
+        on_update = "Cascade",
+        on_delete = "NoAction"
+    )]
+    SelfRef,
     #[sea_orm(
         belongs_to = "super::store::Entity",
         from = "Column::StoreId",

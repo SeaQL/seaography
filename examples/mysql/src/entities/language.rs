@@ -18,13 +18,7 @@ pub struct Model {
     pub last_update: DateTimeUtc,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, seaography::macros::RelationsCompact)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]
 pub enum Relation {}
-
-impl RelationTrait for Relation {
-    fn def(&self) -> RelationDef {
-        panic!("No RelationDef")
-    }
-}
 
 impl ActiveModelBehavior for ActiveModel {}
