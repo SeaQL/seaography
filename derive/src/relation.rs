@@ -142,18 +142,13 @@ pub fn produce_relations(
     let relations_copy = relations_parameters.clone();
 
     let reverse_self_references_parameters = relations_copy
-            .into_iter()
-            .filter(|(_, belongs_to, has_one, _)| {
-                belongs_to.eq(&Some("Entity".into())) || has_one.eq(&Some("Entity".into()))
-            })
-            .map(|(relation_name, belongs_to, has_many, _)| {
-                (
-                    relation_name,
-                    has_many,
-                    belongs_to,
-                    true,
-                )
-            });
+        .into_iter()
+        .filter(|(_, belongs_to, has_one, _)| {
+            belongs_to.eq(&Some("Entity".into())) || has_one.eq(&Some("Entity".into()))
+        })
+        .map(|(relation_name, belongs_to, has_many, _)| {
+            (relation_name, has_many, belongs_to, true)
+        });
 
     let (loaders, functions): (Vec<_>, Vec<_>) = relations_parameters
         .into_iter()
