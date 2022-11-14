@@ -20,7 +20,7 @@ pub struct Model {
     #[sea_orm(column_type = "Decimal(Some((5, 2)))")]
     pub amount: Decimal,
     pub payment_date: DateTime,
-    pub last_update: Option<DateTimeUtc>,
+    pub last_update: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]

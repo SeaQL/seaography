@@ -37,7 +37,6 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .with_test_writer()
         .init();
-
     let database = Database::connect(&*DATABASE_URL)
         .await
         .expect("Fail to initialize database connection");
@@ -61,7 +60,6 @@ async fn main() {
         &*ENDPOINT,
         get(graphql_playground).post(GraphQL::new(schema)),
     );
-
     println!("Visit GraphQL Playground at http://{}", *URL);
     Server::new(TcpListener::bind(&*URL))
         .run(app)

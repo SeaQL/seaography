@@ -21,7 +21,7 @@ pub struct Model {
     pub address_id: i32,
     pub active: i8,
     pub create_date: DateTime,
-    pub last_update: Option<DateTimeUtc>,
+    pub last_update: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]

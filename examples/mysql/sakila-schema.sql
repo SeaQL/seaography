@@ -186,9 +186,9 @@ CREATE TABLE film_category (
 
 --
 -- Table structure for table `film_text`
--- 
+--
 -- InnoDB added FULLTEXT support in 5.6.10. If you use an
--- earlier version, then consider upgrading (recommended) or 
+-- earlier version, then consider upgrading (recommended) or
 -- changing InnoDB to MyISAM as the film_text engine
 --
 
@@ -315,6 +315,7 @@ CREATE TABLE staff (
   first_name VARCHAR(45) NOT NULL,
   last_name VARCHAR(45) NOT NULL,
   address_id INT NOT NULL,
+  reports_to_id INT,
   picture BLOB DEFAULT NULL,
   email VARCHAR(50) DEFAULT NULL,
   store_id INT NOT NULL,
@@ -326,6 +327,7 @@ CREATE TABLE staff (
   KEY idx_fk_store_id (store_id),
   KEY idx_fk_address_id (address_id),
   CONSTRAINT fk_staff_store FOREIGN KEY (store_id) REFERENCES store (store_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_staff_staff FOREIGN KEY (reports_to_id) REFERENCES staff (staff_id) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT fk_staff_address FOREIGN KEY (address_id) REFERENCES address (address_id) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

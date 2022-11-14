@@ -501,6 +501,7 @@ CREATE TABLE staff (
     first_name character varying(45) NOT NULL,
     last_name character varying(45) NOT NULL,
     address_id smallint NOT NULL,
+    reports_to_id integer,
     email character varying(50),
     store_id smallint NOT NULL,
     active boolean DEFAULT true NOT NULL,
@@ -1342,6 +1343,13 @@ ALTER TABLE ONLY staff
 
 ALTER TABLE ONLY staff
     ADD CONSTRAINT staff_store_id_fkey FOREIGN KEY (store_id) REFERENCES store(store_id);
+
+    --
+-- Name: staff_reports_to_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY staff
+    ADD CONSTRAINT staff_reports_to_id_fkey FOREIGN KEY (reports_to_id) REFERENCES staff(staff_id);
 
 
 --

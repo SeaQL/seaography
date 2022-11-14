@@ -512,6 +512,7 @@ impl<Filter, Order> std::hash::Hash for RelationKeyStruct<Filter, Order> {
 pub async fn fetch_relation_data<Entity, Filter, Order>(
     keys: Vec<RelationKeyStruct<Option<Filter>, Option<Order>>>,
     relation: sea_orm::RelationDef,
+    reverse: bool,
     db: &sea_orm::DatabaseConnection,
 ) -> std::result::Result<
     Vec<(
@@ -530,9 +531,15 @@ where
     let keys: Vec<sea_orm::Value> = keys.into_iter().map(|key| key.0).collect();
 
     // TODO support multiple columns
-    let to_column =
+    let to_column = if reverse {
+        <Entity::Column as FromStr>::from_str(
+            relation.from_col.to_string().to_snake_case().as_str(),
+        )
+        .unwrap()
+    } else {
         <Entity::Column as FromStr>::from_str(relation.to_col.to_string().to_snake_case().as_str())
-            .unwrap();
+            .unwrap()
+    };
 
     let stmt = <Entity as sea_orm::EntityTrait>::find();
 
