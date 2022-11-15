@@ -451,51 +451,57 @@ async fn test_self_ref() {
             .execute(
                 r#"
                 {
-                  staff {
-                    nodes {
-                      firstName
-                      reportsToId
-                      selfRefReverse {
-                        staffId
+                    staff {
+                      nodes {
                         firstName
-                      }
-                      selfRef {
-                        staffId
-                        firstName
+                        reportsToId
+                        selfRefReverse {
+                          nodes {
+                            staffId
+                            firstName
+                          }
+                        }
+                        selfRef {
+                          staffId
+                          firstName
+                        }
                       }
                     }
                   }
-                }
         "#,
             )
             .await,
         r#"
         {
-          "staff": {
-            "nodes": [
-              {
-                "firstName": "Mike",
-                "reportsToId": null,
-                "selfRefReverse": [
-                  {
-                    "staffId": 2,
-                    "firstName": "Jon"
+            "staff": {
+              "nodes": [
+                {
+                  "firstName": "Mike",
+                  "reportsToId": null,
+                  "selfRefReverse": {
+                    "nodes": [
+                      {
+                        "staffId": 2,
+                        "firstName": "Jon"
+                      }
+                    ]
+                  },
+                  "selfRef": null
+                },
+                {
+                  "firstName": "Jon",
+                  "reportsToId": 1,
+                  "selfRefReverse": {
+                    "nodes": []
+                  },
+                  "selfRef": {
+                    "staffId": 1,
+                    "firstName": "Mike"
                   }
-                ],
-                "selfRef": null
-              },
-              {
-                "firstName": "Jon",
-                "reportsToId": 1,
-                "selfRefReverse": null,
-                "selfRef": {
-                  "staffId": 1,
-                  "firstName": "Mike"
                 }
-              }
-            ]
+              ]
+            }
           }
-        }
         "#,
     )
 }

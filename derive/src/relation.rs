@@ -1,4 +1,4 @@
-use heck::{ToSnakeCase, ToUpperCamelCase};
+use heck::{ToUpperCamelCase};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 
@@ -253,7 +253,6 @@ pub fn relation_fn(
                             .map(|(key, model)| (#foreign_key_name(key), model))
                             .into_group_map();
 
-
                         Ok(data)
                     }
                 }
@@ -287,8 +286,8 @@ pub fn relation_fn(
                     let nodes: Vec<#path::Model> = data_loader
                         .load_one(key)
                         .await
-                        .unwrap()
-                        .unwrap();
+                        .expect("cannot unwrap load_one")
+                        .unwrap_or_else(|| vec![]);
 
                     if let Some(pagination) = pagination {
                         return match pagination {
