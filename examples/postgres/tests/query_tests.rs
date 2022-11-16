@@ -679,7 +679,7 @@ async fn related_queries_pagination() {
                   "nodes": [
                     {
                       "paymentId": 8547,
-                      "amount": "9.99"
+                      "amount": "9.9900"
                     }
                   ],
                   "pages": 2,
@@ -701,7 +701,7 @@ async fn related_queries_pagination() {
                   "nodes": [
                     {
                       "paymentId": 9972,
-                      "amount": "7.99"
+                      "amount": "7.9900"
                     }
                   ],
                   "pages": 6,
@@ -723,7 +723,7 @@ async fn related_queries_pagination() {
                   "nodes": [
                     {
                       "paymentId": 10989,
-                      "amount": "7.99"
+                      "amount": "7.9900"
                     }
                   ],
                   "pages": 3,

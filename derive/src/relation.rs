@@ -1,4 +1,4 @@
-use heck::{ToUpperCamelCase};
+use heck::ToUpperCamelCase;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 

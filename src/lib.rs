@@ -551,8 +551,10 @@ where
         )
         .unwrap()
     } else {
-        <Entity::Column as std::str::FromStr>::from_str(relation.to_col.to_string().to_snake_case().as_str())
-            .unwrap()
+        <Entity::Column as std::str::FromStr>::from_str(
+            relation.to_col.to_string().to_snake_case().as_str(),
+        )
+        .unwrap()
     };
 
     let stmt = <Entity as sea_orm::EntityTrait>::find();
@@ -616,7 +618,12 @@ pub fn data_to_connection<T>(
     has_next_page: bool,
     pages: Option<u64>,
     current: Option<u64>,
-) -> async_graphql::types::connection::Connection<String, T::Model, ExtraPaginationFields, async_graphql::types::connection::EmptyFields>
+) -> async_graphql::types::connection::Connection<
+    String,
+    T::Model,
+    ExtraPaginationFields,
+    async_graphql::types::connection::EmptyFields,
+>
 where
     T: sea_orm::EntityTrait,
     <T as sea_orm::EntityTrait>::Model: async_graphql::OutputType,
