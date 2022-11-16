@@ -579,13 +579,13 @@ async fn related_queries_filters() {
                       "paymentId": 9945
                     },
                     {
-                      "paymentId": 9953
-                    },
-                    {
                       "paymentId": 9962
                     },
                     {
                       "paymentId": 9967
+                    },
+                    {
+                      "paymentId": 9953
                     }
                   ]
                 }
