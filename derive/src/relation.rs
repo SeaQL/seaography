@@ -281,7 +281,11 @@ pub fn relation_fn(
                             .as_str()
                     ).unwrap();
 
-                    let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), filters, order_by));
+                    let key = #foreign_key_name(seaography::RelationKeyStruct {
+                        val: self.get(from_column),
+                        filter: filters,
+                        order_by,
+                    });
 
                     let nodes: Vec<#path::Model> = data_loader
                         .load_one(key)
@@ -395,7 +399,11 @@ pub fn relation_fn(
                             .as_str()
                     ).unwrap();
 
-                    let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(from_column), None, None));
+                    let key = #foreign_key_name(seaography::RelationKeyStruct {
+                        val: self.get(from_column),
+                        filter: None,
+                        order_by: None,
+                    });
 
                     let data: Option<_> = data_loader.load_one(key).await.unwrap();
 

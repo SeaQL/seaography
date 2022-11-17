@@ -449,11 +449,11 @@ impl async_graphql::types::connection::CursorType for CursorValues {
 }
 
 #[derive(Debug, Clone)]
-pub struct RelationKeyStruct<Entity: EnchantedEntity>(
-    pub sea_orm::Value,
-    pub Option<Entity::Filter>,
-    pub Option<Entity::OrderBy>,
-);
+pub struct RelationKeyStruct<Entity: EnchantedEntity> {
+    pub val: sea_orm::Value,
+    pub filter: Option<Entity::Filter>,
+    pub order_by: Option<Entity::OrderBy>,
+}
 
 impl<Entity: EnchantedEntity> PartialEq for RelationKeyStruct<Entity> {
     fn eq(&self, other: &Self) -> bool {
@@ -468,8 +468,8 @@ impl<Entity: EnchantedEntity> PartialEq for RelationKeyStruct<Entity> {
                 .map(|(index, _)| s.split_at(index))
         }
 
-        let a = format!("{:?}", self.0);
-        let b = format!("{:?}", other.0);
+        let a = format!("{:?}", self.val);
+        let b = format!("{:?}", other.val);
 
         let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
         let b = split_at_nth_char(b.as_str(), '(', 1).map(|v| v.1);
@@ -490,7 +490,7 @@ impl<Entity: EnchantedEntity> std::hash::Hash for RelationKeyStruct<Entity> {
                 .map(|(index, _)| s.split_at(index))
         }
 
-        let a = format!("{:?}", self.0);
+        let a = format!("{:?}", self.val);
         let a = split_at_nth_char(a.as_str(), '(', 1).map(|v| v.1);
 
         a.hash(state)
@@ -531,18 +531,18 @@ where
     use sea_orm::prelude::*;
 
     let filters = if !keys.is_empty() {
-        keys[0].clone().1
+        keys[0].clone().filter
     } else {
         None
     };
 
     let order_by = if !keys.is_empty() {
-        keys[0].clone().2
+        keys[0].clone().order_by
     } else {
         None
     };
 
-    let keys: Vec<sea_orm::Value> = keys.into_iter().map(|key| key.0).collect();
+    let keys: Vec<sea_orm::Value> = keys.into_iter().map(|key| key.val).collect();
 
     // TODO support multiple columns
     let to_column = if reverse {
@@ -580,11 +580,11 @@ where
             RelationKeyStruct<Entity>,
             <Entity as EntityTrait>::Model,
         ) {
-            let key = RelationKeyStruct::<Entity>(
-                model.get(to_column),
-                None,
-                None,
-            );
+            let key = RelationKeyStruct::<Entity> {
+                val: model.get(to_column),
+                filter: None,
+                order_by: None,
+            };
 
             (key, model)
         },
