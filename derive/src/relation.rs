@@ -12,27 +12,38 @@ pub struct SeaOrm {
     on_delete: Option<syn::Lit>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RelationParams {
+    relation_name: String,
+    belongs_to: Option<String>,
+    has_many: Option<String>,
+    reverse: bool,
+}
+
 pub fn compact_relation_fn(item: &syn::DataEnum) -> Result<TokenStream, crate::error::Error> {
-    let relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>  = item
+    let relations_parameters: Vec<RelationParams> = item
         .variants
         .iter()
-        .map(
-            |variant| -> Result<(String, Option<String>, Option<String>, bool), crate::error::Error> {
-                let attrs = SeaOrm::from_attributes(&variant.attrs)?;
+        .map(|variant| -> Result<RelationParams, crate::error::Error> {
+            let attrs = SeaOrm::from_attributes(&variant.attrs)?;
 
-                let belongs_to = match attrs.belongs_to {
-                    Some(syn::Lit::Str(belongs_to)) => Some(belongs_to.value()),
-                    _ => None,
-                };
+            let belongs_to = match attrs.belongs_to {
+                Some(syn::Lit::Str(belongs_to)) => Some(belongs_to.value()),
+                _ => None,
+            };
 
-                let has_many = match attrs.has_many {
-                    Some(syn::Lit::Str(has_many)) => Some(has_many.value()),
-                    _ => None,
-                };
+            let has_many = match attrs.has_many {
+                Some(syn::Lit::Str(has_many)) => Some(has_many.value()),
+                _ => None,
+            };
 
-                Ok((variant.ident.to_string(), belongs_to, has_many, false))
-            },
-        )
+            Ok(RelationParams {
+                relation_name: variant.ident.to_string(),
+                belongs_to,
+                has_many,
+                reverse: false,
+            })
+        })
         .collect::<Result<Vec<_>, crate::error::Error>>()?;
 
     produce_relations(relations_parameters)
@@ -112,9 +123,9 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
         })
         .collect::<Result<Vec<ExpandedParams>, crate::error::Error>>()?;
 
-    let relations_parameters: Vec<(String, Option<String>, Option<String>, bool)> = expanded_params
+    let relations_parameters: Vec<RelationParams> = expanded_params
         .iter()
-        .map(|params| -> Result<(String, Option<String>, Option<String>, bool), crate::error::Error> {
+        .map(|params| -> Result<RelationParams, crate::error::Error> {
             let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
                 Some(params.related_type.to_token_stream().to_string())
             } else {
@@ -129,7 +140,12 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
 
             let relation_name = params.variant.to_string();
 
-            Ok((relation_name, belongs_to, has_many, false))
+            Ok(RelationParams {
+                relation_name,
+                belongs_to,
+                has_many,
+                reverse: false,
+            })
         })
         .collect::<Result<Vec<_>, crate::error::Error>>()?;
 
@@ -137,27 +153,27 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
 }
 
 pub fn produce_relations(
-    relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>,
+    relations_parameters: Vec<RelationParams>,
 ) -> Result<TokenStream, crate::error::Error> {
     let relations_copy = relations_parameters.clone();
 
     let reverse_self_references_parameters = relations_copy
         .into_iter()
-        .filter(|(_, belongs_to, has_one, _)| {
-            belongs_to.eq(&Some("Entity".into())) || has_one.eq(&Some("Entity".into()))
+        .filter(|rel_param| {
+            rel_param.belongs_to.eq(&Some("Entity".into()))
+                || rel_param.has_many.eq(&Some("Entity".into()))
         })
-        .map(|(relation_name, belongs_to, has_many, _)| {
-            (relation_name, has_many, belongs_to, true)
+        .map(|rel_param| RelationParams {
+            relation_name: rel_param.relation_name,
+            belongs_to: rel_param.has_many,
+            has_many: rel_param.belongs_to,
+            reverse: true,
         });
 
     let (loaders, functions): (Vec<_>, Vec<_>) = relations_parameters
         .into_iter()
         .chain(reverse_self_references_parameters)
-        .map(
-            |(relation_name, belongs_to, has_many, reverse)| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-                relation_fn(relation_name, belongs_to, has_many, reverse)
-            },
-        )
+        .map(|rel_param| relation_fn(rel_param))
         .collect::<Result<Vec<_>, crate::error::Error>>()?
         .into_iter()
         .map(|(loader, func)| (loader, func))
@@ -174,11 +190,15 @@ pub fn produce_relations(
 }
 
 pub fn relation_fn(
-    relation_name: String,
-    belongs_to: Option<String>,
-    has_many: Option<String>,
-    reverse: bool,
+    relations_parameters: RelationParams,
 ) -> Result<(TokenStream, TokenStream), crate::error::Error> {
+    let RelationParams {
+        relation_name,
+        belongs_to,
+        has_many,
+        reverse,
+    } = relations_parameters;
+
     let relation_ident = format_ident!("{}", relation_name.to_upper_camel_case());
 
     let relation_name = if reverse {
