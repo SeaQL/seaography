@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## What's Changed
 * Add pagination, filtering and ordering for related queries https://github.com/SeaQL/seaography/pull/84
+  Note: Pagination is WIP, currently in memory only pagination
 
 ## 0.2.0 - 2022-10-31
 
