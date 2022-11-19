@@ -173,7 +173,7 @@ pub fn produce_relations(
     let (loaders, functions): (Vec<_>, Vec<_>) = relations_parameters
         .into_iter()
         .chain(reverse_self_references_parameters)
-        .map(|rel_param| relation_fn(rel_param))
+        .map(relation_fn)
         .collect::<Result<Vec<_>, crate::error::Error>>()?
         .into_iter()
         .map(|(loader, func)| (loader, func))
