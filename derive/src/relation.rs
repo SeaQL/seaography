@@ -12,27 +12,38 @@ pub struct SeaOrm {
     on_delete: Option<syn::Lit>,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RelationParams {
+    relation_name: String,
+    belongs_to: Option<String>,
+    has_many: Option<String>,
+    reverse: bool,
+}
+
 pub fn compact_relation_fn(item: &syn::DataEnum) -> Result<TokenStream, crate::error::Error> {
-    let relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>  = item
+    let relations_parameters: Vec<RelationParams> = item
         .variants
         .iter()
-        .map(
-            |variant| -> Result<(String, Option<String>, Option<String>, bool), crate::error::Error> {
-                let attrs = SeaOrm::from_attributes(&variant.attrs)?;
+        .map(|variant| -> Result<RelationParams, crate::error::Error> {
+            let attrs = SeaOrm::from_attributes(&variant.attrs)?;
 
-                let belongs_to = match attrs.belongs_to {
-                    Some(syn::Lit::Str(belongs_to)) => Some(belongs_to.value()),
-                    _ => None,
-                };
+            let belongs_to = match attrs.belongs_to {
+                Some(syn::Lit::Str(belongs_to)) => Some(belongs_to.value()),
+                _ => None,
+            };
 
-                let has_many = match attrs.has_many {
-                    Some(syn::Lit::Str(has_many)) => Some(has_many.value()),
-                    _ => None,
-                };
+            let has_many = match attrs.has_many {
+                Some(syn::Lit::Str(has_many)) => Some(has_many.value()),
+                _ => None,
+            };
 
-                Ok((variant.ident.to_string(), belongs_to, has_many, false))
-            },
-        )
+            Ok(RelationParams {
+                relation_name: variant.ident.to_string(),
+                belongs_to,
+                has_many,
+                reverse: false,
+            })
+        })
         .collect::<Result<Vec<_>, crate::error::Error>>()?;
 
     produce_relations(relations_parameters)
@@ -112,9 +123,9 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
         })
         .collect::<Result<Vec<ExpandedParams>, crate::error::Error>>()?;
 
-    let relations_parameters: Vec<(String, Option<String>, Option<String>, bool)> = expanded_params
+    let relations_parameters: Vec<RelationParams> = expanded_params
         .iter()
-        .map(|params| -> Result<(String, Option<String>, Option<String>, bool), crate::error::Error> {
+        .map(|params| -> Result<RelationParams, crate::error::Error> {
             let belongs_to = if params.relation_type.to_string().eq("belongs_to") {
                 Some(params.related_type.to_token_stream().to_string())
             } else {
@@ -129,7 +140,12 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
 
             let relation_name = params.variant.to_string();
 
-            Ok((relation_name, belongs_to, has_many, false))
+            Ok(RelationParams {
+                relation_name,
+                belongs_to,
+                has_many,
+                reverse: false,
+            })
         })
         .collect::<Result<Vec<_>, crate::error::Error>>()?;
 
@@ -137,27 +153,27 @@ pub fn expanded_relation_fn(item: &syn::ItemImpl) -> Result<TokenStream, crate::
 }
 
 pub fn produce_relations(
-    relations_parameters: Vec<(String, Option<String>, Option<String>, bool)>,
+    relations_parameters: Vec<RelationParams>,
 ) -> Result<TokenStream, crate::error::Error> {
     let relations_copy = relations_parameters.clone();
 
     let reverse_self_references_parameters = relations_copy
         .into_iter()
-        .filter(|(_, belongs_to, has_one, _)| {
-            belongs_to.eq(&Some("Entity".into())) || has_one.eq(&Some("Entity".into()))
+        .filter(|rel_param| {
+            rel_param.belongs_to.eq(&Some("Entity".into()))
+                || rel_param.has_many.eq(&Some("Entity".into()))
         })
-        .map(|(relation_name, belongs_to, has_many, _)| {
-            (relation_name, has_many, belongs_to, true)
+        .map(|rel_param| RelationParams {
+            relation_name: rel_param.relation_name,
+            belongs_to: rel_param.has_many,
+            has_many: rel_param.belongs_to,
+            reverse: true,
         });
 
     let (loaders, functions): (Vec<_>, Vec<_>) = relations_parameters
         .into_iter()
         .chain(reverse_self_references_parameters)
-        .map(
-            |(relation_name, belongs_to, has_many, reverse)| -> Result<(TokenStream, TokenStream), crate::error::Error> {
-                relation_fn(relation_name, belongs_to, has_many, reverse)
-            },
-        )
+        .map(relation_fn)
         .collect::<Result<Vec<_>, crate::error::Error>>()?
         .into_iter()
         .map(|(loader, func)| (loader, func))
@@ -174,11 +190,15 @@ pub fn produce_relations(
 }
 
 pub fn relation_fn(
-    relation_name: String,
-    belongs_to: Option<String>,
-    has_many: Option<String>,
-    reverse: bool,
+    relations_parameters: RelationParams,
 ) -> Result<(TokenStream, TokenStream), crate::error::Error> {
+    let RelationParams {
+        relation_name,
+        belongs_to,
+        has_many,
+        reverse,
+    } = relations_parameters;
+
     let relation_ident = format_ident!("{}", relation_name.to_upper_camel_case());
 
     let relation_name = if reverse {
@@ -211,91 +231,211 @@ pub fn relation_fn(
         quote! { self }
     };
 
-    let (return_type, extra_imports, map_method) = if has_many.is_some() {
+    let relation_enum = quote! {Relation::#relation_ident};
+    let foreign_key_name = format_ident!("{}FK", relation_name).to_token_stream();
+
+    if has_many.is_some() && belongs_to.is_some() {
+        return Err(crate::error::Error::Internal(
+            "Cannot map relation: cannot be both one-many and many-one".into(),
+        ));
+    }
+
+    let (global_scope, object_scope) = if has_many.is_some() {
         (
-            quote! { Vec<#path::Model> },
-            quote! { use seaography::itertools::Itertools; },
-            quote! { .into_group_map() },
+            quote! {
+                #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                pub struct #foreign_key_name(pub seaography::RelationKeyStruct<#path::Entity>);
+
+                #[async_trait::async_trait]
+                impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
+                    type Value = Vec<#path::Model>;
+                    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+
+                    async fn load(
+                        &self,
+                        keys: &[#foreign_key_name],
+                    ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
+                        let keys: Vec<_> = keys
+                            .into_iter()
+                            .map(|key| key.0.to_owned())
+                            .collect();
+
+                        use seaography::itertools::Itertools;
+
+                        let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
+                            ::fetch_relation_data::<#path::Entity>(
+                                keys,
+                                #relation_enum.def(),
+                                #reverse,
+                                &self.db,
+                            ).await?
+                            .into_iter()
+                            .map(|(key, model)| (#foreign_key_name(key), model))
+                            .into_group_map();
+
+                        Ok(data)
+                    }
+                }
+            },
+            quote! {
+                pub async fn #relation_name<'a>(
+                    &self,
+                    ctx: &async_graphql::Context<'a>,
+                    filters: Option<#path::Filter>,
+                    pagination: Option<seaography::Pagination>,
+                    order_by: Option<#path::OrderBy>,
+                ) -> async_graphql::types::connection::Connection<String, #path::Model, seaography::ExtraPaginationFields, async_graphql::types::connection::EmptyFields> {
+                    use seaography::heck::ToSnakeCase;
+                    use ::std::str::FromStr;
+
+                    let data_loader = ctx
+                        .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
+                        .unwrap();
+
+                    let from_column: Column = Column::from_str(
+                        #relation_enum
+                            .def()
+                            .#column_type
+                            .to_string()
+                            .to_snake_case()
+                            .as_str()
+                    ).unwrap();
+
+                    let key = #foreign_key_name(seaography::RelationKeyStruct {
+                        val: self.get(from_column),
+                        filter: filters,
+                        order_by,
+                    });
+
+                    let nodes: Vec<#path::Model> = data_loader
+                        .load_one(key)
+                        .await
+                        .expect("cannot unwrap load_one")
+                        .unwrap_or_else(|| vec![]);
+
+                    if let Some(pagination) = pagination {
+                        return match pagination {
+                            seaography::Pagination::Pages(pagination) => {
+                                let nodes_size = nodes.len() as u64;
+                                let skip_size: usize = (pagination.page * pagination.limit).try_into().unwrap();
+                                let take_size: usize = pagination.limit.try_into().unwrap();
+
+                                let nodes = nodes
+                                    .into_iter()
+                                    .skip(skip_size)
+                                    .take(take_size)
+                                    .collect();
+
+                                let has_previous_page = pagination.page * pagination.limit > 0 && nodes_size != 0;
+                                let has_next_page = (nodes_size / pagination.limit) - pagination.page - 1 > 0;
+                                let pages = nodes_size / pagination.limit;
+                                let current = pagination.page;
+
+                                seaography::data_to_connection::<#path::Entity>(
+                                    nodes,
+                                    has_previous_page,
+                                    has_next_page,
+                                    Some(pages),
+                                    Some(current)
+                                )
+                            },
+                            seaography::Pagination::Cursor(cursor) => {
+                                // TODO fix cursor related query pagination
+                                seaography::data_to_connection::<#path::Entity>(
+                                    nodes,
+                                    false,
+                                    false,
+                                    Some(1),
+                                    Some(1)
+                                )
+                            }
+                        }
+                    }
+
+                    seaography::data_to_connection::<#path::Entity>(
+                        nodes,
+                        false,
+                        false,
+                        Some(1),
+                        Some(1)
+                    )
+                }
+            },
         )
     } else if belongs_to.is_some() {
-        (quote! { #path::Model }, quote! {}, quote! { .collect() })
+        (
+            quote! {
+                #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                pub struct #foreign_key_name(pub seaography::RelationKeyStruct<#path::Entity>);
+
+                #[async_trait::async_trait]
+                impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
+                    type Value = #path::Model;
+                    type Error = std::sync::Arc<sea_orm::error::DbErr>;
+
+                    async fn load(
+                        &self,
+                        keys: &[#foreign_key_name],
+                    ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
+                        let keys: Vec<_> = keys
+                            .into_iter()
+                            .map(|key| key.0.to_owned())
+                            .collect();
+
+                        let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
+                            ::fetch_relation_data::<#path::Entity>(
+                                keys,
+                                #relation_enum.def(),
+                                #reverse,
+                                &self.db,
+                            ).await?
+                            .into_iter()
+                            .map(|(key, model)| (#foreign_key_name(key), model))
+                            .collect();
+
+
+                        Ok(data)
+                    }
+                }
+            },
+            quote! {
+                pub async fn #relation_name<'a>(
+                    &self,
+                    ctx: &async_graphql::Context<'a>,
+                ) -> Option<#path::Model> {
+                    use seaography::heck::ToSnakeCase;
+                    use ::std::str::FromStr;
+
+                    let data_loader = ctx
+                        .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
+                        .unwrap();
+
+                    let from_column: Column = Column::from_str(
+                        #relation_enum
+                            .def()
+                            .#column_type
+                            .to_string()
+                            .to_snake_case()
+                            .as_str()
+                    ).unwrap();
+
+                    let key = #foreign_key_name(seaography::RelationKeyStruct {
+                        val: self.get(from_column),
+                        filter: None,
+                        order_by: None,
+                    });
+
+                    let data: Option<_> = data_loader.load_one(key).await.unwrap();
+
+                    data
+                }
+            },
+        )
     } else {
         return Err(crate::error::Error::Internal(
             "Cannot map relation: neither one-many or many-one".into(),
         ));
     };
 
-    let relation_enum = quote! {Relation::#relation_ident};
-    let foreign_key_name = format_ident!("{}FK", relation_name).to_token_stream();
-
-    Ok((
-        quote! {
-            #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-            pub struct #foreign_key_name(pub seaography::RelationKeyStruct<Option<#path::Filter>, Option<#path::OrderBy>>);
-
-            #[async_trait::async_trait]
-            impl async_graphql::dataloader::Loader<#foreign_key_name> for crate::OrmDataloader {
-                type Value = #return_type;
-                type Error = std::sync::Arc<sea_orm::error::DbErr>;
-
-                async fn load(
-                    &self,
-                    keys: &[#foreign_key_name],
-                ) -> Result<std::collections::HashMap<#foreign_key_name, Self::Value>, Self::Error> {
-                    use seaography::heck::ToSnakeCase;
-                    use ::std::str::FromStr;
-
-                    let keys: Vec<_> = keys
-                        .into_iter()
-                        .map(|key| key.0.to_owned())
-                        .collect();
-
-                    #extra_imports
-
-                    let data: std::collections::HashMap<#foreign_key_name, Self::Value> = seaography
-                        ::fetch_relation_data::<#path::Entity, #path::Filter, #path::OrderBy>(
-                            keys,
-                            #relation_enum.def(),
-                            #reverse,
-                            &self.db,
-                        ).await?
-                        .into_iter()
-                        .map(|(key, model)| (#foreign_key_name(key), model))
-                        #map_method;
-
-
-                    Ok(data)
-                }
-            }
-        },
-        quote! {
-            pub async fn #relation_name<'a>(
-                &self,
-                ctx: &async_graphql::Context<'a>,
-            ) -> Option<#return_type> {
-                use seaography::heck::ToSnakeCase;
-                use ::std::str::FromStr;
-
-                let data_loader = ctx
-                    .data::<async_graphql::dataloader::DataLoader<crate::OrmDataloader>>()
-                    .unwrap();
-
-                // TODO support multiple value keys
-                let target_column: Column = Column::from_str(
-                    #relation_enum
-                        .def()
-                        .#column_type
-                        .to_string()
-                        .to_snake_case()
-                        .as_str()
-                ).unwrap();
-
-                let key = #foreign_key_name(seaography::RelationKeyStruct(self.get(target_column), None, None));
-
-                let data: Option<_> = data_loader.load_one(key).await.unwrap();
-
-                data
-            }
-        },
-    ))
+    Ok((global_scope, object_scope))
 }

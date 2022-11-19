@@ -451,18 +451,91 @@ async fn test_self_ref() {
             .execute(
                 r#"
                 {
-                  staff {
+                    staff {
+                      nodes {
+                        firstName
+                        reportsToId
+                        selfRefReverse {
+                          nodes {
+                            staffId
+                            firstName
+                          }
+                        }
+                        selfRef {
+                          staffId
+                          firstName
+                        }
+                      }
+                    }
+                  }
+        "#,
+            )
+            .await,
+        r#"
+        {
+            "staff": {
+              "nodes": [
+                {
+                  "firstName": "Mike",
+                  "reportsToId": null,
+                  "selfRefReverse": {
+                    "nodes": [
+                      {
+                        "staffId": 2,
+                        "firstName": "Jon"
+                      }
+                    ]
+                  },
+                  "selfRef": null
+                },
+                {
+                  "firstName": "Jon",
+                  "reportsToId": 1,
+                  "selfRefReverse": {
+                    "nodes": []
+                  },
+                  "selfRef": {
+                    "staffId": 1,
+                    "firstName": "Mike"
+                  }
+                }
+              ]
+            }
+          }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn related_queries_filters() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(
+                    filters: { active: { eq: 0 } }
+                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                  ) {
                     nodes {
-                      firstName
-                      reportsToId
-                      selfRefReverse {
-                        staffId
-                        firstName
+                      customerId
+                      lastName
+                      email
+                      address {
+                        address
                       }
-                      selfRef {
-                        staffId
-                        firstName
+                      payment(filters: { amount: { gt: "8" } }, orderBy: { amount: DESC }) {
+                        nodes {
+                          paymentId
+                        }
                       }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      endCursor
                     }
                   }
                 }
@@ -471,29 +544,200 @@ async fn test_self_ref() {
             .await,
         r#"
         {
-          "staff": {
+          "customer": {
             "nodes": [
               {
-                "firstName": "Mike",
-                "reportsToId": null,
-                "selfRefReverse": [
-                  {
-                    "staffId": 2,
-                    "firstName": "Jon"
-                  }
-                ],
-                "selfRef": null
+                "customerId": 315,
+                "lastName": "GOODEN",
+                "email": "KENNETH.GOODEN@sakilacustomer.org",
+                "address": {
+                  "address": "1542 Lubumbashi Boulevard"
+                },
+                "payment": {
+                  "nodes": [
+                    {
+                      "paymentId": 8547
+                    },
+                    {
+                      "paymentId": 8537
+                    }
+                  ]
+                }
               },
               {
-                "firstName": "Jon",
-                "reportsToId": 1,
-                "selfRefReverse": null,
-                "selfRef": {
-                  "staffId": 1,
-                  "firstName": "Mike"
+                "customerId": 368,
+                "lastName": "ARCE",
+                "email": "HARRY.ARCE@sakilacustomer.org",
+                "address": {
+                  "address": "1922 Miraj Way"
+                },
+                "payment": {
+                  "nodes": [
+                    {
+                      "paymentId": 9945
+                    },
+                    {
+                      "paymentId": 9953
+                    },
+                    {
+                      "paymentId": 9962
+                    },
+                    {
+                      "paymentId": 9967
+                    }
+                  ]
+                }
+              },
+              {
+                "customerId": 406,
+                "lastName": "RUNYON",
+                "email": "NATHAN.RUNYON@sakilacustomer.org",
+                "address": {
+                  "address": "264 Bhimavaram Manor"
+                },
+                "payment": {
+                  "nodes": [
+                    {
+                      "paymentId": 10998
+                    }
+                  ]
                 }
               }
-            ]
+            ],
+            "pageInfo": {
+              "hasPreviousPage": true,
+              "hasNextPage": true,
+              "endCursor": "Int[3]:406"
+            }
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn related_queries_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(
+                    filters: { active: { eq: 0 } }
+                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                  ) {
+                    nodes {
+                      customerId
+                      lastName
+                      email
+                      address {
+                        address
+                      }
+                      payment(
+                        filters: { amount: { gt: "7" } }
+                        orderBy: { amount: ASC }
+                        pagination: { pages: { limit: 1, page: 1 } }
+                      ) {
+                        nodes {
+                          paymentId
+                          amount
+                        }
+                        pages
+                        current
+                        pageInfo {
+                          hasPreviousPage
+                          hasNextPage
+                        }
+                      }
+                    }
+                    pageInfo {
+                      hasPreviousPage
+                      hasNextPage
+                      endCursor
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 315,
+                "lastName": "GOODEN",
+                "email": "KENNETH.GOODEN@sakilacustomer.org",
+                "address": {
+                  "address": "1542 Lubumbashi Boulevard"
+                },
+                "payment": {
+                  "nodes": [
+                    {
+                      "paymentId": 8547,
+                      "amount": "9.99"
+                    }
+                  ],
+                  "pages": 2,
+                  "current": 1,
+                  "pageInfo": {
+                    "hasPreviousPage": true,
+                    "hasNextPage": false
+                  }
+                }
+              },
+              {
+                "customerId": 368,
+                "lastName": "ARCE",
+                "email": "HARRY.ARCE@sakilacustomer.org",
+                "address": {
+                  "address": "1922 Miraj Way"
+                },
+                "payment": {
+                  "nodes": [
+                    {
+                      "paymentId": 9972,
+                      "amount": "7.99"
+                    }
+                  ],
+                  "pages": 6,
+                  "current": 1,
+                  "pageInfo": {
+                    "hasPreviousPage": true,
+                    "hasNextPage": true
+                  }
+                }
+              },
+              {
+                "customerId": 406,
+                "lastName": "RUNYON",
+                "email": "NATHAN.RUNYON@sakilacustomer.org",
+                "address": {
+                  "address": "264 Bhimavaram Manor"
+                },
+                "payment": {
+                  "nodes": [
+                    {
+                      "paymentId": 10989,
+                      "amount": "7.99"
+                    }
+                  ],
+                  "pages": 3,
+                  "current": 1,
+                  "pageInfo": {
+                    "hasPreviousPage": true,
+                    "hasNextPage": true
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": true,
+              "hasNextPage": true,
+              "endCursor": "Int[3]:406"
+            }
           }
         }
         "#,

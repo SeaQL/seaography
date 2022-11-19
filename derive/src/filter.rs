@@ -38,6 +38,12 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
         #order_by_struct
 
         #order_by_fn
+
+        impl seaography::EnhancedEntity for Entity {
+            type Entity = Entity;
+            type Filter = Filter;
+            type OrderBy = OrderBy;
+        }
     })
 }
 
@@ -121,7 +127,7 @@ pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::erro
             let column = format_ident!("{}", ident.to_string().to_upper_camel_case());
 
             quote! {
-                let stmt = if let Some(order_by) = order_by_struct.#ident {
+                let stmt = if let Some(order_by) = self.#ident {
                     match order_by {
                         seaography::OrderByEnum::Asc => stmt.order_by(Column::#column, sea_orm::query::Order::Asc),
                         seaography::OrderByEnum::Desc => stmt.order_by(Column::#column, sea_orm::query::Order::Desc),
@@ -134,13 +140,12 @@ pub fn order_by_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, crate::erro
         .collect();
 
     Ok(quote! {
-        pub fn order_by(stmt: sea_orm::Select<Entity>, order_by_struct: Option<OrderBy>) -> sea_orm::Select<Entity> {
-            use sea_orm::QueryOrder;
+        impl seaography::EntityOrderBy<Entity> for OrderBy {
+            fn order_by(&self, stmt: sea_orm::Select<Entity>) -> sea_orm::Select<Entity> {
+                use sea_orm::QueryOrder;
 
-            if let Some(order_by_struct) = order_by_struct {
                 #(#fields)*
-                stmt
-            } else {
+
                 stmt
             }
         }
@@ -156,40 +161,40 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
             let column_enum_name = format_ident!("{}", ident.to_string().to_upper_camel_case());
 
             quote!{
-                if let Some(#column_name) = current_filter.#column_name {
-                    if let Some(eq_value) = seaography::FilterTrait::eq(&#column_name) {
+                if let Some(#column_name) = &self.#column_name {
+                    if let Some(eq_value) = seaography::FilterTrait::eq(#column_name) {
                         condition = condition.add(Column::#column_enum_name.eq(eq_value))
                     }
 
-                    if let Some(ne_value) = seaography::FilterTrait::ne(&#column_name) {
+                    if let Some(ne_value) = seaography::FilterTrait::ne(#column_name) {
                         condition = condition.add(Column::#column_enum_name.ne(ne_value))
                     }
 
-                    if let Some(gt_value) = seaography::FilterTrait::gt(&#column_name) {
+                    if let Some(gt_value) = seaography::FilterTrait::gt(#column_name) {
                         condition = condition.add(Column::#column_enum_name.gt(gt_value))
                     }
 
-                    if let Some(gte_value) = seaography::FilterTrait::gte(&#column_name) {
+                    if let Some(gte_value) = seaography::FilterTrait::gte(#column_name) {
                         condition = condition.add(Column::#column_enum_name.gte(gte_value))
                     }
 
-                    if let Some(lt_value) = seaography::FilterTrait::lt(&#column_name) {
+                    if let Some(lt_value) = seaography::FilterTrait::lt(#column_name) {
                         condition = condition.add(Column::#column_enum_name.lt(lt_value))
                     }
 
-                    if let Some(lte_value) = seaography::FilterTrait::lte(&#column_name) {
+                    if let Some(lte_value) = seaography::FilterTrait::lte(#column_name) {
                         condition = condition.add(Column::#column_enum_name.lte(lte_value))
                     }
 
-                    if let Some(is_in_value) = seaography::FilterTrait::is_in(&#column_name) {
+                    if let Some(is_in_value) = seaography::FilterTrait::is_in(#column_name) {
                         condition = condition.add(Column::#column_enum_name.is_in(is_in_value))
                     }
 
-                    if let Some(is_not_in_value) = seaography::FilterTrait::is_not_in(&#column_name) {
+                    if let Some(is_not_in_value) = seaography::FilterTrait::is_not_in(#column_name) {
                         condition = condition.add(Column::#column_enum_name.is_not_in(is_not_in_value))
                     }
 
-                    if let Some(is_null_value) = seaography::FilterTrait::is_null(&#column_name) {
+                    if let Some(is_null_value) = seaography::FilterTrait::is_null(#column_name) {
                         if is_null_value {
                             condition = condition.add(Column::#column_enum_name.is_null())
                         }
@@ -200,34 +205,34 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
         .collect();
 
     Ok(quote! {
-        pub fn filter_recursive(root_filter: Option<Filter>) -> sea_orm::Condition {
-            let mut condition = sea_orm::Condition::all();
+        impl seaography::EntityFilter for Filter {
+            fn filter_condition(&self) -> sea_orm::Condition {
+                let mut condition = sea_orm::Condition::all();
 
-            if let Some(current_filter) = root_filter {
-                if let Some(or_filters) = current_filter.or {
+                if let Some(or_filters) = &self.or {
                     let or_condition = or_filters
-                        .into_iter()
+                        .iter()
                         .fold(
                             sea_orm::Condition::any(),
-                            |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
+                            |fold_condition, filter| fold_condition.add(filter.filter_condition())
                         );
                     condition = condition.add(or_condition);
                 }
 
-                if let Some(and_filters) = current_filter.and {
+                if let Some(and_filters) = &self.and {
                     let and_condition = and_filters
-                        .into_iter()
+                        .iter()
                         .fold(
                             sea_orm::Condition::all(),
-                            |fold_condition, filter| fold_condition.add(filter_recursive(Some(*filter)))
+                            |fold_condition, filter| fold_condition.add(filter.filter_condition())
                         );
                     condition = condition.add(and_condition);
                 }
 
                 #(#columns_filters)*
-            }
 
-            condition
+                condition
+            }
         }
     })
 }
