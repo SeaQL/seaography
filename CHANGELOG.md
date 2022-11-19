@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Next
+
+## What's Changed
+* Add pagination, filtering and ordering for related queries https://github.com/SeaQL/seaography/pull/84
+
 ## 0.2.0 - 2022-10-31
 
 ## What's Changed
