@@ -449,13 +449,13 @@ impl async_graphql::types::connection::CursorType for CursorValues {
 }
 
 #[derive(Debug, Clone)]
-pub struct RelationKeyStruct<Entity: EnchantedEntity> {
+pub struct RelationKeyStruct<Entity: EnhancedEntity> {
     pub val: sea_orm::Value,
     pub filter: Option<Entity::Filter>,
     pub order_by: Option<Entity::OrderBy>,
 }
 
-impl<Entity: EnchantedEntity> PartialEq for RelationKeyStruct<Entity> {
+impl<Entity: EnhancedEntity> PartialEq for RelationKeyStruct<Entity> {
     fn eq(&self, other: &Self) -> bool {
         // TODO temporary hack to solve the following problem
         // let v1 = TestFK(sea_orm::Value::TinyInt(Some(1)));
@@ -478,9 +478,9 @@ impl<Entity: EnchantedEntity> PartialEq for RelationKeyStruct<Entity> {
     }
 }
 
-impl<Entity: EnchantedEntity> Eq for RelationKeyStruct<Entity> {}
+impl<Entity: EnhancedEntity> Eq for RelationKeyStruct<Entity> {}
 
-impl<Entity: EnchantedEntity> std::hash::Hash for RelationKeyStruct<Entity> {
+impl<Entity: EnhancedEntity> std::hash::Hash for RelationKeyStruct<Entity> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // TODO this is a hack
 
@@ -511,7 +511,7 @@ impl<Entity: EnchantedEntity> std::hash::Hash for RelationKeyStruct<Entity> {
     }
 }
 
-pub async fn fetch_relation_data<Entity: EnchantedEntity>(
+pub async fn fetch_relation_data<Entity: EnhancedEntity>(
     keys: Vec<RelationKeyStruct<Entity>>,
     relation: sea_orm::RelationDef,
     reverse: bool,
@@ -524,7 +524,7 @@ pub async fn fetch_relation_data<Entity: EnchantedEntity>(
     sea_orm::error::DbErr,
 >
 where
-    Entity: sea_orm::EntityTrait + EnchantedEntity<Entity = Entity>,
+    Entity: sea_orm::EntityTrait + EnhancedEntity<Entity = Entity>,
     <Entity::Column as std::str::FromStr>::Err: core::fmt::Debug,
 {
     use heck::ToSnakeCase;
@@ -604,7 +604,7 @@ where
     fn order_by(&self, stmt: sea_orm::Select<Entity>) -> sea_orm::Select<Entity>;
 }
 
-pub trait EnchantedEntity {
+pub trait EnhancedEntity {
     type Entity: sea_orm::EntityTrait;
 
     type Filter: EntityFilter + Clone;

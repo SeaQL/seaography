@@ -253,7 +253,7 @@ impl seaography::EntityOrderBy<Entity> for OrderBy {
         stmt
     }
 }
-impl seaography::EnchantedEntity for Entity {
+impl seaography::EnhancedEntity for Entity {
     type Entity = Entity;
     type Filter = Filter;
     type OrderBy = OrderBy;

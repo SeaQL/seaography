@@ -39,7 +39,7 @@ pub fn filter_fn(item: syn::DataStruct, attrs: SeaOrm) -> Result<TokenStream, cr
 
         #order_by_fn
 
-        impl seaography::EnchantedEntity for Entity {
+        impl seaography::EnhancedEntity for Entity {
             type Entity = Entity;
             type Filter = Filter;
             type OrderBy = OrderBy;
