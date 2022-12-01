@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 0.2.0 - 2022-10-31
 
-## What's Changed
+### What's Changed
 * Conditionally add filter types list with features by @XiNiHa in https://github.com/SeaQL/seaography/pull/67
 * Re-export internal dependency instead of leaking it into user package by @billy1624 in https://github.com/SeaQL/seaography/pull/68
 * Add --with-json feature by @nicompte in https://github.com/SeaQL/seaography/pull/70
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 * Add ignore_tables and hidden_tables arguments by @karatakis in https://github.com/SeaQL/seaography/pull/79
 * Move RelationKey struct to lib by @karatakis in https://github.com/SeaQL/seaography/pull/85
 
-## New Contributors
+### New Contributors
 * @XiNiHa made their first contribution in https://github.com/SeaQL/seaography/pull/67
 * @nicompte made their first contribution in https://github.com/SeaQL/seaography/pull/70
 
