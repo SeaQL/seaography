@@ -5,11 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## Next
+## 0.3.0 - Pending
 
-## What's Changed
-* Add pagination, filtering and ordering for related queries https://github.com/SeaQL/seaography/pull/84
-  Note: Pagination is WIP, currently in memory only pagination
+### New Features
+
+* Relations derive produces the reverse of a self reference relation https://github.com/SeaQL/seaography/pull/99
+* Filtering, sorting and paginating related 1-to-many queries (Note: Pagination is WIP, currently in memory only pagination) https://github.com/SeaQL/seaography/pull/84
+* Add Actix web framework generator https://github.com/SeaQL/seaography/pull/74
+* [seaography-cli] option to generate Actix or Rocket web framework https://github.com/SeaQL/seaography/pull/74
+
+### Enhancements
+
+* Generic type filter https://github.com/SeaQL/seaography/pull/97
+
+### Upgrades
+
+* Upgrade `sea-orm` to 0.10 https://github.com/SeaQL/seaography/pull/93
 
 ## 0.2.0 - 2022-10-31
 
