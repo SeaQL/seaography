@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 * Relations derive produces the reverse of a self reference relation https://github.com/SeaQL/seaography/pull/99
 * Filtering, sorting and paginating related 1-to-many queries (Note: Pagination is WIP, currently in memory only pagination) https://github.com/SeaQL/seaography/pull/84
 * Add Actix web framework generator https://github.com/SeaQL/seaography/pull/74
-* [seaography-cli] option to generate Actix or Rocket web framework https://github.com/SeaQL/seaography/pull/74
+* [seaography-cli] option to generate Actix or Poem web framework https://github.com/SeaQL/seaography/pull/74
 
 ### Enhancements
 
