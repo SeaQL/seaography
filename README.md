@@ -138,11 +138,14 @@ Go to http://localhost:8000/ and try out the following queries:
 ```
 
 ### Complex query with filters on relations
+
 Find all inactive customers, include their address, and their payments with amount greater than 7 ordered by amount the second result
+
 ```graphql
 {
   customer(
     filters: { active: { eq: 0 } }
+    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
   ) {
     nodes {
       customerId

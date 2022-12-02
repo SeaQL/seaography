@@ -18,6 +18,13 @@
 //!
 //! #### Seaography is a GraphQL framework for building GraphQL resolvers using SeaORM entities. It ships with a CLI tool that can generate ready-to-compile Rust GraphQL servers from existing MySQL, Postgres and SQLite databases.
 //!
+//! ## Benefits
+//!
+//! * Quick and easy to get started
+//! * Generates readable code
+//! * Extensible project structure
+//! * Based on popular async libraries: [async-graphql](https://github.com/async-graphql/async-graphql) and [SeaORM](https://github.com/SeaQL/sea-orm)
+//!
 //! ## Features
 //!
 //! * Relational query (1-to-1, 1-to-N)
@@ -51,15 +58,17 @@
 //!
 //! ```graphql
 //! {
-//!   film(pagination: { limit: 10, page: 0 }, orderBy: { title: ASC }) {
-//!     data {
+//!   film(pagination: { pages: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
+//!     nodes {
 //!       title
 //!       description
 //!       releaseYear
 //!       filmActor {
-//!         actor {
-//!           firstName
-//!           lastName
+//!         nodes {
+//!           actor {
+//!             firstName
+//!             lastName
+//!           }
 //!         }
 //!       }
 //!     }
@@ -72,7 +81,7 @@
 //! ```graphql
 //! {
 //!   store(filters: { storeId: { eq: 1 } }) {
-//!     data {
+//!     nodes {
 //!       storeId
 //!       address {
 //!         address
@@ -82,6 +91,90 @@
 //!         firstName
 //!         lastName
 //!       }
+//!     }
+//!   }
+//! }
+//! ```
+//!
+//! ### Fetch inactive customers with pagination
+//!
+//! ```graphql
+//! {
+//!   customer(
+//!     filters: { active: { eq: 0 } }
+//!     pagination: { pages: { page: 2, limit: 3 } }
+//!   ) {
+//!     nodes {
+//!       customerId
+//!       lastName
+//!       email
+//!     }
+//!     pages
+//!     current
+//!   }
+//! }
+//! ```
+//!
+//! ### The query above using cursor pagination
+//!
+//! ```graphql
+//! {
+//!   customer(
+//!     filters: { active: { eq: 0 } }
+//!     pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+//!   ) {
+//!     nodes {
+//!       customerId
+//!       lastName
+//!       email
+//!     }
+//!     pageInfo {
+//!       hasPreviousPage
+//!       hasNextPage
+//!       endCursor
+//!     }
+//!   }
+//! }
+//! ```
+//!
+//! ### Complex query with filters on relations
+//!
+//! Find all inactive customers, include their address, and their payments with amount greater than 7 ordered by amount the second result
+//!
+//! ```graphql
+//! {
+//!   customer(
+//!     filters: { active: { eq: 0 } }
+//!     pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+//!   ) {
+//!     nodes {
+//!       customerId
+//!       lastName
+//!       email
+//!       address {
+//!         address
+//!       }
+//!       payment(
+//!         filters: { amount: { gt: "7" } }
+//!         orderBy: { amount: ASC }
+//!         pagination: { pages: { limit: 1, page: 1 } }
+//!       ) {
+//!         nodes {
+//!           paymentId
+//!           amount
+//!         }
+//!         pages
+//!         current
+//!         pageInfo {
+//!           hasPreviousPage
+//!           hasNextPage
+//!         }
+//!       }
+//!     }
+//!     pageInfo {
+//!       hasPreviousPage
+//!       hasNextPage
+//!       endCursor
 //!     }
 //!   }
 //! }
@@ -101,25 +194,8 @@
 //!
 //! ```sh
 //! cd examples/sqlite
-//! seaography-cli sqlite://chinook.db seaography-sqlite-example .
+//! seaography-cli sqlite://sakila.db seaography-sqlite-example .
 //! cargo run
-//! ```
-//!
-//! Go to http://localhost:8000/ and try out the following query:
-//!
-//! #### Fetch albums and their artists
-//!
-//! ```graphql
-//! {
-//!   albums(pagination: { limit: 10, page: 0 }) {
-//!     data {
-//!       title
-//!       artists {
-//!         name
-//!       }
-//!     }
-//!   }
-//! }
 //! ```
 //!
 //! ## Contribution
@@ -127,6 +203,7 @@
 //! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 //!
 //! Seaography is a community driven project. We welcome you to participate, contribute and together build for Rust's future.
+
 pub use heck;
 pub use itertools;
 pub use seaography_derive as macros;
