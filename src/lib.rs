@@ -1,6 +1,6 @@
 //! <div align="center">
 //!
-//!   <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280 alt="Seaography"/>
+//!   <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280" alt="Seaography logo"/>
 //!
 //!   <p>
 //!     <strong>🧭 A GraphQL framework and code generator for SeaORM</strong>
