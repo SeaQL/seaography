@@ -1,16 +1,7 @@
 use sea_orm::entity::prelude::*;
 
-#[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    DeriveEntityModel,
-    async_graphql::SimpleObject,
-    seaography::macros::Filter,
-)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "actor")]
-#[graphql(complex)]
-#[graphql(name = "Actor")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub actor_id: i32,
@@ -19,7 +10,7 @@ pub struct Model {
     pub last_update: DateTimeUtc,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_many = "super::film_actor::Entity")]
     FilmActor,

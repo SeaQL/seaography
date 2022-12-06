@@ -5,12 +5,8 @@ use sea_orm::entity::prelude::*;
     Debug,
     PartialEq,
     DeriveEntityModel,
-    async_graphql::SimpleObject,
-    seaography::macros::Filter,
 )]
 #[sea_orm(table_name = "film_actor")]
-#[graphql(complex)]
-#[graphql(name = "FilmActor")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub actor_id: i32,
@@ -19,7 +15,7 @@ pub struct Model {
     pub last_update: DateTimeUtc,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation, seaography::macros::RelationsCompact)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::film::Entity",
