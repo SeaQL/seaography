@@ -120,6 +120,9 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
+            - name: Build example
+              working-directory: ./examples/sqlite
+              run: cargo build
             - name: Remove generated folder
               run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
@@ -164,6 +167,9 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
+            - name: Build example
+              working-directory: ./examples/mysql
+              run: cargo build
             - name: Remove generated folder
               run: rm -rf ./examples/mysql/src
             - name: Create DB
@@ -215,6 +221,9 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
+            - name: Build example
+              working-directory: ./examples/postgres
+              run: cargo build
             - name: Remove generated folder
               run: rm -rf ./examples/postgres/src
             - name: Create DB

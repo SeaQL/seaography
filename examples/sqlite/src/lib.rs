@@ -1,4 +1,5 @@
 #![recursion_limit = "1024"]
+
 use sea_orm::prelude::*;
 
 pub mod entities;
