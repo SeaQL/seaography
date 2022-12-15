@@ -10,23 +10,44 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let actor = entity_to_dynamic_graphql::<crate::entities::actor::Entity>();
-    let address = entity_to_dynamic_graphql::<crate::entities::address::Entity>();
     let order_by_enum = Enum::new("OrderByEnum")
         .item(EnumItem::new("Asc"))
         .item(EnumItem::new("Desc"));
 
-    let query = Object::new("Query").field(actor.query).field(address.query);
+    let query = Object::new("Query");
 
-    let schema = Schema::build(query.type_name(), None, None)
-        .register(actor.object)
-        .register(actor.filter_input)
-        .register(actor.order_input)
-        .register(address.object)
-        .register(address.filter_input)
-        .register(address.order_input)
-        .register(order_by_enum)
-        .register(query);
+    let entities = vec![
+        entity_to_dynamic_graphql::<crate::entities::actor::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::address::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::category::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::city::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::country::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::customer::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::film_actor::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::film_category::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::film_text::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::film::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::inventory::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::language::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::payment::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::rental::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::staff::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::store::Entity>(),
+    ];
+
+    let schema = Schema::build(query.type_name(), None, None);
+
+    let (schema, query) = entities
+        .into_iter()
+        .fold((schema, query), |(schema, query), object| {
+            (
+                schema
+                    .register(object.filter_input)
+                    .register(object.order_input)
+                    .register(object.object),
+                query.field(object.query),
+            )
+        });
 
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
@@ -44,7 +65,12 @@ pub fn schema(
         schema
     };
 
-    schema.data(database).data(orm_dataloader).finish()
+    schema
+        .register(order_by_enum)
+        .register(query)
+        .data(database)
+        .data(orm_dataloader)
+        .finish()
 }
 
 pub struct DynamicGraphqlEntity {
@@ -513,11 +539,14 @@ where
 macro_rules! basic_filtering_operation {
     ( $condition:expr, $column:expr, $filter:expr, $operator:ident, $type:ident ) => {
         if let Some(data) = $filter.get(stringify!($operator)) {
-            let data = data.$type().expect(format!(
-                "We expect the {} to be of type {}",
-                stringify!($operator),
-                stringify!($type)
-            ).as_str());
+            let data = data.$type().expect(
+                format!(
+                    "We expect the {} to be of type {}",
+                    stringify!($operator),
+                    stringify!($type)
+                )
+                .as_str(),
+            );
 
             $condition.add($column.$operator(data))
         } else {
@@ -569,10 +598,7 @@ macro_rules! string_filtering_type {
     };
 }
 
-pub fn apply_filters<T>(
-    stmt: Select<T>,
-    filters: Option<ValueAccessor>,
-) -> Select<T>
+pub fn apply_filters<T>(stmt: Select<T>, filters: Option<ValueAccessor>) -> Select<T>
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -606,7 +632,9 @@ where
                 .expect("We expect the column filter to be object type");
 
             match column.def().get_column_type() {
-                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => string_filtering_type!(condition, column, filter, string),
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
+                    string_filtering_type!(condition, column, filter, string)
+                }
                 ColumnType::TinyInteger
                 | ColumnType::SmallInteger
                 | ColumnType::Integer
@@ -615,7 +643,9 @@ where
                 | ColumnType::SmallUnsigned
                 | ColumnType::Unsigned
                 | ColumnType::BigUnsigned => basic_filtering_type!(condition, column, filter, u64),
-                ColumnType::Float | ColumnType::Double => basic_filtering_type!(condition, column, filter, f64),
+                ColumnType::Float | ColumnType::Double => {
+                    basic_filtering_type!(condition, column, filter, f64)
+                }
                 ColumnType::Decimal(_) => basic_filtering_type!(condition, column, filter, string),
                 // ColumnType::DateTime => {
 
@@ -676,13 +706,17 @@ where
     });
 
     let condition = if let Some(and) = filters.get("and") {
-        let filters = and.list().expect("We expect to find a list of FiltersInput");
+        let filters = and
+            .list()
+            .expect("We expect to find a list of FiltersInput");
 
         condition.add(
-            filters.iter().fold(Condition::all(), |condition, filters: ValueAccessor| {
-                let filters = filters.object().expect("We expect an FiltersInput object");
-                condition.add(recursive_prepare_condition::<T>(filters))
-            })
+            filters
+                .iter()
+                .fold(Condition::all(), |condition, filters: ValueAccessor| {
+                    let filters = filters.object().expect("We expect an FiltersInput object");
+                    condition.add(recursive_prepare_condition::<T>(filters))
+                }),
         )
     } else {
         condition
@@ -692,10 +726,12 @@ where
         let filters = or.list().expect("We expect to find a list of FiltersInput");
 
         condition.add(
-            filters.iter().fold(Condition::any(), |condition, filters: ValueAccessor| {
-                let filters = filters.object().expect("We expect an FiltersInput object");
-                condition.add(recursive_prepare_condition::<T>(filters))
-            })
+            filters
+                .iter()
+                .fold(Condition::any(), |condition, filters: ValueAccessor| {
+                    let filters = filters.object().expect("We expect an FiltersInput object");
+                    condition.add(recursive_prepare_condition::<T>(filters))
+                }),
         )
     } else {
         condition
@@ -710,18 +746,22 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     if let Some(order_by) = order_by {
-        let order_by = order_by.object().expect("We expect the entity order_by to be object type");
+        let order_by = order_by
+            .object()
+            .expect("We expect the entity order_by to be object type");
 
         T::Column::iter().fold(stmt, |stmt, column: T::Column| {
             let order = order_by.get(column.as_str());
 
             if let Some(order) = order {
-                let order = order.enum_name().expect("We expect the order of a column to be OrderByEnum");
+                let order = order
+                    .enum_name()
+                    .expect("We expect the order of a column to be OrderByEnum");
 
                 match order {
                     "Asc" => stmt.order_by(column, sea_orm::Order::Asc),
                     "Desc" => stmt.order_by(column, sea_orm::Order::Desc),
-                    _ => panic!("Order is not a valid OrderByEnum item")
+                    _ => panic!("Order is not a valid OrderByEnum item"),
                 }
             } else {
                 stmt
