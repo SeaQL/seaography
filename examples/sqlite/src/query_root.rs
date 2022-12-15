@@ -14,25 +14,38 @@ pub fn schema(
         .item(EnumItem::new("Asc"))
         .item(EnumItem::new("Desc"));
 
+    let cursor_input = InputObject::new("CursorInput")
+        .field(InputValue::new("cursor", TypeRef::named_nn(TypeRef::STRING)))
+        .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)));
+
+    let page_input = InputObject::new("PageInput")
+        .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)))
+        .field(InputValue::new("page", TypeRef::named_nn(TypeRef::INT)));
+
+    let pagination_input = InputObject::new("PaginationInput")
+        .oneof()
+        .field(InputValue::new("Cursor", TypeRef::named(cursor_input.type_name())))
+        .field(InputValue::new("Pages", TypeRef::named(page_input.type_name())));
+
     let query = Object::new("Query");
 
     let entities = vec![
-        entity_to_dynamic_graphql::<crate::entities::actor::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::address::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::category::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::city::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::country::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::customer::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::film_actor::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::film_category::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::film_text::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::film::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::inventory::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::language::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::payment::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::rental::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::staff::Entity>(),
-        entity_to_dynamic_graphql::<crate::entities::store::Entity>(),
+        entity_to_dynamic_graphql::<crate::entities::actor::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::address::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::category::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::city::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::country::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::customer::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::film_actor::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::film_category::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::film_text::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::film::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::inventory::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::language::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::payment::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::rental::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::staff::Entity>(&pagination_input),
+        entity_to_dynamic_graphql::<crate::entities::store::Entity>(&pagination_input),
     ];
 
     let schema = Schema::build(query.type_name(), None, None);
@@ -66,6 +79,9 @@ pub fn schema(
     };
 
     schema
+        .register(cursor_input)
+        .register(page_input)
+        .register(pagination_input)
         .register(order_by_enum)
         .register(query)
         .data(database)
@@ -80,7 +96,9 @@ pub struct DynamicGraphqlEntity {
     pub order_input: InputObject,
 }
 
-pub fn entity_to_dynamic_graphql<T>() -> DynamicGraphqlEntity
+pub fn entity_to_dynamic_graphql<T>(
+    pagination_input: &InputObject
+) -> DynamicGraphqlEntity
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -91,7 +109,7 @@ where
 
     let order_input = entity_to_order::<T>();
 
-    let query = entity_to_query::<T>(&object, &filter_input, &order_input);
+    let query = entity_to_query::<T>(&object, &filter_input, &order_input, pagination_input);
 
     DynamicGraphqlEntity {
         object,
@@ -500,6 +518,7 @@ pub fn entity_to_query<T>(
     object: &Object,
     filter_input: &InputObject,
     order_input: &InputObject,
+    pagination_input: &InputObject,
 ) -> Field
 where
     T: EntityTrait,
@@ -532,6 +551,10 @@ where
     .argument(InputValue::new(
         "orderBy",
         TypeRef::named(order_input.type_name()),
+    ))
+    .argument(InputValue::new(
+        "pagination",
+        TypeRef::named(pagination_input.type_name()),
     ))
 }
 
