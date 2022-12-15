@@ -1,5 +1,5 @@
 use async_graphql::{dataloader::DataLoader, dynamic::*, Value};
-use sea_orm::{prelude::*, Condition, Iterable};
+use sea_orm::{prelude::*, Condition, Iterable, QueryOrder};
 use seaography::heck::ToUpperCamelCase;
 
 use crate::OrmDataloader;
@@ -12,6 +12,9 @@ pub fn schema(
 ) -> Result<Schema, SchemaError> {
     let actor = entity_to_dynamic_graphql::<crate::entities::actor::Entity>();
     let address = entity_to_dynamic_graphql::<crate::entities::address::Entity>();
+    let order_by_enum = Enum::new("OrderByEnum")
+        .item(EnumItem::new("Asc"))
+        .item(EnumItem::new("Desc"));
 
     let query = Object::new("Query").field(actor.query).field(address.query);
 
@@ -22,6 +25,7 @@ pub fn schema(
         .register(address.object)
         .register(address.filter_input)
         .register(address.order_input)
+        .register(order_by_enum)
         .register(query);
 
     let schema = if let Some(depth) = depth {
@@ -461,7 +465,7 @@ where
     T::Column::iter().fold(InputObject::new(&name), |object, column| {
         object.field(InputValue::new(
             column.as_str(),
-            TypeRef::named(TypeRef::BOOLEAN),
+            TypeRef::named("OrderByEnum"),
         ))
     })
 }
@@ -481,23 +485,14 @@ where
         move |ctx| {
             FieldFuture::new(async move {
                 let filters = ctx.args.get("filters");
-
-                // if let Ok(v) = filters {
-                //     v.object()?
-                //         .iter()
-                //         .for_each(|(name, val)| {
-                //             println!("{:?}", name);
-                //             println!("{:?}", val.object().unwrap().try_get("eq").unwrap().i64());
-                //         });
-                // } else {
-                //     println!("KEY filters is MISSING!")
-                // };
+                let order_by = ctx.args.get("orderBy");
 
                 let stmt = T::find();
                 let stmt = apply_filters(stmt, filters);
+                let stmt = apply_order(stmt, order_by);
 
                 let database = ctx.data::<DatabaseConnection>()?;
-                let data = T::find().all(database).await?;
+                let data = stmt.all(database).await?;
                 Ok(Some(FieldValue::list(
                     data.into_iter().map(|model| FieldValue::owned_any(model)),
                 )))
@@ -577,7 +572,7 @@ macro_rules! string_filtering_type {
 pub fn apply_filters<T>(
     stmt: Select<T>,
     filters: Option<ValueAccessor>,
-) -> Result<Select<T>, async_graphql::Error>
+) -> Select<T>
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -591,9 +586,9 @@ where
 
         println!("Condition: {:?}", condition);
 
-        Ok(stmt.filter(condition))
+        stmt.filter(condition)
     } else {
-        Ok(stmt)
+        stmt
     }
 }
 
@@ -707,4 +702,32 @@ where
     };
 
     condition
+}
+
+pub fn apply_order<T>(stmt: Select<T>, order_by: Option<ValueAccessor>) -> Select<T>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    if let Some(order_by) = order_by {
+        let order_by = order_by.object().expect("We expect the entity order_by to be object type");
+
+        T::Column::iter().fold(stmt, |stmt, column: T::Column| {
+            let order = order_by.get(column.as_str());
+
+            if let Some(order) = order {
+                let order = order.enum_name().expect("We expect the order of a column to be OrderByEnum");
+
+                match order {
+                    "Asc" => stmt.order_by(column, sea_orm::Order::Asc),
+                    "Desc" => stmt.order_by(column, sea_orm::Order::Desc),
+                    _ => panic!("Order is not a valid OrderByEnum item")
+                }
+            } else {
+                stmt
+            }
+        })
+    } else {
+        stmt
+    }
 }
