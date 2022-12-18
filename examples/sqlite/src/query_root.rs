@@ -1,6 +1,6 @@
 use async_graphql::{dataloader::DataLoader, dynamic::*, Value};
 use sea_orm::{prelude::*, Condition, Iterable, QueryOrder};
-use seaography::heck::ToUpperCamelCase;
+use seaography::heck::{ToUpperCamelCase, ToLowerCamelCase};
 
 use crate::OrmDataloader;
 
@@ -66,6 +66,8 @@ pub fn schema(
                 schema
                     .register(object.filter_input)
                     .register(object.order_input)
+                    .register(object.edge)
+                    .register(object.connection)
                     .register(object.object),
                 query.field(object.query),
             )
@@ -88,6 +90,8 @@ pub fn schema(
     };
 
     schema
+        .register(PageInfo::to_object())
+        .register(PaginationInfo::to_object())
         .register(cursor_input)
         .register(page_input)
         .register(pagination_input)
@@ -100,6 +104,8 @@ pub fn schema(
 
 pub struct DynamicGraphqlEntity {
     pub object: Object,
+    pub edge: Object,
+    pub connection: Object,
     pub query: Field,
     pub filter_input: InputObject,
     pub order_input: InputObject,
@@ -112,14 +118,20 @@ where
 {
     let object = entity_to_object::<T>();
 
-    let filter_input = entity_to_filter::<T>();
+    let edge = Edge::<T>::to_object(&object);
 
-    let order_input = entity_to_order::<T>();
+    let connection = Connection::<T>::entity_object_to_connection(&object, &edge);
 
-    let query = entity_to_query::<T>(&object, &filter_input, &order_input, pagination_input);
+    let filter_input = entity_to_filter::<T>(&object);
+
+    let order_input = entity_to_order::<T>(&object);
+
+    let query = entity_to_query::<T>(&object, &connection, &filter_input, &order_input, pagination_input);
 
     DynamicGraphqlEntity {
         object,
+        edge,
+        connection,
         query,
         filter_input,
         order_input,
@@ -411,16 +423,12 @@ pub fn get_filter_types() -> Vec<InputObject> {
     ]
 }
 
-pub fn entity_to_filter<T>() -> InputObject
+pub fn entity_to_filter<T>(entity_def: &Object) -> InputObject
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
-    let name = format!(
-        "{}FilterInput",
-        <T as EntityName>::table_name(&T::default())
-    )
-    .to_upper_camel_case();
+    let name = format!("{}FilterInput", entity_def.type_name());
 
     let object = T::Column::iter().fold(InputObject::new(&name), |object, column| {
         let field = match column.def().get_column_type() {
@@ -505,13 +513,13 @@ where
         .field(InputValue::new("or", TypeRef::named_nn_list(&name)))
 }
 
-pub fn entity_to_order<T>() -> InputObject
+pub fn entity_to_order<T>(entity_def: &Object) -> InputObject
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
-    let name =
-        format!("{}OrderInput", <T as EntityName>::table_name(&T::default())).to_upper_camel_case();
+
+    let name = format!("{}OrderInput", entity_def.type_name());
 
     T::Column::iter().fold(InputObject::new(&name), |object, column| {
         object.field(InputValue::new(
@@ -523,6 +531,7 @@ where
 
 pub fn entity_to_query<T>(
     object: &Object,
+    connection: &Object,
     filter_input: &InputObject,
     order_input: &InputObject,
     pagination_input: &InputObject,
@@ -532,8 +541,8 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     Field::new(
-        format!("{}s", <T as EntityName>::table_name(&T::default())),
-        TypeRef::named_list(object.type_name()),
+        object.type_name().to_lower_camel_case(),
+        TypeRef::named_nn(connection.type_name()),
         move |ctx| {
             FieldFuture::new(async move {
                 let filters = ctx.args.get("filters");
@@ -545,9 +554,30 @@ where
 
                 let database = ctx.data::<DatabaseConnection>()?;
                 let data = stmt.all(database).await?;
-                Ok(Some(FieldValue::list(
-                    data.into_iter().map(|model| FieldValue::owned_any(model)),
-                )))
+
+                let edges: Vec<Edge<T>> = data.into_iter().map(|node: T::Model| {
+                    let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
+                        .map(|variant| node.get(variant.into_column()))
+                        .collect();
+
+                    let cursor: String = encode_cursor(values);
+
+                    Edge {
+                        cursor,
+                        node
+                    }
+                }).collect();
+
+                let connection = Connection {
+                    page_info: PageInfo { has_previous_page: false, has_next_page: false, start_cursor: edges.first().map(|edge| edge.cursor.clone()), end_cursor: edges.last().map(|edge| edge.cursor.clone()) },
+                    pagination_info: Some(PaginationInfo {
+                        current: 1,
+                        pages: 1,
+                    }),
+                    edges
+                };
+
+                Ok(Some(FieldValue::owned_any(connection)))
             })
         },
     )
@@ -563,6 +593,106 @@ where
         "pagination",
         TypeRef::named(pagination_input.type_name()),
     ))
+}
+
+fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
+    use seaography::itertools::Itertools;
+
+    values
+        .iter()
+        .map(|value| -> String {
+            match value {
+                sea_orm::Value::TinyInt(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("TinyInt[{}]:{}", value.len(), value)
+                    } else {
+                        "TinyInt[-1]:".into()
+                    }
+                }
+                sea_orm::Value::SmallInt(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("SmallInt[{}]:{}", value.len(), value)
+                    } else {
+                        "SmallInt[-1]:".into()
+                    }
+                }
+                sea_orm::Value::Int(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("Int[{}]:{}", value.len(), value)
+                    } else {
+                        "Int[-1]:".into()
+                    }
+                }
+                sea_orm::Value::BigInt(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("BigInt[{}]:{}", value.len(), value)
+                    } else {
+                        "BigInt[-1]:".into()
+                    }
+                }
+                sea_orm::Value::TinyUnsigned(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("TinyUnsigned[{}]:{}", value.len(), value)
+                    } else {
+                        "TinyUnsigned[-1]:".into()
+                    }
+                }
+                sea_orm::Value::SmallUnsigned(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("SmallUnsigned[{}]:{}", value.len(), value)
+                    } else {
+                        "SmallUnsigned[-1]:".into()
+                    }
+                }
+                sea_orm::Value::Unsigned(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("Unsigned[{}]:{}", value.len(), value)
+                    } else {
+                        "Unsigned[-1]:".into()
+                    }
+                }
+                sea_orm::Value::BigUnsigned(value) => {
+                    if let Some(value) = value {
+                        let value = value.to_string();
+                        format!("BigUnsigned[{}]:{}", value.len(), value)
+                    } else {
+                        "BigUnsigned[-1]:".into()
+                    }
+                }
+                sea_orm::Value::String(value) => {
+                    if let Some(value) = value {
+                        let value = value.as_ref();
+                        format!("String[{}]:{}", value.len(), value)
+                    } else {
+                        "String[-1]:".into()
+                    }
+                }
+                #[cfg(feature = "with-uuid")]
+                sea_orm::Value::Uuid(value) => {
+                    if let Some(value) = value {
+                        let value = value.as_ref().to_string();
+                        format!("Uuid[{}]:{}", value.len(), value)
+                    } else {
+                        "Uuid[-1]:".into()
+                    }
+                }
+                _ => {
+                    // FIXME: missing value types
+                    panic!(
+                        "cannot
+                         current type"
+                    )
+                }
+            }
+        })
+        .join(",")
 }
 
 #[macro_export]
@@ -802,40 +932,111 @@ where
     }
 }
 
-pub fn entity_object_to_connection<T>(entity_def: Object) -> Object
+#[derive(Clone, Debug)]
+pub struct Edge<T>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
 {
-    Object::new(format!("{}Connection", entity_def.type_name()))
-        .field(Field::new("pageInfo", TypeRef::named_nn(CursorPageInfo::to_object().type_name()), |ctx| {
-            FieldFuture::new(async move {
-                let cursor_page_info = ctx.parent_value.try_downcast_ref::<CursorPageInfo>()?;
-                Ok(Some(FieldValue::borrowed_any(cursor_page_info)))
-            })
-        }))
-        .field(Field::new("paginationInfo", TypeRef::named_nn(PaginationPageInfo::to_object().type_name()), |ctx| {
-            FieldFuture::new(async move {
-                let pagination_page_info = ctx.parent_value.try_downcast_ref::<PaginationPageInfo>()?;
-                Ok(Some(FieldValue::borrowed_any(pagination_page_info)))
-            })
-        }))
+    pub cursor: String,
+    pub node: T::Model
 }
 
-pub struct CursorPageInfo {
+impl<T> Edge<T>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    pub fn to_object(entity_def: &Object) -> Object {
+        let name = format!("{}Edge", entity_def.type_name());
+        Object::new(name)
+            .field(Field::new("cursor", TypeRef::named_nn(TypeRef::STRING), |ctx| {
+                FieldFuture::new(async move {
+                    let edge = ctx.parent_value.try_downcast_ref::<Edge<T>>()?;
+                    Ok(Some(Value::from(edge.cursor.as_str())))
+                })
+            }))
+            .field(Field::new("node", TypeRef::named_nn(entity_def.type_name()), |ctx| {
+                FieldFuture::new(async move {
+                    let edge = ctx.parent_value.try_downcast_ref::<Edge<T>>()?;
+                    Ok(Some(FieldValue::borrowed_any(&edge.node)))
+                })
+            }))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Connection<T>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    pub page_info: PageInfo,
+    pub pagination_info: Option<PaginationInfo>,
+    pub edges: Vec<Edge<T>>
+}
+
+impl<T> Connection<T>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    pub fn entity_object_to_connection(entity_def: &Object, edge: &Object) -> Object
+    {
+        Object::new(format!("{}Connection", entity_def.type_name()))
+            .field(Field::new("pageInfo", TypeRef::named_nn(PageInfo::to_object().type_name()), |ctx| {
+                FieldFuture::new(async move {
+                    let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
+                    Ok(Some(FieldValue::borrowed_any(&connection.page_info)))
+                })
+            }))
+            .field(Field::new("paginationInfo", TypeRef::named(PaginationInfo::to_object().type_name()), |ctx| {
+                FieldFuture::new(async move {
+                    let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
+                    if let Some(value) = connection.pagination_info.as_ref().map(|v| FieldValue::borrowed_any(v)) {
+                        Ok(Some(value))
+                    } else {
+                        Ok(FieldValue::NONE)
+                    }
+                })
+            }))
+            .field(Field::new("nodes", TypeRef::named_nn_list_nn(entity_def.type_name()), |ctx| {
+                FieldFuture::new(async move {
+                    let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
+                    Ok(Some(FieldValue::list(connection.edges.iter().map(|edge: &Edge<T>| {
+                        FieldValue::borrowed_any(&edge.node)
+                    }))))
+                })
+            }))
+            .field(Field::new("edges", TypeRef::named_nn_list_nn(edge.type_name()), |ctx| {
+                FieldFuture::new(async move {
+                    let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
+                    Ok(Some(FieldValue::list(connection.edges.iter().map(|edge: &Edge<T>| {
+                        FieldValue::borrowed_any(edge)
+                    }))))
+                })
+            }))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PageInfo {
     pub has_previous_page: bool,
     pub has_next_page: bool,
-    pub start_cursor: String,
-    pub end_cursor: String,
+    pub start_cursor: Option<String>,
+    pub end_cursor: Option<String>,
 }
 
-impl CursorPageInfo {
+impl PageInfo {
     pub fn to_object() -> Object {
-        Object::new("CursorPageInfo")
+        Object::new("PageInfo")
             .field(Field::new(
                 "hasPreviousPage",
                 TypeRef::named_nn(TypeRef::BOOLEAN),
                 |ctx| {
                     FieldFuture::new(async move {
                         let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
-                        Ok(Some(FieldValue::owned_any(
+                        Ok(Some(Value::from(
                             cursor_page_info.has_previous_page,
                         )))
                     })
@@ -847,58 +1048,61 @@ impl CursorPageInfo {
                 |ctx| {
                     FieldFuture::new(async move {
                         let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
-                        Ok(Some(FieldValue::owned_any(cursor_page_info.has_next_page)))
+                        Ok(Some(Value::from(cursor_page_info.has_next_page)))
                     })
                 },
             ))
             .field(Field::new(
                 "startCursor",
-                TypeRef::named_nn(TypeRef::BOOLEAN),
+                TypeRef::named(TypeRef::STRING),
                 |ctx| {
                     FieldFuture::new(async move {
                         let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
-                        Ok(Some(FieldValue::owned_any(cursor_page_info.start_cursor.clone())))
+                        let value = cursor_page_info.start_cursor.as_ref().map(|v| Value::from(v.as_str())).or_else(|| Some(Value::Null));
+                        Ok(value)
                     })
                 },
             ))
             .field(Field::new(
                 "endCursor",
-                TypeRef::named_nn(TypeRef::BOOLEAN),
+                TypeRef::named(TypeRef::STRING),
                 |ctx| {
                     FieldFuture::new(async move {
                         let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
-                        Ok(Some(FieldValue::owned_any(cursor_page_info.end_cursor.clone())))
+                        let value = cursor_page_info.end_cursor.as_ref().map(|v| Value::from(v.as_str())).or_else(|| Some(Value::Null));
+                        Ok(value)
                     })
                 },
             ))
     }
 }
 
-pub struct PaginationPageInfo {
+#[derive(Clone, Debug)]
+pub struct PaginationInfo {
     pub pages: u64,
     pub current: u64,
 }
 
-impl PaginationPageInfo {
+impl PaginationInfo {
     pub fn to_object() -> Object {
-        Object::new("CursorPageInfo")
+        Object::new("PaginationInfo")
             .field(Field::new(
                 "pages",
-                TypeRef::named_nn(TypeRef::BOOLEAN),
+                TypeRef::named_nn(TypeRef::INT),
                 |ctx| {
                     FieldFuture::new(async move {
                         let pagination_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
-                        Ok(Some(FieldValue::owned_any(pagination_page_info.pages)))
+                        Ok(Some(Value::from(pagination_page_info.pages)))
                     })
                 },
             ))
             .field(Field::new(
                 "current",
-                TypeRef::named_nn(TypeRef::BOOLEAN),
+                TypeRef::named_nn(TypeRef::INT),
                 |ctx| {
                     FieldFuture::new(async move {
                         let pagination_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
-                        Ok(Some(FieldValue::owned_any(pagination_page_info.current)))
+                        Ok(Some(Value::from(pagination_page_info.current)))
                     })
                 },
             ))
