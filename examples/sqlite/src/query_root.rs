@@ -15,7 +15,10 @@ pub fn schema(
         .item(EnumItem::new("Desc"));
 
     let cursor_input = InputObject::new("CursorInput")
-        .field(InputValue::new("cursor", TypeRef::named_nn(TypeRef::STRING)))
+        .field(InputValue::new(
+            "cursor",
+            TypeRef::named_nn(TypeRef::STRING),
+        ))
         .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)));
 
     let page_input = InputObject::new("PageInput")
@@ -24,8 +27,14 @@ pub fn schema(
 
     let pagination_input = InputObject::new("PaginationInput")
         .oneof()
-        .field(InputValue::new("Cursor", TypeRef::named(cursor_input.type_name())))
-        .field(InputValue::new("Pages", TypeRef::named(page_input.type_name())));
+        .field(InputValue::new(
+            "Cursor",
+            TypeRef::named(cursor_input.type_name()),
+        ))
+        .field(InputValue::new(
+            "Pages",
+            TypeRef::named(page_input.type_name()),
+        ));
 
     let query = Object::new("Query");
 
@@ -96,9 +105,7 @@ pub struct DynamicGraphqlEntity {
     pub order_input: InputObject,
 }
 
-pub fn entity_to_dynamic_graphql<T>(
-    pagination_input: &InputObject
-) -> DynamicGraphqlEntity
+pub fn entity_to_dynamic_graphql<T>(pagination_input: &InputObject) -> DynamicGraphqlEntity
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -792,5 +799,108 @@ where
         })
     } else {
         stmt
+    }
+}
+
+pub fn entity_object_to_connection<T>(entity_def: Object) -> Object
+{
+    Object::new(format!("{}Connection", entity_def.type_name()))
+        .field(Field::new("pageInfo", TypeRef::named_nn(CursorPageInfo::to_object().type_name()), |ctx| {
+            FieldFuture::new(async move {
+                let cursor_page_info = ctx.parent_value.try_downcast_ref::<CursorPageInfo>()?;
+                Ok(Some(FieldValue::borrowed_any(cursor_page_info)))
+            })
+        }))
+        .field(Field::new("paginationInfo", TypeRef::named_nn(PaginationPageInfo::to_object().type_name()), |ctx| {
+            FieldFuture::new(async move {
+                let pagination_page_info = ctx.parent_value.try_downcast_ref::<PaginationPageInfo>()?;
+                Ok(Some(FieldValue::borrowed_any(pagination_page_info)))
+            })
+        }))
+}
+
+pub struct CursorPageInfo {
+    pub has_previous_page: bool,
+    pub has_next_page: bool,
+    pub start_cursor: String,
+    pub end_cursor: String,
+}
+
+impl CursorPageInfo {
+    pub fn to_object() -> Object {
+        Object::new("CursorPageInfo")
+            .field(Field::new(
+                "hasPreviousPage",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(FieldValue::owned_any(
+                            cursor_page_info.has_previous_page,
+                        )))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "hasNextPage",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(FieldValue::owned_any(cursor_page_info.has_next_page)))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "startCursor",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(FieldValue::owned_any(cursor_page_info.start_cursor.clone())))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "endCursor",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let cursor_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(FieldValue::owned_any(cursor_page_info.end_cursor.clone())))
+                    })
+                },
+            ))
+    }
+}
+
+pub struct PaginationPageInfo {
+    pub pages: u64,
+    pub current: u64,
+}
+
+impl PaginationPageInfo {
+    pub fn to_object() -> Object {
+        Object::new("CursorPageInfo")
+            .field(Field::new(
+                "pages",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let pagination_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(FieldValue::owned_any(pagination_page_info.pages)))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "current",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let pagination_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(FieldValue::owned_any(pagination_page_info.current)))
+                    })
+                },
+            ))
     }
 }
