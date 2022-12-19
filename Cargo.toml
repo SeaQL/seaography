@@ -1,11 +1,5 @@
 [workspace]
-members = [
-    ".",
-    "cli",
-    "derive",
-    "discoverer",
-    "generator",
-]
+members = [".", "cli", "derive", "discoverer", "generator"]
 
 [package]
 name = "seaography"
@@ -22,7 +16,7 @@ keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
 [dependencies]
-async-graphql = { version = "4.0.12", default-features = false }
+async-graphql = { version = "^5.0", default-features = false }
 seaography-derive = { version = "^0.3.0", path = "./derive" }
 sea-orm = { version = "^0.10", default-features = false }
 itertools = { version = "0.10.3" }
@@ -30,7 +24,15 @@ heck = { version = "0.4.0" }
 
 [features]
 default = []
-with-chrono = ["seaography-derive/with-chrono", "sea-orm/with-chrono", "async-graphql/chrono"]
-with-decimal = ["seaography-derive/with-decimal", "sea-orm/with-rust_decimal", "async-graphql/decimal"]
+with-chrono = [
+  "seaography-derive/with-chrono",
+  "sea-orm/with-chrono",
+  "async-graphql/chrono",
+]
+with-decimal = [
+  "seaography-derive/with-decimal",
+  "sea-orm/with-rust_decimal",
+  "async-graphql/decimal",
+]
 with-json = ["seaography-derive/with-json", "sea-orm/with-json"]
 with-uuid = ["seaography-derive/with-uuid", "sea-orm/with-uuid"]
