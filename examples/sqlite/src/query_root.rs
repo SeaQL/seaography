@@ -16,10 +16,7 @@ pub fn schema(
         .item(EnumItem::new("Desc"));
 
     let cursor_input = InputObject::new("CursorInput")
-        .field(InputValue::new(
-            "cursor",
-            TypeRef::named(TypeRef::STRING),
-        ))
+        .field(InputValue::new("cursor", TypeRef::named(TypeRef::STRING)))
         .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)));
 
     let page_input = InputObject::new("PageInput")
@@ -151,7 +148,7 @@ where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
-    T::Column::iter().fold(
+    let object = T::Column::iter().fold(
         Object::new(<T as EntityName>::table_name(&T::default()).to_upper_camel_case()),
         |object, column| {
             let field = match column.def().get_column_type() {
@@ -375,7 +372,59 @@ where
 
             object.field(field)
         },
-    )
+    );
+
+    let object = T::Relation::iter().fold(object, |object, relation: T::Relation| {
+        let relation_definition = relation.def();
+
+        let name = format!("{:?}", relation).to_lower_camel_case();
+
+        let type_name: String =
+            if let sea_orm::sea_query::TableRef::Table(name) = relation_definition.to_tbl {
+                name.to_string()
+            } else {
+                // TODO look this
+                "PANIC!".into()
+            }
+            .to_upper_camel_case();
+
+        let field = match relation_definition.rel_type {
+            sea_orm::RelationType::HasOne => {
+                Field::new(name, TypeRef::named(format!("{}", type_name)), |ctx| {
+                    // TODO
+                    // dataloader applied here!
+                    FieldFuture::new(async move { Ok(Some(Value::Null)) })
+                })
+            }
+            sea_orm::RelationType::HasMany => Field::new(
+                name,
+                TypeRef::named_nn_list_nn(format!("{}Connection", type_name)),
+                |ctx| FieldFuture::new(async move {
+                    // TODO
+                    // each has unique query in order to apply pagination...
+                    Ok(Some(Value::Null))
+                }),
+            ),
+        };
+
+        object.field(
+            field
+                .argument(InputValue::new(
+                    "filters",
+                    TypeRef::named(format!("{}FilterInput", type_name)),
+                ))
+                .argument(InputValue::new(
+                    "orderBy",
+                    TypeRef::named(format!("{}OrderInput", type_name)),
+                ))
+                .argument(InputValue::new(
+                    "pagination",
+                    TypeRef::named("PaginationInput"),
+                )),
+        )
+    });
+
+    object
 }
 
 #[macro_export]
