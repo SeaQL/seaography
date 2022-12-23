@@ -312,11 +312,11 @@ pub fn relation_fn(
                         .await
                         .expect("cannot unwrap load_one")
                         .unwrap_or_else(|| vec![]);
+                    let nodes_size = nodes.len() as u64;
 
                     if let Some(pagination) = pagination {
                         return match pagination {
                             seaography::Pagination::Pages(pagination) => {
-                                let nodes_size = nodes.len() as u64;
                                 let skip_size: usize = (pagination.page * pagination.limit).try_into().unwrap();
                                 let take_size: usize = pagination.limit.try_into().unwrap();
 
@@ -343,7 +343,6 @@ pub fn relation_fn(
                                 )
                             },
                             seaography::Pagination::Offset(offset) => {
-                                let nodes_size = nodes.len() as u64;
                                 let skip_size: usize = (offset.skip).try_into().unwrap();
                                 let take_size: usize = offset.take.try_into().unwrap();
 
@@ -391,9 +390,9 @@ pub fn relation_fn(
                         false,
                         Some(1),
                         Some(1),
-                        None,
-                        None,
-                        None
+                        Some(0),
+                        Some(nodes_size as u64),
+                        Some(nodes_size as u64),
                     )
                 }
             },

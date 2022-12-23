@@ -239,7 +239,7 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
                 }
             } else {
                 let data: Vec<#path::Model> = stmt.all(db).await.unwrap();
-                let total_count = *(&data).len() as u64;
+                let total_count = (&data).len() as u64;
 
                 seaography::data_to_connection::<#path::Entity>(data, false, false, Some(1), Some(1), Some(0), Some(total_count), Some(total_count))
             }
