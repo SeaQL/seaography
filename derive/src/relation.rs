@@ -336,7 +336,37 @@ pub fn relation_fn(
                                     has_previous_page,
                                     has_next_page,
                                     Some(pages),
-                                    Some(current)
+                                    Some(current),
+                                    Some(skip_size as u64),
+                                    Some(take_size as u64),
+                                    Some(nodes_size as u64),
+                                )
+                            },
+                            seaography::Pagination::Offset(offset) => {
+                                let nodes_size = nodes.len() as u64;
+                                let skip_size: usize = (offset.skip).try_into().unwrap();
+                                let take_size: usize = offset.take.try_into().unwrap();
+
+                                let nodes = nodes
+                                    .into_iter()
+                                    .skip(skip_size)
+                                    .take(take_size)
+                                    .collect();
+
+                                let has_previous_page = offset.skip > 0 && nodes_size != 0;
+                                let has_next_page = (nodes_size / offset.take) - offset.skip - 1 > 0;
+                                let pages = (nodes_size as f32 / offset.take as f32).ceil() as u64;
+                                let current = (offset.skip as f32 / offset.take as f32).floor() as u64;
+
+                                seaography::data_to_connection::<#path::Entity>(
+                                    nodes,
+                                    has_previous_page,
+                                    has_next_page,
+                                    Some(pages as u64),
+                                    Some(current as u64),
+                                    Some(skip_size as u64),
+                                    Some(take_size as u64),
+                                    Some(nodes_size as u64),
                                 )
                             },
                             seaography::Pagination::Cursor(cursor) => {
@@ -346,7 +376,10 @@ pub fn relation_fn(
                                     false,
                                     false,
                                     Some(1),
-                                    Some(1)
+                                    Some(1),
+                                    None,
+                                    None,
+                                    None
                                 )
                             }
                         }
@@ -357,7 +390,10 @@ pub fn relation_fn(
                         false,
                         false,
                         Some(1),
-                        Some(1)
+                        Some(1),
+                        None,
+                        None,
+                        None
                     )
                 }
             },

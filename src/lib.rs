@@ -222,6 +222,12 @@ pub struct PageInput {
 }
 
 #[derive(Debug, async_graphql::InputObject)]
+pub struct OffsetInput {
+    pub skip: u64,
+    pub take: u64,
+}
+
+#[derive(Debug, async_graphql::InputObject)]
 pub struct CursorInput {
     pub cursor: Option<String>,
     pub limit: u64,
@@ -229,6 +235,7 @@ pub struct CursorInput {
 
 #[derive(async_graphql::OneofObject)]
 pub enum Pagination {
+    Offset(OffsetInput),
     Pages(PageInput),
     Cursor(CursorInput),
 }
@@ -237,6 +244,9 @@ pub enum Pagination {
 pub struct ExtraPaginationFields {
     pub pages: Option<u64>,
     pub current: Option<u64>,
+    pub skip: Option<u64>,
+    pub take: Option<u64>,
+    pub total_count: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -693,6 +703,9 @@ pub fn data_to_connection<T>(
     has_next_page: bool,
     pages: Option<u64>,
     current: Option<u64>,
+    skip: Option<u64>,
+    take: Option<u64>,
+    total_count: Option<u64>,
 ) -> async_graphql::types::connection::Connection<
     String,
     T::Model,
@@ -733,7 +746,13 @@ where
     >::with_additional_fields(
         has_previous_page,
         has_next_page,
-        ExtraPaginationFields { pages, current },
+        ExtraPaginationFields {
+            pages,
+            current,
+            skip,
+            take,
+            total_count,
+        },
     );
 
     result.edges.extend(edges);
