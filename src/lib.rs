@@ -113,6 +113,26 @@
 //! }
 //! ```
 //!
+//! ### Fetch inactive customers with offsets
+//!
+//! ```graphql
+//! {
+//!   customer(
+//!     filters: { active: { eq: 0 } }
+//!     pagination: { offset: { skip: 2, take: 3 } }
+//!   ) {
+//!     nodes {
+//!       customerId
+//!       lastName
+//!       email
+//!     }
+//!     skip
+//!     take
+//!     totalCount
+//!   }
+//! }
+//! ```
+//!
 //! ### The query above using cursor pagination
 //!
 //! ```graphql
