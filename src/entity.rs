@@ -14,12 +14,14 @@ pub struct DynamicGraphqlEntity {
 }
 
 impl DynamicGraphqlEntity {
-    pub fn from_entity<T>(pagination_input: &InputObject) -> Self
+    pub fn from_entity<T>(pagination_input: &InputObject, relations: Vec<Field>) -> Self
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let entity_object = entity_to_object::<T>();
+        let entity_object = relations.into_iter().fold(entity_to_object::<T>(), |object, field| {
+            object.field(field)
+        });
 
         let edge_object = Edge::<T>::to_object(&entity_object);
 
@@ -30,7 +32,7 @@ impl DynamicGraphqlEntity {
         let order_input = entity_to_order::<T>(&entity_object);
 
         let query = entity_to_query::<T>(
-            &edge_object,
+            &entity_object,
             &connection_object,
             &filter_input,
             &order_input,

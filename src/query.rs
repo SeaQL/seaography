@@ -1,12 +1,12 @@
 use crate::{connection::*, edge::*, pagination::*};
-use async_graphql::dynamic::*;
-use heck::ToLowerCamelCase;
+use async_graphql::{dynamic::*};
+use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use itertools::Itertools;
 use sea_orm::{prelude::*, query::*, Iterable};
 
 pub fn entity_to_query<T>(
-    object: &Object,
-    connection: &Object,
+    entity_object: &Object,
+    connection_object: &Object,
     filter_input: &InputObject,
     order_input: &InputObject,
     pagination_input: &InputObject,
@@ -16,8 +16,8 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     Field::new(
-        object.type_name().to_lower_camel_case(),
-        TypeRef::named_nn(connection.type_name()),
+        entity_object.type_name().to_lower_camel_case(),
+        TypeRef::named_nn(connection_object.type_name()),
         move |ctx| {
             FieldFuture::new(async move {
                 let filters = ctx.args.get("filters");
@@ -574,4 +574,101 @@ where
     };
 
     condition
+}
+
+pub fn entity_object_relation<T, R>(name: &str) -> Field
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+    R: EntityTrait,
+    T: Related<R>,
+    <R as sea_orm::EntityTrait>::Model: Sync,
+{
+    let relation_definition = <T as Related<R>>::to();
+
+    let name = name.to_lower_camel_case();
+
+    let type_name: String =
+        if let sea_orm::sea_query::TableRef::Table(name) = relation_definition.to_tbl {
+            name.to_string()
+        } else {
+            // TODO look this
+            "PANIC!".into()
+        }
+        .to_upper_camel_case();
+
+    let field = match relation_definition.rel_type {
+        sea_orm::RelationType::HasOne => {
+            Field::new(name, TypeRef::named(format!("{}", type_name)), |ctx| {
+                // TODO
+                // dataloader applied here!
+                FieldFuture::new(async move {
+                    let parent: &T::Model = ctx
+                        .parent_value
+                        .try_downcast_ref::<T::Model>()
+                        .expect("Parent should exist");
+
+                    let stmt = <T as Related<R>>::find_related().belongs_to(parent);
+
+                    let db = ctx.data::<DatabaseConnection>()?;
+
+                    let data = stmt.one(db).await?;
+
+                    if let Some(data) = data {
+                        Ok(Some(FieldValue::owned_any(data)))
+                    } else {
+                        Ok(Some(FieldValue::NULL))
+                    }
+                })
+            })
+        }
+        sea_orm::RelationType::HasMany => Field::new(
+            name,
+            TypeRef::named_nn(format!("{}Connection", type_name)),
+            |ctx| {
+                FieldFuture::new(async move {
+                    // TODO
+                    // each has unique query in order to apply pagination...
+                    let parent: &T::Model = ctx
+                        .parent_value
+                        .try_downcast_ref::<T::Model>()
+                        .expect("Parent should exist");
+
+                    let stmt = <T as Related<R>>::find_related().belongs_to(parent);
+
+                    let filters = ctx.args.get("filters");
+                    let order_by = ctx.args.get("orderBy");
+                    let pagination = ctx.args.get("pagination");
+
+                    let stmt = apply_filters(stmt, filters);
+                    let stmt = apply_order(stmt, order_by);
+
+                    let db = ctx.data::<DatabaseConnection>()?;
+
+                    let connection = apply_pagination::<R>(db, stmt, pagination).await?;
+
+                    Ok(Some(FieldValue::owned_any(connection)))
+                })
+            },
+        ),
+    };
+
+    let field = match relation_definition.rel_type {
+        sea_orm::RelationType::HasOne => field,
+        sea_orm::RelationType::HasMany => field
+            .argument(InputValue::new(
+                "filters",
+                TypeRef::named(format!("{}FilterInput", type_name)),
+            ))
+            .argument(InputValue::new(
+                "orderBy",
+                TypeRef::named(format!("{}OrderInput", type_name)),
+            ))
+            .argument(InputValue::new(
+                "pagination",
+                TypeRef::named("PaginationInput"),
+            )),
+    };
+
+    field
 }

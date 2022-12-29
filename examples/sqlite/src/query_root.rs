@@ -1,6 +1,6 @@
 use async_graphql::{dataloader::DataLoader, dynamic::*};
 use sea_orm::DatabaseConnection;
-use seaography::DynamicGraphqlEntity;
+use seaography::{DynamicGraphqlEntity, entity_object_relation};
 
 use crate::OrmDataloader;
 
@@ -18,22 +18,33 @@ pub fn schema(
     let query = Object::new("Query");
 
     let entities = vec![
-        DynamicGraphqlEntity::from_entity::<crate::entities::actor::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::address::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::category::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::city::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::country::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::customer::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film_actor::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film_category::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film_text::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::inventory::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::language::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::payment::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::rental::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::staff::Entity>(&pagination_input),
-        DynamicGraphqlEntity::from_entity::<crate::entities::store::Entity>(&pagination_input),
+        DynamicGraphqlEntity::from_entity::<crate::entities::actor::Entity>(&pagination_input, vec![
+            entity_object_relation::<crate::entities::actor::Entity, crate::entities::film_actor::Entity>("filmActors")
+        ]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::address::Entity>(&pagination_input, vec![
+            entity_object_relation::<crate::entities::address::Entity, crate::entities::city::Entity>("city"),
+            entity_object_relation::<crate::entities::address::Entity, crate::entities::customer::Entity>("customer"),
+            entity_object_relation::<crate::entities::address::Entity, crate::entities::staff::Entity>("staff"),
+            entity_object_relation::<crate::entities::address::Entity, crate::entities::store::Entity>("store"),
+        ]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::category::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::city::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::country::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::customer::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film_actor::Entity>(&pagination_input, vec![
+
+            entity_object_relation::<crate::entities::film_actor::Entity, crate::entities::film::Entity>("film"),
+            entity_object_relation::<crate::entities::film_actor::Entity, crate::entities::actor::Entity>("actor"),
+        ]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film_category::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film_text::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::inventory::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::language::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::payment::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::rental::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::staff::Entity>(&pagination_input, vec![]),
+        DynamicGraphqlEntity::from_entity::<crate::entities::store::Entity>(&pagination_input, vec![]),
     ];
 
     let schema = Schema::build(query.type_name(), None, None);
@@ -80,63 +91,3 @@ pub fn schema(
         .data(orm_dataloader)
         .finish()
 }
-
-
-
-// pub fn entity_object_relation<T, R>() -> Field
-// where
-//     T: EntityTrait,
-//     <T as EntityTrait>::Model: Sync,
-//     R: EntityTrait,
-//     T: Related<R>
-// {
-//     let relation_definition = <T as Related<R>>::to();
-
-//     let name = format!("{:?}", relation).to_lower_camel_case();
-
-//     let type_name: String =
-//         if let sea_orm::sea_query::TableRef::Table(name) = relation_definition.to_tbl {
-//             name.to_string()
-//         } else {
-//             // TODO look this
-//             "PANIC!".into()
-//         }
-//         .to_upper_camel_case();
-
-//     let field = match relation_definition.rel_type {
-//         sea_orm::RelationType::HasOne => {
-//             Field::new(name, TypeRef::named(format!("{}", type_name)), |ctx| {
-//                 // TODO
-//                 // dataloader applied here!
-//                 let parent: T::Model = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-
-//                 let stmt = <T as Related<relation as EntityTrait>>::find_related();
-
-//                 FieldFuture::new(async move { Ok(Some(Value::Null)) })
-//             })
-//         }
-//         sea_orm::RelationType::HasMany => Field::new(
-//             name,
-//             TypeRef::named_nn_list_nn(format!("{}Connection", type_name)),
-//             |ctx| FieldFuture::new(async move {
-//                 // TODO
-//                 // each has unique query in order to apply pagination...
-//                 Ok(Some(Value::Null))
-//             }),
-//         ),
-//     };
-
-//     field
-//         .argument(InputValue::new(
-//             "filters",
-//             TypeRef::named(format!("{}FilterInput", type_name)),
-//         ))
-//         .argument(InputValue::new(
-//             "orderBy",
-//             TypeRef::named(format!("{}OrderInput", type_name)),
-//         ))
-//         .argument(InputValue::new(
-//             "pagination",
-//             TypeRef::named("PaginationInput"),
-//     ))
-// }
