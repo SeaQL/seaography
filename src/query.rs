@@ -69,8 +69,8 @@ where
                     .expect("We expect the order of a column to be OrderByEnum");
 
                 match order {
-                    "Asc" => stmt.order_by(column, sea_orm::Order::Asc),
-                    "Desc" => stmt.order_by(column, sea_orm::Order::Desc),
+                    "ASC" => stmt.order_by(column, sea_orm::Order::Asc),
+                    "DESC" => stmt.order_by(column, sea_orm::Order::Desc),
                     _ => panic!("Order is not a valid OrderByEnum item"),
                 }
             } else {
@@ -96,8 +96,8 @@ where
             .object()
             .expect("We expect the pagination to be object type");
 
-        let cursor_object = pagination.get("Cursor");
-        let page_object = pagination.get("Pages");
+        let cursor_object = pagination.get("cursor");
+        let page_object = pagination.get("pages");
 
         if let Some(cursor_object) = cursor_object {
             let cursor_object = cursor_object

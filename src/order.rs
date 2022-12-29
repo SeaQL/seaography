@@ -18,6 +18,6 @@ where
 
 pub fn get_order_by_enum() -> Enum {
     Enum::new("OrderByEnum")
-        .item(EnumItem::new("Asc"))
-        .item(EnumItem::new("Desc"))
+        .item(EnumItem::new("ASC"))
+        .item(EnumItem::new("DESC"))
 }

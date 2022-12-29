@@ -1,37 +1,111 @@
+use std::collections::BTreeMap;
+
 use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{util::add_line_break, WebFrameworkEnum};
 
-pub fn generate_query_root(
-    entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
-) -> Result<TokenStream, crate::error::Error> {
-    let items: Vec<_> = entities_hashmap
-        .keys()
-        .into_iter()
-        .filter(|entity| {
-            entity.ne(&&"mod.rs".to_string())
-                && entity.ne(&&"prelude.rs".to_string())
-                && entity.ne(&&"sea_orm_active_enums.rs".to_string())
-        })
-        .map(|entity| {
-            let entity = &entity.as_str()[..entity.len() - 3];
-            format!("crate::entities::{}", entity)
-        })
-        .collect();
+pub struct EntityDefinition {
+    pub name: TokenStream,
+    pub relations: BTreeMap<String, TokenStream>,
 
-    Ok(quote! {
-      #[derive(Debug, seaography::macros::QueryRoot)]
-      #(#[seaography(entity = #items)])*
-      pub struct QueryRoot;
-    })
+}
+
+pub fn generate_query_root(
+    entities: &Vec<EntityDefinition>,
+) -> TokenStream {
+    let entities: Vec<TokenStream> = entities.iter().map(|entity| {
+        let entity_path = &entity.name;
+
+        let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, related_path)| {
+            quote!{
+                entity_object_relation::<#entity_path::Entity, #related_path>(#relationship_name)
+            }
+        }).collect();
+
+        quote!{
+            DynamicGraphqlEntity::from_entity::<#entity_path::Entity>(&pagination_input, vec![
+                #(#relations),*
+            ])
+        }
+    }).collect();
+
+    quote! {
+        use async_graphql::{dataloader::DataLoader, dynamic::*};
+        use sea_orm::DatabaseConnection;
+        use seaography::{DynamicGraphqlEntity, entity_object_relation};
+
+        use crate::OrmDataloader;
+
+        pub fn schema(
+            database: DatabaseConnection,
+            orm_dataloader: DataLoader<OrmDataloader>,
+            depth: Option<usize>,
+            complexity: Option<usize>,
+        ) -> Result<Schema, SchemaError> {
+            let order_by_enum = seaography::get_order_by_enum();
+            let cursor_input = seaography::get_cursor_input();
+            let page_input = seaography::get_page_input();
+            let pagination_input = seaography::get_pagination_input(&cursor_input, &page_input);
+
+            let query = Object::new("Query");
+
+            let entities = vec![
+                #(#entities),*
+            ];
+
+            let schema = Schema::build(query.type_name(), None, None);
+
+            let (schema, query) = entities
+                .into_iter()
+                .fold((schema, query), |(schema, query), object| {
+                    (
+                        schema
+                            .register(object.filter_input)
+                            .register(object.order_input)
+                            .register(object.edge_object)
+                            .register(object.connection_object)
+                            .register(object.entity_object),
+                        query.field(object.query),
+                    )
+                });
+
+            let schema = if let Some(depth) = depth {
+                schema.limit_depth(depth)
+            } else {
+                schema
+            };
+
+            let schema = seaography::get_filter_types()
+                .into_iter()
+                .fold(schema, |schema, object| schema.register(object));
+
+            let schema = if let Some(complexity) = complexity {
+                schema.limit_complexity(complexity)
+            } else {
+                schema
+            };
+
+            schema
+                .register(seaography::PageInfo::to_object())
+                .register(seaography::PaginationInfo::to_object())
+                .register(cursor_input)
+                .register(page_input)
+                .register(pagination_input)
+                .register(order_by_enum)
+                .register(query)
+                .data(database)
+                .data(orm_dataloader)
+                .finish()
+        }
+    }
 }
 
 pub fn write_query_root<P: AsRef<std::path::Path>>(
     path: &P,
-    entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
+    entities: &Vec<EntityDefinition>,
 ) -> Result<(), crate::error::Error> {
-    let tokens = generate_query_root(entities_hashmap)?;
+    let tokens = generate_query_root(entities);
 
     let file_name = path.as_ref().join("query_root.rs");
 
@@ -40,6 +114,9 @@ pub fn write_query_root<P: AsRef<std::path::Path>>(
     Ok(())
 }
 
+///
+/// Used to generate project/Cargo.toml file content
+///
 pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
     path: &P,
     crate_name: &str,
@@ -72,34 +149,32 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ///
 /// Used to generate project/src/lib.rs file content
 ///
-pub fn generate_lib() -> TokenStream {
-    quote! {
+pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
+    let tokens = quote! {
         use sea_orm::prelude::*;
 
         pub mod entities;
         pub mod query_root;
 
-        pub use query_root::QueryRoot;
-
         pub struct OrmDataloader {
             pub db: DatabaseConnection,
         }
-    }
-}
 
-pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
-    let tokens = generate_lib();
+    };
 
     let file_name = path.as_ref().join("lib.rs");
 
     std::fs::write(
         file_name,
-        format!("#![recursion_limit = \"1024\"]\n{}", add_line_break(tokens)),
+        add_line_break(tokens),
     )?;
 
     Ok(())
 }
 
+///
+/// Used to generate project/.env file content
+///
 pub fn write_env<P: AsRef<std::path::Path>>(
     path: &P,
     db_url: &str,

@@ -12,8 +12,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     quote! {
         use async_graphql::{
             dataloader::DataLoader,
-            http::{playground_source, GraphQLPlaygroundConfig},
-            EmptyMutation, EmptySubscription, Schema,
+            http::{playground_source, GraphQLPlaygroundConfig}
         };
         use async_graphql_poem::GraphQL;
         use dotenv::dotenv;
@@ -49,7 +48,6 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .with_max_level(tracing::Level::INFO)
                 .with_test_writer()
                 .init();
-
             let database = Database::connect(&*DATABASE_URL)
                 .await
                 .expect("Fail to initialize database connection");
@@ -59,21 +57,13 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 },
                 tokio::spawn,
             );
-            let mut schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-                .data(database)
-                .data(orm_dataloader);
-            if let Some(depth) = *DEPTH_LIMIT {
-                schema = schema.limit_depth(depth);
-            }
-            if let Some(complexity) = *COMPLEXITY_LIMIT {
-                schema = schema.limit_complexity(complexity);
-            }
-            let schema = schema.finish();
+
+            let schema = #crate_name_token::query_root::schema(database, orm_dataloader, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
+
             let app = Route::new().at(
                 &*ENDPOINT,
                 get(graphql_playground).post(GraphQL::new(schema)),
             );
-
             println!("Visit GraphQL Playground at http://{}", *URL);
             Server::new(TcpListener::bind(&*URL))
                 .run(app)

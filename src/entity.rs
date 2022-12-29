@@ -1,5 +1,5 @@
 use async_graphql::{dynamic::*, Value};
-use heck::ToUpperCamelCase;
+use heck::{ToUpperCamelCase, ToLowerCamelCase};
 use sea_orm::{prelude::*, Iterable};
 
 use crate::{connection::*, edge::*, filter::*, order::*, query::*};
@@ -58,9 +58,11 @@ where
     let entity_object = T::Column::iter().fold(
         Object::new(<T as EntityName>::table_name(&T::default()).to_upper_camel_case()),
         |object, column| {
+            let name = column.as_str().to_lower_camel_case();
+
             let field = match column.def().get_column_type() {
                 ColumnType::Char(_) => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::STRING),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -71,7 +73,7 @@ where
                     },
                 ),
                 ColumnType::String(_) => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::STRING),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -82,7 +84,7 @@ where
                     },
                 ),
                 ColumnType::Text => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::STRING),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -93,7 +95,7 @@ where
                     },
                 ),
                 ColumnType::TinyInteger => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -104,7 +106,7 @@ where
                     },
                 ),
                 ColumnType::SmallInteger => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -115,7 +117,7 @@ where
                     },
                 ),
                 ColumnType::Integer => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -126,7 +128,7 @@ where
                     },
                 ),
                 ColumnType::BigInteger => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -137,7 +139,7 @@ where
                     },
                 ),
                 ColumnType::TinyUnsigned => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -148,7 +150,7 @@ where
                     },
                 ),
                 ColumnType::SmallUnsigned => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -159,7 +161,7 @@ where
                     },
                 ),
                 ColumnType::Unsigned => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -170,7 +172,7 @@ where
                     },
                 ),
                 ColumnType::BigUnsigned => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -181,7 +183,7 @@ where
                     },
                 ),
                 ColumnType::Float => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::FLOAT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -192,7 +194,7 @@ where
                     },
                 ),
                 ColumnType::Double => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::FLOAT),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -204,7 +206,7 @@ where
                 ),
                 #[cfg(feature = "with-decimal")]
                 ColumnType::Decimal(_) => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::STRING),
                     move |ctx| {
                         FieldFuture::new(async move {
@@ -266,7 +268,7 @@ where
 
                 // },
                 _ => Field::new(
-                    column.as_str(),
+                    name,
                     TypeRef::named_nn(TypeRef::STRING),
                     move |ctx| {
                         FieldFuture::new(async move {

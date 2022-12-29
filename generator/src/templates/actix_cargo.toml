@@ -1,12 +1,12 @@
 [package]
 edition = "2021"
 name = "<seaography-package-name>"
-version = "0.1.0"
+version = "0.3.0"
 
 [dependencies]
 actix-web = { version = "4.0.1", default-features = false, features = ["macros"] }
-async-graphql = { version = "4.0.14", features = ["decimal", "chrono", "dataloader"] }
-async-graphql-actix-web = { version = "4.0.14" }
+async-graphql = { version = "5.0.2", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+async-graphql-poem = { version = "5.0.2" }
 async-trait = { version = "0.1.53" }
 dotenv = "0.15.0"
 sea-orm = { version = "^0.10", features = ["<seaography-sql-library>", "runtime-async-std-native-tls"] }

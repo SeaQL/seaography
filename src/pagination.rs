@@ -382,11 +382,11 @@ pub fn get_page_input() -> InputObject {
 pub fn get_pagination_input(cursor_input: &InputObject, page_input: &InputObject) -> InputObject {
     InputObject::new("PaginationInput")
         .field(InputValue::new(
-            "Cursor",
+            "cursor",
             TypeRef::named(cursor_input.type_name()),
         ))
         .field(InputValue::new(
-            "Pages",
+            "pages",
             TypeRef::named(page_input.type_name()),
         ))
         .oneof()

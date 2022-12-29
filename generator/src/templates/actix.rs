@@ -12,7 +12,9 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     quote! {
         use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
         use async_graphql::{
-            dataloader::DataLoader, http::{playground_source, GraphQLPlaygroundConfig}, EmptyMutation, EmptySubscription, Schema,
+            dataloader::DataLoader,
+            http::{playground_source, GraphQLPlaygroundConfig},
+            dynamic::*,
         };
         use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
         use dotenv::dotenv;
@@ -35,9 +37,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 });
         }
 
-        type AppSchema = Schema<QueryRoot, EmptyMutation, EmptySubscription>;
-
-        async fn index(schema: web::Data<AppSchema>, req: GraphQLRequest) -> GraphQLResponse {
+        async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
             schema.execute(req.into_inner()).await.into()
         }
 
@@ -60,22 +60,15 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             let database = Database::connect(&*DATABASE_URL)
                 .await
                 .expect("Fail to initialize database connection");
+
             let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
                 OrmDataloader {
                     db: database.clone(),
                 },
                 tokio::spawn,
             );
-            let mut schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-                .data(database)
-                .data(orm_dataloader);
-            if let Some(depth) = *DEPTH_LIMIT {
-                schema = schema.limit_depth(depth);
-            }
-            if let Some(complexity) = *COMPLEXITY_LIMIT {
-                schema = schema.limit_complexity(complexity);
-            }
-            let schema = schema.finish();
+
+            let schema = #crate_name_token::query_root::schema(database, orm_dataloader, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
 
             println!("Visit GraphQL Playground at http://{}", *URL);
 

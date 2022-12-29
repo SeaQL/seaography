@@ -1,4 +1,5 @@
 use async_graphql::dynamic::*;
+use heck::ToLowerCamelCase;
 use sea_orm::{prelude::*, Iterable};
 
 pub fn entity_to_filter<T>(entity_object: &Object) -> InputObject
@@ -9,9 +10,11 @@ where
     let name = format!("{}FilterInput", entity_object.type_name());
 
     let object = T::Column::iter().fold(InputObject::new(&name), |object, column| {
+        let name = column.as_str().to_lower_camel_case();
+
         let field = match column.def().get_column_type() {
             ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                InputValue::new(column.as_str(), TypeRef::named("StringFilterInput"))
+                InputValue::new(name, TypeRef::named("StringFilterInput"))
             }
             ColumnType::TinyInteger
             | ColumnType::SmallInteger
@@ -21,13 +24,13 @@ where
             | ColumnType::SmallUnsigned
             | ColumnType::Unsigned
             | ColumnType::BigUnsigned => {
-                InputValue::new(column.as_str(), TypeRef::named("IntegerFilterInput"))
+                InputValue::new(name, TypeRef::named("IntegerFilterInput"))
             }
             ColumnType::Float | ColumnType::Double => {
-                InputValue::new(column.as_str(), TypeRef::named("FloatFilterInput"))
+                InputValue::new(name, TypeRef::named("FloatFilterInput"))
             }
             ColumnType::Decimal(_) => {
-                InputValue::new(column.as_str(), TypeRef::named("TextFilterInput"))
+                InputValue::new(name, TypeRef::named("TextFilterInput"))
             }
             // ColumnType::DateTime => {
 
@@ -80,7 +83,7 @@ where
             // ColumnType::Array(_) => {
 
             // },
-            _ => InputValue::new(column.as_str(), TypeRef::named("TextFilterInput")),
+            _ => InputValue::new(name, TypeRef::named("TextFilterInput")),
         };
 
         object.field(field)

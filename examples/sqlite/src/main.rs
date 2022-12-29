@@ -1,12 +1,12 @@
 use async_graphql::{
     dataloader::DataLoader,
-    http::{playground_source, GraphQLPlaygroundConfig}
+    http::{playground_source, GraphQLPlaygroundConfig},
 };
 use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
-use sea_orm::{Database};
+use sea_orm::Database;
 use seaography_sqlite_example::*;
 use std::env;
 
@@ -45,9 +45,13 @@ async fn main() {
         },
         tokio::spawn,
     );
-
-    let schema = seaography_sqlite_example::query_root::schema(database, orm_dataloader, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
-
+    let schema = seaography_sqlite_example::query_root::schema(
+        database,
+        orm_dataloader,
+        *DEPTH_LIMIT,
+        *COMPLEXITY_LIMIT,
+    )
+    .unwrap();
     let app = Route::new().at(
         &*ENDPOINT,
         get(graphql_playground).post(GraphQL::new(schema)),

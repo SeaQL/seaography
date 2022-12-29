@@ -1,11 +1,11 @@
-use crate::util::add_line_break;
+use sea_orm_codegen::WriterOutput;
 
-pub type EntityHashMap = std::collections::BTreeMap<String, proc_macro2::TokenStream>;
+use crate::{util::add_line_break, parser::parse_entity, writer::EntityDefinition};
 
 pub fn generate_entities(
     table_crate_stmts: Vec<sea_query::TableCreateStatement>,
     expanded_format: bool,
-) -> crate::Result<EntityHashMap> {
+) -> crate::Result<(Vec<EntityDefinition>, WriterOutput)> {
     let entity_writer = sea_orm_codegen::EntityTransformer::transform(table_crate_stmts)?;
 
     let entity_writer_ctx = sea_orm_codegen::EntityWriterContext::new(
@@ -18,27 +18,29 @@ pub fn generate_entities(
 
     let writer_output = entity_writer.generate(&entity_writer_ctx);
 
-    let data: EntityHashMap = writer_output
+    let data: Vec<EntityDefinition> = writer_output
         .files
         .iter()
-        .map(|output_file| {
-            (
-                output_file.name.clone(),
-                output_file.content.parse().unwrap(),
-            )
+        .filter(|file| {
+            file.name.ne(&"mod.rs".to_string())
+                && file.name.ne(&"prelude.rs".to_string())
+                && file.name.ne(&"sea_orm_active_enums.rs".to_string())
+        })
+        .map(|file| {
+            parse_entity(file)
         })
         .collect();
 
-    Ok(data)
+    Ok((data, writer_output))
 }
 
 pub fn write_entities<P: AsRef<std::path::Path>>(
     path: &P,
-    entities_hashmap: EntityHashMap,
+    writer_output: WriterOutput,
 ) -> crate::Result<()> {
-    for (name, content) in entities_hashmap.iter() {
-        let file_path = path.as_ref().join(name);
-        std::fs::write(file_path, add_line_break(content.clone()))?;
+    for file in writer_output.files.iter() {
+        let file_path = path.as_ref().join(file.name.clone());
+        std::fs::write(file_path, add_line_break(file.content.parse().unwrap()))?;
     }
 
     Ok(())
