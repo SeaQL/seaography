@@ -74,4 +74,10 @@ impl Related<super::rental::Entity> for Entity {
     }
 }
 
+impl Related<super::staff::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::SelfRef.def()
+    }
+}
+
 impl ActiveModelBehavior for ActiveModel {}

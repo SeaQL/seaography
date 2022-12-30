@@ -1,6 +1,6 @@
 use crate::{connection::*, edge::*, pagination::*};
-use async_graphql::{dynamic::*};
-use heck::{ToLowerCamelCase, ToUpperCamelCase};
+use async_graphql::dynamic::*;
+use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use itertools::Itertools;
 use sea_orm::{prelude::*, query::*, Iterable};
 
@@ -25,7 +25,7 @@ where
                 let pagination = ctx.args.get("pagination");
 
                 let stmt = T::find();
-                let stmt = apply_filters(stmt, filters);
+                let stmt = stmt.filter(get_filter_conditions::<T>(filters));
                 let stmt = apply_order(stmt, order_by);
 
                 let db = ctx.data::<DatabaseConnection>()?;
@@ -434,7 +434,7 @@ macro_rules! string_filtering_type {
     };
 }
 
-pub fn apply_filters<T>(stmt: Select<T>, filters: Option<ValueAccessor>) -> Select<T>
+pub fn get_filter_conditions<T>(filters: Option<ValueAccessor>) -> Condition
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -444,13 +444,9 @@ where
             .object()
             .expect("We expect the entity filters to be object type");
 
-        let condition = recursive_prepare_condition::<T>(filters);
-
-        println!("Condition: {:?}", condition);
-
-        stmt.filter(condition)
+        recursive_prepare_condition::<T>(filters)
     } else {
-        stmt
+        Condition::all()
     }
 }
 
@@ -576,39 +572,88 @@ where
     condition
 }
 
-pub fn entity_object_relation<T, R>(name: &str) -> Field
+pub fn entity_object_relation<T, R>(name: &str, self_reverse: bool) -> Field
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
     R: EntityTrait,
-    T: Related<R>,
     <R as sea_orm::EntityTrait>::Model: Sync,
+    T: Related<R>,
+    <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+    <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
 {
-    let relation_definition = <T as Related<R>>::to();
+    let relation_definition = match self_reverse {
+        true => {
+            let temp = <T as Related<R>>::to().rev();
+            match temp.rel_type {
+                sea_orm::RelationType::HasOne => RelationDef {
+                    rel_type: sea_orm::RelationType::HasMany,
+                    ..temp
+                },
+                sea_orm::RelationType::HasMany => RelationDef {
+                    rel_type: sea_orm::RelationType::HasOne,
+                    ..temp
+                },
+            }
+        }
+        false => <T as Related<R>>::to(),
+    };
 
     let name = name.to_lower_camel_case();
 
-    let type_name: String =
-        if let sea_orm::sea_query::TableRef::Table(name) = relation_definition.to_tbl {
-            name.to_string()
-        } else {
-            // TODO look this
-            "PANIC!".into()
+    let type_name: String = match relation_definition.to_tbl {
+        sea_orm::sea_query::TableRef::Table(table) => table.to_string(),
+        sea_orm::sea_query::TableRef::TableAlias(table, _alias) => table.to_string(),
+        sea_orm::sea_query::TableRef::SchemaTable(_schema, table) => table.to_string(),
+        sea_orm::sea_query::TableRef::DatabaseSchemaTable(_database, _schema, table) => {
+            table.to_string()
         }
-        .to_upper_camel_case();
+        sea_orm::sea_query::TableRef::SchemaTableAlias(_schema, table, _alias) => table.to_string(),
+        sea_orm::sea_query::TableRef::DatabaseSchemaTableAlias(
+            _database,
+            _schema,
+            table,
+            _alias,
+        ) => table.to_string(),
+        // TODO what if empty ?
+        sea_orm::sea_query::TableRef::SubQuery(_stmt, alias) => alias.to_string(),
+        sea_orm::sea_query::TableRef::ValuesList(_values, alias) => alias.to_string(),
+    }
+    .to_upper_camel_case();
+
+    let from_col = <T::Column as std::str::FromStr>::from_str(
+        &relation_definition
+            .from_col
+            .to_string()
+            .to_snake_case()
+            .as_str(),
+    )
+    .unwrap();
+
+    let to_col = <R::Column as std::str::FromStr>::from_str(
+        relation_definition
+            .to_col
+            .to_string()
+            .to_snake_case()
+            .as_str(),
+    )
+    .unwrap();
 
     let field = match relation_definition.rel_type {
         sea_orm::RelationType::HasOne => {
-            Field::new(name, TypeRef::named(format!("{}", type_name)), |ctx| {
-                // TODO
-                // dataloader applied here!
+            Field::new(name, TypeRef::named(format!("{}", type_name)), move |ctx| {
+                // TODO dataloader applied here!
                 FieldFuture::new(async move {
                     let parent: &T::Model = ctx
                         .parent_value
                         .try_downcast_ref::<T::Model>()
                         .expect("Parent should exist");
 
-                    let stmt = <T as Related<R>>::find_related().belongs_to(parent);
+                    let stmt = R::find();
+
+                    let filter = Condition::all().add(to_col.eq(parent.get(from_col)));
+
+                    let stmt = stmt.filter(filter);
 
                     let db = ctx.data::<DatabaseConnection>()?;
 
@@ -617,7 +662,7 @@ where
                     if let Some(data) = data {
                         Ok(Some(FieldValue::owned_any(data)))
                     } else {
-                        Ok(Some(FieldValue::NULL))
+                        Ok(None)
                     }
                 })
             })
@@ -625,7 +670,7 @@ where
         sea_orm::RelationType::HasMany => Field::new(
             name,
             TypeRef::named_nn(format!("{}Connection", type_name)),
-            |ctx| {
+            move |ctx| {
                 FieldFuture::new(async move {
                     // TODO
                     // each has unique query in order to apply pagination...
@@ -634,13 +679,15 @@ where
                         .try_downcast_ref::<T::Model>()
                         .expect("Parent should exist");
 
-                    let stmt = <T as Related<R>>::find_related().belongs_to(parent);
+                    let stmt = R::find();
+
+                    let filter = Condition::all().add(to_col.eq(parent.get(from_col)));
 
                     let filters = ctx.args.get("filters");
                     let order_by = ctx.args.get("orderBy");
                     let pagination = ctx.args.get("pagination");
 
-                    let stmt = apply_filters(stmt, filters);
+                    let stmt = stmt.filter(filter.add(get_filter_conditions::<T>(filters)));
                     let stmt = apply_order(stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;
