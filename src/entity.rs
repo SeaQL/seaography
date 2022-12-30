@@ -1,6 +1,6 @@
 use async_graphql::{dynamic::*, Value};
 use heck::{ToUpperCamelCase, ToLowerCamelCase};
-use sea_orm::{prelude::*, Iterable};
+use sea_orm::{prelude::*, Iterable, sea_query::ValueType};
 
 use crate::{connection::*, edge::*, filter::*, order::*, query::*};
 
@@ -55,6 +55,7 @@ where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
+    // TODO check if nullable
     let entity_object = T::Column::iter().fold(
         Object::new(<T as EntityName>::table_name(&T::default()).to_upper_camel_case()),
         |object, column| {
@@ -96,45 +97,58 @@ where
                 ),
                 ColumnType::TinyInteger => Field::new(
                     name,
-                    TypeRef::named_nn(TypeRef::INT),
+                    TypeRef::named(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<i8>())))
+                            match <i8 as ValueType>::try_from(value).map(|v| Some(v)).unwrap_or_else(|_err| None) {
+                                Some(number) => Ok(Some(Value::from(number))),
+                                None => Ok(None)
+                            }
                         })
                     },
                 ),
+
                 ColumnType::SmallInteger => Field::new(
                     name,
-                    TypeRef::named_nn(TypeRef::INT),
+                    TypeRef::named(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<i16>())))
+                            match <i16 as ValueType>::try_from(value).map(|v| Some(v)).unwrap_or_else(|_err| None) {
+                                Some(number) => Ok(Some(Value::from(number))),
+                                None => Ok(None)
+                            }
                         })
                     },
                 ),
                 ColumnType::Integer => Field::new(
                     name,
-                    TypeRef::named_nn(TypeRef::INT),
+                    TypeRef::named(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<i32>())))
+                            match <i32 as ValueType>::try_from(value).map(|v| Some(v)).unwrap_or_else(|_err| None) {
+                                Some(number) => Ok(Some(Value::from(number))),
+                                None => Ok(None)
+                            }
                         })
                     },
                 ),
                 ColumnType::BigInteger => Field::new(
                     name,
-                    TypeRef::named_nn(TypeRef::INT),
+                    TypeRef::named(TypeRef::INT),
                     move |ctx| {
                         FieldFuture::new(async move {
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<i64>())))
+                            match <i64 as ValueType>::try_from(value).map(|v| Some(v)).unwrap_or_else(|_err| None) {
+                                Some(number) => Ok(Some(Value::from(number))),
+                                None => Ok(None)
+                            }
                         })
                     },
                 ),

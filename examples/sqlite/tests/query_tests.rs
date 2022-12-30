@@ -651,8 +651,10 @@ async fn related_queries_pagination() {
                           paymentId
                           amount
                         }
-                        pages
-                        current
+                        paginationInfo {
+                          pages
+                          current
+                        }
                         pageInfo {
                           hasPreviousPage
                           hasNextPage
@@ -687,10 +689,12 @@ async fn related_queries_pagination() {
                       "amount": "9.99"
                     }
                   ],
-                  "pages": 2,
-                  "current": 1,
+                  "paginationInfo": {
+                    "pages": 2,
+                    "current": 1
+                  },
                   "pageInfo": {
-                    "hasPreviousPage": true,
+                    "hasPreviousPage": false,
                     "hasNextPage": false
                   }
                 }
@@ -709,10 +713,12 @@ async fn related_queries_pagination() {
                       "amount": "7.99"
                     }
                   ],
-                  "pages": 6,
-                  "current": 1,
+                  "paginationInfo": {
+                    "pages": 6,
+                    "current": 1
+                  },
                   "pageInfo": {
-                    "hasPreviousPage": true,
+                    "hasPreviousPage": false,
                     "hasNextPage": true
                   }
                 }
@@ -731,10 +737,12 @@ async fn related_queries_pagination() {
                       "amount": "7.99"
                     }
                   ],
-                  "pages": 3,
-                  "current": 1,
+                  "paginationInfo": {
+                    "pages": 3,
+                    "current": 1
+                  },
                   "pageInfo": {
-                    "hasPreviousPage": true,
+                    "hasPreviousPage": false,
                     "hasNextPage": true
                   }
                 }

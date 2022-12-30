@@ -29,6 +29,7 @@ where
             ColumnType::Float | ColumnType::Double => {
                 InputValue::new(name, TypeRef::named("FloatFilterInput"))
             }
+            #[cfg(feature = "with-decimal")]
             ColumnType::Decimal(_) => {
                 InputValue::new(name, TypeRef::named("TextFilterInput"))
             }

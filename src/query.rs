@@ -456,7 +456,7 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     let condition = T::Column::iter().fold(Condition::all(), |condition, column: T::Column| {
-        let filter = filters.get(column.as_str());
+        let filter = filters.get(column.as_str().to_lower_camel_case().as_str());
 
         if let Some(filter) = filter {
             let filter = filter
@@ -478,6 +478,7 @@ where
                 ColumnType::Float | ColumnType::Double => {
                     basic_filtering_type!(condition, column, filter, f64)
                 }
+                #[cfg(feature = "with-decimal")]
                 ColumnType::Decimal(_) => basic_filtering_type!(condition, column, filter, string),
                 // ColumnType::DateTime => {
 
@@ -681,13 +682,15 @@ where
 
                     let stmt = R::find();
 
-                    let filter = Condition::all().add(to_col.eq(parent.get(from_col)));
+                    let condition = Condition::all().add(to_col.eq(parent.get(from_col)));
 
                     let filters = ctx.args.get("filters");
                     let order_by = ctx.args.get("orderBy");
                     let pagination = ctx.args.get("pagination");
 
-                    let stmt = stmt.filter(filter.add(get_filter_conditions::<T>(filters)));
+                    let base_condition = get_filter_conditions::<R>(filters);
+
+                    let stmt = stmt.filter(condition.add(base_condition));
                     let stmt = apply_order(stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;
