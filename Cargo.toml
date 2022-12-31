@@ -16,7 +16,7 @@ keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
 [dependencies]
-async-graphql = { version = "^5.0", default-features = false }
+async-graphql = { version = "^4.0.16", default-features = false }
 seaography-derive = { version = "^0.3.0", path = "./derive" }
 sea-orm = { version = "^0.10", default-features = false }
 itertools = { version = "0.10.3" }
