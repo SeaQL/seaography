@@ -9,7 +9,7 @@ members = [
 
 [package]
 name = "seaography"
-version = "0.3.0"
+version = "1.0.0"
 edition = "2021"
 rust-version = "1.60"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
@@ -22,15 +22,14 @@ keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
 [dependencies]
-async-graphql = { version = "5.0.2", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
-seaography-derive = { version = "^0.3.0", path = "./derive" }
-sea-orm = { version = "^0.10", default-features = false }
-itertools = { version = "0.10.3" }
+async-graphql = { version = "5.0.5", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+sea-orm = { version = "0.10.6", default-features = false }
+itertools = { version = "0.10.5" }
 heck = { version = "0.4.0" }
 
 [features]
 default = []
-with-chrono = ["seaography-derive/with-chrono", "sea-orm/with-chrono", "async-graphql/chrono"]
-with-decimal = ["seaography-derive/with-decimal", "sea-orm/with-rust_decimal", "async-graphql/decimal"]
-with-json = ["seaography-derive/with-json", "sea-orm/with-json"]
-with-uuid = ["seaography-derive/with-uuid", "sea-orm/with-uuid"]
+with-json = ["sea-orm/with-json"]
+with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
+with-decimal = ["sea-orm/with-rust_decimal", "async-graphql/decimal"]
+with-uuid = ["sea-orm/with-uuid"]

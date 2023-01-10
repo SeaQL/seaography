@@ -204,7 +204,6 @@
 
 pub use heck;
 pub use itertools;
-pub use seaography_derive as macros;
 
 pub mod connection;
 pub use connection::*;

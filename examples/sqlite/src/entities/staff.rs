@@ -74,7 +74,7 @@ impl Related<super::rental::Entity> for Entity {
     }
 }
 
-impl Related<super::staff::Entity> for Entity {
+impl Related<Entity> for Entity {
     fn to() -> RelationDef {
         Relation::SelfRef.def()
     }

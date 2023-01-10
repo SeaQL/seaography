@@ -51,6 +51,6 @@ pub fn parse_entity(file: &OutputFile) -> EntityDefinition {
 
     EntityDefinition {
         name,
-        relations: relations,
+        relations,
     }
 }
