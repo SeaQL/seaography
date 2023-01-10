@@ -17,7 +17,7 @@ lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
 path = "../../" # remove this line in your own project
-version = "0.3.0"
+version = "1.0.0"
 features = ["with-decimal", "with-chrono"]
 
 [dev-dependencies]

@@ -10,22 +10,22 @@ pub struct Args {
 
     pub destination: String,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub expanded_format: Option<bool>,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub depth_limit: Option<usize>,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub complexity_limit: Option<usize>,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub ignore_tables: Option<String>,
 
-    #[clap(short, long)]
+    #[clap(long)]
     pub hidden_tables: Option<bool>,
 
-    #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
+    #[clap(long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
     pub framework: WebFrameworkEnum,
 }
 
