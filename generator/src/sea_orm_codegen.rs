@@ -1,6 +1,6 @@
 use sea_orm_codegen::WriterOutput;
 
-use crate::{util::add_line_break, parser::parse_entity, writer::EntityDefinition};
+use crate::{parser::parse_entity, util::add_line_break, writer::EntityDefinition};
 
 pub fn generate_entities(
     table_crate_stmts: Vec<sea_query::TableCreateStatement>,
@@ -27,9 +27,7 @@ pub fn generate_entities(
                 && file.name.ne(&"prelude.rs".to_string())
                 && file.name.ne(&"sea_orm_active_enums.rs".to_string())
         })
-        .map(|file| {
-            parse_entity(file)
-        })
+        .map(|file| parse_entity(file))
         .collect();
 
     Ok((data, writer_output))

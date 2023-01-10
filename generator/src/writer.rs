@@ -8,12 +8,9 @@ use crate::{util::add_line_break, WebFrameworkEnum};
 pub struct EntityDefinition {
     pub name: TokenStream,
     pub relations: BTreeMap<String, TokenStream>,
-
 }
 
-pub fn generate_query_root(
-    entities: &Vec<EntityDefinition>,
-) -> TokenStream {
+pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
     let entities: Vec<TokenStream> = entities.iter().map(|entity| {
         let entity_path = &entity.name;
 
@@ -189,10 +186,7 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 
     let file_name = path.as_ref().join("lib.rs");
 
-    std::fs::write(
-        file_name,
-        add_line_break(tokens),
-    )?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
