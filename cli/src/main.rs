@@ -1,16 +1,13 @@
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use seaography_generator::write_project;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    #[clap(value_parser)]
     pub database_url: String,
 
-    #[clap(value_parser)]
     pub crate_name: String,
 
-    #[clap(value_parser)]
     pub destination: String,
 
     #[clap(short, long)]
@@ -28,7 +25,7 @@ pub struct Args {
     #[clap(short, long)]
     pub hidden_tables: Option<bool>,
 
-    #[clap(short, long, arg_enum, value_parser, default_value = "poem")]
+    #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
     pub framework: WebFrameworkEnum,
 }
 
@@ -151,7 +148,7 @@ async fn main() {
     .unwrap();
 }
 
-#[derive(ArgEnum, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum WebFrameworkEnum {
     Actix,
     Poem,
