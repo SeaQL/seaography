@@ -8,7 +8,7 @@ where
 {
     let name = format!("{}OrderInput", entity_object.type_name());
 
-    T::Column::iter().fold(InputObject::new(&name), |object, column| {
+    T::Column::iter().fold(InputObject::new(name), |object, column| {
         object.field(InputValue::new(
             column.as_str(),
             TypeRef::named("OrderByEnum"),

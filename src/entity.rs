@@ -96,7 +96,7 @@ where
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
                             match <i8 as ValueType>::try_from(value)
-                                .map(|v| Some(v))
+                                .map(Some)
                                 .unwrap_or_else(|_err| None)
                             {
                                 Some(number) => Ok(Some(Value::from(number))),
@@ -112,7 +112,7 @@ where
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
                             match <i16 as ValueType>::try_from(value)
-                                .map(|v| Some(v))
+                                .map(Some)
                                 .unwrap_or_else(|_err| None)
                             {
                                 Some(number) => Ok(Some(Value::from(number))),
@@ -126,7 +126,7 @@ where
                         let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                         let value = object.get(column);
                         match <i32 as ValueType>::try_from(value)
-                            .map(|v| Some(v))
+                            .map(Some)
                             .unwrap_or_else(|_err| None)
                         {
                             Some(number) => Ok(Some(Value::from(number))),
@@ -140,7 +140,7 @@ where
                             let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
                             let value = object.get(column);
                             match <i64 as ValueType>::try_from(value)
-                                .map(|v| Some(v))
+                                .map(Some)
                                 .unwrap_or_else(|_err| None)
                             {
                                 Some(number) => Ok(Some(Value::from(number))),

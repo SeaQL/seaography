@@ -174,7 +174,7 @@ where
 
                     let next_data = next_stmt.first(limit).after(values).all(db).await.unwrap();
 
-                    next_data.len() != 0
+                    !next_data.is_empty()
                 } else {
                     false
                 }
@@ -199,7 +199,7 @@ where
                         .await
                         .unwrap();
 
-                    previous_data.len() != 0
+                    !previous_data.is_empty()
                 } else {
                     false
                 }
@@ -623,7 +623,7 @@ where
     .to_upper_camel_case();
 
     let from_col = <T::Column as std::str::FromStr>::from_str(
-        &relation_definition
+        relation_definition
             .from_col
             .to_string()
             .to_snake_case()
@@ -642,7 +642,7 @@ where
 
     let field = match relation_definition.rel_type {
         sea_orm::RelationType::HasOne => {
-            Field::new(name, TypeRef::named(format!("{}", type_name)), move |ctx| {
+            Field::new(name, TypeRef::named(type_name.to_string()), move |ctx| {
                 // TODO dataloader applied here!
                 FieldFuture::new(async move {
                     let parent: &T::Model = ctx
