@@ -1,7 +1,12 @@
-#[derive(Debug)]
+use thiserror::Error;
+
+#[derive(Error, Debug)]
 pub enum Error {
+    #[error("Code generator: {0}")]
     Error(String),
+    #[error("SeaORM generator: {0}")]
     SeaOrmCodegenError(sea_orm_codegen::Error),
+    #[error("IO: {0}")]
     IoError(std::io::Error),
 }
 

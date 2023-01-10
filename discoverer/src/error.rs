@@ -1,6 +1,10 @@
-#[derive(Debug)]
+use thiserror::Error;
+
+#[derive(Error, Debug)]
 pub enum Error {
+    #[error("Database error: {0}")]
     SqlxError(sqlx::Error),
+    #[error("Discovery error: {0}")]
     Error(String),
 }
 

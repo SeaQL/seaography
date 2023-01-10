@@ -14,6 +14,7 @@ pub fn generate_entities(
         true,
         sea_orm_codegen::DateTimeCrate::Chrono,
         None,
+        false,
     );
 
     let writer_output = entity_writer.generate(&entity_writer_ctx);
