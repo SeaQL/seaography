@@ -25,7 +25,7 @@ pub struct Args {
     #[clap(long)]
     pub hidden_tables: Option<bool>,
 
-    #[clap(long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
+    #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
     pub framework: WebFrameworkEnum,
 }
 

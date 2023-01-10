@@ -16,7 +16,9 @@ tracing-subscriber = { version = "0.3.16" }
 lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
-version = "<seaography-version>" # seaography version
+# version = "<seaography-version>" # seaography version
+path = "../../" # remove this line in your own project
+version = "1.0.0"
 features = ["with-decimal", "with-chrono"]
 
 [dev-dependencies]

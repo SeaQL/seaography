@@ -14,40 +14,15 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
     let entities: Vec<TokenStream> = entities.iter().map(|entity| {
         let entity_path = &entity.name;
 
-        let relations: Vec<TokenStream> = entity.relations.iter().filter(|(_relationship_name, related_path)| {
-            if related_path.to_string().eq("Entity") {
-                false
-            } else {
-                true
-            }
-        }).map(|(relationship_name, related_path)| {
+        let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, related_path)| {
             quote!{
-                entity_object_relation::<#entity_path::Entity, #related_path>(#relationship_name, false)
+                entity_object_via_relation::<#entity_path::Entity, #related_path>(#relationship_name)
             }
         }).collect();
-
-        let self_relations: Vec<TokenStream> = entity.relations.iter()
-            .filter(|(_relationship_name, related_path)| {
-                if related_path.to_string().eq("Entity") {
-                    true
-                } else {
-                    false
-                }
-            })
-            .map(|(relationship_name, _related_path)| {
-                let relationship_name = format!("{}Reverse", relationship_name);
-
-                quote!{
-                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, false),
-                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, true)
-                }
-            })
-            .collect();
 
         quote!{
             DynamicGraphqlEntity::from_entity::<#entity_path::Entity>(&pagination_input, vec![
                 #(#relations),*
-                #(#self_relations),*
             ])
         }
     }).collect();
@@ -55,7 +30,7 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
     quote! {
         use async_graphql::{dataloader::DataLoader, dynamic::*};
         use sea_orm::DatabaseConnection;
-        use seaography::{DynamicGraphqlEntity, entity_object_relation};
+        use seaography::{DynamicGraphqlEntity, entity_object_relation, entity_object_via_relation};
 
         use crate::OrmDataloader;
 

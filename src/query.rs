@@ -573,33 +573,15 @@ where
     condition
 }
 
-pub fn entity_object_relation<T, R>(name: &str, self_reverse: bool) -> Field
+pub fn entity_object_relation<T, R>(name: &str, relation_definition: RelationDef) -> Field
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
+    <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     R: EntityTrait,
     <R as sea_orm::EntityTrait>::Model: Sync,
-    T: Related<R>,
-    <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
 {
-    let relation_definition = match self_reverse {
-        true => {
-            let temp = <T as Related<R>>::to().rev();
-            match temp.rel_type {
-                sea_orm::RelationType::HasOne => RelationDef {
-                    rel_type: sea_orm::RelationType::HasMany,
-                    ..temp
-                },
-                sea_orm::RelationType::HasMany => RelationDef {
-                    rel_type: sea_orm::RelationType::HasOne,
-                    ..temp
-                },
-            }
-        }
-        false => <T as Related<R>>::to(),
-    };
-
     let name = name.to_lower_camel_case();
 
     let type_name: String = match relation_definition.to_tbl {
@@ -640,8 +622,8 @@ where
     )
     .unwrap();
 
-    let field = match relation_definition.rel_type {
-        sea_orm::RelationType::HasOne => {
+    let field = match relation_definition.is_owner {
+        false => {
             Field::new(name, TypeRef::named(type_name.to_string()), move |ctx| {
                 // TODO dataloader applied here!
                 FieldFuture::new(async move {
@@ -668,7 +650,7 @@ where
                 })
             })
         }
-        sea_orm::RelationType::HasMany => Field::new(
+        true => Field::new(
             name,
             TypeRef::named_nn(format!("{}Connection", type_name)),
             move |ctx| {
@@ -703,9 +685,153 @@ where
         ),
     };
 
-    let field = match relation_definition.rel_type {
-        sea_orm::RelationType::HasOne => field,
-        sea_orm::RelationType::HasMany => field
+    let field = match relation_definition.is_owner {
+        false => field,
+        true => field
+            .argument(InputValue::new(
+                "filters",
+                TypeRef::named(format!("{}FilterInput", type_name)),
+            ))
+            .argument(InputValue::new(
+                "orderBy",
+                TypeRef::named(format!("{}OrderInput", type_name)),
+            ))
+            .argument(InputValue::new(
+                "pagination",
+                TypeRef::named("PaginationInput"),
+            )),
+    };
+
+    field
+}
+
+pub fn entity_object_via_relation<T, R>(name: &str) -> Field
+where
+    T: Related<R>,
+    T: EntityTrait,
+    R: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+    <R as sea_orm::EntityTrait>::Model: Sync,
+    <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+    <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+{
+    let to_relation_definition = <T as Related<R>>::to();
+    let via_relation_definition = <T as Related<R>>::via().expect("We expect this function to be used with Related that has `via` method implemented!");
+
+    let name = name.to_lower_camel_case();
+
+    let type_name: String = match to_relation_definition.to_tbl {
+        sea_orm::sea_query::TableRef::Table(table) => table.to_string(),
+        sea_orm::sea_query::TableRef::TableAlias(table, _alias) => table.to_string(),
+        sea_orm::sea_query::TableRef::SchemaTable(_schema, table) => table.to_string(),
+        sea_orm::sea_query::TableRef::DatabaseSchemaTable(_database, _schema, table) => {
+            table.to_string()
+        }
+        sea_orm::sea_query::TableRef::SchemaTableAlias(_schema, table, _alias) => table.to_string(),
+        sea_orm::sea_query::TableRef::DatabaseSchemaTableAlias(
+            _database,
+            _schema,
+            table,
+            _alias,
+        ) => table.to_string(),
+        // TODO what if empty ?
+        sea_orm::sea_query::TableRef::SubQuery(_stmt, alias) => alias.to_string(),
+        sea_orm::sea_query::TableRef::ValuesList(_values, alias) => alias.to_string(),
+    }
+    .to_upper_camel_case();
+
+    let from_col = <T::Column as std::str::FromStr>::from_str(
+        via_relation_definition
+            .from_col
+            .to_string()
+            .to_snake_case()
+            .as_str(),
+    )
+    .unwrap();
+
+    let to_col = <R::Column as std::str::FromStr>::from_str(
+        to_relation_definition
+            .to_col
+            .to_string()
+            .to_snake_case()
+            .as_str(),
+    )
+    .unwrap();
+
+    let field = match via_relation_definition.is_owner {
+        false => {
+            Field::new(name, TypeRef::named(type_name.to_string()), move |ctx| {
+                // TODO dataloader applied here!
+                FieldFuture::new(async move {
+                    let parent: &T::Model = ctx
+                        .parent_value
+                        .try_downcast_ref::<T::Model>()
+                        .expect("Parent should exist");
+
+                    let stmt = if let Some(_) = <T as Related<R>>::via() {
+                        <T as Related<R>>::find_related()
+                    } else {
+                        R::find()
+                    };
+
+                    let filter = Condition::all().add(to_col.eq(parent.get(from_col)));
+
+                    let stmt = stmt.filter(filter);
+
+                    let db = ctx.data::<DatabaseConnection>()?;
+
+                    let data = stmt.one(db).await?;
+
+                    if let Some(data) = data {
+                        Ok(Some(FieldValue::owned_any(data)))
+                    } else {
+                        Ok(None)
+                    }
+                })
+            })
+        }
+        true => Field::new(
+            name,
+            TypeRef::named_nn(format!("{}Connection", type_name)),
+            move |ctx| {
+                FieldFuture::new(async move {
+                    // TODO
+                    // each has unique query in order to apply pagination...
+                    let parent: &T::Model = ctx
+                        .parent_value
+                        .try_downcast_ref::<T::Model>()
+                        .expect("Parent should exist");
+
+                    let stmt = if let Some(_) = <T as Related<R>>::via() {
+                        <T as Related<R>>::find_related()
+                    } else {
+                        R::find()
+                    };
+
+                    let condition = Condition::all().add(to_col.eq(parent.get(from_col)));
+
+                    let filters = ctx.args.get("filters");
+                    let order_by = ctx.args.get("orderBy");
+                    let pagination = ctx.args.get("pagination");
+
+                    let base_condition = get_filter_conditions::<R>(filters);
+
+                    let stmt = stmt.filter(condition.add(base_condition));
+                    let stmt = apply_order(stmt, order_by);
+
+                    let db = ctx.data::<DatabaseConnection>()?;
+
+                    let connection = apply_pagination::<R>(db, stmt, pagination).await?;
+
+                    Ok(Some(FieldValue::owned_any(connection)))
+                })
+            },
+        ),
+    };
+
+    let field = match via_relation_definition.is_owner {
+        false => field,
+        true => field
             .argument(InputValue::new(
                 "filters",
                 TypeRef::named(format!("{}FilterInput", type_name)),
