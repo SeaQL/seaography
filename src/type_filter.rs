@@ -12,6 +12,7 @@ pub trait FilterTrait {
     fn is_in(&self) -> Option<Vec<Self::Ty>>;
     fn is_not_in(&self) -> Option<Vec<Self::Ty>>;
     fn is_null(&self) -> Option<bool>;
+    fn is_not_null(&self) -> Option<bool>;
     fn contains(&self) -> Option<String>;
     fn starts_with(&self) -> Option<String>;
     fn ends_with(&self) -> Option<String>;
@@ -84,6 +85,7 @@ where
     pub is_in: Option<Vec<T>>,
     pub is_not_in: Option<Vec<T>>,
     pub is_null: Option<bool>,
+    pub is_not_null: Option<bool>,
 }
 
 impl<T> FilterTrait for TypeFilter<T>
@@ -128,24 +130,28 @@ where
         self.is_null
     }
 
+    fn is_not_null(&self) -> Option<bool> {
+        self.is_not_null
+    }
+
     fn contains(&self) -> Option<String> {
-        panic!("FilterType does not support contains")
+        None
     }
 
     fn starts_with(&self) -> Option<String> {
-        panic!("FilterType does not support starts_with")
+        None
     }
 
     fn ends_with(&self) -> Option<String> {
-        panic!("FilterType does not support ends_with")
+        None
     }
 
     fn like(&self) -> Option<String> {
-        panic!("FilterType does not support like")
+        None
     }
 
     fn not_like(&self) -> Option<String> {
-        panic!("FilterType does not support not_like")
+        None
     }
 }
 
@@ -160,6 +166,7 @@ pub struct StringFilter {
     pub is_in: Option<Vec<String>>,
     pub is_not_in: Option<Vec<String>>,
     pub is_null: Option<bool>,
+    pub is_not_null: Option<bool>,
     pub contains: Option<String>,
     pub starts_with: Option<String>,
     pub ends_with: Option<String>,
@@ -204,6 +211,10 @@ impl FilterTrait for StringFilter {
 
     fn is_null(&self) -> Option<bool> {
         self.is_null
+    }
+
+    fn is_not_null(&self) -> Option<bool> {
+        self.is_not_null
     }
 
     fn contains(&self) -> Option<String> {

@@ -199,6 +199,32 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
                             condition = condition.add(Column::#column_enum_name.is_null())
                         }
                     }
+
+                    if let Some(is_not_null_value) = seaography::FilterTrait::is_not_null(#column_name) {
+                        if is_not_null_value {
+                            condition = condition.add(Column::#column_enum_name.is_not_null())
+                        }
+                    }
+
+                    if let Some(contains_value) = seaography::FilterTrait::contains(#column_name) {
+                        condition = condition.add(Column::#column_enum_name.contains(contains_value.as_str()))
+                    }
+
+                    if let Some(starts_with_value) = seaography::FilterTrait::starts_with(#column_name) {
+                        condition = condition.add(Column::#column_enum_name.starts_with(starts_with_value.as_str()))
+                    }
+
+                    if let Some(ends_with_value) = seaography::FilterTrait::ends_with(#column_name) {
+                        condition = condition.add(Column::#column_enum_name.ends_with(ends_with_value.as_str()))
+                    }
+
+                    if let Some(like_value) = seaography::FilterTrait::like(#column_name) {
+                        condition = condition.add(Column::#column_enum_name.like(like_value.as_str()))
+                    }
+
+                    if let Some(not_like_value) = seaography::FilterTrait::not_like(#column_name) {
+                        condition = condition.add(Column::#column_enum_name.not_like(not_like_value.as_str()))
+                    }
                 }
             }
         })
@@ -246,22 +272,22 @@ pub fn remove_optional_from_type(ty: syn::Type) -> Result<syn::Type, crate::erro
 
     let ty = match ty {
         syn::Type::Path(type_path)
-            if type_path.qself.is_none() && path_is_option(&type_path.path) =>
-        {
-            let type_params = &type_path.path.segments.first().unwrap().arguments;
-            let generic_arg = match type_params {
-                syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
-                _ => {
-                    return Err(crate::error::Error::Internal(
-                        "Cannot parse type brackets".into(),
-                    ))
+        if type_path.qself.is_none() && path_is_option(&type_path.path) =>
+            {
+                let type_params = &type_path.path.segments.first().unwrap().arguments;
+                let generic_arg = match type_params {
+                    syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
+                    _ => {
+                        return Err(crate::error::Error::Internal(
+                            "Cannot parse type brackets".into(),
+                        ))
+                    }
+                };
+                match generic_arg {
+                    syn::GenericArgument::Type(ty) => ty.to_owned(),
+                    _ => return Err(crate::error::Error::Internal("Cannot parse type".into())),
                 }
-            };
-            match generic_arg {
-                syn::GenericArgument::Type(ty) => ty.to_owned(),
-                _ => return Err(crate::error::Error::Internal("Cannot parse type".into())),
             }
-        }
         _ => ty,
     };
 
