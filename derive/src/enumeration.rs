@@ -16,6 +16,7 @@ pub fn enum_filter_fn(ident: syn::Ident) -> TokenStream {
             pub is_in: Option<Vec<#ident>>,
             pub is_not_in: Option<Vec<#ident>>,
             pub is_null: Option<bool>,
+            pub is_not_null: Option<bool>
         }
 
         impl seaography::FilterTrait for #name {
@@ -47,6 +48,9 @@ pub fn enum_filter_fn(ident: syn::Ident) -> TokenStream {
             }
             fn is_null(&self) -> Option<bool> {
                 self.is_null
+            }
+            fn is_not_null(&self) -> Option<bool> {
+                self.is_not_null
             }
             fn contains(&self) -> Option<String> {
                 panic!("contains not supported for enumerations")
