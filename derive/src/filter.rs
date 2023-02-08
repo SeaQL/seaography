@@ -272,22 +272,22 @@ pub fn remove_optional_from_type(ty: syn::Type) -> Result<syn::Type, crate::erro
 
     let ty = match ty {
         syn::Type::Path(type_path)
-        if type_path.qself.is_none() && path_is_option(&type_path.path) =>
-            {
-                let type_params = &type_path.path.segments.first().unwrap().arguments;
-                let generic_arg = match type_params {
-                    syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
-                    _ => {
-                        return Err(crate::error::Error::Internal(
-                            "Cannot parse type brackets".into(),
-                        ))
-                    }
-                };
-                match generic_arg {
-                    syn::GenericArgument::Type(ty) => ty.to_owned(),
-                    _ => return Err(crate::error::Error::Internal("Cannot parse type".into())),
+            if type_path.qself.is_none() && path_is_option(&type_path.path) =>
+        {
+            let type_params = &type_path.path.segments.first().unwrap().arguments;
+            let generic_arg = match type_params {
+                syn::PathArguments::AngleBracketed(params) => params.args.first().unwrap(),
+                _ => {
+                    return Err(crate::error::Error::Internal(
+                        "Cannot parse type brackets".into(),
+                    ))
                 }
+            };
+            match generic_arg {
+                syn::GenericArgument::Type(ty) => ty.to_owned(),
+                _ => return Err(crate::error::Error::Internal("Cannot parse type".into())),
             }
+        }
         _ => ty,
     };
 
