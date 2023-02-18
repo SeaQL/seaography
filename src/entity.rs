@@ -1,6 +1,6 @@
 use async_graphql::{dynamic::*, Value};
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
-use sea_orm::{prelude::*, sea_query::ValueType, Iterable};
+use sea_orm::{prelude::*, Iterable};
 
 use crate::{connection::*, edge::*, filter::*, order::*, query::*};
 
@@ -14,6 +14,7 @@ pub struct DynamicGraphqlEntity {
 }
 
 impl DynamicGraphqlEntity {
+    /// Used to convert SeaORM Entity into async-graphql types
     pub fn from_entity<T>(pagination_input: &InputObject, relations: Vec<Field>) -> Self
     where
         T: EntityTrait,
@@ -59,219 +60,367 @@ where
     // TODO check if nullable
     let entity_object = T::Column::iter().fold(
         Object::new(<T as EntityName>::table_name(&T::default()).to_upper_camel_case()),
-        |object, column| {
+        |object, column: T::Column| {
             let name = column.as_str().to_lower_camel_case();
 
-            let field = match column.def().get_column_type() {
-                ColumnType::Char(_) => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::STRING), move |ctx| {
-                        FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<char>().to_string())))
-                        })
-                    })
-                }
-                ColumnType::String(_) => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::STRING), move |ctx| {
-                        FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<String>())))
-                        })
-                    })
-                }
-                ColumnType::Text => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::STRING), move |ctx| {
-                        FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<String>())))
-                        })
-                    })
-                }
-                ColumnType::TinyInteger => {
-                    Field::new(name, TypeRef::named(TypeRef::INT), move |ctx| {
-                        FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            match <i8 as ValueType>::try_from(value)
-                                .map(Some)
-                                .unwrap_or_else(|_err| None)
-                            {
-                                Some(number) => Ok(Some(Value::from(number))),
-                                None => Ok(None),
-                            }
-                        })
-                    })
-                }
+            let column_def = column.def();
 
-                ColumnType::SmallInteger => {
-                    Field::new(name, TypeRef::named(TypeRef::INT), move |ctx| {
-                        FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            match <i16 as ValueType>::try_from(value)
-                                .map(Some)
-                                .unwrap_or_else(|_err| None)
-                            {
-                                Some(number) => Ok(Some(Value::from(number))),
-                                None => Ok(None),
-                            }
-                        })
-                    })
-                }
-                ColumnType::Integer => Field::new(name, TypeRef::named(TypeRef::INT), move |ctx| {
-                    FieldFuture::new(async move {
-                        let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                        let value = object.get(column);
-                        match <i32 as ValueType>::try_from(value)
-                            .map(Some)
-                            .unwrap_or_else(|_err| None)
-                        {
-                            Some(number) => Ok(Some(Value::from(number))),
+            let type_name = match &column_def.get_column_type() {
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => TypeRef::STRING,
+                ColumnType::TinyInteger
+                | ColumnType::SmallInteger
+                | ColumnType::Integer
+                | ColumnType::BigInteger
+                | ColumnType::TinyUnsigned
+                | ColumnType::SmallUnsigned
+                | ColumnType::Unsigned
+                | ColumnType::BigUnsigned => TypeRef::INT,
+                ColumnType::Float | ColumnType::Double => TypeRef::FLOAT,
+                ColumnType::Decimal(_) => TypeRef::STRING,
+                ColumnType::DateTime
+                | ColumnType::Timestamp
+                | ColumnType::TimestampWithTimeZone
+                | ColumnType::Time
+                | ColumnType::Date => TypeRef::STRING,
+                ColumnType::Year(_) => TypeRef::INT,
+                ColumnType::Interval(_, _) => TypeRef::STRING,
+                ColumnType::Binary(_)
+                | ColumnType::VarBinary(_)
+                | ColumnType::VarBit(_)
+                | ColumnType::Bit(_) => TypeRef::STRING,
+                ColumnType::Boolean => TypeRef::BOOLEAN,
+                ColumnType::Money(_) => TypeRef::STRING,
+                ColumnType::Json | ColumnType::JsonBinary => {
+                    // FIXME
+                    TypeRef::STRING
+                },
+                ColumnType::Uuid => TypeRef::STRING,
+                ColumnType::Custom(_) => {
+                    // FIXME
+                    TypeRef::STRING
+                },
+                ColumnType::Enum {
+                    name: _,
+                    variants: _,
+                } => {
+                    // FIXME
+                    TypeRef::STRING
+                },
+                ColumnType::Array(_) => {
+                    // FIXME
+                    TypeRef::STRING
+                },
+                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => TypeRef::STRING,
+                _ => todo!(),
+            };
+
+            let graphql_type = if column_def.is_null() {
+                TypeRef::named(type_name)
+            } else {
+                TypeRef::named_nn(type_name)
+            };
+
+            let field = Field::new(name, graphql_type, move |ctx| {
+                let object = ctx
+                    .parent_value
+                    .try_downcast_ref::<T::Model>()
+                    .expect("Something went wrong when trying to downcast entity object.");
+
+                match object.get(column) {
+                    sea_orm::sea_query::Value::Bool(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
                             None => Ok(None),
                         }
-                    })
-                }),
-                ColumnType::BigInteger => {
-                    Field::new(name, TypeRef::named(TypeRef::INT), move |ctx| {
+                    }),
+                    sea_orm::sea_query::Value::TinyInt(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::SmallInt(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::Int(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::BigInt(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::TinyUnsigned(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            match <i64 as ValueType>::try_from(value)
-                                .map(Some)
-                                .unwrap_or_else(|_err| None)
-                            {
-                                Some(number) => Ok(Some(Value::from(number))),
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value))),
                                 None => Ok(None),
                             }
                         })
-                    })
-                }
-                ColumnType::TinyUnsigned => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::INT), move |ctx| {
+                    }
+                    sea_orm::sea_query::Value::SmallUnsigned(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<u8>())))
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value))),
+                                None => Ok(None),
+                            }
                         })
-                    })
-                }
-                ColumnType::SmallUnsigned => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::INT), move |ctx| {
+                    }
+                    sea_orm::sea_query::Value::Unsigned(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::BigUnsigned(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::Float(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::Double(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::String(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.as_str()))),
+                            None => Ok(None),
+                        }
+                    }),
+                    sea_orm::sea_query::Value::Char(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
+                    #[allow(clippy::box_collection)]
+                    sea_orm::sea_query::Value::Bytes(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(String::from_utf8_lossy(&value)))),
+                            None => Ok(None),
+                        }
+                    }),
+                    #[cfg(feature = "with-json")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
+                    sea_orm::sea_query::Value::Json(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<u16>())))
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
                         })
-                    })
-                }
-                ColumnType::Unsigned => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::INT), move |ctx| {
+                    }
+
+                    #[cfg(feature = "with-chrono")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+                    sea_orm::sea_query::Value::ChronoDate(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<u32>())))
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
                         })
-                    })
-                }
-                ColumnType::BigUnsigned => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::INT), move |ctx| {
+                    }
+
+                    #[cfg(feature = "with-chrono")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+                    sea_orm::sea_query::Value::ChronoTime(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<u64>())))
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
                         })
-                    })
-                }
-                ColumnType::Float => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::FLOAT), move |ctx| {
+                    }
+
+                    #[cfg(feature = "with-chrono")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+                    sea_orm::sea_query::Value::ChronoDateTime(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<f32>())))
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
                         })
-                    })
-                }
-                ColumnType::Double => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::FLOAT), move |ctx| {
+                    }
+
+                    #[cfg(feature = "with-chrono")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+                    sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<f64>())))
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
                         })
-                    })
-                }
-                #[cfg(feature = "with-decimal")]
-                ColumnType::Decimal(_) => {
-                    Field::new(name, TypeRef::named_nn(TypeRef::STRING), move |ctx| {
+                    }
+
+                    #[cfg(feature = "with-chrono")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+                    sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
                         FieldFuture::new(async move {
-                            let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                            let value = object.get(column);
-                            Ok(Some(Value::from(value.unwrap::<Decimal>().to_string())))
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
                         })
-                    })
+                    }
+
+                    #[cfg(feature = "with-chrono")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+                    sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-time")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+                    sea_orm::sea_query::Value::TimeDate(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-time")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+                    sea_orm::sea_query::Value::TimeTime(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-time")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+                    sea_orm::sea_query::Value::TimeDateTime(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-time")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+                    sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-uuid")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]
+                    sea_orm::sea_query::Value::Uuid(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-rust_decimal")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-rust_decimal")))]
+                    sea_orm::sea_query::Value::Decimal(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-bigdecimal")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
+                    sea_orm::sea_query::Value::BigDecimal(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "postgres-array")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "postgres-array")))]
+                    sea_orm::sea_query::Value::Array(array_type, value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-ipnetwork")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
+                    sea_orm::sea_query::Value::IpNetwork(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
+
+                    #[cfg(feature = "with-mac_address")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
+                    sea_orm::sea_query::Value::MacAddress(value) => {
+                        FieldFuture::new(async move {
+                            // FIXME
+                            match value {
+                                Some(value) => Ok(Some(Value::from(value.to_string()))),
+                                None => Ok(None),
+                            }
+                        })
+                    }
                 }
-                // ColumnType::DateTime => {
-
-                // },
-                // ColumnType::Timestamp => {
-
-                // },
-                // ColumnType::TimestampWithTimeZone => {
-
-                // },
-                // ColumnType::Time => {
-
-                // },
-                // ColumnType::Date => {
-
-                // },
-                // ColumnType::Binary => {
-
-                // },
-                // ColumnType::TinyBinary => {
-
-                // },
-                // ColumnType::MediumBinary => {
-
-                // },
-                // ColumnType::LongBinary => {
-
-                // },
-                // ColumnType::Boolean => {
-
-                // },
-                // ColumnType::Money(_) => {
-
-                // },
-                // ColumnType::Json => {
-
-                // },
-                // ColumnType::JsonBinary => {
-
-                // },
-                // ColumnType::Custom(_) => {
-
-                // },
-                // ColumnType::Uuid => {
-
-                // },
-                // ColumnType::Enum { name, variants } => {
-
-                // },
-                // ColumnType::Array(_) => {
-
-                // },
-                _ => Field::new(name, TypeRef::named_nn(TypeRef::STRING), move |ctx| {
-                    FieldFuture::new(async move {
-                        let object = ctx.parent_value.try_downcast_ref::<T::Model>()?;
-                        let value = object.get(column);
-                        Ok(Some(Value::from(value.unwrap::<String>())))
-                    })
-                }),
-            };
+            });
 
             object.field(field)
         },

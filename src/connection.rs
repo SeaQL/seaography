@@ -3,14 +3,20 @@ use sea_orm::prelude::*;
 
 use crate::{edge::*, pagination::*};
 
+/// used to represent a GraphQL Connection node for any Type
 #[derive(Clone, Debug)]
 pub struct Connection<T>
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
+    /// cursor pagination info
     pub page_info: PageInfo,
+
+    /// pagination info
     pub pagination_info: Option<PaginationInfo>,
+
+    /// vector of data vector
     pub edges: Vec<Edge<T>>,
 }
 

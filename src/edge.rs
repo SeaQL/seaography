@@ -1,13 +1,17 @@
 use async_graphql::{dynamic::*, Value};
 use sea_orm::prelude::*;
 
+/// used to represent a data Edge for GraphQL pagination
 #[derive(Clone, Debug)]
 pub struct Edge<T>
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
+    /// cursor string
     pub cursor: String,
+
+    /// data
     pub node: T::Model,
 }
 
