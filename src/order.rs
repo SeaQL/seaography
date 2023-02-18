@@ -1,6 +1,7 @@
 use async_graphql::dynamic::*;
 use sea_orm::{prelude::*, Iterable};
 
+/// used to create order input for SeaORM entity
 pub fn entity_to_order<T>(entity_object: &Object) -> InputObject
 where
     T: EntityTrait,

@@ -1,6 +1,7 @@
 use async_graphql::{dynamic::*, Value};
 use itertools::Itertools;
 
+/// used to hold cursor pagination info
 #[derive(Clone, Debug)]
 pub struct PageInfo {
     pub has_previous_page: bool,
@@ -65,10 +66,13 @@ impl PageInfo {
     }
 }
 
+/// used to hold offset pagination info
 #[derive(Clone, Debug)]
 pub struct PaginationInfo {
     pub pages: u64,
     pub current: u64,
+    pub offset: u64,
+    pub total: u64,
 }
 
 impl PaginationInfo {
@@ -86,6 +90,26 @@ impl PaginationInfo {
             ))
             .field(Field::new(
                 "current",
+                TypeRef::named_nn(TypeRef::INT),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let pagination_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(Value::from(pagination_page_info.current)))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "offset",
+                TypeRef::named_nn(TypeRef::INT),
+                |ctx| {
+                    FieldFuture::new(async move {
+                        let pagination_page_info = ctx.parent_value.try_downcast_ref::<Self>()?;
+                        Ok(Some(Value::from(pagination_page_info.current)))
+                    })
+                },
+            ))
+            .field(Field::new(
+                "total",
                 TypeRef::named_nn(TypeRef::INT),
                 |ctx| {
                     FieldFuture::new(async move {
@@ -364,22 +388,25 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
     Ok(values)
 }
 
-// TODO parser to rust object
 pub fn get_cursor_input() -> InputObject {
     InputObject::new("CursorInput")
         .field(InputValue::new("cursor", TypeRef::named(TypeRef::STRING)))
         .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)))
 }
 
-// TODO parser to rust object
 pub fn get_page_input() -> InputObject {
     InputObject::new("PageInput")
         .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)))
         .field(InputValue::new("page", TypeRef::named_nn(TypeRef::INT)))
 }
 
-// TODO parser to rust object
-pub fn get_pagination_input(cursor_input: &InputObject, page_input: &InputObject) -> InputObject {
+pub fn get_offset_input() -> InputObject {
+    InputObject::new("OffsetInput")
+        .field(InputValue::new("limit", TypeRef::named_nn(TypeRef::INT)))
+        .field(InputValue::new("offset", TypeRef::named_nn(TypeRef::INT)))
+}
+
+pub fn get_pagination_input(cursor_input: &InputObject, page_input: &InputObject, offset_input: &InputObject) -> InputObject {
     InputObject::new("PaginationInput")
         .field(InputValue::new(
             "cursor",
@@ -388,6 +415,10 @@ pub fn get_pagination_input(cursor_input: &InputObject, page_input: &InputObject
         .field(InputValue::new(
             "pages",
             TypeRef::named(page_input.type_name()),
+        ))
+        .field(InputValue::new(
+            "offset",
+            TypeRef::named(offset_input.type_name()),
         ))
         .oneof()
 }
