@@ -16,7 +16,7 @@ categories = ["database"]
 quote = "1.0.23"
 proc-macro2 = "1.0.49"
 syn = { version = "1.0.107", features = ["full"] }
-heck = "0.4.0"
+heck = "0.4.1"
 itertools = "0.10.5"
 sea-orm-codegen = { version = "0.10.6"}
 sea-query = { version = "0.27.2", default-features = false }

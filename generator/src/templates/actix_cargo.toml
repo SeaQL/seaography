@@ -5,8 +5,8 @@ version = "0.3.0"
 
 [dependencies]
 actix-web = { version = "4.2.1", default-features = false, features = ["macros"] }
-async-graphql-actix-web = { version = "5.0.5" }
-async-graphql = { version = "5.0.5", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+async-graphql-actix-web = { version = "5.0.6" }
+async-graphql = { version = "5.0.6", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 async-trait = { version = "0.1.61" }
 dotenv = "0.15.0"
 sea-orm = { version = "0.10.6", features = ["<seaography-sql-library>", "runtime-async-std-native-tls"] }
