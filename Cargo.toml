@@ -22,10 +22,10 @@ keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
 [dependencies]
-async-graphql = { version = "5.0.5", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
-sea-orm = { version = "0.10.6", default-features = false }
+async-graphql = { version = "5.0.6", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+sea-orm = { version = "0.11.0", default-features = false }
 itertools = { version = "0.10.5" }
-heck = { version = "0.4.0" }
+heck = { version = "0.4.1" }
 
 [features]
 default = []
