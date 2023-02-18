@@ -2,6 +2,7 @@ use async_graphql::dynamic::*;
 use heck::ToLowerCamelCase;
 use sea_orm::{prelude::*, Iterable};
 
+/// used to create filter input for SeaORM Entity
 pub fn entity_to_filter<T>(entity_object: &Object) -> InputObject
 where
     T: EntityTrait,
@@ -14,7 +15,7 @@ where
 
         let field = match column.def().get_column_type() {
             ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                InputValue::new(name, TypeRef::named("StringFilterInput"))
+                Some(InputValue::new(name, TypeRef::named("StringFilterInput")))
             }
             ColumnType::TinyInteger
             | ColumnType::SmallInteger
@@ -24,68 +25,47 @@ where
             | ColumnType::SmallUnsigned
             | ColumnType::Unsigned
             | ColumnType::BigUnsigned => {
-                InputValue::new(name, TypeRef::named("IntegerFilterInput"))
+                Some(InputValue::new(name, TypeRef::named("IntegerFilterInput")))
             }
             ColumnType::Float | ColumnType::Double => {
-                InputValue::new(name, TypeRef::named("FloatFilterInput"))
+                Some(InputValue::new(name, TypeRef::named("FloatFilterInput")))
             }
-            #[cfg(feature = "with-decimal")]
-            ColumnType::Decimal(_) => InputValue::new(name, TypeRef::named("TextFilterInput")),
-            // ColumnType::DateTime => {
-
-            // },
-            // ColumnType::Timestamp => {
-
-            // },
-            // ColumnType::TimestampWithTimeZone => {
-
-            // },
-            // ColumnType::Time => {
-
-            // },
-            // ColumnType::Date => {
-
-            // },
-            // ColumnType::Binary => {
-
-            // },
-            // ColumnType::TinyBinary => {
-
-            // },
-            // ColumnType::MediumBinary => {
-
-            // },
-            // ColumnType::LongBinary => {
-
-            // },
-            // ColumnType::Boolean => {
-
-            // },
-            // ColumnType::Money(_) => {
-
-            // },
-            // ColumnType::Json => {
-
-            // },
-            // ColumnType::JsonBinary => {
-
-            // },
+            ColumnType::Decimal(_) | ColumnType::Money(_) => Some(InputValue::new(name, TypeRef::named("TextFilterInput"))),
+            ColumnType::DateTime |
+            ColumnType::Timestamp |
+            ColumnType::TimestampWithTimeZone |
+            ColumnType::Time |
+            ColumnType::Date => {
+                Some(InputValue::new(name, TypeRef::named("TextFilterInput")))
+            },
+            ColumnType::Year(_) => {
+                Some(InputValue::new(name, TypeRef::named("IntegerFilterInput")))
+            }
+            ColumnType::Boolean => {
+                Some(InputValue::new(name, TypeRef::named("BooleanFilterInput")))
+            },
+            ColumnType::Uuid => {
+                Some(InputValue::new(name, TypeRef::named("TextFilterInput")))
+            },
+            // FIXME
             // ColumnType::Custom(_) => {
-
             // },
-            // ColumnType::Uuid => {
-
+            // FIXME
+            // ColumnType::Enum { name: _, variants: _ } => {
             // },
-            // ColumnType::Enum { name, variants } => {
-
+            // FIXME
+            // ColumnType::Array => {
             // },
-            // ColumnType::Array(_) => {
-
-            // },
-            _ => InputValue::new(name, TypeRef::named("TextFilterInput")),
+            ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
+                Some(InputValue::new(name, TypeRef::named("TextFilterInput")))
+            },
+            _ => None,
         };
 
-        object.field(field)
+        match field {
+            Some(field) => object.field(field),
+            None => object
+        }
     });
 
     object
