@@ -3,20 +3,32 @@ use std::collections::BTreeMap;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::{util::add_line_break, WebFrameworkEnum};
+use crate::{util::add_line_break, WebFrameworkEnum, parser::RelationDef};
 
 pub struct EntityDefinition {
     pub name: TokenStream,
-    pub relations: BTreeMap<String, TokenStream>,
+    pub relations: BTreeMap<String, RelationDef>,
 }
 
 pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
     let entities: Vec<TokenStream> = entities.iter().map(|entity| {
         let entity_path = &entity.name;
 
-        let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, related_path)| {
-            quote!{
-                entity_object_via_relation::<#entity_path::Entity, #related_path>(#relationship_name)
+        let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, rel_def)| {
+            let related_path = &rel_def.path;
+
+            if rel_def.related {
+                quote!{
+                    entity_object_via_relation::<#entity_path::Entity, #related_path>(#relationship_name)
+                }
+            } else if rel_def.reverse {
+                quote!{
+                    entity_object_relation<#entity_path::Entity, >(#relationship_name, #entity_path::Relation::#related_path.def().rev())
+                }
+            } else {
+                quote!{
+                    entity_object_relation<#entity_path::Entity, >(#relationship_name, #entity_path::Relation::#related_path.def())
+                }
             }
         }).collect();
 
@@ -43,7 +55,8 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
             let order_by_enum = seaography::get_order_by_enum();
             let cursor_input = seaography::get_cursor_input();
             let page_input = seaography::get_page_input();
-            let pagination_input = seaography::get_pagination_input(&cursor_input, &page_input);
+            let offset_input = seaography::get_offset_input();
+            let pagination_input = seaography::get_pagination_input(&cursor_input, &page_input, &offset_input);
 
             let query = Object::new("Query");
 
@@ -88,6 +101,7 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
                 .register(seaography::PaginationInfo::to_object())
                 .register(cursor_input)
                 .register(page_input)
+                .register(offset_input)
                 .register(pagination_input)
                 .register(order_by_enum)
                 .register(query)
