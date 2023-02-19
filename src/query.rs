@@ -4,6 +4,7 @@ use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use itertools::Itertools;
 use sea_orm::{prelude::*, query::*, Iterable};
 
+/// used to convert SeaORM Entity to async-graphql query
 pub fn entity_to_query<T>(
     entity_object: &Object,
     connection_object: &Object,
@@ -61,7 +62,7 @@ where
             .expect("We expect the entity order_by to be object type");
 
         T::Column::iter().fold(stmt, |stmt, column: T::Column| {
-            let order = order_by.get(column.as_str());
+            let order = order_by.get(column.as_str().to_lower_camel_case().as_str());
 
             if let Some(order) = order {
                 let order = order
@@ -98,11 +99,13 @@ where
 
         let cursor_object = pagination.get("cursor");
         let page_object = pagination.get("pages");
+        let offset_object = pagination.get("offset");
 
         if let Some(cursor_object) = cursor_object {
             let cursor_object = cursor_object
                 .object()
                 .expect("We expect Cursor to be object");
+
             let limit = cursor_object
                 .get("limit")
                 .expect("Cursor has a mandatory limit field")
@@ -276,7 +279,75 @@ where
                 pagination_info: Some(PaginationInfo {
                     pages,
                     current: page,
+                    offset: page * limit,
+                    total: pages * limit
                 }),
+            })
+        } else if let Some(offset_object) = offset_object {
+            let offset_object = offset_object.object().expect("We expect Offset to be object");
+            let offset = offset_object
+                .get("offset")
+                .map_or_else(|| Ok(0), |v| v.u64())
+                .expect("OffsetInput offset value should be u64");
+            let limit = offset_object
+                .get("limit")
+                .expect("Offset has a mandatory limit field")
+                .u64()
+                .expect("Offset limit field is should be u64");
+
+            let count_stmt = stmt.clone().as_query().to_owned();
+
+            let data = stmt.offset(offset).limit(limit).all(db).await?;
+
+            let edges: Vec<Edge<T>> = data
+                .into_iter()
+                .map(|node| {
+                    let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
+                        .map(|variant| node.get(variant.into_column()))
+                        .collect();
+
+                    let cursor: String = encode_cursor(values);
+
+                    Edge { cursor, node }
+                })
+                .collect();
+
+            let start_cursor = edges.first().map(|edge| edge.cursor.clone());
+            let end_cursor = edges.last().map(|edge| edge.cursor.clone());
+
+            let count_stmt = db.get_database_backend().build(
+                sea_orm::sea_query::SelectStatement::new()
+                    .expr(sea_orm::sea_query::Expr::cust("COUNT(*) AS num_items"))
+                    .from_subquery(
+                        count_stmt,
+                        sea_orm::sea_query::Alias::new("sub_query")
+                    )
+            );
+
+            let total = match db.query_one(count_stmt).await? {
+                Some(res) => {
+                    match db.get_database_backend() {
+                        sea_orm::DbBackend::Postgres => res.try_get::<i64>("", "num_items")? as u64,
+                        _ => res.try_get::<i32>("", "num_items")? as u64,
+                    }
+                },
+                None => 0,
+            };
+
+            Ok(Connection{
+                edges,
+                page_info: PageInfo {
+                    has_previous_page: offset != 0,
+                    has_next_page: offset * limit < total,
+                    start_cursor,
+                    end_cursor
+                },
+                pagination_info: Some(PaginationInfo {
+                    current: f64::ceil(offset as f64 / limit as f64) as u64,
+                    pages: f64::ceil(total as f64 / limit as f64) as u64,
+                    total,
+                    offset
+                })
             })
         } else {
             Err(DbErr::Type(
@@ -302,6 +373,8 @@ where
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
         let end_cursor = edges.last().map(|edge| edge.cursor.clone());
 
+        let total = edges.len() as u64;
+
         Ok(Connection {
             edges,
             page_info: PageInfo {
@@ -313,6 +386,8 @@ where
             pagination_info: Some(PaginationInfo {
                 pages: 1,
                 current: 1,
+                offset: 0,
+                total
             }),
         })
     }
@@ -401,6 +476,7 @@ macro_rules! basic_filtering_type {
             let condition = basic_filtering_operation!(condition, $column, $filter, gte, $type);
             let condition = basic_filtering_operation!(condition, $column, $filter, lt, $type);
             let condition = basic_filtering_operation!(condition, $column, $filter, lte, $type);
+            // FIXME: implement bellow methods
             // let condition = basic_filtering_operation!(condition, $column, $filter, is_in, $type);
             // let condition = basic_filtering_operation!(condition, $column, $filter, is_not_in, $type);
             // let condition = basic_filtering_operation!(condition, $column, $filter, is_null, $type);
@@ -420,6 +496,7 @@ macro_rules! string_filtering_type {
             let condition = basic_filtering_operation!(condition, $column, $filter, gte, $type);
             let condition = basic_filtering_operation!(condition, $column, $filter, lt, $type);
             let condition = basic_filtering_operation!(condition, $column, $filter, lte, $type);
+            // FIXME: implement bellow methods
             // let condition = basic_filtering_operation!(condition, $column, $filter, is_in, $type);
             // let condition = basic_filtering_operation!(condition, $column, $filter, is_not_in, $type);
             // let condition = basic_filtering_operation!(condition, $column, $filter, is_null, $type);
@@ -495,16 +572,22 @@ where
                 // ColumnType::Date => {
 
                 // },
+                // ColumnType::Year => {
+
+                // },
+                // ColumnType::Interval => {
+
+                // },
                 // ColumnType::Binary => {
 
                 // },
-                // ColumnType::TinyBinary => {
+                // ColumnType::VarBinary => {
 
                 // },
-                // ColumnType::MediumBinary => {
+                // ColumnType::Bit => {
 
                 // },
-                // ColumnType::LongBinary => {
+                // ColumnType::VarBit => {
 
                 // },
                 // ColumnType::Boolean => {
@@ -529,6 +612,15 @@ where
 
                 // },
                 // ColumnType::Array(_) => {
+
+                // },
+                // ColumnType::Cidr => {
+
+                // },
+                // ColumnType::Inet => {
+
+                // },
+                // ColumnType::MacAddr => {
 
                 // },
                 _ => panic!("Type is not supported"),
@@ -598,9 +690,10 @@ where
             table,
             _alias,
         ) => table.to_string(),
-        // TODO what if empty ?
+        // FIXME: what if empty ?
         sea_orm::sea_query::TableRef::SubQuery(_stmt, alias) => alias.to_string(),
         sea_orm::sea_query::TableRef::ValuesList(_values, alias) => alias.to_string(),
+        sea_orm::sea_query::TableRef::FunctionCall(_, alias) => alias.to_string(),
     }
     .to_upper_camel_case();
 
@@ -625,7 +718,7 @@ where
     let field = match relation_definition.is_owner {
         false => {
             Field::new(name, TypeRef::named(type_name.to_string()), move |ctx| {
-                // TODO dataloader applied here!
+                // FIXME: optimize with dataloader
                 FieldFuture::new(async move {
                     let parent: &T::Model = ctx
                         .parent_value
@@ -655,8 +748,8 @@ where
             TypeRef::named_nn(format!("{}Connection", type_name)),
             move |ctx| {
                 FieldFuture::new(async move {
-                    // TODO
-                    // each has unique query in order to apply pagination...
+                    // FIXME: optimize union queries
+                    // NOTE: each has unique query in order to apply pagination...
                     let parent: &T::Model = ctx
                         .parent_value
                         .try_downcast_ref::<T::Model>()
@@ -734,9 +827,10 @@ where
             table,
             _alias,
         ) => table.to_string(),
-        // TODO what if empty ?
+        // FIXME: what if empty ?
         sea_orm::sea_query::TableRef::SubQuery(_stmt, alias) => alias.to_string(),
         sea_orm::sea_query::TableRef::ValuesList(_values, alias) => alias.to_string(),
+        sea_orm::sea_query::TableRef::FunctionCall(_, alias) => alias.to_string(),
     }
     .to_upper_camel_case();
 
@@ -761,7 +855,7 @@ where
     let field = match via_relation_definition.is_owner {
         false => {
             Field::new(name, TypeRef::named(type_name.to_string()), move |ctx| {
-                // TODO dataloader applied here!
+                // FIXME: optimize by adding dataloader
                 FieldFuture::new(async move {
                     let parent: &T::Model = ctx
                         .parent_value
@@ -795,8 +889,8 @@ where
             TypeRef::named_nn(format!("{}Connection", type_name)),
             move |ctx| {
                 FieldFuture::new(async move {
-                    // TODO
-                    // each has unique query in order to apply pagination...
+                    // FIXME: optimize union queries
+                    // NOTE: each has unique query in order to apply pagination...
                     let parent: &T::Model = ctx
                         .parent_value
                         .try_downcast_ref::<T::Model>()

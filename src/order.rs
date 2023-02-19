@@ -1,5 +1,6 @@
 use async_graphql::dynamic::*;
 use sea_orm::{prelude::*, Iterable};
+use heck::ToLowerCamelCase;
 
 /// used to create order input for SeaORM entity
 pub fn entity_to_order<T>(entity_object: &Object) -> InputObject
@@ -11,7 +12,7 @@ where
 
     T::Column::iter().fold(InputObject::new(name), |object, column| {
         object.field(InputValue::new(
-            column.as_str(),
+            column.as_str().to_lower_camel_case(),
             TypeRef::named("OrderByEnum"),
         ))
     })

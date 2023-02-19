@@ -360,8 +360,8 @@ where
                         })
                     }
 
-                    #[cfg(feature = "with-rust_decimal")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-rust_decimal")))]
+                    #[cfg(feature = "with-decimal")]
+                    #[cfg_attr(docsrs, doc(cfg(feature = "with-decimal")))]
                     sea_orm::sea_query::Value::Decimal(value) => {
                         FieldFuture::new(async move {
                             // FIXME
@@ -418,7 +418,9 @@ where
                                 None => Ok(None),
                             }
                         })
-                    }
+                    },
+                    #[allow(unreachable_patterns)]
+                    _ => todo!(),
                 }
             });
 
