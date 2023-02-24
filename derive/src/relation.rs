@@ -333,13 +333,10 @@ pub fn relation_fn(
 
                                 seaography::data_to_connection::<#path::Entity>(
                                     nodes,
-                                    has_previous_page,
-                                    has_next_page,
-                                    Some(pages),
-                                    Some(current),
-                                    Some(skip_size as u64),
-                                    Some(take_size as u64),
-                                    Some(nodes_size as u64),
+                                    seaography::ConnectionMeta::default()
+                                        .connection_info(has_previous_page, has_next_page)
+                                        .page_info(pages, current)
+                                        .offset_info(skip_size as u64, take_size as u64, nodes_size as u64)
                                 )
                             },
                             seaography::Pagination::Offset(offset) => {
@@ -359,26 +356,19 @@ pub fn relation_fn(
 
                                 seaography::data_to_connection::<#path::Entity>(
                                     nodes,
-                                    has_previous_page,
-                                    has_next_page,
-                                    Some(pages as u64),
-                                    Some(current as u64),
-                                    Some(skip_size as u64),
-                                    Some(take_size as u64),
-                                    Some(nodes_size as u64),
+                                    seaography::ConnectionMeta::default()
+                                        .connection_info(has_previous_page, has_next_page)
+                                        .page_info(pages, current)
+                                        .offset_info(skip_size as u64, take_size as u64, nodes_size as u64)
                                 )
                             },
                             seaography::Pagination::Cursor(cursor) => {
                                 // TODO fix cursor related query pagination
                                 seaography::data_to_connection::<#path::Entity>(
                                     nodes,
-                                    false,
-                                    false,
-                                    Some(1),
-                                    Some(1),
-                                    None,
-                                    None,
-                                    None
+                                    seaography::ConnectionMeta::default()
+                                        .connection_info(false, false)
+                                        .page_info(1, 1)
                                 )
                             }
                         }
@@ -386,13 +376,10 @@ pub fn relation_fn(
 
                     seaography::data_to_connection::<#path::Entity>(
                         nodes,
-                        false,
-                        false,
-                        Some(1),
-                        Some(1),
-                        Some(0),
-                        Some(nodes_size as u64),
-                        Some(nodes_size as u64),
+                        seaography::ConnectionMeta::default()
+                            .connection_info(false, false)
+                            .page_info(1, 1)
+                            .offset_info(0, nodes_size as u64, nodes_size as u64)
                     )
                 }
             },

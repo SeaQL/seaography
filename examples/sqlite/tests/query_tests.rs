@@ -158,6 +158,52 @@ async fn test_filter_with_pagination() {
 }
 
 #[tokio::test]
+async fn test_filter_with_offset() {
+    let schema = get_schema().await;
+    assert_eq(
+        schema
+            .execute(
+                r#"
+          {
+            customer(
+              filters: { active: { eq: 0 } }
+              pagination: { offset: { skip: 6, take: 3 } }
+            ) {
+              nodes {
+                customerId
+              }
+              totalCount
+              skip
+              take
+            }
+          }
+        "#,
+            )
+            .await,
+        r#"
+          {
+            "customer": {
+              "nodes": [
+                {
+                  "customerId": 315
+                },
+                {
+                  "customerId": 368
+                },
+                {
+                  "customerId": 406
+                }
+              ],
+              "skip": 6,
+              "take": 3,
+              "totalCount": 15
+            }
+          }
+          "#,
+    )
+}
+
+#[tokio::test]
 async fn test_complex_filter_with_pagination() {
     let schema = get_schema().await;
 

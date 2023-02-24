@@ -125,7 +125,13 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
                             .await
                             .unwrap();
 
-                        seaography::data_to_connection::<#path::Entity>(data, pagination.page != 1, pagination.page < pages, Some(pages), Some(pagination.page), Some(pagination.limit * pagination.page), Some(pagination.limit), Some(total_count))
+                        seaography::data_to_connection::<#path::Entity>(
+                            data,
+                            seaography::ConnectionMeta::default()
+                                .connection_info(pagination.page != 1, pagination.page < pages)
+                                .page_info(pages, pagination.page)
+                                .offset_info(pagination.limit * pagination.page, pagination.limit, total_count)
+                        )
                     },
                     seaography::Pagination::Offset(offset) => {
                         let paginator = stmt.paginate(db, offset.take);
@@ -143,7 +149,13 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
 
                         let pages = (total_count as f32 / offset.take as f32).ceil() as u64;
 
-                        seaography::data_to_connection::<#path::Entity>(data, offset.skip > 0, offset.take < total_count, Some(pages), Some(page), Some(offset.skip), Some(offset.take), Some(total_count as u64))
+                        seaography::data_to_connection::<#path::Entity>(
+                            data,
+                            seaography::ConnectionMeta::default()
+                                .connection_info(offset.skip > 0, offset.take < total_count)
+                                .page_info(pages, page)
+                                .offset_info(offset.skip, offset.take, total_count as u64)
+                        )
                     },
                     seaography::Pagination::Cursor(cursor) => {
                         let next_stmt = stmt.clone();
@@ -234,14 +246,24 @@ pub fn basic_query(name: &Ident, path: &TokenStream) -> TokenStream {
                             }
                         };
 
-                        seaography::data_to_connection::<#path::Entity>(data, has_previous_page, has_next_page, None, None, None, None, None)
+                        seaography::data_to_connection::<#path::Entity>(
+                            data,
+                            seaography::ConnectionMeta::default()
+                                .connection_info(has_previous_page, has_next_page)
+                        )
                     }
                 }
             } else {
                 let data: Vec<#path::Model> = stmt.all(db).await.unwrap();
                 let total_count = (&data).len() as u64;
 
-                seaography::data_to_connection::<#path::Entity>(data, false, false, Some(1), Some(1), Some(0), Some(total_count), Some(total_count))
+                seaography::data_to_connection::<#path::Entity>(
+                    data,
+                    seaography::ConnectionMeta::default()
+                        .connection_info(false, false)
+                        .page_info(1, 1)
+                        .offset_info(0, total_count, total_count)
+                )
             }
         }
     }

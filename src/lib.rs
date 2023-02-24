@@ -717,15 +717,46 @@ pub trait EnhancedEntity {
     type OrderBy: EntityOrderBy<Self::Entity> + Clone;
 }
 
+#[derive(Clone, Default, Debug)]
+pub struct ConnectionMeta {
+    pub has_previous_page: bool,
+    pub has_next_page: bool,
+    pub pages: Option<u64>,
+    pub current: Option<u64>,
+    pub skip: Option<u64>,
+    pub take: Option<u64>,
+    pub total_count: Option<u64>,
+}
+
+impl ConnectionMeta {
+    pub fn connection_info(self, has_previous_page: bool, has_next_page: bool) -> Self {
+        Self {
+            has_previous_page,
+            has_next_page,
+            ..self
+        }
+    }
+    pub fn page_info(self, pages: u64, current: u64) -> Self {
+        Self {
+            pages: Some(pages),
+            current: Some(current),
+            ..self
+        }
+    }
+
+    pub fn offset_info(self, skip: u64, take: u64, total_count: u64) -> Self {
+        Self {
+            skip: Some(skip),
+            take: Some(take),
+            total_count: Some(total_count),
+            ..self
+        }
+    }
+}
+
 pub fn data_to_connection<T>(
     data: Vec<T::Model>,
-    has_previous_page: bool,
-    has_next_page: bool,
-    pages: Option<u64>,
-    current: Option<u64>,
-    skip: Option<u64>,
-    take: Option<u64>,
-    total_count: Option<u64>,
+    meta: ConnectionMeta,
 ) -> async_graphql::types::connection::Connection<
     String,
     T::Model,
@@ -738,6 +769,16 @@ where
 {
     use async_graphql::connection::CursorType;
     use sea_orm::{Iterable, ModelTrait, PrimaryKeyToColumn};
+
+    let ConnectionMeta {
+        has_previous_page,
+        has_next_page,
+        pages,
+        current,
+        skip,
+        take,
+        total_count,
+    } = meta;
 
     let edges: Vec<
         async_graphql::types::connection::Edge<
