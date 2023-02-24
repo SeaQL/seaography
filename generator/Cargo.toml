@@ -18,5 +18,5 @@ proc-macro2 = "1.0.43"
 syn = { version = "1.0.99", features = ["full"] }
 heck = "0.4.0"
 itertools = "0.10.3"
-sea-orm-codegen = { version = "0.9.2"}
-sea-query = { version = "0.26.3", default-features = false }
+sea-orm-codegen = { version = "0.11.0" }
+sea-query = { version = "0.28.3", default-features = false }
