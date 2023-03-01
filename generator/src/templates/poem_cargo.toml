@@ -9,7 +9,7 @@ async-graphql-poem = { version = "5.0.6" }
 async-graphql = { version = "5.0.6", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 async-trait = { version = "0.1.61" }
 dotenv = "0.15.0"
-sea-orm = { version = "0.10.6", features = ["<seaography-sql-library>", "runtime-async-std-native-tls"] }
+sea-orm = { version = "0.11.0", features = ["<seaography-sql-library>", "runtime-async-std-native-tls"] }
 tokio = { version = "1.24.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.16" }
@@ -17,6 +17,7 @@ lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
 # version = "<seaography-version>" # seaography version
+
 path = "../../" # remove this line in your own project
 version = "1.0.0"
 features = ["with-decimal", "with-chrono"]

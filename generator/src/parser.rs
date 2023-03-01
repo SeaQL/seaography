@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap};
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -7,27 +7,21 @@ use sea_orm_codegen::OutputFile;
 use crate::writer::EntityDefinition;
 
 pub struct RelationDef {
-    pub path: TokenStream,
+    pub target: TokenStream,
     pub variant: TokenStream,
     pub related: bool,
     pub reverse: bool,
+    pub self_rel: bool,
 }
 
 impl RelationDef {
-    fn related(path: TokenStream) -> Self {
+    fn related(target: TokenStream) -> Self {
         Self {
-            path,
+            target,
             variant: quote!{},
             related: true,
-            reverse: false
-        }
-    }
-    fn relation(path: TokenStream, variant: TokenStream, reverse: bool) -> Self {
-        Self {
-            path,
-            variant,
-            related: false,
-            reverse
+            reverse: false,
+            self_rel: false
         }
     }
 }
@@ -101,12 +95,75 @@ pub fn parse_entity(file: &OutputFile) -> EntityDefinition {
                             });
                             if let Some(attr) = attr {
                                 let ident = quote::format_ident!("{}", name);
-                                attr.tokens.clone().into_iter().for_each(|tok| println!("{:?}", tok));
-                                if attr.tokens.to_string().contains("belongs_to = \"Entity\"") {
-                                    acc.insert(name.clone(), RelationDef { path: quote!{ #ident }, related: false, reverse: false, variant: quote!{ ident } });
-                                    acc.insert(format!("{}Reverse", name), RelationDef { path: quote!{ #ident }, related: false, reverse: false, variant: quote!{ ident } });
+
+                                let attributes_string = attr.tokens.to_string();
+                                let attributes_string = &attributes_string[1..attributes_string.len() - 1];
+
+                                let attributes = attributes_string
+                                    .split(",")
+                                    .fold(
+                                        std::collections::BTreeMap::<&str, &str>::new(),
+                                        |mut acc, cur| {
+                                            let mut parts = cur.split("=");
+                                            if parts.clone().count() == 2 {
+                                                let key = parts.next().expect("We expect to have first part").trim();
+                                                let value = parts.next().expect("We expect to have second part").trim();
+                                                acc.insert(key, value);
+                                            }
+
+                                            acc
+                                        }
+                                    );
+
+                                let belongs_to = attributes.get("belongs_to");
+                                let has_one = attributes.get("has_one");
+                                let has_many = attributes.get("has_many");
+
+                                let target = if let Some(v) = belongs_to {
+                                    v
+                                } else if let Some(v) = has_one {
+                                    v
+                                } else if let Some(v) = has_many {
+                                    v
                                 } else {
-                                    acc.insert(name, RelationDef { path: quote!{ #ident }, related: false, reverse: false, variant: quote!{ ident } });
+                                    panic!("Invalid relation definition")
+                                };
+
+                                let target = target.replace("super", "crate::entities");
+
+                                let target:TokenStream = target[1..target.len() - 1].parse().unwrap();
+
+                                let self_belongs_to = belongs_to.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
+                                let self_has_one = has_one.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
+                                let self_has_many = has_many.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
+
+                                if self_belongs_to || self_has_one || self_has_many{
+                                    let normal = RelationDef {
+                                        target: target.clone(),
+                                        variant: quote!{ #ident },
+                                        related: false,
+                                        reverse: false,
+                                        self_rel: true
+                                    };
+                                    acc.insert(name.clone(), normal);
+
+                                    let reverse = RelationDef {
+                                        target,
+                                        variant: quote!{ #ident },
+                                        related: false,
+                                        reverse: true,
+                                        self_rel: true
+                                    };
+                                    acc.insert(format!("{}Reverse", name), reverse);
+                                } else {
+                                    let normal = RelationDef {
+                                        target,
+                                        variant: quote!{ #ident },
+                                        related: false,
+                                        reverse: false,
+                                        self_rel: false
+                                    };
+                                    acc.insert(name, normal);
                                 }
                             }
                         });

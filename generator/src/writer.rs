@@ -15,19 +15,28 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
         let entity_path = &entity.name;
 
         let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, rel_def)| {
-            let related_path = &rel_def.path;
+            let variant = &rel_def.variant;
+            let target = &rel_def.target;
 
             if rel_def.related {
                 quote!{
-                    entity_object_via_relation::<#entity_path::Entity, #related_path>(#relationship_name)
+                    entity_object_via_relation::<#entity_path::Entity, #target>(#relationship_name)
+                }
+            } else if rel_def.self_rel {
+                quote!{
+                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def())
+                }
+            } else if rel_def.self_rel && rel_def.reverse {
+                quote!{
+                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
                 }
             } else if rel_def.reverse {
                 quote!{
-                    entity_object_relation<#entity_path::Entity, >(#relationship_name, #entity_path::Relation::#related_path.def().rev())
+                    entity_object_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def().rev())
                 }
             } else {
                 quote!{
-                    entity_object_relation<#entity_path::Entity, >(#relationship_name, #entity_path::Relation::#related_path.def())
+                    entity_object_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def())
                 }
             }
         }).collect();
@@ -41,7 +50,8 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
 
     quote! {
         use async_graphql::{dataloader::DataLoader, dynamic::*};
-        use sea_orm::DatabaseConnection;
+
+        use sea_orm::{DatabaseConnection, RelationTrait};
         use seaography::{DynamicGraphqlEntity, entity_object_relation, entity_object_via_relation};
 
         use crate::OrmDataloader;
