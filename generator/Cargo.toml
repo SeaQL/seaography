@@ -1,6 +1,6 @@
 [package]
 name = "seaography-generator"
-version = "0.3.0"
+version = "1.0.0"
 edition = "2021"
 rust-version = "1.60"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
@@ -14,10 +14,9 @@ categories = ["database"]
 
 [dependencies]
 quote = "1.0.23"
-proc-macro2 = "1.0.49"
-syn = { version = "1.0.107", features = ["full"] }
+proc-macro2 = "1.0.51"
+syn = { version = "1.0.109", features = ["full"] }
 heck = "0.4.1"
 itertools = "0.10.5"
-sea-orm-codegen = { version = "0.10.6"}
-sea-query = { version = "0.27.2", default-features = false }
-thiserror = "1.0"
+sea-query = { version = "0.28.3", default-features = false }
+thiserror = "1.0.38"

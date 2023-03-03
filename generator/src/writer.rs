@@ -1,16 +1,43 @@
 use std::collections::BTreeMap;
+use std::path::Path;
+
 
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::{util::add_line_break, WebFrameworkEnum, parser::RelationDef};
+use crate::{util::add_line_break, WebFrameworkEnum, parser::{RelationDef, parse_entity}};
 
 pub struct EntityDefinition {
     pub name: TokenStream,
     pub relations: BTreeMap<String, RelationDef>,
 }
 
-pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
+pub fn generate_query_root<P: AsRef<Path>>(
+    entities_path: &P
+) -> TokenStream {
+    let entities_paths = std::fs::read_dir(entities_path)
+        .unwrap()
+        .into_iter()
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap().path())
+        .filter(|r| r.is_file())
+        .filter(|r| {
+            let name = r.file_stem();
+
+            if let Some(v) = name {
+                !v.eq(std::ffi::OsStr::new("prelude")) && !v.eq(std::ffi::OsStr::new("sea_orm_active_enums")) && !v.eq(std::ffi::OsStr::new("mod"))
+            } else {
+                false
+            }
+        });
+
+
+    let entities: Vec<EntityDefinition> = entities_paths.map(|path| {
+        let file_name = path.file_name().unwrap().to_str().unwrap();
+        let file_content = std::fs::read_to_string(entities_path.as_ref().join(file_name)).unwrap();
+        parse_entity(file_name.into(), file_content)
+    }).collect();
+
     let entities: Vec<TokenStream> = entities.iter().map(|entity| {
         let entity_path = &entity.name;
 
@@ -18,17 +45,17 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
             let variant = &rel_def.variant;
             let target = &rel_def.target;
 
-            if rel_def.related {
+            if rel_def.self_rel && rel_def.reverse {
+                quote!{
+                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
+                }
+            } else if rel_def.related {
                 quote!{
                     entity_object_via_relation::<#entity_path::Entity, #target>(#relationship_name)
                 }
             } else if rel_def.self_rel {
                 quote!{
                     entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def())
-                }
-            } else if rel_def.self_rel && rel_def.reverse {
-                quote!{
-                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
                 }
             } else if rel_def.reverse {
                 quote!{
@@ -122,13 +149,13 @@ pub fn generate_query_root(entities: &Vec<EntityDefinition>) -> TokenStream {
     }
 }
 
-pub fn write_query_root<P: AsRef<std::path::Path>>(
-    path: &P,
-    entities: &Vec<EntityDefinition>,
+pub fn write_query_root<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
+    src_path: &P,
+    entities_path: &T,
 ) -> Result<(), crate::error::Error> {
-    let tokens = generate_query_root(entities);
+    let tokens = generate_query_root(entities_path);
 
-    let file_name = path.as_ref().join("query_root.rs");
+    let file_name = src_path.as_ref().join("query_root.rs");
 
     std::fs::write(file_name, add_line_break(tokens))?;
 

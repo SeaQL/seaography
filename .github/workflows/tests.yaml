@@ -95,12 +95,14 @@ jobs:
               run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
               run: cp ./examples/sqlite/sakila.db .
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db
             - uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
                     --package seaography-cli --
-                    -f poem sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
+                    ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f poem
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Integration tests

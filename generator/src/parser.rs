@@ -2,7 +2,6 @@ use std::{collections::BTreeMap};
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use sea_orm_codegen::OutputFile;
 
 use crate::writer::EntityDefinition;
 
@@ -26,11 +25,11 @@ impl RelationDef {
     }
 }
 
-pub fn parse_entity(file: &OutputFile) -> EntityDefinition {
-    let name = &file.name.as_str()[..file.name.len() - 3];
+pub fn parse_entity(file_name: String, file_content: String) -> EntityDefinition {
+    let name = &file_name[..file_name.len() - 3];
     let name: TokenStream = format!("crate::entities::{}", name).parse().unwrap();
 
-    let tree = syn::parse2::<syn::File>(file.content.parse().unwrap()).unwrap();
+    let tree = syn::parse2::<syn::File>(file_content.parse().unwrap()).unwrap();
 
     let relations: BTreeMap<String, RelationDef> =
         tree.items

@@ -4,29 +4,22 @@ use seaography_generator::write_project;
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
+    pub destination: String,
+
+    pub entities: String,
+
     pub database_url: String,
 
     pub crate_name: String,
 
-    pub destination: String,
-
-    #[clap(long)]
-    pub expanded_format: Option<bool>,
+    #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
+    pub framework: WebFrameworkEnum,
 
     #[clap(long)]
     pub depth_limit: Option<usize>,
 
     #[clap(long)]
     pub complexity_limit: Option<usize>,
-
-    #[clap(long)]
-    pub ignore_tables: Option<String>,
-
-    #[clap(long)]
-    pub hidden_tables: Option<bool>,
-
-    #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
-    pub framework: WebFrameworkEnum,
 }
 
 /**
@@ -87,11 +80,12 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
 async fn main() {
     let args = Args::parse();
 
-    let path = std::path::Path::new(&args.destination);
+    let root_path = std::path::Path::new(&args.destination);
+    let entities_path = std::path::Path::new(&args.entities);
 
     let database_url = parse_database_url(&args.database_url).unwrap();
 
-    let (tables, sql_version) = seaography_discoverer::extract_database_metadata(&database_url)
+    let (_, sql_version) = seaography_discoverer::extract_database_metadata(&database_url)
         .await
         .unwrap();
 
@@ -101,44 +95,13 @@ async fn main() {
         seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
     };
 
-    let expanded_format = args.expanded_format.unwrap_or(false);
-
-    let ignore_tables = args
-        .ignore_tables
-        .unwrap_or_else(|| "seaql_migrations".into());
-    let ignore_tables: Vec<&str> = ignore_tables.split(",").collect();
-
-    let hidden_tables = args.hidden_tables.unwrap_or(true);
-
-    let tables: std::collections::BTreeMap<
-        String,
-        seaography_discoverer::sea_schema::sea_query::TableCreateStatement,
-    > = tables
-        .into_iter()
-        .filter(|(key, _)| {
-            if hidden_tables {
-                !key.starts_with("_")
-            } else {
-                true
-            }
-        })
-        .filter(|(key, _)| {
-            if !ignore_tables.is_empty() {
-                !ignore_tables.contains(&key.as_str())
-            } else {
-                true
-            }
-        })
-        .collect();
-
     let db_url = database_url.as_str();
 
     write_project(
-        &path,
+        &root_path,
+        &entities_path,
         db_url,
         &args.crate_name,
-        expanded_format,
-        tables,
         sql_library,
         args.framework.into(),
         args.depth_limit,
