@@ -1,7 +1,7 @@
 use crate::OrmDataloader;
 use async_graphql::{dataloader::DataLoader, dynamic::*};
-use sea_orm::DatabaseConnection;
-use seaography::{entity_object_relation, DynamicGraphqlEntity};
+use sea_orm::{DatabaseConnection, RelationTrait};
+use seaography::{entity_object_relation, entity_object_via_relation, DynamicGraphqlEntity};
 
 pub fn schema(
     database: DatabaseConnection,
@@ -12,78 +12,23 @@ pub fn schema(
     let order_by_enum = seaography::get_order_by_enum();
     let cursor_input = seaography::get_cursor_input();
     let page_input = seaography::get_page_input();
-    let pagination_input = seaography::get_pagination_input(&cursor_input, &page_input);
+    let offset_input = seaography::get_offset_input();
+    let pagination_input =
+        seaography::get_pagination_input(&cursor_input, &page_input, &offset_input);
     let query = Object::new("Query");
     let entities = vec![
-        DynamicGraphqlEntity::from_entity::<crate::entities::address::Entity>(
-            &pagination_input,
-            vec![
-                entity_object_relation::<
-                    crate::entities::address::Entity,
-                    crate::entities::city::Entity,
-                >("City", false),
-                entity_object_relation::<
-                    crate::entities::address::Entity,
-                    crate::entities::customer::Entity,
-                >("Customer", false),
-                entity_object_relation::<
-                    crate::entities::address::Entity,
-                    crate::entities::staff::Entity,
-                >("Staff", false),
-                entity_object_relation::<
-                    crate::entities::address::Entity,
-                    crate::entities::store::Entity,
-                >("Store", false),
-            ],
-        ),
         DynamicGraphqlEntity::from_entity::<crate::entities::film_actor::Entity>(
             &pagination_input,
             vec![
                 entity_object_relation::<
                     crate::entities::film_actor::Entity,
                     crate::entities::actor::Entity,
-                >("Actor", false),
+                >("Actor", crate::entities::film_actor::Relation::Actor.def()),
                 entity_object_relation::<
                     crate::entities::film_actor::Entity,
                     crate::entities::film::Entity,
-                >("Film", false),
+                >("Film", crate::entities::film_actor::Relation::Film.def()),
             ],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::customer::Entity>(
-            &pagination_input,
-            vec![
-                entity_object_relation::<
-                    crate::entities::customer::Entity,
-                    crate::entities::address::Entity,
-                >("Address", false),
-                entity_object_relation::<
-                    crate::entities::customer::Entity,
-                    crate::entities::payment::Entity,
-                >("Payment", false),
-                entity_object_relation::<
-                    crate::entities::customer::Entity,
-                    crate::entities::rental::Entity,
-                >("Rental", false),
-                entity_object_relation::<
-                    crate::entities::customer::Entity,
-                    crate::entities::store::Entity,
-                >("Store", false),
-            ],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::language::Entity>(
-            &pagination_input,
-            vec![],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::country::Entity>(
-            &pagination_input,
-            vec![entity_object_relation::<
-                crate::entities::country::Entity,
-                crate::entities::city::Entity,
-            >("City", false)],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film_text::Entity>(
-            &pagination_input,
-            vec![],
         ),
         DynamicGraphqlEntity::from_entity::<crate::entities::rental::Entity>(
             &pagination_input,
@@ -91,27 +36,33 @@ pub fn schema(
                 entity_object_relation::<
                     crate::entities::rental::Entity,
                     crate::entities::customer::Entity,
-                >("Customer", false),
+                >(
+                    "Customer",
+                    crate::entities::rental::Relation::Customer.def(),
+                ),
                 entity_object_relation::<
                     crate::entities::rental::Entity,
                     crate::entities::inventory::Entity,
-                >("Inventory", false),
+                >(
+                    "Inventory",
+                    crate::entities::rental::Relation::Inventory.def(),
+                ),
                 entity_object_relation::<
                     crate::entities::rental::Entity,
                     crate::entities::payment::Entity,
-                >("Payment", false),
+                >("Payment", crate::entities::rental::Relation::Payment.def()),
                 entity_object_relation::<
                     crate::entities::rental::Entity,
                     crate::entities::staff::Entity,
-                >("Staff", false),
+                >("Staff", crate::entities::rental::Relation::Staff.def()),
             ],
         ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::actor::Entity>(
+        DynamicGraphqlEntity::from_entity::<crate::entities::category::Entity>(
             &pagination_input,
-            vec![entity_object_relation::<
-                crate::entities::actor::Entity,
-                crate::entities::film_actor::Entity,
-            >("FilmActor", false)],
+            vec![entity_object_via_relation::<
+                crate::entities::category::Entity,
+                crate::entities::film::Entity,
+            >("Film")],
         ),
         DynamicGraphqlEntity::from_entity::<crate::entities::staff::Entity>(
             &pagination_input,
@@ -119,28 +70,85 @@ pub fn schema(
                 entity_object_relation::<
                     crate::entities::staff::Entity,
                     crate::entities::address::Entity,
-                >("Address", false),
+                >("Address", crate::entities::staff::Relation::Address.def()),
                 entity_object_relation::<
                     crate::entities::staff::Entity,
                     crate::entities::payment::Entity,
-                >("Payment", false),
+                >("Payment", crate::entities::staff::Relation::Payment.def()),
                 entity_object_relation::<
                     crate::entities::staff::Entity,
                     crate::entities::rental::Entity,
-                >("Rental", false),
+                >("Rental", crate::entities::staff::Relation::Rental.def()),
+                entity_object_relation::<
+                    crate::entities::staff::Entity,
+                    crate::entities::staff::Entity,
+                >("SelfRef", crate::entities::staff::Relation::SelfRef.def()),
+                entity_object_relation::<
+                    crate::entities::staff::Entity,
+                    crate::entities::staff::Entity,
+                >(
+                    "SelfRefReverse",
+                    crate::entities::staff::Relation::SelfRef.def().rev(),
+                ),
                 entity_object_relation::<
                     crate::entities::staff::Entity,
                     crate::entities::store::Entity,
-                >("Store", false),
-                entity_object_relation::<
-                    crate::entities::staff::Entity,
-                    crate::entities::staff::Entity,
-                >("selfRefReverse", true),
-                entity_object_relation::<
-                    crate::entities::staff::Entity,
-                    crate::entities::staff::Entity,
-                >("selfRef", false),
+                >("Store", crate::entities::staff::Relation::Store.def()),
             ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::country::Entity>(
+            &pagination_input,
+            vec![entity_object_relation::<
+                crate::entities::country::Entity,
+                crate::entities::city::Entity,
+            >(
+                "City", crate::entities::country::Relation::City.def()
+            )],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film::Entity>(
+            &pagination_input,
+            vec![
+                entity_object_via_relation::<
+                    crate::entities::film::Entity,
+                    crate::entities::actor::Entity,
+                >("Actor"),
+                entity_object_via_relation::<
+                    crate::entities::film::Entity,
+                    crate::entities::category::Entity,
+                >("Category"),
+                entity_object_relation::<
+                    crate::entities::film::Entity,
+                    crate::entities::inventory::Entity,
+                >(
+                    "Inventory",
+                    crate::entities::film::Relation::Inventory.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::film::Entity,
+                    crate::entities::language::Entity,
+                >(
+                    "Language1",
+                    crate::entities::film::Relation::Language1.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::film::Entity,
+                    crate::entities::language::Entity,
+                >(
+                    "Language2",
+                    crate::entities::film::Relation::Language2.def(),
+                ),
+            ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::actor::Entity>(
+            &pagination_input,
+            vec![entity_object_via_relation::<
+                crate::entities::actor::Entity,
+                crate::entities::film::Entity,
+            >("Film")],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::language::Entity>(
+            &pagination_input,
+            vec![],
         ),
         DynamicGraphqlEntity::from_entity::<crate::entities::city::Entity>(
             &pagination_input,
@@ -148,86 +156,11 @@ pub fn schema(
                 entity_object_relation::<
                     crate::entities::city::Entity,
                     crate::entities::address::Entity,
-                >("Address", false),
+                >("Address", crate::entities::city::Relation::Address.def()),
                 entity_object_relation::<
                     crate::entities::city::Entity,
                     crate::entities::country::Entity,
-                >("Country", false),
-            ],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::category::Entity>(
-            &pagination_input,
-            vec![entity_object_relation::<
-                crate::entities::category::Entity,
-                crate::entities::film_category::Entity,
-            >("FilmCategory", false)],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film::Entity>(
-            &pagination_input,
-            vec![
-                entity_object_relation::<
-                    crate::entities::film::Entity,
-                    crate::entities::film_actor::Entity,
-                >("FilmActor", false),
-                entity_object_relation::<
-                    crate::entities::film::Entity,
-                    crate::entities::film_category::Entity,
-                >("FilmCategory", false),
-                entity_object_relation::<
-                    crate::entities::film::Entity,
-                    crate::entities::inventory::Entity,
-                >("Inventory", false),
-            ],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::film_category::Entity>(
-            &pagination_input,
-            vec![
-                entity_object_relation::<
-                    crate::entities::film_category::Entity,
-                    crate::entities::category::Entity,
-                >("Category", false),
-                entity_object_relation::<
-                    crate::entities::film_category::Entity,
-                    crate::entities::film::Entity,
-                >("Film", false),
-            ],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::store::Entity>(
-            &pagination_input,
-            vec![
-                entity_object_relation::<
-                    crate::entities::store::Entity,
-                    crate::entities::address::Entity,
-                >("Address", false),
-                entity_object_relation::<
-                    crate::entities::store::Entity,
-                    crate::entities::customer::Entity,
-                >("Customer", false),
-                entity_object_relation::<
-                    crate::entities::store::Entity,
-                    crate::entities::inventory::Entity,
-                >("Inventory", false),
-                entity_object_relation::<
-                    crate::entities::store::Entity,
-                    crate::entities::staff::Entity,
-                >("Staff", false),
-            ],
-        ),
-        DynamicGraphqlEntity::from_entity::<crate::entities::payment::Entity>(
-            &pagination_input,
-            vec![
-                entity_object_relation::<
-                    crate::entities::payment::Entity,
-                    crate::entities::customer::Entity,
-                >("Customer", false),
-                entity_object_relation::<
-                    crate::entities::payment::Entity,
-                    crate::entities::rental::Entity,
-                >("Rental", false),
-                entity_object_relation::<
-                    crate::entities::payment::Entity,
-                    crate::entities::staff::Entity,
-                >("Staff", false),
+                >("Country", crate::entities::city::Relation::Country.def()),
             ],
         ),
         DynamicGraphqlEntity::from_entity::<crate::entities::inventory::Entity>(
@@ -236,15 +169,130 @@ pub fn schema(
                 entity_object_relation::<
                     crate::entities::inventory::Entity,
                     crate::entities::film::Entity,
-                >("Film", false),
+                >("Film", crate::entities::inventory::Relation::Film.def()),
                 entity_object_relation::<
                     crate::entities::inventory::Entity,
                     crate::entities::rental::Entity,
-                >("Rental", false),
+                >("Rental", crate::entities::inventory::Relation::Rental.def()),
                 entity_object_relation::<
                     crate::entities::inventory::Entity,
                     crate::entities::store::Entity,
-                >("Store", false),
+                >("Store", crate::entities::inventory::Relation::Store.def()),
+            ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film_text::Entity>(
+            &pagination_input,
+            vec![],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::film_category::Entity>(
+            &pagination_input,
+            vec![
+                entity_object_relation::<
+                    crate::entities::film_category::Entity,
+                    crate::entities::category::Entity,
+                >(
+                    "Category",
+                    crate::entities::film_category::Relation::Category.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::film_category::Entity,
+                    crate::entities::film::Entity,
+                >("Film", crate::entities::film_category::Relation::Film.def()),
+            ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::customer::Entity>(
+            &pagination_input,
+            vec![
+                entity_object_relation::<
+                    crate::entities::customer::Entity,
+                    crate::entities::address::Entity,
+                >(
+                    "Address",
+                    crate::entities::customer::Relation::Address.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::customer::Entity,
+                    crate::entities::payment::Entity,
+                >(
+                    "Payment",
+                    crate::entities::customer::Relation::Payment.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::customer::Entity,
+                    crate::entities::rental::Entity,
+                >("Rental", crate::entities::customer::Relation::Rental.def()),
+                entity_object_relation::<
+                    crate::entities::customer::Entity,
+                    crate::entities::store::Entity,
+                >("Store", crate::entities::customer::Relation::Store.def()),
+            ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::store::Entity>(
+            &pagination_input,
+            vec![
+                entity_object_relation::<
+                    crate::entities::store::Entity,
+                    crate::entities::address::Entity,
+                >("Address", crate::entities::store::Relation::Address.def()),
+                entity_object_relation::<
+                    crate::entities::store::Entity,
+                    crate::entities::customer::Entity,
+                >("Customer", crate::entities::store::Relation::Customer.def()),
+                entity_object_relation::<
+                    crate::entities::store::Entity,
+                    crate::entities::inventory::Entity,
+                >(
+                    "Inventory",
+                    crate::entities::store::Relation::Inventory.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::store::Entity,
+                    crate::entities::staff::Entity,
+                >("Staff", crate::entities::store::Relation::Staff.def()),
+            ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::payment::Entity>(
+            &pagination_input,
+            vec![
+                entity_object_relation::<
+                    crate::entities::payment::Entity,
+                    crate::entities::customer::Entity,
+                >(
+                    "Customer",
+                    crate::entities::payment::Relation::Customer.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::payment::Entity,
+                    crate::entities::rental::Entity,
+                >("Rental", crate::entities::payment::Relation::Rental.def()),
+                entity_object_relation::<
+                    crate::entities::payment::Entity,
+                    crate::entities::staff::Entity,
+                >("Staff", crate::entities::payment::Relation::Staff.def()),
+            ],
+        ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::address::Entity>(
+            &pagination_input,
+            vec![
+                entity_object_relation::<
+                    crate::entities::address::Entity,
+                    crate::entities::city::Entity,
+                >("City", crate::entities::address::Relation::City.def()),
+                entity_object_relation::<
+                    crate::entities::address::Entity,
+                    crate::entities::customer::Entity,
+                >(
+                    "Customer",
+                    crate::entities::address::Relation::Customer.def(),
+                ),
+                entity_object_relation::<
+                    crate::entities::address::Entity,
+                    crate::entities::staff::Entity,
+                >("Staff", crate::entities::address::Relation::Staff.def()),
+                entity_object_relation::<
+                    crate::entities::address::Entity,
+                    crate::entities::store::Entity,
+                >("Store", crate::entities::address::Relation::Store.def()),
             ],
         ),
     ];
@@ -280,6 +328,7 @@ pub fn schema(
         .register(seaography::PaginationInfo::to_object())
         .register(cursor_input)
         .register(page_input)
+        .register(offset_input)
         .register(pagination_input)
         .register(order_by_enum)
         .register(query)
