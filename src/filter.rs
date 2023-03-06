@@ -30,23 +30,21 @@ where
             ColumnType::Float | ColumnType::Double => {
                 Some(InputValue::new(name, TypeRef::named("FloatFilterInput")))
             }
-            ColumnType::Decimal(_) | ColumnType::Money(_) => Some(InputValue::new(name, TypeRef::named("TextFilterInput"))),
-            ColumnType::DateTime |
-            ColumnType::Timestamp |
-            ColumnType::TimestampWithTimeZone |
-            ColumnType::Time |
-            ColumnType::Date => {
+            ColumnType::Decimal(_) | ColumnType::Money(_) => {
                 Some(InputValue::new(name, TypeRef::named("TextFilterInput")))
-            },
+            }
+            ColumnType::DateTime
+            | ColumnType::Timestamp
+            | ColumnType::TimestampWithTimeZone
+            | ColumnType::Time
+            | ColumnType::Date => Some(InputValue::new(name, TypeRef::named("TextFilterInput"))),
             ColumnType::Year(_) => {
                 Some(InputValue::new(name, TypeRef::named("IntegerFilterInput")))
             }
             ColumnType::Boolean => {
                 Some(InputValue::new(name, TypeRef::named("BooleanFilterInput")))
-            },
-            ColumnType::Uuid => {
-                Some(InputValue::new(name, TypeRef::named("TextFilterInput")))
-            },
+            }
+            ColumnType::Uuid => Some(InputValue::new(name, TypeRef::named("TextFilterInput"))),
             // FIXME
             // ColumnType::Custom(_) => {
             // },
@@ -58,13 +56,13 @@ where
             // },
             ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
                 Some(InputValue::new(name, TypeRef::named("TextFilterInput")))
-            },
+            }
             _ => None,
         };
 
         match field {
             Some(field) => object.field(field),
-            None => object
+            None => object,
         }
     });
 

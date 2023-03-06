@@ -21,6 +21,20 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+    install-generator:
+      name: Install sea-orm-cli
+      runs-on: ubuntu-latest
+      steps:
+          - uses: actions/checkout@v2
+          - uses: actions-rs/toolchain@v1
+            with:
+                profile: minimal
+                toolchain: stable
+                override: true
+          - uses: actions-rs/cargo@v1
+            with:
+                command: install
+                args: "sea-orm-cli"
     check:
         name: Check
         runs-on: ubuntu-latest

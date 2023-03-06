@@ -51,6 +51,7 @@ where
     ))
 }
 
+/// used to parse order input object and apply it to statement
 pub fn apply_order<T>(stmt: Select<T>, order_by: Option<ValueAccessor>) -> Select<T>
 where
     T: EntityTrait,
@@ -83,6 +84,7 @@ where
     }
 }
 
+/// used to parse pagination input object and apply it to statement
 pub async fn apply_pagination<T>(
     db: &DatabaseConnection,
     stmt: Select<T>,
@@ -280,11 +282,13 @@ where
                     pages,
                     current: page,
                     offset: page * limit,
-                    total: pages * limit
+                    total: pages * limit,
                 }),
             })
         } else if let Some(offset_object) = offset_object {
-            let offset_object = offset_object.object().expect("We expect Offset to be object");
+            let offset_object = offset_object
+                .object()
+                .expect("We expect Offset to be object");
             let offset = offset_object
                 .get("offset")
                 .map_or_else(|| Ok(0), |v| v.u64())
@@ -318,36 +322,31 @@ where
             let count_stmt = db.get_database_backend().build(
                 sea_orm::sea_query::SelectStatement::new()
                     .expr(sea_orm::sea_query::Expr::cust("COUNT(*) AS num_items"))
-                    .from_subquery(
-                        count_stmt,
-                        sea_orm::sea_query::Alias::new("sub_query")
-                    )
+                    .from_subquery(count_stmt, sea_orm::sea_query::Alias::new("sub_query")),
             );
 
             let total = match db.query_one(count_stmt).await? {
-                Some(res) => {
-                    match db.get_database_backend() {
-                        sea_orm::DbBackend::Postgres => res.try_get::<i64>("", "num_items")? as u64,
-                        _ => res.try_get::<i32>("", "num_items")? as u64,
-                    }
+                Some(res) => match db.get_database_backend() {
+                    sea_orm::DbBackend::Postgres => res.try_get::<i64>("", "num_items")? as u64,
+                    _ => res.try_get::<i32>("", "num_items")? as u64,
                 },
                 None => 0,
             };
 
-            Ok(Connection{
+            Ok(Connection {
                 edges,
                 page_info: PageInfo {
                     has_previous_page: offset != 0,
                     has_next_page: offset * limit < total,
                     start_cursor,
-                    end_cursor
+                    end_cursor,
                 },
                 pagination_info: Some(PaginationInfo {
                     current: f64::ceil(offset as f64 / limit as f64) as u64,
                     pages: f64::ceil(total as f64 / limit as f64) as u64,
                     total,
-                    offset
-                })
+                    offset,
+                }),
             })
         } else {
             Err(DbErr::Type(
@@ -387,7 +386,7 @@ where
                 pages: 1,
                 current: 1,
                 offset: 0,
-                total
+                total,
             }),
         })
     }
@@ -809,7 +808,9 @@ where
     <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
 {
     let to_relation_definition = <T as Related<R>>::to();
-    let via_relation_definition = <T as Related<R>>::via().expect("We expect this function to be used with Related that has `via` method implemented!");
+    let via_relation_definition = <T as Related<R>>::via().expect(
+        "We expect this function to be used with Related that has `via` method implemented!",
+    );
 
     let name = name.to_lower_camel_case();
 

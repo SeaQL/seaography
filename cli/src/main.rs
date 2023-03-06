@@ -4,20 +4,27 @@ use seaography_generator::write_project;
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
+    /// project destination folder
     pub destination: String,
 
+    /// entities folder to depend on
     pub entities: String,
 
+    /// database URL to write it in .env
     pub database_url: String,
 
+    /// crate name for generated project
     pub crate_name: String,
 
+    /// web framework
     #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
     pub framework: WebFrameworkEnum,
 
+    /// GraphQL depth limit
     #[clap(long)]
     pub depth_limit: Option<usize>,
 
+    /// GraphQL complexity limit
     #[clap(long)]
     pub complexity_limit: Option<usize>,
 }
@@ -81,6 +88,7 @@ async fn main() {
     let args = Args::parse();
 
     let root_path = std::path::Path::new(&args.destination);
+
     let entities_path = std::path::Path::new(&args.entities);
 
     let database_url = parse_database_url(&args.database_url).unwrap();

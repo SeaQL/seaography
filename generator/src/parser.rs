@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap};
+use std::collections::BTreeMap;
 
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
@@ -17,10 +17,10 @@ impl RelationDef {
     fn related(target: TokenStream) -> Self {
         Self {
             target,
-            variant: quote!{},
+            variant: quote! {},
             related: true,
             reverse: false,
-            self_rel: false
+            self_rel: false,
         }
     }
 }
@@ -87,32 +87,37 @@ pub fn parse_entity(file_name: String, file_content: String) -> EntityDefinition
                         enumeration.variants.iter().for_each(|variant| {
                             let name = variant.ident.to_string();
                             let attr = variant.attrs.iter().find(|attr| {
-                                attr
-                                    .path
+                                attr.path
                                     .get_ident()
-                                    .map(|i| i.to_string().eq("sea_orm")).unwrap_or_else(|| false)
+                                    .map(|i| i.to_string().eq("sea_orm"))
+                                    .unwrap_or_else(|| false)
                             });
                             if let Some(attr) = attr {
                                 let ident = quote::format_ident!("{}", name);
 
                                 let attributes_string = attr.tokens.to_string();
-                                let attributes_string = &attributes_string[1..attributes_string.len() - 1];
+                                let attributes_string =
+                                    &attributes_string[1..attributes_string.len() - 1];
 
-                                let attributes = attributes_string
-                                    .split(",")
-                                    .fold(
-                                        std::collections::BTreeMap::<&str, &str>::new(),
-                                        |mut acc, cur| {
-                                            let mut parts = cur.split("=");
-                                            if parts.clone().count() == 2 {
-                                                let key = parts.next().expect("We expect to have first part").trim();
-                                                let value = parts.next().expect("We expect to have second part").trim();
-                                                acc.insert(key, value);
-                                            }
-
-                                            acc
+                                let attributes = attributes_string.split(",").fold(
+                                    std::collections::BTreeMap::<&str, &str>::new(),
+                                    |mut acc, cur| {
+                                        let mut parts = cur.split("=");
+                                        if parts.clone().count() == 2 {
+                                            let key = parts
+                                                .next()
+                                                .expect("We expect to have first part")
+                                                .trim();
+                                            let value = parts
+                                                .next()
+                                                .expect("We expect to have second part")
+                                                .trim();
+                                            acc.insert(key, value);
                                         }
-                                    );
+
+                                        acc
+                                    },
+                                );
 
                                 let belongs_to = attributes.get("belongs_to");
                                 let has_one = attributes.get("has_one");
@@ -130,37 +135,41 @@ pub fn parse_entity(file_name: String, file_content: String) -> EntityDefinition
 
                                 let target = target.replace("super", "crate::entities");
 
-                                let target:TokenStream = target[1..target.len() - 1].parse().unwrap();
+                                let target: TokenStream =
+                                    target[1..target.len() - 1].parse().unwrap();
 
-                                let self_belongs_to = belongs_to.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
-                                let self_has_one = has_one.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
-                                let self_has_many = has_many.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
+                                let self_belongs_to =
+                                    belongs_to.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
+                                let self_has_one =
+                                    has_one.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
+                                let self_has_many =
+                                    has_many.map_or_else(|| false, |v| v.eq(&"\"Entity\""));
 
-                                if self_belongs_to || self_has_one || self_has_many{
+                                if self_belongs_to || self_has_one || self_has_many {
                                     let normal = RelationDef {
                                         target: target.clone(),
-                                        variant: quote!{ #ident },
+                                        variant: quote! { #ident },
                                         related: false,
                                         reverse: false,
-                                        self_rel: true
+                                        self_rel: true,
                                     };
                                     acc.insert(name.clone(), normal);
 
                                     let reverse = RelationDef {
                                         target,
-                                        variant: quote!{ #ident },
+                                        variant: quote! { #ident },
                                         related: false,
                                         reverse: true,
-                                        self_rel: true
+                                        self_rel: true,
                                     };
                                     acc.insert(format!("{}Reverse", name), reverse);
                                 } else {
                                     let normal = RelationDef {
                                         target,
-                                        variant: quote!{ #ident },
+                                        variant: quote! { #ident },
                                         related: false,
                                         reverse: false,
-                                        self_rel: false
+                                        self_rel: false,
                                     };
                                     acc.insert(name, normal);
                                 }

@@ -26,14 +26,12 @@ pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>
 
     let src_path = &root_path.as_ref().join("src");
 
-    writer::write_query_root(src_path, entities_path).unwrap();
+    writer::write_query_root(src_path, entities_path)?;
     writer::write_lib(src_path)?;
 
     match framework {
-        WebFrameworkEnum::Actix => {
-            crate::templates::actix::write_main(src_path, crate_name).unwrap()
-        }
-        WebFrameworkEnum::Poem => crate::templates::poem::write_main(src_path, crate_name).unwrap(),
+        WebFrameworkEnum::Actix => crate::templates::actix::write_main(src_path, crate_name)?,
+        WebFrameworkEnum::Poem => crate::templates::poem::write_main(src_path, crate_name)?,
     }
 
     writer::write_env(&root_path.as_ref(), db_url, depth_limit, complexity_limit)?;

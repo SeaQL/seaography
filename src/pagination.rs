@@ -406,7 +406,11 @@ pub fn get_offset_input() -> InputObject {
         .field(InputValue::new("offset", TypeRef::named_nn(TypeRef::INT)))
 }
 
-pub fn get_pagination_input(cursor_input: &InputObject, page_input: &InputObject, offset_input: &InputObject) -> InputObject {
+pub fn get_pagination_input(
+    cursor_input: &InputObject,
+    page_input: &InputObject,
+    offset_input: &InputObject,
+) -> InputObject {
     InputObject::new("PaginationInput")
         .field(InputValue::new(
             "cursor",

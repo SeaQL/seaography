@@ -1,20 +1,21 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::{util::add_line_break, WebFrameworkEnum, parser::{RelationDef, parse_entity}};
+use crate::{
+    parser::{parse_entity, RelationDef},
+    util::add_line_break,
+    WebFrameworkEnum,
+};
 
 pub struct EntityDefinition {
     pub name: TokenStream,
     pub relations: BTreeMap<String, RelationDef>,
 }
 
-pub fn generate_query_root<P: AsRef<Path>>(
-    entities_path: &P
-) -> TokenStream {
+pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
     let entities_paths = std::fs::read_dir(entities_path)
         .unwrap()
         .into_iter()
@@ -25,18 +26,22 @@ pub fn generate_query_root<P: AsRef<Path>>(
             let name = r.file_stem();
 
             if let Some(v) = name {
-                !v.eq(std::ffi::OsStr::new("prelude")) && !v.eq(std::ffi::OsStr::new("sea_orm_active_enums")) && !v.eq(std::ffi::OsStr::new("mod"))
+                !v.eq(std::ffi::OsStr::new("prelude"))
+                    && !v.eq(std::ffi::OsStr::new("sea_orm_active_enums"))
+                    && !v.eq(std::ffi::OsStr::new("mod"))
             } else {
                 false
             }
         });
 
-
-    let entities: Vec<EntityDefinition> = entities_paths.map(|path| {
-        let file_name = path.file_name().unwrap().to_str().unwrap();
-        let file_content = std::fs::read_to_string(entities_path.as_ref().join(file_name)).unwrap();
-        parse_entity(file_name.into(), file_content)
-    }).collect();
+    let entities: Vec<EntityDefinition> = entities_paths
+        .map(|path| {
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+            let file_content =
+                std::fs::read_to_string(entities_path.as_ref().join(file_name)).unwrap();
+            parse_entity(file_name.into(), file_content)
+        })
+        .collect();
 
     let entities: Vec<TokenStream> = entities.iter().map(|entity| {
         let entity_path = &entity.name;

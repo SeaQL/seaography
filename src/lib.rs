@@ -37,6 +37,7 @@
 //! ### Install
 //!
 //! ```sh
+//! cargo install sea-orm-cli
 //! cargo install seaography-cli
 //! ```
 //!
@@ -46,27 +47,25 @@
 //!
 //! ```sh
 //! cd examples/mysql
-//! seaography-cli mysql://user:pw@localhost/sakila seaography-mysql-example .
+//! sea-orm-cli generate entity -o ./src/entities -u mysql://user:pw@localhost/sakila
+//! seaography-cli . ./src/entities mysql://user:pw@localhost/sakila seaography-mysql-example
 //! cargo run
 //! ```
 //!
 //! Go to http://localhost:8000/ and try out the following queries:
 //!
 //! #### Fetch films and their actors
-//!
 //! ```graphql
 //! {
-//!   film(pagination: { pages: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
+//!   film( pagination: { pages:{limit: 10, page: 0}}, orderBy: { title:ASC}) {
 //!     nodes {
 //!       title
 //!       description
 //!       releaseYear
-//!       filmActor {
+//!       actor {
 //!         nodes {
-//!           actor {
-//!             firstName
-//!             lastName
-//!           }
+//!           firstName
+//!           lastName
 //!         }
 //!       }
 //!     }
@@ -107,8 +106,10 @@
 //!       lastName
 //!       email
 //!     }
-//!     pages
-//!     current
+//!     paginationInfo {
+//!       pages
+//!       current
+//!     }
 //!   }
 //! }
 //! ```
@@ -161,8 +162,10 @@
 //!           paymentId
 //!           amount
 //!         }
-//!         pages
-//!         current
+//!         paginationInfo {
+//!           pages
+//!           current
+//!         }
 //!         pageInfo {
 //!           hasPreviousPage
 //!           hasNextPage
@@ -184,7 +187,8 @@
 //!
 //! ```sh
 //! cd examples/postgres
-//! seaography-cli postgres://user:pw@localhost/sakila seaography-postgres-example .
+//! sea-orm-cli generate entity -o ./src/entities -u postgres://user:pw@localhost/sakila
+//! seaography-cli . ./src/entities postgres://user:pw@localhost/sakila seaography-postgres-example
 //! cargo run
 //! ```
 //!
@@ -192,7 +196,8 @@
 //!
 //! ```sh
 //! cd examples/sqlite
-//! seaography-cli sqlite://sakila.db seaography-sqlite-example .
+//! sea-orm-cli generate entity -o ./src/entities -u sqlite://sakila.db
+//! seaography-cli . ./src/entities sqlite://sakila.db seaography-sqlite-example
 //! cargo run
 //! ```
 //!

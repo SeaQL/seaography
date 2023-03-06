@@ -4,6 +4,7 @@ use sea_orm::{prelude::*, Iterable};
 
 use crate::{connection::*, edge::*, filter::*, order::*, query::*};
 
+/// used to hold GraphQL definitions for SeaORM entity
 pub struct DynamicGraphqlEntity {
     pub entity_object: Object,
     pub edge_object: Object,
@@ -52,12 +53,12 @@ impl DynamicGraphqlEntity {
     }
 }
 
+/// used to convert SeaORM entity to GraphQL Object definition
 pub fn entity_to_object<T>() -> Object
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
-    // TODO check if nullable
     let entity_object = T::Column::iter().fold(
         Object::new(<T as EntityName>::table_name(&T::default()).to_upper_camel_case()),
         |object, column: T::Column| {
@@ -65,6 +66,7 @@ where
 
             let column_def = column.def();
 
+            // map column type to GraphQL type
             let type_name = match &column_def.get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => TypeRef::STRING,
                 ColumnType::TinyInteger
@@ -93,33 +95,35 @@ where
                 ColumnType::Json | ColumnType::JsonBinary => {
                     // FIXME
                     TypeRef::STRING
-                },
+                }
                 ColumnType::Uuid => TypeRef::STRING,
                 ColumnType::Custom(_) => {
                     // FIXME
                     TypeRef::STRING
-                },
+                }
                 ColumnType::Enum {
                     name: _,
                     variants: _,
                 } => {
                     // FIXME
                     TypeRef::STRING
-                },
+                }
                 ColumnType::Array(_) => {
                     // FIXME
                     TypeRef::STRING
-                },
+                }
                 ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => TypeRef::STRING,
                 _ => todo!(),
             };
 
+            // map if field is nullable
             let graphql_type = if column_def.is_null() {
                 TypeRef::named(type_name)
             } else {
                 TypeRef::named_nn(type_name)
             };
 
+            // convert SeaQL value to GraphQL value
             let field = Field::new(name, graphql_type, move |ctx| {
                 let object = ctx
                     .parent_value
@@ -418,7 +422,7 @@ where
                                 None => Ok(None),
                             }
                         })
-                    },
+                    }
                     #[allow(unreachable_patterns)]
                     _ => todo!(),
                 }
