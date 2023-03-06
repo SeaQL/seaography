@@ -228,5 +228,8 @@ pub use order::*;
 pub mod pagination;
 pub use pagination::*;
 
+pub mod enumeration;
+pub use enumeration::*;
+
 pub mod query;
 pub use query::*;

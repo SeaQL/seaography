@@ -185,3 +185,33 @@ pub fn parse_entity(file_name: String, file_content: String) -> EntityDefinition
 
     EntityDefinition { name, relations }
 }
+
+pub struct EnumerationDefinition {
+    pub name: TokenStream,
+}
+
+pub fn parse_enumerations(file_content: String) -> Vec<EnumerationDefinition> {
+    let tree = syn::parse2::<syn::File>(file_content.parse().unwrap()).unwrap();
+
+    let items: Vec<EnumerationDefinition> = tree
+        .items
+        .iter()
+        .filter(|item| {
+            match item {
+                syn::Item::Enum(_) => true,
+                _ => false
+            }
+        })
+        .map(|item| {
+            match item {
+                syn::Item::Enum(enumeration) => {
+                    EnumerationDefinition {
+                        name: enumeration.ident.to_token_stream()
+                    }
+                },
+                _ => panic!("This is unreachable.")
+            }
+        }).collect();
+
+    items
+}

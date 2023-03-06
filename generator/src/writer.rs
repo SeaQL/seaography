@@ -1,11 +1,11 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap};
 use std::path::Path;
 
 use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{
-    parser::{parse_entity, RelationDef},
+    parser::{parse_entity, parse_enumerations, RelationDef},
     util::add_line_break,
     WebFrameworkEnum,
 };
@@ -80,6 +80,41 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         }
     }).collect();
 
+    let enumerations = std::fs::read_dir(entities_path)
+        .unwrap()
+        .into_iter()
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap().path())
+        .find(|r| {
+            let name = r.file_stem();
+
+            if let Some(v) = name {
+                v.eq(std::ffi::OsStr::new("sea_orm_active_enums"))
+            } else {
+                false
+            }
+        });
+
+    let enumerations = match enumerations {
+        Some(_) => {
+            let file_content = std::fs::read_to_string(entities_path.as_ref().join("sea_orm_active_enums.rs")).unwrap();
+
+            parse_enumerations(file_content)
+        },
+        None => vec![]
+    };
+
+
+    let enumerations = enumerations
+        .into_iter()
+        .map(|definition| {
+            let name = definition.name;
+
+            quote!{
+                seaography::enumeration_map::<#name>()
+            }
+        });
+
     quote! {
         use async_graphql::{dataloader::DataLoader, dynamic::*};
 
@@ -106,6 +141,10 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
                 #(#entities),*
             ];
 
+            let enumerations = vec![
+                #(#enumerations),*
+            ];
+
             let schema = Schema::build(query.type_name(), None, None);
 
             let (schema, query) = entities
@@ -120,6 +159,12 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
                             .register(object.entity_object),
                         query.field(object.query),
                     )
+                });
+
+            let schema = enumerations
+                .into_iter()
+                .fold(schema, |schema, enumeration| {
+                    schema.register(enumeration)
                 });
 
             let schema = if let Some(depth) = depth {

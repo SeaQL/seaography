@@ -67,8 +67,10 @@ where
             let column_def = column.def();
 
             // map column type to GraphQL type
-            let type_name = match &column_def.get_column_type() {
-                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => TypeRef::STRING,
+            let type_name: String = match &column_def.get_column_type() {
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
+                    TypeRef::STRING.clone().into()
+                }
                 ColumnType::TinyInteger
                 | ColumnType::SmallInteger
                 | ColumnType::Integer
@@ -76,43 +78,41 @@ where
                 | ColumnType::TinyUnsigned
                 | ColumnType::SmallUnsigned
                 | ColumnType::Unsigned
-                | ColumnType::BigUnsigned => TypeRef::INT,
-                ColumnType::Float | ColumnType::Double => TypeRef::FLOAT,
-                ColumnType::Decimal(_) => TypeRef::STRING,
+                | ColumnType::BigUnsigned => TypeRef::INT.clone().into(),
+                ColumnType::Float | ColumnType::Double => TypeRef::FLOAT.clone().into(),
+                ColumnType::Decimal(_) => TypeRef::STRING.clone().into(),
                 ColumnType::DateTime
                 | ColumnType::Timestamp
                 | ColumnType::TimestampWithTimeZone
                 | ColumnType::Time
-                | ColumnType::Date => TypeRef::STRING,
-                ColumnType::Year(_) => TypeRef::INT,
-                ColumnType::Interval(_, _) => TypeRef::STRING,
+                | ColumnType::Date => TypeRef::STRING.clone().into(),
+                ColumnType::Year(_) => TypeRef::INT.clone().into(),
+                ColumnType::Interval(_, _) => TypeRef::STRING.clone().into(),
                 ColumnType::Binary(_)
                 | ColumnType::VarBinary(_)
                 | ColumnType::VarBit(_)
-                | ColumnType::Bit(_) => TypeRef::STRING,
-                ColumnType::Boolean => TypeRef::BOOLEAN,
-                ColumnType::Money(_) => TypeRef::STRING,
+                | ColumnType::Bit(_) => TypeRef::STRING.clone().into(),
+                ColumnType::Boolean => TypeRef::BOOLEAN.clone().into(),
+                ColumnType::Money(_) => TypeRef::STRING.clone().into(),
                 ColumnType::Json | ColumnType::JsonBinary => {
                     // FIXME
-                    TypeRef::STRING
+                    TypeRef::STRING.clone().into()
                 }
-                ColumnType::Uuid => TypeRef::STRING,
+                ColumnType::Uuid => TypeRef::STRING.clone().into(),
                 ColumnType::Custom(_) => {
                     // FIXME
-                    TypeRef::STRING
+                    TypeRef::STRING.clone().into()
                 }
-                ColumnType::Enum {
-                    name: _,
-                    variants: _,
-                } => {
-                    // FIXME
-                    TypeRef::STRING
+                ColumnType::Enum { name, variants: _ } => {
+                    format!("{}Enum", name.to_string().to_upper_camel_case())
                 }
                 ColumnType::Array(_) => {
                     // FIXME
-                    TypeRef::STRING
+                    TypeRef::STRING.clone().into()
                 }
-                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => TypeRef::STRING,
+                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
+                    TypeRef::STRING.clone().into()
+                }
                 _ => todo!(),
             };
 
@@ -121,6 +121,14 @@ where
                 TypeRef::named(type_name)
             } else {
                 TypeRef::named_nn(type_name)
+            };
+
+            let is_enum = match column_def.get_column_type() {
+                ColumnType::Enum {
+                    name: _,
+                    variants: _,
+                } => true,
+                _ => false,
             };
 
             // convert SeaQL value to GraphQL value
@@ -203,7 +211,15 @@ where
                     }),
                     sea_orm::sea_query::Value::String(value) => FieldFuture::new(async move {
                         match value {
-                            Some(value) => Ok(Some(Value::from(value.as_str()))),
+                            Some(value) => {
+                                if is_enum {
+                                    Ok(Some(Value::from(
+                                        value.as_str().to_upper_camel_case().to_ascii_uppercase(),
+                                    )))
+                                } else {
+                                    Ok(Some(Value::from(value.as_str())))
+                                }
+                            }
                             None => Ok(None),
                         }
                     }),

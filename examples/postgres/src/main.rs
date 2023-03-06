@@ -1,7 +1,6 @@
 use async_graphql::{
     dataloader::DataLoader,
     http::{playground_source, GraphQLPlaygroundConfig},
-    EmptyMutation, EmptySubscription, Schema,
 };
 use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
@@ -37,7 +36,6 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .with_test_writer()
         .init();
-
     let database = Database::connect(&*DATABASE_URL)
         .await
         .expect("Fail to initialize database connection");
@@ -47,21 +45,17 @@ async fn main() {
         },
         tokio::spawn,
     );
-    let mut schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-        .data(database)
-        .data(orm_dataloader);
-    if let Some(depth) = *DEPTH_LIMIT {
-        schema = schema.limit_depth(depth);
-    }
-    if let Some(complexity) = *COMPLEXITY_LIMIT {
-        schema = schema.limit_complexity(complexity);
-    }
-    let schema = schema.finish();
+    let schema = seaography_postgres_example::query_root::schema(
+        database,
+        orm_dataloader,
+        *DEPTH_LIMIT,
+        *COMPLEXITY_LIMIT,
+    )
+    .unwrap();
     let app = Route::new().at(
         &*ENDPOINT,
         get(graphql_playground).post(GraphQL::new(schema)),
     );
-
     println!("Visit GraphQL Playground at http://{}", *URL);
     Server::new(TcpListener::bind(&*URL))
         .run(app)

@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "seaography-sqlite-example"
+name = "<seaography-package-name>"
 version = "0.3.0"
 
 [dependencies]
