@@ -1,40 +1,26 @@
 name: tests
 
 on:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '.github/ISSUE_TEMPLATE/**'
-  push:
-    paths-ignore:
-      - '**.md'
-      - '.github/ISSUE_TEMPLATE/**'
-    branches:
-      - main
-      - pr/**/ci
+    pull_request:
+        paths-ignore:
+            - "**.md"
+            - ".github/ISSUE_TEMPLATE/**"
+    push:
+        paths-ignore:
+            - "**.md"
+            - ".github/ISSUE_TEMPLATE/**"
+        branches:
+            - main
+            - pr/**/ci
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}
+    cancel-in-progress: true
 
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 
 jobs:
-    install-generator:
-      name: Install sea-orm-cli
-      runs-on: ubuntu-latest
-      steps:
-          - uses: actions/checkout@v2
-          - uses: actions-rs/toolchain@v1
-            with:
-                profile: minimal
-                toolchain: stable
-                override: true
-          - uses: actions-rs/cargo@v1
-            with:
-                command: install
-                args: "sea-orm-cli"
     check:
         name: Check
         runs-on: ubuntu-latest
@@ -102,9 +88,13 @@ jobs:
             - uses: actions/checkout@v2
             - uses: actions-rs/toolchain@v1
               with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
+                profile: minimal
+                toolchain: stable
+                override: true
+            - uses: actions-rs/install@v0.1
+              with:
+                crate: sea-orm-cli
+                version: '0.11.0'
             - name: Remove generated folder
               run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
@@ -115,8 +105,8 @@ jobs:
               with:
                   command: run
                   args: >
-                    --package seaography-cli --
-                    ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f poem
+                      --package seaography-cli --
+                      ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f poem
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Integration tests
@@ -136,6 +126,10 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
+            - uses: actions-rs/install@v0.1
+              with:
+                crate: sea-orm-cli
+                version: '0.11.0'
             - name: Build example
               working-directory: ./examples/sqlite
               run: cargo build
@@ -143,12 +137,14 @@ jobs:
               run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
               run: cp ./examples/sqlite/sakila.db .
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db
             - uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
-                    --package seaography-cli --
-                    -f actix sqlite://sakila.db seaography-sqlite-example ./examples/sqlite
+                      --package seaography-cli --
+                      ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f actix
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Integration tests
@@ -183,6 +179,10 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
+            - uses: actions-rs/install@v0.1
+              with:
+                crate: sea-orm-cli
+                version: '0.11.0'
             - name: Build example
               working-directory: ./examples/mysql
               run: cargo build
@@ -198,12 +198,14 @@ jobs:
             - name: Import DB Data
               run: mysql -uroot -h 127.0.0.1 sakila < sakila-data.sql
               working-directory: ./examples/mysql
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o ./examples/mysql/src/entities -u mysql://sea:sea@127.0.0.1/sakila
             - uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
-                    --package seaography-cli --
-                    mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example ./examples/mysql
+                      --package seaography-cli --
+                      ./examples/mysql ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
             - name: Integration tests
@@ -237,6 +239,10 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
+            - uses: actions-rs/install@v0.1
+              with:
+                crate: sea-orm-cli
+                version: '0.11.0'
             - name: Build example
               working-directory: ./examples/postgres
               run: cargo build
@@ -250,12 +256,14 @@ jobs:
             - name: Import DB Data
               run: psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
               working-directory: ./examples/postgres
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o ./examples/postgres/src/entities -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
             - uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
-                    --package seaography-cli --
-                    postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example ./examples/postgres
+                      --package seaography-cli --
+                      ./examples/postgres ./examples/postgres/src/entities postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
             - name: Integration tests
