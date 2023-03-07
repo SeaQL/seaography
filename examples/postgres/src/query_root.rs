@@ -281,7 +281,12 @@ pub fn schema(
             ],
         ),
     ];
-    let enumerations = vec![seaography::enumeration_map::<crate::entities::sea_orm_active_enums::MpaaRating>()];
+    let enumerations_filters = vec![seaography::active_enum_to_enum_filter_input::<
+        crate::entities::sea_orm_active_enums::MpaaRating,
+    >()];
+    let enumerations = vec![seaography::active_enum_to_enum_type::<
+        crate::entities::sea_orm_active_enums::MpaaRating,
+    >()];
     let schema = Schema::build(query.type_name(), None, None);
     let (schema, query) = entities
         .into_iter()
@@ -296,12 +301,12 @@ pub fn schema(
                 query.field(object.query),
             )
         });
+    let schema = enumerations_filters
+        .into_iter()
+        .fold(schema, |schema, enumeration| schema.register(enumeration));
     let schema = enumerations
         .into_iter()
-        .fold(schema, |schema, enumeration| {
-            println!("MPAA");
-            schema.register(enumeration)
-        });
+        .fold(schema, |schema, enumeration| schema.register(enumeration));
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
     } else {

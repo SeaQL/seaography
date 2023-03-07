@@ -555,7 +555,59 @@ where
                     basic_filtering_type!(condition, column, filter, f64)
                 }
                 #[cfg(feature = "with-decimal")]
-                ColumnType::Decimal(_) => basic_filtering_type!(condition, column, filter, string),
+                ColumnType::Decimal(_) => {
+                    use std::str::FromStr;
+
+                    let condition = if let Some(data) = filter.get("eq") {
+                        let data = data.string().expect("We expect the eq to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        condition.add(column.eq(data))
+                    } else {
+                        condition
+                    };
+
+                    let condition = if let Some(data) = filter.get("ne") {
+                        let data = data.string().expect("We expect the ne to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        condition.add(column.ne(data))
+                    } else {
+                        condition
+                    };
+
+                    let condition = if let Some(data) = filter.get("gt") {
+                        let data = data.string().expect("We expect the gt to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        condition.add(column.gt(data))
+                    } else {
+                        condition
+                    };
+
+                    let condition = if let Some(data) = filter.get("gte") {
+                        let data = data.string().expect("We expect the gte to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        condition.add(column.gte(data))
+                    } else {
+                        condition
+                    };
+
+                    let condition = if let Some(data) = filter.get("lt") {
+                        let data = data.string().expect("We expect the lt to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        condition.add(column.lt(data))
+                    } else {
+                        condition
+                    };
+
+                    let condition = if let Some(data) = filter.get("lte") {
+                        let data = data.string().expect("We expect the lte to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        condition.add(column.lte(data))
+                    } else {
+                        condition
+                    };
+
+                    condition
+                },
                 // ColumnType::DateTime => {
                 // FIXME
                 // },

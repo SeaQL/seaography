@@ -1,8 +1,8 @@
-use async_graphql::{dataloader::DataLoader, EmptyMutation, EmptySubscription, Response, Schema};
+use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
 use sea_orm::Database;
-use seaography_postgres_example::{OrmDataloader, QueryRoot};
+use seaography_postgres_example::OrmDataloader;
 
-pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
+pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
@@ -12,10 +12,8 @@ pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription>
         },
         tokio::spawn,
     );
-    let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-        .data(database)
-        .data(orm_dataloader)
-        .finish();
+    let schema = seaography_postgres_example::query_root::schema(database, orm_dataloader, None, None)
+      .unwrap();
 
     schema
 }
@@ -35,41 +33,41 @@ async fn test_simple_query() {
         schema
             .execute(
                 r#"
-          {
-            store {
-              nodes {
-                storeId
-                staff {
-                  firstName
-                  lastName
+                {
+                    store {
+                    nodes {
+                        storeId
+                        staff {
+                        firstName
+                        lastName
+                        }
+                    }
+                    }
                 }
-              }
-            }
-          }
           "#,
             )
             .await,
         r#"
-          {
+        {
             "store": {
-              "nodes": [
+            "nodes": [
                 {
-                  "storeId": 1,
-                  "staff": {
+                "storeId": 1,
+                "staff": {
                     "firstName": "Mike",
                     "lastName": "Hillyer"
-                  }
+                }
                 },
                 {
-                  "storeId": 2,
-                  "staff": {
+                "storeId": 2,
+                "staff": {
                     "firstName": "Jon",
                     "lastName": "Stephens"
-                  }
                 }
-              ]
+                }
+            ]
             }
-          }
+        }
           "#,
     )
 }
@@ -81,36 +79,36 @@ async fn test_simple_query_with_filter() {
     assert_eq(
         schema
             .execute(
-                r#"
-          {
-              store(filters: {storeId:{eq: 1}}) {
-                nodes {
-                  storeId
-                  staff {
-                    firstName
-                    lastName
+              r#"
+              {
+                  store(filters: {storeId:{eq: 1}}) {
+                      nodes {
+                      storeId
+                      staff {
+                          firstName
+                          lastName
+                      }
+                      }
                   }
-                }
               }
-          }
-          "#,
+              "#,
             )
             .await,
-        r#"
-          {
-            "store": {
-              "nodes": [
+            r#"
                 {
-                  "storeId": 1,
-                  "staff": {
-                    "firstName": "Mike",
-                    "lastName": "Hillyer"
-                  }
+                    "store": {
+                    "nodes": [
+                        {
+                        "storeId": 1,
+                        "staff": {
+                            "firstName": "Mike",
+                            "lastName": "Hillyer"
+                        }
+                        }
+                    ]
+                    }
                 }
-              ]
-            }
-          }
-          "#,
+                "#,
     )
 }
 
@@ -121,8 +119,8 @@ async fn test_filter_with_pagination() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
+              r#"
+              {
                   customer(
                     filters: { active: { eq: 0 } }
                     pagination: { pages: { page: 2, limit: 3 } }
@@ -130,32 +128,36 @@ async fn test_filter_with_pagination() {
                     nodes {
                       customerId
                     }
-                    pages
-                    current
+                    paginationInfo {
+                      pages
+                      current
+                    }
                   }
                 }
-          "#,
+              "#,
             )
             .await,
-        r#"
-          {
-            "customer": {
-              "nodes": [
+            r#"
                 {
-                  "customerId": 315
-                },
-                {
-                  "customerId": 368
-                },
-                {
-                  "customerId": 406
+                    "customer": {
+                      "nodes": [
+                        {
+                          "customerId": 315
+                        },
+                        {
+                          "customerId": 368
+                        },
+                        {
+                          "customerId": 406
+                        }
+                      ],
+                      "paginationInfo": {
+                        "pages": 5,
+                        "current": 2
+                      }
+                    }
                 }
-              ],
-              "pages": 5,
-              "current": 2
-            }
-          }
-          "#,
+                "#,
     )
 }
 
@@ -166,8 +168,8 @@ async fn test_complex_filter_with_pagination() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
+              r#"
+              {
                   payment(
                     filters: { amount: { gt: "11.1" } }
                     pagination: { pages: { limit: 2, page: 3 } }
@@ -176,31 +178,35 @@ async fn test_complex_filter_with_pagination() {
                       paymentId
                       amount
                     }
-                    pages
-                    current
+                    paginationInfo {
+                      pages
+                      current
+                    }
                   }
-                }
-          "#,
+              }
+              "#,
             )
             .await,
-        r#"
-        {
-          "payment": {
-            "nodes": [
-              {
-                "paymentId": 8272,
-                "amount": "11.9900"
-              },
-              {
-                "paymentId": 9803,
-                "amount": "11.9900"
-              }
-            ],
-            "pages": 5,
-            "current": 3
-          }
-        }
-          "#,
+            r#"
+                {
+                    "payment": {
+                    "nodes": [
+                        {
+                        "paymentId": 8272,
+                        "amount": "11.9900"
+                        },
+                        {
+                        "paymentId": 9803,
+                        "amount": "11.9900"
+                        }
+                    ],
+                    "paginationInfo": {
+                        "pages": 5,
+                        "current": 3
+                    }
+                    }
+                }
+                "#,
     )
 }
 
@@ -211,91 +217,91 @@ async fn test_cursor_pagination() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
+              r#"
+              {
                   payment(
-                    filters: { amount: { gt: "11" } }
-                    pagination: { cursor: { limit: 5 } }
+                      filters: { amount: { gt: "11" } }
+                      pagination: { cursor: { limit: 5 } }
                   ) {
-                    edges {
+                      edges {
                       node {
-                        paymentId
-                        amount
-                        customer {
+                          paymentId
+                          amount
+                          customer {
                           firstName
-                        }
+                          }
                       }
-                    }
-                    pageInfo {
+                      }
+                      pageInfo {
                       hasPreviousPage
                       hasNextPage
                       startCursor
                       endCursor
-                    }
+                      }
                   }
-                }
-        "#,
+              }
+              "#,
             )
             .await,
-        r#"
-        {
-          "payment": {
-            "edges": [
-              {
-                "node": {
-                  "paymentId": 342,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "KAREN"
-                  }
+            r#"
+                {
+                "payment": {
+                    "edges": [
+                    {
+                        "node": {
+                        "paymentId": 342,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "KAREN"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 3146,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "VICTORIA"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 5280,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "VANESSA"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 5281,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "ALMA"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 5550,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "ROSEMARY"
+                        }
+                        }
+                    }
+                    ],
+                    "pageInfo": {
+                    "hasPreviousPage": false,
+                    "hasNextPage": true,
+                    "startCursor": "Int[3]:342",
+                    "endCursor": "Int[4]:5550"
+                    }
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 3146,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "VICTORIA"
-                  }
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 5280,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "VANESSA"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 5281,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "ALMA"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 5550,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "ROSEMARY"
-                  }
-                }
-              }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": false,
-              "hasNextPage": true,
-              "startCursor": "Int[3]:342",
-              "endCursor": "Int[4]:5550"
-            }
-          }
-        }
-        "#,
+                "#,
     )
 }
 
@@ -306,73 +312,73 @@ async fn test_cursor_pagination_prev() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
-                  payment(
-                    filters: { amount: { gt: "11" } }
-                    pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:5550" } }
-                  ) {
-                    edges {
-                      node {
-                        paymentId
-                        amount
-                        customer {
-                          firstName
-                        }
+              r#"
+              {
+                payment(
+                  filters: { amount: { gt: "11" } }
+                  pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:5550" } }
+                ) {
+                  edges {
+                    node {
+                      paymentId
+                      amount
+                      customer {
+                        firstName
                       }
                     }
-                    pageInfo {
-                      hasPreviousPage
-                      hasNextPage
-                      startCursor
-                      endCursor
-                    }
                   }
-                }
-        "#,
-            )
-            .await,
-        r#"
-        {
-          "payment": {
-            "edges": [
-              {
-                "node": {
-                  "paymentId": 6409,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "TANYA"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 8272,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "RICHARD"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 9803,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "NICHOLAS"
+                  pageInfo {
+                    hasPreviousPage
+                    hasNextPage
+                    startCursor
+                    endCursor
                   }
                 }
               }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": true,
-              "hasNextPage": true,
-              "startCursor": "Int[4]:6409",
-              "endCursor": "Int[4]:9803"
-            }
-          }
-        }
-        "#,
+              "#,
+            )
+            .await,
+            r#"
+                {
+                "payment": {
+                    "edges": [
+                    {
+                        "node": {
+                        "paymentId": 6409,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "TANYA"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 8272,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "RICHARD"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 9803,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "NICHOLAS"
+                        }
+                        }
+                    }
+                    ],
+                    "pageInfo": {
+                    "hasPreviousPage": true,
+                    "hasNextPage": true,
+                    "startCursor": "Int[4]:6409",
+                    "endCursor": "Int[4]:9803"
+                    }
+                }
+                }
+                "#,
     )
 }
 
@@ -383,64 +389,64 @@ async fn test_cursor_pagination_no_next() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
-                  payment(
-                    filters: { amount: { gt: "11" } }
-                    pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:9803" } }
-                  ) {
-                    edges {
-                      node {
-                        paymentId
-                        amount
-                        customer {
-                          firstName
-                        }
+              r#"
+              {
+                payment(
+                  filters: { amount: { gt: "11" } }
+                  pagination: { cursor: { limit: 3, cursor: "SmallUnsigned[4]:9803" } }
+                ) {
+                  edges {
+                    node {
+                      paymentId
+                      amount
+                      customer {
+                        firstName
                       }
                     }
-                    pageInfo {
-                      hasPreviousPage
-                      hasNextPage
-                      startCursor
-                      endCursor
-                    }
                   }
-                }
-        "#,
-            )
-            .await,
-        r#"
-        {
-          "payment": {
-            "edges": [
-              {
-                "node": {
-                  "paymentId": 15821,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "KENT"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 15850,
-                  "amount": "11.9900",
-                  "customer": {
-                    "firstName": "TERRANCE"
+                  pageInfo {
+                    hasPreviousPage
+                    hasNextPage
+                    startCursor
+                    endCursor
                   }
                 }
               }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": true,
-              "hasNextPage": false,
-              "startCursor": "Int[5]:15821",
-              "endCursor": "Int[5]:15850"
-            }
-          }
-        }
-        "#,
+              "#,
+            )
+            .await,
+            r#"
+                {
+                "payment": {
+                    "edges": [
+                    {
+                        "node": {
+                        "paymentId": 15821,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "KENT"
+                        }
+                        }
+                    },
+                    {
+                        "node": {
+                        "paymentId": 15850,
+                        "amount": "11.9900",
+                        "customer": {
+                            "firstName": "TERRANCE"
+                        }
+                        }
+                    }
+                    ],
+                    "pageInfo": {
+                    "hasPreviousPage": true,
+                    "hasNextPage": false,
+                    "startCursor": "Int[5]:15821",
+                    "endCursor": "Int[5]:15850"
+                    }
+                }
+                }
+                "#,
     )
 }
 
@@ -451,60 +457,60 @@ async fn test_self_ref() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
-                    staff {
-                      nodes {
-                        firstName
-                        reportsToId
-                        selfRefReverse {
-                          nodes {
-                            staffId
-                            firstName
-                          }
-                        }
-                        selfRef {
+              r#"
+              {
+                  staff {
+                    nodes {
+                      firstName
+                      reportsToId
+                      selfRefReverse {
+                        nodes {
                           staffId
                           firstName
                         }
                       }
+                      selfRef {
+                        staffId
+                        firstName
+                      }
                     }
                   }
-        "#,
+                }
+              "#,
             )
             .await,
-        r#"
-        {
-            "staff": {
-              "nodes": [
+            r#"
                 {
-                  "firstName": "Mike",
-                  "reportsToId": null,
-                  "selfRefReverse": {
+                    "staff": {
                     "nodes": [
-                      {
-                        "staffId": 2,
-                        "firstName": "Jon"
-                      }
+                        {
+                        "firstName": "Mike",
+                        "reportsToId": null,
+                        "selfRefReverse": {
+                            "nodes": [
+                            {
+                                "staffId": 2,
+                                "firstName": "Jon"
+                            }
+                            ]
+                        },
+                        "selfRef": null
+                        },
+                        {
+                        "firstName": "Jon",
+                        "reportsToId": 1,
+                        "selfRefReverse": {
+                            "nodes": []
+                        },
+                        "selfRef": {
+                            "staffId": 1,
+                            "firstName": "Mike"
+                        }
+                        }
                     ]
-                  },
-                  "selfRef": null
-                },
-                {
-                  "firstName": "Jon",
-                  "reportsToId": 1,
-                  "selfRefReverse": {
-                    "nodes": []
-                  },
-                  "selfRef": {
-                    "staffId": 1,
-                    "firstName": "Mike"
-                  }
+                    }
                 }
-              ]
-            }
-          }
-        "#,
+                "#,
     )
 }
 
@@ -515,8 +521,8 @@ async fn related_queries_filters() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
+              r#"
+              {
                   customer(
                     filters: { active: { eq: 0 } }
                     pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
@@ -540,80 +546,80 @@ async fn related_queries_filters() {
                       endCursor
                     }
                   }
-                }
-        "#,
+              }
+              "#,
             )
             .await,
-        r#"
-        {
-          "customer": {
-            "nodes": [
-              {
-                "customerId": 315,
-                "lastName": "GOODEN",
-                "email": "KENNETH.GOODEN@sakilacustomer.org",
-                "address": {
-                  "address": "1542 Lubumbashi Boulevard"
-                },
-                "payment": {
-                  "nodes": [
-                    {
-                      "paymentId": 8547
+            r#"
+            {
+              "customer": {
+                "nodes": [
+                  {
+                    "customerId": 315,
+                    "lastName": "GOODEN",
+                    "email": "KENNETH.GOODEN@sakilacustomer.org",
+                    "address": {
+                      "address": "1542 Lubumbashi Boulevard"
                     },
-                    {
-                      "paymentId": 8537
+                    "payment": {
+                      "nodes": [
+                        {
+                          "paymentId": 8547
+                        },
+                        {
+                          "paymentId": 8537
+                        }
+                      ]
                     }
-                  ]
-                }
-              },
-              {
-                "customerId": 368,
-                "lastName": "ARCE",
-                "email": "HARRY.ARCE@sakilacustomer.org",
-                "address": {
-                  "address": "1922 Miraj Way"
-                },
-                "payment": {
-                  "nodes": [
-                    {
-                      "paymentId": 9945
+                  },
+                  {
+                    "customerId": 368,
+                    "lastName": "ARCE",
+                    "email": "HARRY.ARCE@sakilacustomer.org",
+                    "address": {
+                      "address": "1922 Miraj Way"
                     },
-                    {
-                      "paymentId": 9962
-                    },
-                    {
-                      "paymentId": 9967
-                    },
-                    {
-                      "paymentId": 9953
+                    "payment": {
+                      "nodes": [
+                        {
+                          "paymentId": 9945
+                        },
+                        {
+                          "paymentId": 9953
+                        },
+                        {
+                          "paymentId": 9962
+                        },
+                        {
+                          "paymentId": 9967
+                        }
+                      ]
                     }
-                  ]
-                }
-              },
-              {
-                "customerId": 406,
-                "lastName": "RUNYON",
-                "email": "NATHAN.RUNYON@sakilacustomer.org",
-                "address": {
-                  "address": "264 Bhimavaram Manor"
-                },
-                "payment": {
-                  "nodes": [
-                    {
-                      "paymentId": 10998
+                  },
+                  {
+                    "customerId": 406,
+                    "lastName": "RUNYON",
+                    "email": "NATHAN.RUNYON@sakilacustomer.org",
+                    "address": {
+                      "address": "264 Bhimavaram Manor"
+                    },
+                    "payment": {
+                      "nodes": [
+                        {
+                          "paymentId": 10998
+                        }
+                      ]
                     }
-                  ]
+                  }
+                ],
+                "pageInfo": {
+                  "hasPreviousPage": true,
+                  "hasNextPage": true,
+                  "endCursor": "Int[3]:406"
                 }
               }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": true,
-              "hasNextPage": true,
-              "endCursor": "Int[3]:406"
             }
-          }
-        }
-        "#,
+            "#,
     )
 }
 
@@ -624,124 +630,132 @@ async fn related_queries_pagination() {
     assert_eq(
         schema
             .execute(
-                r#"
-                {
-                  customer(
-                    filters: { active: { eq: 0 } }
-                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
-                  ) {
-                    nodes {
-                      customerId
-                      lastName
-                      email
-                      address {
-                        address
+              r#"
+              {
+                customer(
+                  filters: { active: { eq: 0 } }
+                  pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                ) {
+                  nodes {
+                    customerId
+                    lastName
+                    email
+                    address {
+                      address
+                    }
+                    payment(
+                      filters: { amount: { gt: "7" } }
+                      orderBy: { amount: ASC }
+                      pagination: { pages: { limit: 1, page: 1 } }
+                    ) {
+                      nodes {
+                        paymentId
+                        amount
                       }
-                      payment(
-                        filters: { amount: { gt: "7" } }
-                        orderBy: { amount: ASC }
-                        pagination: { pages: { limit: 1, page: 1 } }
-                      ) {
-                        nodes {
-                          paymentId
-                          amount
-                        }
+                      paginationInfo {
                         pages
                         current
-                        pageInfo {
-                          hasPreviousPage
-                          hasNextPage
-                        }
+                      }
+                      pageInfo {
+                        hasPreviousPage
+                        hasNextPage
                       }
                     }
-                    pageInfo {
-                      hasPreviousPage
-                      hasNextPage
-                      endCursor
-                    }
                   }
-                }
-        "#,
-            )
-            .await,
-        r#"
-        {
-          "customer": {
-            "nodes": [
-              {
-                "customerId": 315,
-                "lastName": "GOODEN",
-                "email": "KENNETH.GOODEN@sakilacustomer.org",
-                "address": {
-                  "address": "1542 Lubumbashi Boulevard"
-                },
-                "payment": {
-                  "nodes": [
-                    {
-                      "paymentId": 8547,
-                      "amount": "9.9900"
-                    }
-                  ],
-                  "pages": 2,
-                  "current": 1,
-                  "pageInfo": {
-                    "hasPreviousPage": true,
-                    "hasNextPage": false
-                  }
-                }
-              },
-              {
-                "customerId": 368,
-                "lastName": "ARCE",
-                "email": "HARRY.ARCE@sakilacustomer.org",
-                "address": {
-                  "address": "1922 Miraj Way"
-                },
-                "payment": {
-                  "nodes": [
-                    {
-                      "paymentId": 9972,
-                      "amount": "7.9900"
-                    }
-                  ],
-                  "pages": 6,
-                  "current": 1,
-                  "pageInfo": {
-                    "hasPreviousPage": true,
-                    "hasNextPage": true
-                  }
-                }
-              },
-              {
-                "customerId": 406,
-                "lastName": "RUNYON",
-                "email": "NATHAN.RUNYON@sakilacustomer.org",
-                "address": {
-                  "address": "264 Bhimavaram Manor"
-                },
-                "payment": {
-                  "nodes": [
-                    {
-                      "paymentId": 10989,
-                      "amount": "7.9900"
-                    }
-                  ],
-                  "pages": 3,
-                  "current": 1,
-                  "pageInfo": {
-                    "hasPreviousPage": true,
-                    "hasNextPage": true
+                  pageInfo {
+                    hasPreviousPage
+                    hasNextPage
+                    endCursor
                   }
                 }
               }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": true,
-              "hasNextPage": true,
-              "endCursor": "Int[3]:406"
+      "#,
+            )
+            .await,
+            r#"
+            {
+              "customer": {
+                "nodes": [
+                  {
+                    "customerId": 315,
+                    "lastName": "GOODEN",
+                    "email": "KENNETH.GOODEN@sakilacustomer.org",
+                    "address": {
+                      "address": "1542 Lubumbashi Boulevard"
+                    },
+                    "payment": {
+                      "nodes": [
+                        {
+                          "paymentId": 8547,
+                          "amount": "9.9900"
+                        }
+                      ],
+                      "paginationInfo": {
+                        "pages": 2,
+                        "current": 1
+                      },
+                      "pageInfo": {
+                        "hasPreviousPage": false,
+                        "hasNextPage": false
+                      }
+                    }
+                  },
+                  {
+                    "customerId": 368,
+                    "lastName": "ARCE",
+                    "email": "HARRY.ARCE@sakilacustomer.org",
+                    "address": {
+                      "address": "1922 Miraj Way"
+                    },
+                    "payment": {
+                      "nodes": [
+                        {
+                          "paymentId": 9972,
+                          "amount": "7.9900"
+                        }
+                      ],
+                      "paginationInfo": {
+                        "pages": 6,
+                        "current": 1
+                      },
+                      "pageInfo": {
+                        "hasPreviousPage": false,
+                        "hasNextPage": true
+                      }
+                    }
+                  },
+                  {
+                    "customerId": 406,
+                    "lastName": "RUNYON",
+                    "email": "NATHAN.RUNYON@sakilacustomer.org",
+                    "address": {
+                      "address": "264 Bhimavaram Manor"
+                    },
+                    "payment": {
+                      "nodes": [
+                        {
+                          "paymentId": 10989,
+                          "amount": "7.9900"
+                        }
+                      ],
+                      "paginationInfo": {
+                        "pages": 3,
+                        "current": 1
+                      },
+                      "pageInfo": {
+                        "hasPreviousPage": false,
+                        "hasNextPage": true
+                      }
+                    }
+                  }
+                ],
+                "pageInfo": {
+                  "hasPreviousPage": true,
+                  "hasNextPage": true,
+                  "endCursor": "Int[3]:406"
+                }
+              }
             }
-          }
-        }
-        "#,
+            "#,
     )
 }
