@@ -559,55 +559,73 @@ where
                     use std::str::FromStr;
 
                     let condition = if let Some(data) = filter.get("eq") {
-                        let data = data.string().expect("We expect the eq to be of type String");
-                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        let data = data
+                            .string()
+                            .expect("We expect the eq to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data)
+                            .expect("We expect value to be Decimal");
                         condition.add(column.eq(data))
                     } else {
                         condition
                     };
 
                     let condition = if let Some(data) = filter.get("ne") {
-                        let data = data.string().expect("We expect the ne to be of type String");
-                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        let data = data
+                            .string()
+                            .expect("We expect the ne to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data)
+                            .expect("We expect value to be Decimal");
                         condition.add(column.ne(data))
                     } else {
                         condition
                     };
 
                     let condition = if let Some(data) = filter.get("gt") {
-                        let data = data.string().expect("We expect the gt to be of type String");
-                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        let data = data
+                            .string()
+                            .expect("We expect the gt to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data)
+                            .expect("We expect value to be Decimal");
                         condition.add(column.gt(data))
                     } else {
                         condition
                     };
 
                     let condition = if let Some(data) = filter.get("gte") {
-                        let data = data.string().expect("We expect the gte to be of type String");
-                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        let data = data
+                            .string()
+                            .expect("We expect the gte to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data)
+                            .expect("We expect value to be Decimal");
                         condition.add(column.gte(data))
                     } else {
                         condition
                     };
 
                     let condition = if let Some(data) = filter.get("lt") {
-                        let data = data.string().expect("We expect the lt to be of type String");
-                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        let data = data
+                            .string()
+                            .expect("We expect the lt to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data)
+                            .expect("We expect value to be Decimal");
                         condition.add(column.lt(data))
                     } else {
                         condition
                     };
 
                     let condition = if let Some(data) = filter.get("lte") {
-                        let data = data.string().expect("We expect the lte to be of type String");
-                        let data = sea_orm::entity::prelude::Decimal::from_str(data).expect("We expect value to be Decimal");
+                        let data = data
+                            .string()
+                            .expect("We expect the lte to be of type String");
+                        let data = sea_orm::entity::prelude::Decimal::from_str(data)
+                            .expect("We expect value to be Decimal");
                         condition.add(column.lte(data))
                     } else {
                         condition
                     };
 
                     condition
-                },
+                }
                 // ColumnType::DateTime => {
                 // FIXME
                 // },
@@ -661,7 +679,7 @@ where
                 // },
                 ColumnType::Enum { name: _, variants } => {
                     prepare_enumeration_condition(condition, &filter, column, variants)
-                },
+                }
                 // ColumnType::Array(_) => {
                 // FIXME
                 // },
@@ -716,57 +734,77 @@ where
     condition
 }
 
-
-pub fn prepare_enumeration_condition<T>(condition: Condition, filter: &ObjectAccessor, column: T, variants: &Vec<std::sync::Arc<dyn Iden>>) -> Condition
+pub fn prepare_enumeration_condition<T>(
+    condition: Condition,
+    filter: &ObjectAccessor,
+    column: T,
+    variants: &Vec<std::sync::Arc<dyn Iden>>,
+) -> Condition
 where
-    T: ColumnTrait
+    T: ColumnTrait,
 {
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
-            let variant = variant.to_string().to_upper_camel_case().to_ascii_uppercase();
+            let variant = variant
+                .to_string()
+                .to_upper_camel_case()
+                .to_ascii_uppercase();
             variant.eq(input)
-
         });
-        variant.expect("We expect to always map Enumerations.").to_string()
+        variant
+            .expect("We expect to always map Enumerations.")
+            .to_string()
     };
 
     let condition = if let Some(data) = filter.get("eq") {
-        let data = data.enum_name().expect("We expect the eq to be of type Enumeration");
+        let data = data
+            .enum_name()
+            .expect("We expect the eq to be of type Enumeration");
         condition.add(column.eq(extract_variant(data)))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("ne") {
-        let data = data.enum_name().expect("We expect the ne to be of type Enumeration");
+        let data = data
+            .enum_name()
+            .expect("We expect the ne to be of type Enumeration");
         condition.add(column.ne(extract_variant(data)))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("gt") {
-        let data = data.enum_name().expect("We expect the gt to be of type Enumeration");
+        let data = data
+            .enum_name()
+            .expect("We expect the gt to be of type Enumeration");
         condition.add(column.gt(extract_variant(data)))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("gte") {
-        let data = data.enum_name().expect("We expect the gte to be of type Enumeration");
+        let data = data
+            .enum_name()
+            .expect("We expect the gte to be of type Enumeration");
         condition.add(column.gte(extract_variant(data)))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("lt") {
-        let data = data.enum_name().expect("We expect the lt to be of type Enumeration");
+        let data = data
+            .enum_name()
+            .expect("We expect the lt to be of type Enumeration");
         condition.add(column.lt(extract_variant(data)))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("lte") {
-        let data = data.enum_name().expect("We expect the lte to be of type Enumeration");
+        let data = data
+            .enum_name()
+            .expect("We expect the lte to be of type Enumeration");
         condition.add(column.lte(extract_variant(data)))
     } else {
         condition

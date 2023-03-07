@@ -48,9 +48,16 @@ where
             // FIXME
             // ColumnType::Custom(_) => {
             // },
-            ColumnType::Enum { name: enum_name, variants: _ } => {
-                Some(InputValue::new(name, TypeRef::named(format!("{}EnumFilterInput", enum_name.to_string().to_upper_camel_case()))))
-            },
+            ColumnType::Enum {
+                name: enum_name,
+                variants: _,
+            } => Some(InputValue::new(
+                name,
+                TypeRef::named(format!(
+                    "{}EnumFilterInput",
+                    enum_name.to_string().to_upper_camel_case()
+                )),
+            )),
             // FIXME
             // ColumnType::Array => {
             // },

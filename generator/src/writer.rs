@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap};
+use std::collections::BTreeMap;
 use std::path::Path;
 
 use proc_macro2::TokenStream;
@@ -97,11 +97,13 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
 
     let enumerations = match enumerations {
         Some(_) => {
-            let file_content = std::fs::read_to_string(entities_path.as_ref().join("sea_orm_active_enums.rs")).unwrap();
+            let file_content =
+                std::fs::read_to_string(entities_path.as_ref().join("sea_orm_active_enums.rs"))
+                    .unwrap();
 
             parse_enumerations(file_content)
-        },
-        None => vec![]
+        }
+        None => vec![],
     };
 
     let enumerations_filters = enumerations
@@ -114,15 +116,13 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             }
         });
 
-    let enumerations = enumerations
-        .iter()
-        .map(|definition| {
-            let name = &definition.name;
+    let enumerations = enumerations.iter().map(|definition| {
+        let name = &definition.name;
 
-            quote!{
-                seaography::active_enum_to_enum_type::<crate::entities::sea_orm_active_enums::#name>()
-            }
-        });
+        quote! {
+            seaography::active_enum_to_enum_type::<crate::entities::sea_orm_active_enums::#name>()
+        }
+    });
 
     quote! {
         use async_graphql::{dataloader::DataLoader, dynamic::*};

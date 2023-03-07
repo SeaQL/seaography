@@ -15,7 +15,10 @@ pub fn active_enum_to_enum_type<A: ActiveEnum>() -> Enum {
 }
 
 pub fn active_enum_to_enum_filter_input<A: ActiveEnum>() -> InputObject {
-    let name = format!("{}EnumFilterInput", A::name().to_string().to_upper_camel_case());
+    let name = format!(
+        "{}EnumFilterInput",
+        A::name().to_string().to_upper_camel_case()
+    );
 
     let enum_name = format!("{}Enum", A::name().to_string().to_upper_camel_case());
 
@@ -26,10 +29,7 @@ pub fn active_enum_to_enum_filter_input<A: ActiveEnum>() -> InputObject {
         .field(InputValue::new("gte", TypeRef::named(&enum_name)))
         .field(InputValue::new("lt", TypeRef::named(&enum_name)))
         .field(InputValue::new("lte", TypeRef::named(&enum_name)))
-        .field(InputValue::new(
-            "is_in",
-            TypeRef::named_nn_list(&enum_name),
-        ))
+        .field(InputValue::new("is_in", TypeRef::named_nn_list(&enum_name)))
         .field(InputValue::new(
             "is_not_in",
             TypeRef::named_nn_list(&enum_name),
