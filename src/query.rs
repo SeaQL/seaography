@@ -557,70 +557,70 @@ where
                 #[cfg(feature = "with-decimal")]
                 ColumnType::Decimal(_) => basic_filtering_type!(condition, column, filter, string),
                 // ColumnType::DateTime => {
-
+                // FIXME
                 // },
                 // ColumnType::Timestamp => {
-
+                // FIXME
                 // },
                 // ColumnType::TimestampWithTimeZone => {
-
+                // FIXME
                 // },
                 // ColumnType::Time => {
-
+                // FIXME
                 // },
                 // ColumnType::Date => {
-
+                // FIXME
                 // },
                 // ColumnType::Year => {
-
+                // FIXME
                 // },
                 // ColumnType::Interval => {
-
+                // FIXME
                 // },
                 // ColumnType::Binary => {
-
+                // FIXME
                 // },
                 // ColumnType::VarBinary => {
-
+                // FIXME
                 // },
                 // ColumnType::Bit => {
-
+                // FIXME
                 // },
                 // ColumnType::VarBit => {
-
+                // FIXME
                 // },
                 // ColumnType::Boolean => {
-
+                // FIXME
                 // },
                 // ColumnType::Money(_) => {
-
+                // FIXME
                 // },
                 // ColumnType::Json => {
-
+                // FIXME
                 // },
                 // ColumnType::JsonBinary => {
-
+                // FIXME
                 // },
                 // ColumnType::Custom(_) => {
-
+                // FIXME
                 // },
                 // ColumnType::Uuid => {
-
+                // FIXME
                 // },
-                // ColumnType::Enum { name, variants } => {
-
-                // },
+                ColumnType::Enum { name: _, variants } => {
+                    prepare_enumeration_condition(condition, &filter, column, variants)
+                },
                 // ColumnType::Array(_) => {
-
+                // FIXME
                 // },
                 // ColumnType::Cidr => {
-
+                // FIXME
                 // },
                 // ColumnType::Inet => {
-
+                // FIXME
                 // },
                 // ColumnType::MacAddr => {
-
+                // FIXME
                 // },
                 _ => panic!("Type is not supported"),
             }
@@ -657,6 +657,65 @@ where
                     condition.add(recursive_prepare_condition::<T>(filters))
                 }),
         )
+    } else {
+        condition
+    };
+
+    condition
+}
+
+
+pub fn prepare_enumeration_condition<T>(condition: Condition, filter: &ObjectAccessor, column: T, variants: &Vec<std::sync::Arc<dyn Iden>>) -> Condition
+where
+    T: ColumnTrait
+{
+    let extract_variant = move |input: &str| -> String {
+        let variant = variants.iter().find(|variant| {
+            let variant = variant.to_string().to_upper_camel_case().to_ascii_uppercase();
+            variant.eq(input)
+
+        });
+        variant.expect("We expect to always map Enumerations.").to_string()
+    };
+
+    let condition = if let Some(data) = filter.get("eq") {
+        let data = data.enum_name().expect("We expect the eq to be of type Enumeration");
+        condition.add(column.eq(extract_variant(data)))
+    } else {
+        condition
+    };
+
+    let condition = if let Some(data) = filter.get("ne") {
+        let data = data.enum_name().expect("We expect the ne to be of type Enumeration");
+        condition.add(column.ne(extract_variant(data)))
+    } else {
+        condition
+    };
+
+    let condition = if let Some(data) = filter.get("gt") {
+        let data = data.enum_name().expect("We expect the gt to be of type Enumeration");
+        condition.add(column.gt(extract_variant(data)))
+    } else {
+        condition
+    };
+
+    let condition = if let Some(data) = filter.get("gte") {
+        let data = data.enum_name().expect("We expect the gte to be of type Enumeration");
+        condition.add(column.gte(extract_variant(data)))
+    } else {
+        condition
+    };
+
+    let condition = if let Some(data) = filter.get("lt") {
+        let data = data.enum_name().expect("We expect the lt to be of type Enumeration");
+        condition.add(column.lt(extract_variant(data)))
+    } else {
+        condition
+    };
+
+    let condition = if let Some(data) = filter.get("lte") {
+        let data = data.enum_name().expect("We expect the lte to be of type Enumeration");
+        condition.add(column.lte(extract_variant(data)))
     } else {
         condition
     };

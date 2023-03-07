@@ -1,5 +1,5 @@
 use async_graphql::dynamic::*;
-use heck::ToLowerCamelCase;
+use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{prelude::*, Iterable};
 
 /// used to create filter input for SeaORM Entity
@@ -48,9 +48,9 @@ where
             // FIXME
             // ColumnType::Custom(_) => {
             // },
-            // FIXME
-            // ColumnType::Enum { name: _, variants: _ } => {
-            // },
+            ColumnType::Enum { name: enum_name, variants: _ } => {
+                Some(InputValue::new(name, TypeRef::named(format!("{}EnumFilterInput", enum_name.to_string().to_upper_camel_case()))))
+            },
             // FIXME
             // ColumnType::Array => {
             // },

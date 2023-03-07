@@ -104,14 +104,23 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         None => vec![]
     };
 
-
-    let enumerations = enumerations
-        .into_iter()
+    let enumerations_filters = enumerations
+        .iter()
         .map(|definition| {
-            let name = definition.name;
+            let name = &definition.name;
 
             quote!{
-                seaography::enumeration_map::<#name>()
+                seaography::active_enum_to_enum_filter_input::<crate::entities::sea_orm_active_enums::#name>()
+            }
+        });
+
+    let enumerations = enumerations
+        .iter()
+        .map(|definition| {
+            let name = &definition.name;
+
+            quote!{
+                seaography::active_enum_to_enum_type::<crate::entities::sea_orm_active_enums::#name>()
             }
         });
 
@@ -141,6 +150,10 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
                 #(#entities),*
             ];
 
+            let enumerations_filters = vec![
+                #(#enumerations_filters),*
+            ];
+
             let enumerations = vec![
                 #(#enumerations),*
             ];
@@ -159,6 +172,12 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
                             .register(object.entity_object),
                         query.field(object.query),
                     )
+                });
+
+            let schema = enumerations_filters
+                .into_iter()
+                .fold(schema, |schema, enumeration| {
+                    schema.register(enumeration)
                 });
 
             let schema = enumerations
