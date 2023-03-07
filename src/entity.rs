@@ -69,7 +69,7 @@ where
             // map column type to GraphQL type
             let type_name: String = match &column_def.get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                    TypeRef::STRING.clone().into()
+                    TypeRef::STRING.into()
                 }
                 ColumnType::TinyInteger
                 | ColumnType::SmallInteger
@@ -78,41 +78,39 @@ where
                 | ColumnType::TinyUnsigned
                 | ColumnType::SmallUnsigned
                 | ColumnType::Unsigned
-                | ColumnType::BigUnsigned => TypeRef::INT.clone().into(),
-                ColumnType::Float | ColumnType::Double => TypeRef::FLOAT.clone().into(),
-                ColumnType::Decimal(_) => TypeRef::STRING.clone().into(),
+                | ColumnType::BigUnsigned => TypeRef::INT.into(),
+                ColumnType::Float | ColumnType::Double => TypeRef::FLOAT.into(),
+                ColumnType::Decimal(_) => TypeRef::STRING.into(),
                 ColumnType::DateTime
                 | ColumnType::Timestamp
                 | ColumnType::TimestampWithTimeZone
                 | ColumnType::Time
-                | ColumnType::Date => TypeRef::STRING.clone().into(),
-                ColumnType::Year(_) => TypeRef::INT.clone().into(),
-                ColumnType::Interval(_, _) => TypeRef::STRING.clone().into(),
+                | ColumnType::Date => TypeRef::STRING.into(),
+                ColumnType::Year(_) => TypeRef::INT.into(),
+                ColumnType::Interval(_, _) => TypeRef::STRING.into(),
                 ColumnType::Binary(_)
                 | ColumnType::VarBinary(_)
                 | ColumnType::VarBit(_)
-                | ColumnType::Bit(_) => TypeRef::STRING.clone().into(),
-                ColumnType::Boolean => TypeRef::BOOLEAN.clone().into(),
-                ColumnType::Money(_) => TypeRef::STRING.clone().into(),
+                | ColumnType::Bit(_) => TypeRef::STRING.into(),
+                ColumnType::Boolean => TypeRef::BOOLEAN.into(),
+                ColumnType::Money(_) => TypeRef::STRING.into(),
                 ColumnType::Json | ColumnType::JsonBinary => {
                     // FIXME
-                    TypeRef::STRING.clone().into()
+                    TypeRef::STRING.into()
                 }
-                ColumnType::Uuid => TypeRef::STRING.clone().into(),
+                ColumnType::Uuid => TypeRef::STRING.into(),
                 ColumnType::Custom(_) => {
                     // FIXME
-                    TypeRef::STRING.clone().into()
+                    TypeRef::STRING.into()
                 }
                 ColumnType::Enum { name, variants: _ } => {
                     format!("{}Enum", name.to_string().to_upper_camel_case())
                 }
                 ColumnType::Array(_) => {
                     // FIXME
-                    TypeRef::STRING.clone().into()
+                    TypeRef::STRING.into()
                 }
-                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
-                    TypeRef::STRING.clone().into()
-                }
+                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => TypeRef::STRING.into(),
                 _ => todo!(),
             };
 
@@ -123,13 +121,13 @@ where
                 TypeRef::named_nn(type_name)
             };
 
-            let is_enum = match column_def.get_column_type() {
+            let is_enum = matches!(
+                column_def.get_column_type(),
                 ColumnType::Enum {
                     name: _,
-                    variants: _,
-                } => true,
-                _ => false,
-            };
+                    variants: _
+                }
+            );
 
             // convert SeaQL value to GraphQL value
             let field = Field::new(name, graphql_type, move |ctx| {

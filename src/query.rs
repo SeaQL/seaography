@@ -738,7 +738,7 @@ pub fn prepare_enumeration_condition<T>(
     condition: Condition,
     filter: &ObjectAccessor,
     column: T,
-    variants: &Vec<std::sync::Arc<dyn Iden>>,
+    variants: &[std::sync::Arc<dyn Iden>],
 ) -> Condition
 where
     T: ColumnTrait,
@@ -1012,7 +1012,7 @@ where
                         .try_downcast_ref::<T::Model>()
                         .expect("Parent should exist");
 
-                    let stmt = if let Some(_) = <T as Related<R>>::via() {
+                    let stmt = if <T as Related<R>>::via().is_some() {
                         <T as Related<R>>::find_related()
                     } else {
                         R::find()
@@ -1046,7 +1046,7 @@ where
                         .try_downcast_ref::<T::Model>()
                         .expect("Parent should exist");
 
-                    let stmt = if let Some(_) = <T as Related<R>>::via() {
+                    let stmt = if <T as Related<R>>::via().is_some() {
                         <T as Related<R>>::find_related()
                     } else {
                         R::find()
