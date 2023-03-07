@@ -1,9 +1,9 @@
-use async_graphql::{dataloader::DataLoader, EmptyMutation, EmptySubscription, Response, Schema};
+use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
 use sea_orm::Database;
-use seaography_mysql_example::{OrmDataloader, QueryRoot};
+use seaography_mysql_example::OrmDataloader;
 
-pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription> {
-    let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
+pub async fn get_schema() -> Schema {
+    let database = Database::connect("mysql://root:root@127.0.0.1/sakila")
         .await
         .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
@@ -12,10 +12,8 @@ pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription>
         },
         tokio::spawn,
     );
-    let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-        .data(database)
-        .data(orm_dataloader)
-        .finish();
+    let schema =
+        seaography_mysql_example::query_root::schema(database, orm_dataloader, None, None).unwrap();
 
     schema
 }
@@ -35,42 +33,42 @@ async fn test_simple_query() {
         schema
             .execute(
                 r#"
-          {
-            store {
-              nodes {
-                storeId
-                staff {
-                  firstName
-                  lastName
+                {
+                    store {
+                    nodes {
+                        storeId
+                        staff {
+                        firstName
+                        lastName
+                        }
+                    }
+                    }
                 }
-              }
-            }
-          }
-          "#,
+                "#,
             )
             .await,
         r#"
-          {
-            "store": {
-              "nodes": [
-                {
-                  "storeId": 1,
-                  "staff": {
-                    "firstName": "Mike",
-                    "lastName": "Hillyer"
-                  }
-                },
-                {
-                  "storeId": 2,
-                  "staff": {
-                    "firstName": "Jon",
-                    "lastName": "Stephens"
-                  }
+            {
+                "store": {
+                "nodes": [
+                    {
+                    "storeId": 1,
+                    "staff": {
+                        "firstName": "Mike",
+                        "lastName": "Hillyer"
+                    }
+                    },
+                    {
+                    "storeId": 2,
+                    "staff": {
+                        "firstName": "Jon",
+                        "lastName": "Stephens"
+                    }
+                    }
+                ]
                 }
-              ]
             }
-          }
-          "#,
+            "#,
     )
 }
 
@@ -82,35 +80,35 @@ async fn test_simple_query_with_filter() {
         schema
             .execute(
                 r#"
-          {
-              store(filters: {storeId:{eq: 1}}) {
-                nodes {
-                  storeId
-                  staff {
-                    firstName
-                    lastName
-                  }
+                {
+                    store(filters: {storeId:{eq: 1}}) {
+                        nodes {
+                        storeId
+                        staff {
+                            firstName
+                            lastName
+                        }
+                        }
+                    }
                 }
-              }
-          }
-          "#,
+                "#,
             )
             .await,
         r#"
-          {
-            "store": {
-              "nodes": [
-                {
-                  "storeId": 1,
-                  "staff": {
-                    "firstName": "Mike",
-                    "lastName": "Hillyer"
-                  }
+            {
+                "store": {
+                "nodes": [
+                    {
+                    "storeId": 1,
+                    "staff": {
+                        "firstName": "Mike",
+                        "lastName": "Hillyer"
+                    }
+                    }
+                ]
                 }
-              ]
             }
-          }
-          "#,
+            "#,
     )
 }
 
@@ -123,39 +121,43 @@ async fn test_filter_with_pagination() {
             .execute(
                 r#"
                 {
-                  customer(
-                    filters: { active: { eq: 0 } }
-                    pagination: { pages: { page: 2, limit: 3 } }
-                  ) {
-                    nodes {
-                      customerId
+                    customer(
+                      filters: { active: { eq: 0 } }
+                      pagination: { pages: { page: 2, limit: 3 } }
+                    ) {
+                      nodes {
+                        customerId
+                      }
+                      paginationInfo {
+                        pages
+                        current
+                      }
                     }
-                    pages
-                    current
                   }
-                }
-          "#,
+                "#,
             )
             .await,
         r#"
-          {
-            "customer": {
-              "nodes": [
-                {
-                  "customerId": 315
-                },
-                {
-                  "customerId": 368
-                },
-                {
-                  "customerId": 406
+            {
+                "customer": {
+                  "nodes": [
+                    {
+                      "customerId": 315
+                    },
+                    {
+                      "customerId": 368
+                    },
+                    {
+                      "customerId": 406
+                    }
+                  ],
+                  "paginationInfo": {
+                    "pages": 5,
+                    "current": 2
+                  }
                 }
-              ],
-              "pages": 5,
-              "current": 2
             }
-          }
-          "#,
+            "#,
     )
 }
 
@@ -168,39 +170,43 @@ async fn test_complex_filter_with_pagination() {
             .execute(
                 r#"
                 {
-                  payment(
-                    filters: { amount: { gt: "11.1" } }
-                    pagination: { pages: { limit: 2, page: 3 } }
-                  ) {
-                    nodes {
-                      paymentId
-                      amount
+                    payment(
+                      filters: { amount: { gt: "11.1" } }
+                      pagination: { pages: { limit: 2, page: 3 } }
+                    ) {
+                      nodes {
+                        paymentId
+                        amount
+                      }
+                      paginationInfo {
+                        pages
+                        current
+                      }
                     }
-                    pages
-                    current
-                  }
                 }
-          "#,
+                "#,
             )
             .await,
         r#"
-          {
-            "payment": {
-              "nodes": [
-                {
-                  "paymentId": 8272,
-                  "amount": "11.99"
-                },
-                {
-                  "paymentId": 9803,
-                  "amount": "11.99"
+            {
+                "payment": {
+                "nodes": [
+                    {
+                    "paymentId": 8272,
+                    "amount": "11.99"
+                    },
+                    {
+                    "paymentId": 9803,
+                    "amount": "11.99"
+                    }
+                ],
+                "paginationInfo": {
+                    "pages": 5,
+                    "current": 3
                 }
-              ],
-              "pages": 5,
-              "current": 3
+                }
             }
-          }
-          "#,
+            "#,
     )
 }
 
@@ -213,89 +219,89 @@ async fn test_cursor_pagination() {
             .execute(
                 r#"
                 {
-                  payment(
-                    filters: { amount: { gt: "11" } }
-                    pagination: { cursor: { limit: 5 } }
-                  ) {
-                    edges {
-                      node {
-                        paymentId
-                        amount
-                        customer {
-                          firstName
+                    payment(
+                        filters: { amount: { gt: "11" } }
+                        pagination: { cursor: { limit: 5 } }
+                    ) {
+                        edges {
+                        node {
+                            paymentId
+                            amount
+                            customer {
+                            firstName
+                            }
                         }
-                      }
+                        }
+                        pageInfo {
+                        hasPreviousPage
+                        hasNextPage
+                        startCursor
+                        endCursor
+                        }
                     }
-                    pageInfo {
-                      hasPreviousPage
-                      hasNextPage
-                      startCursor
-                      endCursor
-                    }
-                  }
                 }
-        "#,
+                "#,
             )
             .await,
         r#"
-        {
-          "payment": {
-            "edges": [
-              {
-                "node": {
-                  "paymentId": 342,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "KAREN"
-                  }
+            {
+            "payment": {
+                "edges": [
+                {
+                    "node": {
+                    "paymentId": 342,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "KAREN"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 3146,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "VICTORIA"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 5280,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "VANESSA"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 5281,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "ALMA"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 5550,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "ROSEMARY"
+                    }
+                    }
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 3146,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "VICTORIA"
-                  }
+                ],
+                "pageInfo": {
+                "hasPreviousPage": false,
+                "hasNextPage": true,
+                "startCursor": "Int[3]:342",
+                "endCursor": "Int[4]:5550"
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 5280,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "VANESSA"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 5281,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "ALMA"
-                  }
-                }
-              },
-              {
-                "node": {
-                  "paymentId": 5550,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "ROSEMARY"
-                  }
-                }
-              }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": false,
-              "hasNextPage": true,
-              "startCursor": "Int[3]:342",
-              "endCursor": "Int[4]:5550"
             }
-          }
-        }
-        "#,
+            }
+            "#,
     )
 }
 
@@ -329,50 +335,50 @@ async fn test_cursor_pagination_prev() {
                     }
                   }
                 }
-        "#,
+                "#,
             )
             .await,
         r#"
-        {
-          "payment": {
-            "edges": [
-              {
-                "node": {
-                  "paymentId": 6409,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "TANYA"
-                  }
+            {
+            "payment": {
+                "edges": [
+                {
+                    "node": {
+                    "paymentId": 6409,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "TANYA"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 8272,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "RICHARD"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 9803,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "NICHOLAS"
+                    }
+                    }
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 8272,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "RICHARD"
-                  }
+                ],
+                "pageInfo": {
+                "hasPreviousPage": true,
+                "hasNextPage": true,
+                "startCursor": "Int[4]:6409",
+                "endCursor": "Int[4]:9803"
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 9803,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "NICHOLAS"
-                  }
-                }
-              }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": true,
-              "hasNextPage": true,
-              "startCursor": "Int[4]:6409",
-              "endCursor": "Int[4]:9803"
             }
-          }
-        }
-        "#,
+            }
+            "#,
     )
 }
 
@@ -406,41 +412,41 @@ async fn test_cursor_pagination_no_next() {
                     }
                   }
                 }
-        "#,
+                "#,
             )
             .await,
         r#"
-        {
-          "payment": {
-            "edges": [
-              {
-                "node": {
-                  "paymentId": 15821,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "KENT"
-                  }
+            {
+            "payment": {
+                "edges": [
+                {
+                    "node": {
+                    "paymentId": 15821,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "KENT"
+                    }
+                    }
+                },
+                {
+                    "node": {
+                    "paymentId": 15850,
+                    "amount": "11.99",
+                    "customer": {
+                        "firstName": "TERRANCE"
+                    }
+                    }
                 }
-              },
-              {
-                "node": {
-                  "paymentId": 15850,
-                  "amount": "11.99",
-                  "customer": {
-                    "firstName": "TERRANCE"
-                  }
+                ],
+                "pageInfo": {
+                "hasPreviousPage": true,
+                "hasNextPage": false,
+                "startCursor": "Int[5]:15821",
+                "endCursor": "Int[5]:15850"
                 }
-              }
-            ],
-            "pageInfo": {
-              "hasPreviousPage": true,
-              "hasNextPage": false,
-              "startCursor": "Int[5]:15821",
-              "endCursor": "Int[5]:15850"
             }
-          }
-        }
-        "#,
+            }
+            "#,
     )
 }
 
@@ -470,41 +476,41 @@ async fn test_self_ref() {
                       }
                     }
                   }
-        "#,
+                "#,
             )
             .await,
         r#"
-        {
-            "staff": {
-              "nodes": [
-                {
-                  "firstName": "Mike",
-                  "reportsToId": null,
-                  "selfRefReverse": {
-                    "nodes": [
-                      {
-                        "staffId": 2,
-                        "firstName": "Jon"
-                      }
-                    ]
-                  },
-                  "selfRef": null
-                },
-                {
-                  "firstName": "Jon",
-                  "reportsToId": 1,
-                  "selfRefReverse": {
-                    "nodes": []
-                  },
-                  "selfRef": {
-                    "staffId": 1,
-                    "firstName": "Mike"
-                  }
+            {
+                "staff": {
+                "nodes": [
+                    {
+                    "firstName": "Mike",
+                    "reportsToId": null,
+                    "selfRefReverse": {
+                        "nodes": [
+                        {
+                            "staffId": 2,
+                            "firstName": "Jon"
+                        }
+                        ]
+                    },
+                    "selfRef": null
+                    },
+                    {
+                    "firstName": "Jon",
+                    "reportsToId": 1,
+                    "selfRefReverse": {
+                        "nodes": []
+                    },
+                    "selfRef": {
+                        "staffId": 1,
+                        "firstName": "Mike"
+                    }
+                    }
+                ]
                 }
-              ]
             }
-          }
-        "#,
+            "#,
     )
 }
 
@@ -517,31 +523,31 @@ async fn related_queries_filters() {
             .execute(
                 r#"
                 {
-                  customer(
-                    filters: { active: { eq: 0 } }
-                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
-                  ) {
-                    nodes {
-                      customerId
-                      lastName
-                      email
-                      address {
-                        address
-                      }
-                      payment(filters: { amount: { gt: "8" } }, orderBy: { amount: DESC }) {
-                        nodes {
-                          paymentId
+                    customer(
+                      filters: { active: { eq: 0 } }
+                      pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                    ) {
+                      nodes {
+                        customerId
+                        lastName
+                        email
+                        address {
+                          address
+                        }
+                        payment(filters: { amount: { gt: "8" } }, orderBy: { amount: DESC }) {
+                          nodes {
+                            paymentId
+                          }
                         }
                       }
+                      pageInfo {
+                        hasPreviousPage
+                        hasNextPage
+                        endCursor
+                      }
                     }
-                    pageInfo {
-                      hasPreviousPage
-                      hasNextPage
-                      endCursor
-                    }
-                  }
                 }
-        "#,
+                "#,
             )
             .await,
         r#"
@@ -646,8 +652,10 @@ async fn related_queries_pagination() {
                           paymentId
                           amount
                         }
-                        pages
-                        current
+                        paginationInfo {
+                          pages
+                          current
+                        }
                         pageInfo {
                           hasPreviousPage
                           hasNextPage
@@ -682,10 +690,12 @@ async fn related_queries_pagination() {
                       "amount": "9.99"
                     }
                   ],
-                  "pages": 2,
-                  "current": 1,
+                  "paginationInfo": {
+                    "pages": 2,
+                    "current": 1
+                  },
                   "pageInfo": {
-                    "hasPreviousPage": true,
+                    "hasPreviousPage": false,
                     "hasNextPage": false
                   }
                 }
@@ -704,10 +714,12 @@ async fn related_queries_pagination() {
                       "amount": "7.99"
                     }
                   ],
-                  "pages": 6,
-                  "current": 1,
+                  "paginationInfo": {
+                    "pages": 6,
+                    "current": 1
+                  },
                   "pageInfo": {
-                    "hasPreviousPage": true,
+                    "hasPreviousPage": false,
                     "hasNextPage": true
                   }
                 }
@@ -726,10 +738,12 @@ async fn related_queries_pagination() {
                       "amount": "7.99"
                     }
                   ],
-                  "pages": 3,
-                  "current": 1,
+                  "paginationInfo": {
+                    "pages": 3,
+                    "current": 1
+                  },
                   "pageInfo": {
-                    "hasPreviousPage": true,
+                    "hasPreviousPage": false,
                     "hasNextPage": true
                   }
                 }
