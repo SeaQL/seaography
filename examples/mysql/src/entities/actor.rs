@@ -1,12 +1,6 @@
 use sea_orm::entity::prelude::*;
 
-#[derive(
-    Clone,
-    Debug,
-    PartialEq,
-    DeriveEntityModel,
-    async_graphql::SimpleObject,
-)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, async_graphql::SimpleObject)]
 #[sea_orm(table_name = "actor")]
 #[graphql(complex)]
 #[graphql(name = "Actor")]
@@ -238,7 +232,7 @@ impl seaography::EntityOrderBy<Entity> for OrderBy {
         } else {
             stmt
         };
-        
+
         if let Some(order_by) = self.last_update {
             match order_by {
                 seaography::OrderByEnum::Asc => {

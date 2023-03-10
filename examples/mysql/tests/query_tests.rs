@@ -12,7 +12,6 @@ pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription>
         },
         tokio::spawn,
     );
-    
 
     Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
         .data(database)
