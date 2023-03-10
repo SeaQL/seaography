@@ -238,7 +238,8 @@ impl seaography::EntityOrderBy<Entity> for OrderBy {
         } else {
             stmt
         };
-        let stmt = if let Some(order_by) = self.last_update {
+        
+        if let Some(order_by) = self.last_update {
             match order_by {
                 seaography::OrderByEnum::Asc => {
                     stmt.order_by(Column::LastUpdate, sea_orm::query::Order::Asc)
@@ -249,8 +250,7 @@ impl seaography::EntityOrderBy<Entity> for OrderBy {
             }
         } else {
             stmt
-        };
-        stmt
+        }
     }
 }
 impl seaography::EnhancedEntity for Entity {

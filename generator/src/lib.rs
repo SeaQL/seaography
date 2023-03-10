@@ -26,9 +26,9 @@ pub async fn write_project<P: AsRef<Path>>(
     depth_limit: Option<usize>,
     complexity_limit: Option<usize>,
 ) -> Result<()> {
-    std::fs::create_dir_all(&path.as_ref().join("src/entities"))?;
+    std::fs::create_dir_all(path.as_ref().join("src/entities"))?;
 
-    writer::write_cargo_toml(path, crate_name, &sql_library, framework)?;
+    writer::write_cargo_toml(path, crate_name, sql_library, framework)?;
 
     let src_path = &path.as_ref().join("src");
 
@@ -54,7 +54,7 @@ pub async fn write_project<P: AsRef<Path>>(
 
     std::process::Command::new("cargo")
         .arg("fmt")
-        .current_dir(&path)
+        .current_dir(path)
         .spawn()?
         .wait()?;
 

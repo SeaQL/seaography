@@ -70,7 +70,7 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
         // information from a particular database
         let database_name = url
             .path_segments()
-            .expect(format!("There is no database name as part of the url path: {}", url).as_str())
+            .unwrap_or_else(|| panic!("There is no database name as part of the url path: {}", url))
             .next()
             .unwrap();
 
@@ -109,7 +109,7 @@ async fn main() {
     let ignore_tables = args
         .ignore_tables
         .unwrap_or_else(|| "seaql_migrations".into());
-    let ignore_tables: Vec<&str> = ignore_tables.split(",").collect();
+    let ignore_tables: Vec<&str> = ignore_tables.split(',').collect();
 
     let hidden_tables = args.hidden_tables.unwrap_or(true);
 
@@ -120,7 +120,7 @@ async fn main() {
         .into_iter()
         .filter(|(key, _)| {
             if hidden_tables {
-                !key.starts_with("_")
+                !key.starts_with('_')
             } else {
                 true
             }

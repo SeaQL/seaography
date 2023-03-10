@@ -8,7 +8,6 @@ pub fn generate_query_root(
 ) -> Result<TokenStream, crate::error::Error> {
     let items: Vec<_> = entities_hashmap
         .keys()
-        .into_iter()
         .filter(|entity| {
             entity.ne(&&"mod.rs".to_string())
                 && entity.ne(&&"prelude.rs".to_string())
