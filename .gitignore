@@ -14,3 +14,7 @@ Cargo.lock
 *.db-*
 
 .env
+
+# direnv / nixos
+.envrc
+.direnv
