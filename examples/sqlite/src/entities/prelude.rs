@@ -6,6 +6,7 @@ pub use super::category::Entity as Category;
 pub use super::city::Entity as City;
 pub use super::country::Entity as Country;
 pub use super::customer::Entity as Customer;
+pub use super::empty_table::Entity as EmptyTable;
 pub use super::film::Entity as Film;
 pub use super::film_actor::Entity as FilmActor;
 pub use super::film_category::Entity as FilmCategory;

@@ -758,3 +758,39 @@ async fn related_queries_pagination() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn test_pagination_underflow() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    emptyTable(
+                        pagination: { pages: { limit: 10, page: 0 } }
+                    ) {
+                        paginationInfo {
+                          pages
+                        }
+                        pageInfo {
+                            hasNextPage
+                        }
+                    }
+                }
+                "#
+            )
+            .await,
+            r#"{
+                "emptyTable": {
+                    "paginationInfo": {
+                        "pages": 0
+                    },
+                    "pageInfo": {
+                        "hasNextPage": false
+                    }
+                }
+            }"#
+    )
+}

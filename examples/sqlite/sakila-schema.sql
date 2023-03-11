@@ -643,6 +643,17 @@ LEFT JOIN sakila.category c
 GROUP BY a.actor_id, a.first_name, a.last_name;
 */
 
+--
+-- Empty table for testing for underflows
+--
+
+CREATE TABLE empty_table
+(
+  empty_table_id INT NOT NULL,
+  PRIMARY KEY (empty_table_id)
+)
+;
+
 -- TO DO PROCEDURES
 -- TO DO TRIGGERS
 

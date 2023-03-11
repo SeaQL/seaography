@@ -295,6 +295,10 @@ pub fn schema(
                 >("Store", crate::entities::address::Relation::Store.def()),
             ],
         ),
+        DynamicGraphqlEntity::from_entity::<crate::entities::empty_table::Entity>(
+            &pagination_input,
+            vec![],
+        ),
     ];
     let schema = Schema::build(query.type_name(), None, None);
     let (schema, query) = entities

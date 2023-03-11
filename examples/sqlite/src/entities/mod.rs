@@ -8,6 +8,7 @@ pub mod category;
 pub mod city;
 pub mod country;
 pub mod customer;
+pub mod empty_table;
 pub mod film;
 pub mod film_actor;
 pub mod film_category;
