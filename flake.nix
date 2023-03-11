@@ -22,6 +22,8 @@
             pkg-config
             clang
             rust-analyzer
+            sqlite
+            (callPackage ./pkgs/sea-orm-cli {} )
           ];
 
           buildInputs = [
