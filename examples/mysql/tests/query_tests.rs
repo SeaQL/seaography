@@ -3,7 +3,7 @@ use sea_orm::Database;
 use seaography_mysql_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("mysql://root:root@127.0.0.1/sakila")
+    let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
@@ -123,7 +123,7 @@ async fn test_filter_with_pagination() {
                 {
                     customer(
                       filters: { active: { eq: 0 } }
-                      pagination: { pages: { page: 2, limit: 3 } }
+                      pagination: { page: { page: 2, limit: 3 } }
                     ) {
                       nodes {
                         customerId
@@ -172,7 +172,7 @@ async fn test_complex_filter_with_pagination() {
                 {
                     payment(
                       filters: { amount: { gt: "11.1" } }
-                      pagination: { pages: { limit: 2, page: 3 } }
+                      pagination: { page: { limit: 2, page: 3 } }
                     ) {
                       nodes {
                         paymentId
@@ -646,7 +646,7 @@ async fn related_queries_pagination() {
                       payment(
                         filters: { amount: { gt: "7" } }
                         orderBy: { amount: ASC }
-                        pagination: { pages: { limit: 1, page: 1 } }
+                        pagination: { page: { limit: 1, page: 1 } }
                       ) {
                         nodes {
                           paymentId
@@ -695,7 +695,7 @@ async fn related_queries_pagination() {
                     "current": 1
                   },
                   "pageInfo": {
-                    "hasPreviousPage": false,
+                    "hasPreviousPage": true,
                     "hasNextPage": false
                   }
                 }
@@ -719,7 +719,7 @@ async fn related_queries_pagination() {
                     "current": 1
                   },
                   "pageInfo": {
-                    "hasPreviousPage": false,
+                    "hasPreviousPage": true,
                     "hasNextPage": true
                   }
                 }
@@ -743,7 +743,7 @@ async fn related_queries_pagination() {
                     "current": 1
                   },
                   "pageInfo": {
-                    "hasPreviousPage": false,
+                    "hasPreviousPage": true,
                     "hasNextPage": true
                   }
                 }

@@ -22,9 +22,7 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     if let Some(pagination) = pagination {
-        let pagination = pagination
-            .object()
-            .expect("We expect the pagination of entity to be object type");
+        let pagination = pagination.object().unwrap();
         let pagination_input_builder = PaginationInputBuilder { context };
 
         let pagination = pagination_input_builder.parse_object(&pagination);
@@ -169,8 +167,8 @@ where
             Ok(Connection {
                 edges,
                 page_info: PageInfo {
-                    has_previous_page: page_object.page != 1,
-                    has_next_page: page_object.page != pages,
+                    has_previous_page: page_object.page != 0,
+                    has_next_page: page_object.page + 1 != pages,
                     start_cursor,
                     end_cursor,
                 },

@@ -28,7 +28,7 @@ impl ActiveEnumFilterInputBuilder {
         format!(
             "{}{}",
             A::name().to_string().to_upper_camel_case(),
-            self.context.active_enum.type_name
+            self.context.active_enum_filter_input.type_name
         )
     }
 
@@ -37,7 +37,7 @@ impl ActiveEnumFilterInputBuilder {
         format!(
             "{}{}",
             name.to_string().to_upper_camel_case(),
-            self.context.active_enum.type_name
+            self.context.active_enum_filter_input.type_name
         )
     }
 

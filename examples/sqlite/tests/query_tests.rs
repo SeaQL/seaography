@@ -694,8 +694,8 @@ async fn related_queries_pagination() {
                     "current": 1
                   },
                   "pageInfo": {
-                    "hasPreviousPage": false,
-                    "hasNextPage": true
+                    "hasPreviousPage": true,
+                    "hasNextPage": false
                   }
                 }
               },
@@ -718,7 +718,7 @@ async fn related_queries_pagination() {
                     "current": 1
                   },
                   "pageInfo": {
-                    "hasPreviousPage": false,
+                    "hasPreviousPage": true,
                     "hasNextPage": true
                   }
                 }
@@ -742,7 +742,7 @@ async fn related_queries_pagination() {
                     "current": 1
                   },
                   "pageInfo": {
-                    "hasPreviousPage": false,
+                    "hasPreviousPage": true,
                     "hasNextPage": true
                   }
                 }

@@ -56,7 +56,7 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  film(pagination: { pages: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
+  film(pagination: { page: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
     nodes {
       title
       description
@@ -100,7 +100,7 @@ Go to http://localhost:8000/ and try out the following queries:
 {
   customer(
     filters: { active: { eq: 0 } }
-    pagination: { pages: { page: 2, limit: 3 } }
+    pagination: { page: { page: 2, limit: 3 } }
   ) {
     nodes {
       customerId
@@ -155,7 +155,7 @@ Find all inactive customers, include their address, and their payments with amou
       payment(
         filters: { amount: { gt: "7" } }
         orderBy: { amount: ASC }
-        pagination: { pages: { limit: 1, page: 1 } }
+        pagination: { page: { limit: 1, page: 1 } }
       ) {
         nodes {
           paymentId
