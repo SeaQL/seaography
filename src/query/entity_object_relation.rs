@@ -13,11 +13,7 @@ pub struct EntityObjectRelationBuilder {
 }
 
 impl EntityObjectRelationBuilder {
-    pub fn get_relation<T, R>(
-        &self,
-        name: &str,
-        relation_definition: RelationDef,
-    ) -> Field
+    pub fn get_relation<T, R>(&self, name: &str, relation_definition: RelationDef) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,

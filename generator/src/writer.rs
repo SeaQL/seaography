@@ -108,17 +108,15 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         None => vec![],
     };
 
-    let enumerations = enumerations
-        .iter()
-        .map(|definition| {
-            let name = &definition.name;
+    let enumerations = enumerations.iter().map(|definition| {
+        let name = &definition.name;
 
-            quote!{
+        quote! {
 
-                builder.register_enumeration::<crate::entities::sea_orm_active_enums::#name>();
+            builder.register_enumeration::<crate::entities::sea_orm_active_enums::#name>();
 
-            }
-        });
+        }
+    });
 
     quote! {
         use crate::OrmDataloader;

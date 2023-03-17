@@ -4,7 +4,7 @@ use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
     apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
-    FilterInputBuilder, OrderInputBuilder, PaginationInputBuilder, EntityObjectBuilder,
+    EntityObjectBuilder, FilterInputBuilder, OrderInputBuilder, PaginationInputBuilder,
 };
 
 #[derive(Clone, Debug)]
@@ -34,7 +34,9 @@ impl EntityQueryFieldBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let entity_object = EntityObjectBuilder { context: self.context };
+        let entity_object = EntityObjectBuilder {
+            context: self.context,
+        };
         entity_object.type_name::<T>().to_lower_camel_case()
     }
 
@@ -55,31 +57,36 @@ impl EntityQueryFieldBuilder {
         let pagination_input_builder = PaginationInputBuilder {
             context: self.context,
         };
-        let entity_object = EntityObjectBuilder { context: self.context };
+        let entity_object = EntityObjectBuilder {
+            context: self.context,
+        };
 
         let object_name = entity_object.type_name::<T>();
         let type_name = connection_object_builder.type_name(&object_name);
 
-
         let context: &'static BuilderContext = self.context;
-        Field::new(&object_name.to_lower_camel_case(), TypeRef::named_nn(type_name), move |ctx| {
-            let context: &'static BuilderContext = context;
-            FieldFuture::new(async move {
-                let filters = ctx.args.get(&context.entity_query_field.filters);
-                let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                let pagination = ctx.args.get(&context.entity_query_field.pagination);
+        Field::new(
+            &object_name.to_lower_camel_case(),
+            TypeRef::named_nn(type_name),
+            move |ctx| {
+                let context: &'static BuilderContext = context;
+                FieldFuture::new(async move {
+                    let filters = ctx.args.get(&context.entity_query_field.filters);
+                    let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                    let pagination = ctx.args.get(&context.entity_query_field.pagination);
 
-                let stmt = T::find();
-                let stmt = stmt.filter(get_filter_conditions::<T>(filters));
-                let stmt = apply_order(&context, stmt, order_by);
+                    let stmt = T::find();
+                    let stmt = stmt.filter(get_filter_conditions::<T>(filters));
+                    let stmt = apply_order(&context, stmt, order_by);
 
-                let db = ctx.data::<DatabaseConnection>()?;
+                    let db = ctx.data::<DatabaseConnection>()?;
 
-                let connection = apply_pagination::<T>(context, db, stmt, pagination).await?;
+                    let connection = apply_pagination::<T>(context, db, stmt, pagination).await?;
 
-                Ok(Some(FieldValue::owned_any(connection)))
-            })
-        })
+                    Ok(Some(FieldValue::owned_any(connection)))
+                })
+            },
+        )
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
             TypeRef::named(filter_input_builder.type_name(&object_name)),

@@ -106,7 +106,6 @@ impl Builder {
         println!("AAAAAAAAAAAAA: {}", enumeration.type_name());
         self.enumerations.extend(vec![enumeration]);
 
-
         let filter = active_enum_filter_input_builder.input_object::<A>();
         println!("AAAAAAAAAAAAA: {}", filter.type_name());
         self.filters.extend(vec![filter]);
@@ -162,7 +161,6 @@ impl Builder {
             .orders
             .into_iter()
             .fold(schema, |schema, order| schema.register(order));
-
 
         // register enumerations
         let schema = self
