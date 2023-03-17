@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use heck::ToLowerCamelCase;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -49,34 +50,35 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, rel_def)| {
             let variant = &rel_def.variant;
             let target = &rel_def.target;
+            let relationship_name = relationship_name.to_lower_camel_case();
 
             if rel_def.self_rel && rel_def.reverse {
                 quote!{
-                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
                 }
             } else if rel_def.related {
                 quote!{
-                    entity_object_via_relation::<#entity_path::Entity, #target>(#relationship_name)
+                    entity_object_via_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name)
                 }
             } else if rel_def.self_rel {
                 quote!{
-                    entity_object_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def())
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def())
                 }
             } else if rel_def.reverse {
                 quote!{
-                    entity_object_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def().rev())
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def().rev())
                 }
             } else {
                 quote!{
-                    entity_object_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def())
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def())
                 }
             }
         }).collect();
 
         quote!{
-            DynamicGraphqlEntity::from_entity::<#entity_path::Entity>(&pagination_input, vec![
-                #(#relations),*
-            ])
+
+            builder.register_entity::<#entity_path::Entity>(vec![#(#relations),*]);
+
         }
     }).collect();
 
@@ -106,31 +108,29 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         None => vec![],
     };
 
-    let enumerations_filters = enumerations
+    let enumerations = enumerations
         .iter()
         .map(|definition| {
             let name = &definition.name;
 
             quote!{
-                seaography::active_enum_to_enum_filter_input::<crate::entities::sea_orm_active_enums::#name>()
+
+                builder.register_enumeration::<crate::entities::sea_orm_active_enums::#name>();
+
             }
         });
 
-    let enumerations = enumerations.iter().map(|definition| {
-        let name = &definition.name;
-
-        quote! {
-            seaography::active_enum_to_enum_type::<crate::entities::sea_orm_active_enums::#name>()
-        }
-    });
-
     quote! {
-        use async_graphql::{dataloader::DataLoader, dynamic::*};
-
-        use sea_orm::{DatabaseConnection, RelationTrait};
-        use seaography::{DynamicGraphqlEntity, entity_object_relation, entity_object_via_relation};
-
         use crate::OrmDataloader;
+        use async_graphql::{dataloader::DataLoader, dynamic::*};
+        use sea_orm::{DatabaseConnection, RelationTrait};
+        use seaography::{
+            Builder, BuilderContext, EntityObjectRelationBuilder, EntityObjectViaRelationBuilder,
+        };
+
+        lazy_static::lazy_static! {
+            static ref CONTEXT: BuilderContext = BuilderContext::default();
+        }
 
         pub fn schema(
             database: DatabaseConnection,
@@ -138,53 +138,15 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             depth: Option<usize>,
             complexity: Option<usize>,
         ) -> Result<Schema, SchemaError> {
-            let order_by_enum = seaography::get_order_by_enum();
-            let cursor_input = seaography::get_cursor_input();
-            let page_input = seaography::get_page_input();
-            let offset_input = seaography::get_offset_input();
-            let pagination_input = seaography::get_pagination_input(&cursor_input, &page_input, &offset_input);
+            let mut builder = Builder::new(&CONTEXT);
+            let entity_object_relation_builder = EntityObjectRelationBuilder { context: &CONTEXT };
+            let entity_object_via_relation_builder = EntityObjectViaRelationBuilder { context: &CONTEXT };
 
-            let query = Object::new("Query");
+            #(#entities)*
 
-            let entities = vec![
-                #(#entities),*
-            ];
+            #(#enumerations)*
 
-            let enumerations_filters = vec![
-                #(#enumerations_filters),*
-            ];
-
-            let enumerations = vec![
-                #(#enumerations),*
-            ];
-
-            let schema = Schema::build(query.type_name(), None, None);
-
-            let (schema, query) = entities
-                .into_iter()
-                .fold((schema, query), |(schema, query), object| {
-                    (
-                        schema
-                            .register(object.filter_input)
-                            .register(object.order_input)
-                            .register(object.edge_object)
-                            .register(object.connection_object)
-                            .register(object.entity_object),
-                        query.field(object.query),
-                    )
-                });
-
-            let schema = enumerations_filters
-                .into_iter()
-                .fold(schema, |schema, enumeration| {
-                    schema.register(enumeration)
-                });
-
-            let schema = enumerations
-                .into_iter()
-                .fold(schema, |schema, enumeration| {
-                    schema.register(enumeration)
-                });
+            let schema = builder.schema_builder();
 
             let schema = if let Some(depth) = depth {
                 schema.limit_depth(depth)
@@ -192,28 +154,13 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
                 schema
             };
 
-            let schema = seaography::get_filter_types()
-                .into_iter()
-                .fold(schema, |schema, object| schema.register(object));
-
             let schema = if let Some(complexity) = complexity {
                 schema.limit_complexity(complexity)
             } else {
                 schema
             };
 
-            schema
-                .register(seaography::PageInfo::to_object())
-                .register(seaography::PaginationInfo::to_object())
-                .register(cursor_input)
-                .register(page_input)
-                .register(offset_input)
-                .register(pagination_input)
-                .register(order_by_enum)
-                .register(query)
-                .data(database)
-                .data(orm_dataloader)
-                .finish()
+            schema.data(database).data(orm_dataloader).finish()
         }
     }
 }

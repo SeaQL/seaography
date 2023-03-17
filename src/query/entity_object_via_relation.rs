@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
-use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
 };
@@ -28,8 +28,6 @@ impl EntityObjectViaRelationBuilder {
         let via_relation_definition = <T as Related<R>>::via().expect(
             "We expect this function to be used with Related that has `via` method implemented!",
         );
-
-        let name = name.to_lower_camel_case();
 
         let type_name: String = match to_relation_definition.to_tbl {
             sea_orm::sea_query::TableRef::Table(table) => table.to_string(),

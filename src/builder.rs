@@ -1,10 +1,12 @@
-use async_graphql::dynamic::{Field, InputObject, Object, Schema, SchemaBuilder};
-use sea_orm::{EntityTrait};
+use async_graphql::dynamic::{Enum, Field, InputObject, Object, Schema, SchemaBuilder};
+use sea_orm::{ActiveEnum, EntityTrait};
 use std::collections::BTreeMap;
 
 use crate::{
-    BuilderContext, ConnectionObjectBuilder, EdgeObjectBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, FilterInputBuilder, OrderInputBuilder, OrderByEnumBuilder, CursorInputBuilder, PageInputBuilder, OffsetInputBuilder, PaginationInputBuilder, PageInfoObjectBuilder, PaginationInfoObjectBuilder,
+    ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
+    CursorInputBuilder, EdgeObjectBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
+    FilterInputBuilder, OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder,
+    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 pub struct Builder {
@@ -13,6 +15,7 @@ pub struct Builder {
     pub connections: Vec<Object>,
     pub filters: Vec<InputObject>,
     pub orders: Vec<InputObject>,
+    pub enumerations: Vec<Enum>,
     pub queries: Vec<Field>,
     pub relations: BTreeMap<String, Vec<Field>>,
     pub context: &'static BuilderContext,
@@ -26,13 +29,14 @@ impl Builder {
             connections: Vec::new(),
             filters: Vec::new(),
             orders: Vec::new(),
+            enumerations: Vec::new(),
             queries: Vec::new(),
             relations: BTreeMap::new(),
             context,
         }
     }
 
-    pub fn register_entity<T>(mut self, relations: Vec<Field>) -> Self
+    pub fn register_entity<T>(&mut self, relations: Vec<Field>)
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -63,10 +67,13 @@ impl Builder {
 
         let entity_object = entity_object_builder.to_object::<T>();
 
-        let entity_object = relations.into_iter().fold(entity_object, |entity_object, field| entity_object.field(field));
+        let entity_object = relations
+            .into_iter()
+            .fold(entity_object, |entity_object, field| {
+                entity_object.field(field)
+            });
 
-        self.entities
-            .extend(vec![entity_object]);
+        self.entities.extend(vec![entity_object]);
 
         let edge = edge_object_builder.to_object::<T>();
         self.edges.extend(vec![edge]);
@@ -82,8 +89,24 @@ impl Builder {
 
         let query = entity_query_field_builder.to_field::<T>();
         self.queries.extend(vec![query]);
+    }
 
-        self
+    pub fn register_enumeration<A>(&mut self)
+    where
+        A: ActiveEnum,
+    {
+        let active_enum_builder = ActiveEnumBuilder {
+            context: self.context,
+        };
+        let active_enum_filter_input_builder = ActiveEnumFilterInputBuilder {
+            context: self.context,
+        };
+
+        let enumeration = active_enum_builder.enumeration::<A>();
+        self.enumerations.extend(vec![enumeration]);
+
+        let filter = active_enum_filter_input_builder.input_object::<A>();
+        self.filters.extend(vec![filter]);
     }
 
     pub fn schema_builder(self) -> SchemaBuilder {
@@ -137,7 +160,9 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, filter| schema.register(filter));
 
-        let filter_input_builder = FilterInputBuilder { context: self.context };
+        let filter_input_builder = FilterInputBuilder {
+            context: self.context,
+        };
 
         schema
             .register(filter_input_builder.string_filter())
@@ -145,14 +170,54 @@ impl Builder {
             .register(filter_input_builder.float_filter())
             .register(filter_input_builder.text_filter())
             .register(filter_input_builder.boolean_filter())
-            .register(OrderByEnumBuilder{ context: self.context }.enumeration())
-            .register(CursorInputBuilder{ context: self.context }.input_object())
-            .register(CursorInputBuilder{ context: self.context }.input_object())
-            .register(PageInputBuilder{ context: self.context }.input_object())
-            .register(OffsetInputBuilder{ context: self.context }.input_object())
-            .register(PaginationInputBuilder{ context: self.context }.input_object())
-            .register(PageInfoObjectBuilder{ context: self.context }.to_object())
-            .register(PaginationInfoObjectBuilder{ context: self.context }.to_object())
+            .register(
+                OrderByEnumBuilder {
+                    context: self.context,
+                }
+                .enumeration(),
+            )
+            .register(
+                CursorInputBuilder {
+                    context: self.context,
+                }
+                .input_object(),
+            )
+            .register(
+                CursorInputBuilder {
+                    context: self.context,
+                }
+                .input_object(),
+            )
+            .register(
+                PageInputBuilder {
+                    context: self.context,
+                }
+                .input_object(),
+            )
+            .register(
+                OffsetInputBuilder {
+                    context: self.context,
+                }
+                .input_object(),
+            )
+            .register(
+                PaginationInputBuilder {
+                    context: self.context,
+                }
+                .input_object(),
+            )
+            .register(
+                PageInfoObjectBuilder {
+                    context: self.context,
+                }
+                .to_object(),
+            )
+            .register(
+                PaginationInfoObjectBuilder {
+                    context: self.context,
+                }
+                .to_object(),
+            )
             .register(query)
     }
 }

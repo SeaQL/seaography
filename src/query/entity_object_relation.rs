@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
-use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter,
     RelationDef,
@@ -27,7 +27,6 @@ impl EntityObjectRelationBuilder {
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
         let context: &'static BuilderContext = self.context;
-        let name = name.to_lower_camel_case();
         let type_name: String = match relation_definition.to_tbl {
             sea_orm::sea_query::TableRef::Table(table) => table.to_string(),
             sea_orm::sea_query::TableRef::TableAlias(table, _alias) => table.to_string(),
