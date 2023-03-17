@@ -1,5 +1,5 @@
-pub mod query;
-pub use query::*;
+pub mod entity_query_field;
+pub use entity_query_field::*;
 
 pub mod ordering;
 pub use ordering::*;

@@ -42,27 +42,27 @@ impl Builder {
         <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
-            context: &self.context,
+            context: self.context,
         };
 
         let edge_object_builder = EdgeObjectBuilder {
-            context: &self.context,
+            context: self.context,
         };
 
         let connection_object_builder = ConnectionObjectBuilder {
-            context: &self.context,
+            context: self.context,
         };
 
         let filter_input_builder = FilterInputBuilder {
-            context: &self.context,
+            context: self.context,
         };
 
         let order_input_builder = OrderInputBuilder {
-            context: &self.context,
+            context: self.context,
         };
 
         let entity_query_field_builder = EntityQueryFieldBuilder {
-            context: &self.context,
+            context: self.context,
         };
 
         let entity_object = entity_object_builder.to_object::<T>();

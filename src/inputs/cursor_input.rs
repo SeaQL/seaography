@@ -55,11 +55,7 @@ impl CursorInputBuilder {
             .unwrap();
 
         let cursor = object.get("cursor");
-        let cursor: Option<String> = if let Some(cursor) = cursor {
-            Some(cursor.string().unwrap().into())
-        } else {
-            None
-        };
+        let cursor: Option<String> = cursor.map(|cursor| cursor.string().unwrap().into());
 
         CursorInput { cursor, limit }
     }

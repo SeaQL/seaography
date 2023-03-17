@@ -66,7 +66,7 @@ impl EntityQueryFieldBuilder {
 
         let context: &'static BuilderContext = self.context;
         Field::new(
-            &object_name.to_lower_camel_case(),
+            object_name.to_lower_camel_case(),
             TypeRef::named_nn(type_name),
             move |ctx| {
                 let context: &'static BuilderContext = context;
@@ -77,7 +77,7 @@ impl EntityQueryFieldBuilder {
 
                     let stmt = T::find();
                     let stmt = stmt.filter(get_filter_conditions::<T>(filters));
-                    let stmt = apply_order(&context, stmt, order_by);
+                    let stmt = apply_order(context, stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;
 

@@ -51,7 +51,7 @@ impl PageInputBuilder {
         let page = object
             .get(&self.context.page_input.page)
             .map_or_else(|| Ok(0), |v| v.u64())
-            .unwrap_or_else(|_| 0);
+            .unwrap_or(0);
         let limit = object
             .get(&self.context.page_input.limit)
             .unwrap()
