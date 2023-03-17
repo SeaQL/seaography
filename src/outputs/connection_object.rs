@@ -1,7 +1,9 @@
-use async_graphql::dynamic::*;
-use sea_orm::prelude::*;
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, Object, TypeRef};
+use sea_orm::EntityTrait;
 
-use crate::{edge::*, pagination::*};
+use crate::{
+    BuilderContext, Edge, EdgeObjectBuilder, EntityObjectBuilder, PageInfo, PaginationInfo,
+};
 
 /// used to represent a GraphQL Connection node for any Type
 #[derive(Clone, Debug)]
@@ -20,16 +22,59 @@ where
     pub edges: Vec<Edge<T>>,
 }
 
-impl<T> Connection<T>
-where
-    T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
-{
-    pub fn entity_object_to_connection(entity_object: &Object, edge: &Object) -> Object {
-        Object::new(format!("{}Connection", entity_object.type_name()))
+#[derive(Clone, Debug)]
+pub struct ConnectionObjectConfig {
+    pub type_name: String,
+    pub page_info: String,
+    pub pagination_info: String,
+    pub edges: String,
+    pub nodes: String,
+}
+
+impl std::default::Default for ConnectionObjectConfig {
+    fn default() -> Self {
+        ConnectionObjectConfig {
+            type_name: "Connection".into(),
+            page_info: "pageInfo".into(),
+            pagination_info: "paginationInfo".into(),
+            edges: "edges".into(),
+            nodes: "nodes".into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ConnectionObjectBuilder {
+    pub context: &'static BuilderContext,
+}
+
+impl ConnectionObjectBuilder {
+    // FIXME: use context naming function
+    pub fn type_name(&self, object_name: &String) -> String {
+        format!(
+            "{}{}",
+            object_name, self.context.connection_object.type_name
+        )
+    }
+
+    pub fn to_object<T>(&self) -> Object
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let edge_object_builder = EdgeObjectBuilder {
+            context: self.context,
+        };
+        let entity_object_builder = EntityObjectBuilder {
+            context: self.context,
+        };
+        let object_name = entity_object_builder.type_name::<T>();
+        let name = self.type_name(&object_name);
+
+        Object::new(name)
             .field(Field::new(
-                "pageInfo",
-                TypeRef::named_nn(PageInfo::to_object().type_name()),
+                &self.context.connection_object.page_info,
+                TypeRef::named_nn(&self.context.page_info_object.type_name),
                 |ctx| {
                     FieldFuture::new(async move {
                         let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
@@ -38,8 +83,8 @@ where
                 },
             ))
             .field(Field::new(
-                "paginationInfo",
-                TypeRef::named(PaginationInfo::to_object().type_name()),
+                &self.context.connection_object.pagination_info,
+                TypeRef::named(&self.context.pagination_info_object.type_name),
                 |ctx| {
                     FieldFuture::new(async move {
                         let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
@@ -56,8 +101,8 @@ where
                 },
             ))
             .field(Field::new(
-                "nodes",
-                TypeRef::named_nn_list_nn(entity_object.type_name()),
+                &self.context.connection_object.nodes,
+                TypeRef::named_nn_list_nn(&object_name),
                 |ctx| {
                     FieldFuture::new(async move {
                         let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;
@@ -68,8 +113,8 @@ where
                 },
             ))
             .field(Field::new(
-                "edges",
-                TypeRef::named_nn_list_nn(edge.type_name()),
+                &self.context.connection_object.edges,
+                TypeRef::named_nn_list_nn(edge_object_builder.type_name(&object_name)),
                 |ctx| {
                     FieldFuture::new(async move {
                         let connection = ctx.parent_value.try_downcast_ref::<Connection<T>>()?;

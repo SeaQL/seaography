@@ -210,26 +210,23 @@
 pub use heck;
 pub use itertools;
 
-pub mod connection;
-pub use connection::*;
+pub mod inputs;
+pub use inputs::*;
 
-pub mod edge;
-pub use edge::*;
+pub mod outputs;
+pub use outputs::*;
 
-pub mod entity;
-pub use entity::*;
+pub mod enumerations;
+pub use enumerations::*;
 
-pub mod filter;
-pub use filter::*;
-
-pub mod order;
-pub use order::*;
-
-pub mod pagination;
-pub use pagination::*;
-
-pub mod enumeration;
-pub use enumeration::*;
+pub mod utilities;
+pub use utilities::*;
 
 pub mod query;
 pub use query::*;
+
+pub mod builder_context;
+pub use builder_context::*;
+
+pub mod builder;
+pub use builder::*;

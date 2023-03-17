@@ -1,68 +1,43 @@
-use async_graphql::{dynamic::*, Value};
+use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
+use async_graphql::Value;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
-use sea_orm::{prelude::*, Iterable};
+use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
-use crate::{connection::*, edge::*, filter::*, order::*, query::*};
+use crate::BuilderContext;
 
-/// used to hold GraphQL definitions for SeaORM entity
-pub struct DynamicGraphqlEntity {
-    pub entity_object: Object,
-    pub edge_object: Object,
-    pub connection_object: Object,
-    pub query: Field,
-    pub filter_input: InputObject,
-    pub order_input: InputObject,
+#[derive(Clone, Debug)]
+pub struct EntityObjectBuilder {
+    pub context: &'static BuilderContext,
 }
 
-impl DynamicGraphqlEntity {
-    /// Used to convert SeaORM Entity into async-graphql types
-    pub fn from_entity<T>(pagination_input: &InputObject, relations: Vec<Field>) -> Self
+impl EntityObjectBuilder {
+    // FIXME: use context naming function
+    pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let entity_object = relations
-            .into_iter()
-            .fold(entity_to_object::<T>(), |object, field| object.field(field));
-
-        let edge_object = Edge::<T>::to_object(&entity_object);
-
-        let connection_object =
-            Connection::<T>::entity_object_to_connection(&entity_object, &edge_object);
-
-        let filter_input = entity_to_filter::<T>(&entity_object);
-
-        let order_input = entity_to_order::<T>(&entity_object);
-
-        let query = entity_to_query::<T>(
-            &entity_object,
-            &connection_object,
-            &filter_input,
-            &order_input,
-            pagination_input,
-        );
-
-        DynamicGraphqlEntity {
-            entity_object,
-            edge_object,
-            connection_object,
-            query,
-            filter_input,
-            order_input,
-        }
+        <T as EntityName>::table_name(&T::default()).to_upper_camel_case()
     }
-}
 
-/// used to convert SeaORM entity to GraphQL Object definition
-pub fn entity_to_object<T>() -> Object
-where
-    T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
-{
-    let entity_object = T::Column::iter().fold(
-        Object::new(<T as EntityName>::table_name(&T::default()).to_upper_camel_case()),
-        |object, column: T::Column| {
-            let name = column.as_str().to_lower_camel_case();
+    // FIXME: use context naming function
+    pub fn column_name<T>(&self, column: T::Column) -> String
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        column.as_str().to_lower_camel_case()
+    }
+
+    pub fn to_object<T>(&self) -> Object
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let name = self.type_name::<T>();
+
+        T::Column::iter().fold(Object::new(name), |object, column: T::Column| {
+            let name = self.column_name::<T>(column);
 
             let column_def = column.def();
 
@@ -443,8 +418,6 @@ where
             });
 
             object.field(field)
-        },
-    );
-
-    entity_object
+        })
+    }
 }

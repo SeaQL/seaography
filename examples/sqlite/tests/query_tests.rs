@@ -122,7 +122,7 @@ async fn test_filter_with_pagination() {
                 {
                     customer(
                       filters: { active: { eq: 0 } }
-                      pagination: { pages: { page: 2, limit: 3 } }
+                      pagination: { page: { page: 2, limit: 3 } }
                     ) {
                       nodes {
                         customerId
@@ -171,7 +171,7 @@ async fn test_complex_filter_with_pagination() {
                 {
                     payment(
                       filters: { amount: { gt: "11.1" } }
-                      pagination: { pages: { limit: 2, page: 3 } }
+                      pagination: { page: { limit: 2, page: 3 } }
                     ) {
                       nodes {
                         paymentId
@@ -645,7 +645,7 @@ async fn related_queries_pagination() {
                       payment(
                         filters: { amount: { gt: "7" } }
                         orderBy: { amount: ASC }
-                        pagination: { pages: { limit: 1, page: 1 } }
+                        pagination: { page: { limit: 1, page: 1 } }
                       ) {
                         nodes {
                           paymentId
@@ -695,7 +695,7 @@ async fn related_queries_pagination() {
                   },
                   "pageInfo": {
                     "hasPreviousPage": false,
-                    "hasNextPage": false
+                    "hasNextPage": true
                   }
                 }
               },

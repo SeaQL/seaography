@@ -1,0 +1,173 @@
+use async_graphql::dynamic::{ObjectAccessor, ValueAccessor};
+use heck::ToLowerCamelCase;
+use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, IdenStatic, Iterable};
+
+use crate::{
+    prepare_enumeration_condition, prepare_float_condition, prepare_integer_condition,
+    prepare_string_condition, prepare_unsigned_condition,
+};
+
+pub fn get_filter_conditions<T>(filters: Option<ValueAccessor>) -> Condition
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    if let Some(filters) = filters {
+        let filters = filters
+            .object()
+            .expect("We expect the entity filters to be object type");
+
+        recursive_prepare_condition::<T>(filters)
+    } else {
+        Condition::all()
+    }
+}
+
+pub fn recursive_prepare_condition<T>(filters: ObjectAccessor) -> Condition
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    let condition = T::Column::iter().fold(Condition::all(), |condition, column: T::Column| {
+        let filter = filters.get(column.as_str().to_lower_camel_case().as_str());
+
+        if let Some(filter) = filter {
+            let filter = filter
+                .object()
+                .expect("We expect the column filter to be object type");
+
+            match column.def().get_column_type() {
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
+                    prepare_string_condition(&filter, column, condition)
+                }
+                ColumnType::TinyInteger
+                | ColumnType::SmallInteger
+                | ColumnType::Integer
+                | ColumnType::BigInteger => prepare_integer_condition(&filter, column, condition),
+                ColumnType::TinyUnsigned
+                | ColumnType::SmallUnsigned
+                | ColumnType::Unsigned
+                | ColumnType::BigUnsigned => prepare_unsigned_condition(&filter, column, condition),
+                // FIXME: support f32 (different precision)
+                ColumnType::Float | ColumnType::Double => {
+                    prepare_float_condition(&filter, column, condition)
+                }
+                #[cfg(feature = "with-decimal")]
+                ColumnType::Decimal(_) => crate::prepare_parsed_condition(
+                    &filter,
+                    column,
+                    |v| {
+                        use std::str::FromStr;
+
+                        sea_orm::entity::prelude::Decimal::from_str(&v)
+                            .expect("We expect value to be Decimal")
+                    },
+                    condition,
+                ),
+                // ColumnType::DateTime => {
+                // FIXME
+                // },
+                // ColumnType::Timestamp => {
+                // FIXME
+                // },
+                // ColumnType::TimestampWithTimeZone => {
+                // FIXME
+                // },
+                // ColumnType::Time => {
+                // FIXME
+                // },
+                // ColumnType::Date => {
+                // FIXME
+                // },
+                // ColumnType::Year => {
+                // FIXME
+                // },
+                // ColumnType::Interval => {
+                // FIXME
+                // },
+                // ColumnType::Binary => {
+                // FIXME
+                // },
+                // ColumnType::VarBinary => {
+                // FIXME
+                // },
+                // ColumnType::Bit => {
+                // FIXME
+                // },
+                // ColumnType::VarBit => {
+                // FIXME
+                // },
+                // ColumnType::Boolean => {
+                // FIXME
+                // },
+                // ColumnType::Money(_) => {
+                // FIXME
+                // },
+                // ColumnType::Json => {
+                // FIXME
+                // },
+                // ColumnType::JsonBinary => {
+                // FIXME
+                // },
+                // ColumnType::Custom(_) => {
+                // FIXME
+                // },
+                // ColumnType::Uuid => {
+                // FIXME
+                // },
+                ColumnType::Enum { name: _, variants } => {
+                    prepare_enumeration_condition(&filter, column, variants, condition)
+                }
+                // ColumnType::Array(_) => {
+                // FIXME
+                // },
+                // ColumnType::Cidr => {
+                // FIXME
+                // },
+                // ColumnType::Inet => {
+                // FIXME
+                // },
+                // ColumnType::MacAddr => {
+                // FIXME
+                // },
+                _ => panic!("Type is not supported"),
+            }
+        } else {
+            condition
+        }
+    });
+
+    let condition = if let Some(and) = filters.get("and") {
+        let filters = and
+            .list()
+            .expect("We expect to find a list of FiltersInput");
+
+        condition.add(
+            filters
+                .iter()
+                .fold(Condition::all(), |condition, filters: ValueAccessor| {
+                    let filters = filters.object().expect("We expect an FiltersInput object");
+                    condition.add(recursive_prepare_condition::<T>(filters))
+                }),
+        )
+    } else {
+        condition
+    };
+
+    let condition = if let Some(or) = filters.get("or") {
+        let filters = or.list().expect("We expect to find a list of FiltersInput");
+
+        condition.add(
+            filters
+                .iter()
+                .fold(Condition::any(), |condition, filters: ValueAccessor| {
+                    let filters = filters.object().expect("We expect an FiltersInput object");
+                    condition.add(recursive_prepare_condition::<T>(filters))
+                }),
+        )
+    } else {
+        condition
+    };
+
+    condition
+}
