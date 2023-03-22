@@ -8,7 +8,7 @@ use crate::{
 };
 
 pub struct EntityQueryFieldConfig {
-    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
     pub filters: String,
     pub order_by: String,
     pub pagination: String,
@@ -17,7 +17,7 @@ pub struct EntityQueryFieldConfig {
 impl std::default::Default for EntityQueryFieldConfig {
     fn default() -> Self {
         EntityQueryFieldConfig {
-            type_name: Box::new(|object_name: &String| -> String {
+            type_name: Box::new(|object_name: &str| -> String {
                 object_name.to_lower_camel_case()
             }),
             filters: "filters".into(),

@@ -23,7 +23,7 @@ where
 }
 
 pub struct ConnectionObjectConfig {
-    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
     pub page_info: String,
     pub pagination_info: String,
     pub edges: String,
@@ -33,8 +33,8 @@ pub struct ConnectionObjectConfig {
 impl std::default::Default for ConnectionObjectConfig {
     fn default() -> Self {
         ConnectionObjectConfig {
-            type_name: Box::new(|name: &String| -> String {
-                format!("{}Connection", name)
+            type_name: Box::new(|object_name: &str| -> String {
+                format!("{}Connection", object_name)
             }),
             page_info: "pageInfo".into(),
             pagination_info: "paginationInfo".into(),
@@ -49,8 +49,7 @@ pub struct ConnectionObjectBuilder {
 }
 
 impl ConnectionObjectBuilder {
-    // FIXME: use context naming function
-    pub fn type_name(&self, object_name: &String) -> String {
+    pub fn type_name(&self, object_name: &str) -> String {
         self.context.connection_object.type_name.as_ref()(object_name)
     }
 

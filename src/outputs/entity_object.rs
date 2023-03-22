@@ -4,18 +4,18 @@ use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
 pub struct EntityObjectConfig {
-    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
-    pub column_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub column_name: Box<dyn Fn(&str, &str) -> String + Sync>,
 }
 
 impl std::default::Default for EntityObjectConfig {
     fn default() -> Self {
         Self {
-            type_name: Box::new(|name: &String| -> String {
-                name.to_upper_camel_case()
+            type_name: Box::new(|entity_name: &str| -> String {
+                entity_name.to_upper_camel_case()
             }),
-            column_name: Box::new(|name: &String| -> String {
-                name.to_lower_camel_case()
+            column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
+                column_name.to_lower_camel_case()
             }),
         }
     }
@@ -42,8 +42,9 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let name: String = column.as_str().into();
-        self.context.entity_object.column_name.as_ref()(&name)
+        let entity_name = self.type_name::<T>();
+        let column_name: String = column.as_str().into();
+        self.context.entity_object.column_name.as_ref()(&entity_name, &column_name)
     }
 
     pub fn to_object<T>(&self) -> Object

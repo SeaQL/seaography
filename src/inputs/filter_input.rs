@@ -4,7 +4,7 @@ use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable, Value};
 use crate::{ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder};
 
 pub struct FilterInputConfig {
-    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
     pub string_type: String,
     pub integer_type: String,
     pub float_type: String,
@@ -16,8 +16,8 @@ pub struct FilterInputConfig {
 impl std::default::Default for FilterInputConfig {
     fn default() -> Self {
         FilterInputConfig {
-            type_name: Box::new(|name: &String| -> String {
-                format!("{}FilterInput", name)
+            type_name: Box::new(|object_name: &str| -> String {
+                format!("{}FilterInput", object_name)
             }),
             string_type: "StringFilterInput".into(),
             integer_type: "IntegerFilterInput".into(),
@@ -34,7 +34,7 @@ pub struct FilterInputBuilder {
 }
 
 impl FilterInputBuilder {
-    pub fn type_name(&self, object_name: &String) -> String {
+    pub fn type_name(&self, object_name: &str) -> String {
         self.context.filter_input.type_name.as_ref()(object_name)
     }
 

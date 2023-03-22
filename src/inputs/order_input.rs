@@ -4,14 +4,14 @@ use sea_orm::{EntityTrait, Iterable};
 use crate::{BuilderContext, EntityObjectBuilder};
 
 pub struct OrderInputConfig {
-    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
 }
 
 impl std::default::Default for OrderInputConfig {
     fn default() -> Self {
         OrderInputConfig {
-            type_name: Box::new(|name: &String| -> String {
-                format!("{}OrderInput", name)
+            type_name: Box::new(|object_name: &str| -> String {
+                format!("{}OrderInput", object_name)
             }),
         }
     }
@@ -22,7 +22,7 @@ pub struct OrderInputBuilder {
 }
 
 impl OrderInputBuilder {
-    pub fn type_name(&self, object_name: &String) -> String {
+    pub fn type_name(&self, object_name: &str) -> String {
         self.context.order_input.type_name.as_ref()(object_name)
     }
 

@@ -5,17 +5,17 @@ use sea_orm::{ActiveEnum, Value, DynIden};
 use crate::BuilderContext;
 
 pub struct ActiveEnumConfig {
-    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
-    pub variant_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub variant_name: Box<dyn Fn(&str, &str) -> String + Sync>,
 }
 
 impl std::default::Default for ActiveEnumConfig {
     fn default() -> Self {
         ActiveEnumConfig {
-            type_name: Box::new(|name: &String| -> String {
+            type_name: Box::new(|name: &str| -> String {
                 format!("{}Enum", name.to_upper_camel_case())
             }),
-            variant_name: Box::new(|variant: &String| -> String {
+            variant_name: Box::new(|_enum_name: &str, variant: &str| -> String {
                 variant.to_upper_camel_case().to_ascii_uppercase()
             })
         }
@@ -37,19 +37,19 @@ impl ActiveEnumBuilder {
         self.context.active_enum.type_name.as_ref()(&name)
     }
 
-    pub fn variant_name(&self, variant: &String) -> String {
-        self.context.active_enum.variant_name.as_ref()(variant)
+    pub fn variant_name(&self, enum_name: &str, variant: &str) -> String {
+        self.context.active_enum.variant_name.as_ref()(enum_name, variant)
     }
 
     pub fn enumeration<A: ActiveEnum>(&self) -> Enum {
-        let name = self.type_name::<A>();
+        let enum_name = self.type_name::<A>();
 
         A::values()
             .into_iter()
-            .fold(Enum::new(name), |enumeration, variant| {
+            .fold(Enum::new(&enum_name), |enumeration, variant| {
                 let variant: Value = variant.into();
                 let variant: String = variant.to_string();
-                enumeration.item(self.variant_name(&variant))
+                enumeration.item(self.variant_name(&enum_name, &variant))
             })
     }
 }
