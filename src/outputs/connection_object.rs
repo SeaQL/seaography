@@ -22,9 +22,8 @@ where
     pub edges: Vec<Edge<T>>,
 }
 
-#[derive(Clone, Debug)]
 pub struct ConnectionObjectConfig {
-    pub type_name: String,
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
     pub page_info: String,
     pub pagination_info: String,
     pub edges: String,
@@ -34,7 +33,9 @@ pub struct ConnectionObjectConfig {
 impl std::default::Default for ConnectionObjectConfig {
     fn default() -> Self {
         ConnectionObjectConfig {
-            type_name: "Connection".into(),
+            type_name: Box::new(|name: &String| -> String {
+                format!("{}Connection", name)
+            }),
             page_info: "pageInfo".into(),
             pagination_info: "paginationInfo".into(),
             edges: "edges".into(),
@@ -43,7 +44,6 @@ impl std::default::Default for ConnectionObjectConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct ConnectionObjectBuilder {
     pub context: &'static BuilderContext,
 }
@@ -51,10 +51,7 @@ pub struct ConnectionObjectBuilder {
 impl ConnectionObjectBuilder {
     // FIXME: use context naming function
     pub fn type_name(&self, object_name: &String) -> String {
-        format!(
-            "{}{}",
-            object_name, self.context.connection_object.type_name
-        )
+        self.context.connection_object.type_name.as_ref()(object_name)
     }
 
     pub fn to_object<T>(&self) -> Object

@@ -11,7 +11,6 @@ pub struct PaginationInput {
     pub offset: Option<OffsetInput>,
 }
 
-#[derive(Clone, Debug)]
 pub struct PaginationInputConfig {
     pub type_name: String,
     pub cursor: String,
@@ -30,7 +29,6 @@ impl std::default::Default for PaginationInputConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct PaginationInputBuilder {
     pub context: &'static BuilderContext,
 }

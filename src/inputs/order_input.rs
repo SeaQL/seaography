@@ -3,28 +3,27 @@ use sea_orm::{EntityTrait, Iterable};
 
 use crate::{BuilderContext, EntityObjectBuilder};
 
-#[derive(Clone, Debug)]
 pub struct OrderInputConfig {
-    pub type_name: String,
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
 }
 
 impl std::default::Default for OrderInputConfig {
     fn default() -> Self {
         OrderInputConfig {
-            type_name: "OrderInput".into(),
+            type_name: Box::new(|name: &String| -> String {
+                format!("{}OrderInput", name)
+            }),
         }
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct OrderInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl OrderInputBuilder {
-    // FIXME: use context naming function
     pub fn type_name(&self, object_name: &String) -> String {
-        format!("{}{}", object_name, self.context.order_input.type_name)
+        self.context.order_input.type_name.as_ref()(object_name)
     }
 
     pub fn to_object<T>(&self) -> InputObject

@@ -1,12 +1,10 @@
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
-use heck::ToLowerCamelCase;
-use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, IdenStatic, Iterable, Value};
+use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable, Value};
 
 use crate::{ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder};
 
-#[derive(Clone, Debug)]
 pub struct FilterInputConfig {
-    pub type_name: String,
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
     pub string_type: String,
     pub integer_type: String,
     pub float_type: String,
@@ -18,7 +16,9 @@ pub struct FilterInputConfig {
 impl std::default::Default for FilterInputConfig {
     fn default() -> Self {
         FilterInputConfig {
-            type_name: "FilterInput".into(),
+            type_name: Box::new(|name: &String| -> String {
+                format!("{}FilterInput", name)
+            }),
             string_type: "StringFilterInput".into(),
             integer_type: "IntegerFilterInput".into(),
             float_type: "FloatFilterInput".into(),
@@ -29,14 +29,13 @@ impl std::default::Default for FilterInputConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct FilterInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl FilterInputBuilder {
     pub fn type_name(&self, object_name: &String) -> String {
-        format!("{}{}", object_name, self.context.filter_input.type_name)
+        self.context.filter_input.type_name.as_ref()(object_name)
     }
 
     pub fn to_object<T>(&self) -> InputObject
@@ -55,11 +54,11 @@ impl FilterInputBuilder {
         let name = self.type_name(&object_name);
 
         let object = T::Column::iter().fold(InputObject::new(&name), |object, column| {
-            let name = column.as_str().to_lower_camel_case();
+            let column_name = entity_object_builder.column_name::<T>(column);
 
             let field = match column.def().get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => Some(
-                    InputValue::new(name, TypeRef::named(&self.context.filter_input.string_type)),
+                    InputValue::new(column_name, TypeRef::named(&self.context.filter_input.string_type)),
                 ),
                 ColumnType::TinyInteger
                 | ColumnType::SmallInteger
@@ -69,15 +68,15 @@ impl FilterInputBuilder {
                 | ColumnType::SmallUnsigned
                 | ColumnType::Unsigned
                 | ColumnType::BigUnsigned => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.integer_type),
                 )),
                 ColumnType::Float | ColumnType::Double => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.float_type),
                 )),
                 ColumnType::Decimal(_) | ColumnType::Money(_) => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.text_type),
                 )),
                 ColumnType::DateTime
@@ -85,32 +84,32 @@ impl FilterInputBuilder {
                 | ColumnType::TimestampWithTimeZone
                 | ColumnType::Time
                 | ColumnType::Date => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.text_type),
                 )),
                 ColumnType::Year(_) => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.integer_type),
                 )),
                 ColumnType::Boolean => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.boolean_type),
                 )),
                 ColumnType::Uuid => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.text_type),
                 )),
                 ColumnType::Enum {
                     name: enum_name,
                     variants: _,
                 } => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(
                         active_enum_filter_input_builder.type_name_from_iden(&enum_name),
                     ),
                 )),
                 ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => Some(InputValue::new(
-                    name,
+                    column_name,
                     TypeRef::named(&self.context.filter_input.text_type),
                 )),
                 // FIXME: support more types

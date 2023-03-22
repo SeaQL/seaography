@@ -4,41 +4,33 @@ use sea_orm::{ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
 
 use crate::{ActiveEnumBuilder, BuilderContext};
 
-#[derive(Clone, Debug)]
 pub struct ActiveEnumFilterInputConfig {
-    pub type_name: String,
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
 }
 
 impl std::default::Default for ActiveEnumFilterInputConfig {
     fn default() -> Self {
         ActiveEnumFilterInputConfig {
-            type_name: "EnumFilterInput".into(),
+            type_name: Box::new(|name: &String| -> String {
+                format!("{}EnumFilterInput", name.to_upper_camel_case())
+            }),
         }
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct ActiveEnumFilterInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl ActiveEnumFilterInputBuilder {
-    // FIXME: use context naming function
     pub fn type_name<A: ActiveEnum>(&self) -> String {
-        format!(
-            "{}{}",
-            A::name().to_string().to_upper_camel_case(),
-            self.context.active_enum_filter_input.type_name
-        )
+        let name = A::name().to_string();
+        self.context.active_enum_filter_input.type_name.as_ref()(&name)
     }
 
-    // FIXME: use context naming function
     pub fn type_name_from_iden(&self, name: &DynIden) -> String {
-        format!(
-            "{}{}",
-            name.to_string().to_upper_camel_case(),
-            self.context.active_enum_filter_input.type_name
-        )
+        let name = name.to_string();
+        self.context.active_enum_filter_input.type_name.as_ref()(&name)
     }
 
     pub fn input_object<A: ActiveEnum>(&self) -> InputObject {

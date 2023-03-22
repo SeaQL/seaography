@@ -12,7 +12,6 @@ pub struct PaginationInfo {
     pub total: u64,
 }
 
-#[derive(Clone, Debug)]
 pub struct PaginationInfoObjectConfig {
     pub type_name: String,
     pub pages: String,
@@ -33,7 +32,6 @@ impl std::default::Default for PaginationInfoObjectConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct PaginationInfoObjectBuilder {
     pub context: &'static BuilderContext,
 }

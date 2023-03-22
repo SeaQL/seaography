@@ -66,7 +66,7 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
                 }
             } else if rel_def.reverse {
                 quote!{
-                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def().rev())
+                    entity_object_relation_builder.get_relation::<#target, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
                 }
             } else {
                 quote!{

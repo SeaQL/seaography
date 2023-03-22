@@ -1,40 +1,44 @@
 use async_graphql::dynamic::Enum;
 use heck::ToUpperCamelCase;
-use sea_orm::{ActiveEnum, Value};
+use sea_orm::{ActiveEnum, Value, DynIden};
 
 use crate::BuilderContext;
 
-#[derive(Clone, Debug)]
 pub struct ActiveEnumConfig {
-    pub type_name: String,
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub variant_name: Box<dyn Fn(&String) -> String + Sync>,
 }
 
 impl std::default::Default for ActiveEnumConfig {
     fn default() -> Self {
         ActiveEnumConfig {
-            type_name: "Enum".into(),
+            type_name: Box::new(|name: &String| -> String {
+                format!("{}Enum", name.to_upper_camel_case())
+            }),
+            variant_name: Box::new(|variant: &String| -> String {
+                variant.to_upper_camel_case().to_ascii_uppercase()
+            })
         }
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct ActiveEnumBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl ActiveEnumBuilder {
-    // FIXME: use context naming function
     pub fn type_name<A: ActiveEnum>(&self) -> String {
-        format!(
-            "{}{}",
-            A::name().to_string().to_upper_camel_case(),
-            self.context.active_enum.type_name
-        )
+        let name = A::name().to_string();
+        self.context.active_enum.type_name.as_ref()(&name)
     }
 
-    // FIXME: use context naming function
+    pub fn type_name_from_iden(&self, name: &DynIden) -> String {
+        let name = name.to_string();
+        self.context.active_enum.type_name.as_ref()(&name)
+    }
+
     pub fn variant_name(&self, variant: &String) -> String {
-        variant.to_upper_camel_case().to_ascii_uppercase()
+        self.context.active_enum.variant_name.as_ref()(variant)
     }
 
     pub fn enumeration<A: ActiveEnum>(&self) -> Enum {

@@ -12,7 +12,6 @@ pub struct PageInfo {
     pub end_cursor: Option<String>,
 }
 
-#[derive(Clone, Debug)]
 pub struct PageInfoObjectConfig {
     pub type_name: String,
     pub has_previous_page: String,
@@ -33,7 +32,6 @@ impl std::default::Default for PageInfoObjectConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct PageInfoObjectBuilder {
     pub context: &'static BuilderContext,
 }

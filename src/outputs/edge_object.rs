@@ -17,9 +17,8 @@ where
     pub node: T::Model,
 }
 
-#[derive(Clone, Debug)]
 pub struct EdgeObjectConfig {
-    pub type_name: String,
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
     pub cursor: String,
     pub node: String,
 }
@@ -27,14 +26,15 @@ pub struct EdgeObjectConfig {
 impl std::default::Default for EdgeObjectConfig {
     fn default() -> EdgeObjectConfig {
         EdgeObjectConfig {
-            type_name: "Edge".into(),
+            type_name: Box::new(|name: &String| -> String {
+                format!("{}Edge", name)
+            }),
             cursor: "cursor".into(),
             node: "node".into(),
         }
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct EdgeObjectBuilder {
     pub context: &'static BuilderContext,
 }
@@ -42,7 +42,7 @@ pub struct EdgeObjectBuilder {
 impl EdgeObjectBuilder {
     // FIXME: use context naming function
     pub fn type_name(&self, object_name: &String) -> String {
-        format!("{}{}", object_name, self.context.edge_object.type_name)
+        self.context.edge_object.type_name.as_ref()(object_name)
     }
 
     pub fn to_object<T>(&self) -> Object

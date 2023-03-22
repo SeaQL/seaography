@@ -7,8 +7,8 @@ use crate::{
     EntityObjectBuilder, FilterInputBuilder, OrderInputBuilder, PaginationInputBuilder,
 };
 
-#[derive(Clone, Debug)]
 pub struct EntityQueryFieldConfig {
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
     pub filters: String,
     pub order_by: String,
     pub pagination: String,
@@ -17,6 +17,9 @@ pub struct EntityQueryFieldConfig {
 impl std::default::Default for EntityQueryFieldConfig {
     fn default() -> Self {
         EntityQueryFieldConfig {
+            type_name: Box::new(|object_name: &String| -> String {
+                object_name.to_lower_camel_case()
+            }),
             filters: "filters".into(),
             order_by: "orderBy".into(),
             pagination: "pagination".into(),
@@ -37,7 +40,8 @@ impl EntityQueryFieldBuilder {
         let entity_object = EntityObjectBuilder {
             context: self.context,
         };
-        entity_object.type_name::<T>().to_lower_camel_case()
+        let object_name = entity_object.type_name::<T>();
+        self.context.entity_query_field.type_name.as_ref()(&object_name)
     }
 
     pub fn to_field<T>(&self) -> Field
@@ -76,7 +80,7 @@ impl EntityQueryFieldBuilder {
                     let pagination = ctx.args.get(&context.entity_query_field.pagination);
 
                     let stmt = T::find();
-                    let stmt = stmt.filter(get_filter_conditions::<T>(filters));
+                    let stmt = stmt.filter(get_filter_conditions::<T>(context, filters));
                     let stmt = apply_order(context, stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;

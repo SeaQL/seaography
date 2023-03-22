@@ -8,7 +8,6 @@ pub struct PageInput {
     pub limit: u64,
 }
 
-#[derive(Clone, Debug)]
 pub struct PageInputConfig {
     pub type_name: String,
     pub page: String,
@@ -25,7 +24,6 @@ impl std::default::Default for PageInputConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct PageInputBuilder {
     pub context: &'static BuilderContext,
 }

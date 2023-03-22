@@ -8,7 +8,6 @@ pub struct CursorInput {
     pub limit: u64,
 }
 
-#[derive(Clone, Debug)]
 pub struct CursorInputConfig {
     pub type_name: String,
     pub cursor: String,
@@ -25,7 +24,6 @@ impl std::default::Default for CursorInputConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct CursorInputBuilder {
     pub context: &'static BuilderContext,
 }
@@ -54,7 +52,7 @@ impl CursorInputBuilder {
             .u64()
             .unwrap();
 
-        let cursor = object.get("cursor");
+        let cursor = object.get(&self.context.cursor_input.cursor);
         let cursor: Option<String> = cursor.map(|cursor| cursor.string().unwrap().into());
 
         CursorInput { cursor, limit }

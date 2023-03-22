@@ -8,7 +8,6 @@ pub struct OffsetInput {
     pub limit: u64,
 }
 
-#[derive(Clone, Debug)]
 pub struct OffsetInputConfig {
     pub type_name: String,
     pub offset: String,
@@ -25,7 +24,6 @@ impl std::default::Default for OffsetInputConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct OffsetInputBuilder {
     pub context: &'static BuilderContext,
 }

@@ -3,30 +3,47 @@ use async_graphql::Value;
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
-use crate::BuilderContext;
+pub struct EntityObjectConfig {
+    pub type_name: Box<dyn Fn(&String) -> String + Sync>,
+    pub column_name: Box<dyn Fn(&String) -> String + Sync>,
+}
 
-#[derive(Clone, Debug)]
+impl std::default::Default for EntityObjectConfig {
+    fn default() -> Self {
+        Self {
+            type_name: Box::new(|name: &String| -> String {
+                name.to_upper_camel_case()
+            }),
+            column_name: Box::new(|name: &String| -> String {
+                name.to_lower_camel_case()
+            }),
+        }
+    }
+}
+
+use crate::{BuilderContext, ActiveEnumBuilder};
+
 pub struct EntityObjectBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl EntityObjectBuilder {
-    // FIXME: use context naming function
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        <T as EntityName>::table_name(&T::default()).to_upper_camel_case()
+        let name: String = <T as EntityName>::table_name(&T::default()).into();
+        self.context.entity_object.type_name.as_ref()(&name)
     }
 
-    // FIXME: use context naming function
     pub fn column_name<T>(&self, column: T::Column) -> String
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        column.as_str().to_lower_camel_case()
+        let name: String = column.as_str().into();
+        self.context.entity_object.column_name.as_ref()(&name)
     }
 
     pub fn to_object<T>(&self) -> Object
@@ -35,6 +52,7 @@ impl EntityObjectBuilder {
         <T as EntityTrait>::Model: Sync,
     {
         let name = self.type_name::<T>();
+        let active_enum_builder = ActiveEnumBuilder { context: self.context };
 
         T::Column::iter().fold(Object::new(name), |object, column: T::Column| {
             let name = self.column_name::<T>(column);
@@ -79,7 +97,7 @@ impl EntityObjectBuilder {
                     TypeRef::STRING.into()
                 }
                 ColumnType::Enum { name, variants: _ } => {
-                    format!("{}Enum", name.to_string().to_upper_camel_case())
+                    active_enum_builder.type_name_from_iden(name)
                 }
                 ColumnType::Array(_) => {
                     // FIXME

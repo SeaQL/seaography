@@ -2,7 +2,6 @@ use async_graphql::dynamic::{Enum, EnumItem};
 
 use crate::BuilderContext;
 
-#[derive(Clone, Debug)]
 pub struct OrderByEnumConfig {
     pub type_name: String,
     pub asc_variant: String,
@@ -19,7 +18,6 @@ impl std::default::Default for OrderByEnumConfig {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct OrderByEnumBuilder {
     pub context: &'static BuilderContext,
 }

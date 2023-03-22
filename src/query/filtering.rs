@@ -1,40 +1,41 @@
 use async_graphql::dynamic::{ObjectAccessor, ValueAccessor};
-use heck::ToLowerCamelCase;
-use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, IdenStatic, Iterable};
+use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable};
 
 use crate::{
     prepare_enumeration_condition, prepare_float_condition, prepare_integer_condition,
-    prepare_string_condition, prepare_unsigned_condition,
+    prepare_string_condition, prepare_unsigned_condition, BuilderContext, EntityObjectBuilder,
 };
 
-pub fn get_filter_conditions<T>(filters: Option<ValueAccessor>) -> Condition
+pub fn get_filter_conditions<T>(context: &'static BuilderContext, filters: Option<ValueAccessor>) -> Condition
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
     if let Some(filters) = filters {
         let filters = filters
-            .object()
-            .expect("We expect the entity filters to be object type");
+            .object().unwrap();
 
-        recursive_prepare_condition::<T>(filters)
+        recursive_prepare_condition::<T>(context, filters)
     } else {
         Condition::all()
     }
 }
 
-pub fn recursive_prepare_condition<T>(filters: ObjectAccessor) -> Condition
+pub fn recursive_prepare_condition<T>(context: &'static BuilderContext, filters: ObjectAccessor) -> Condition
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
+    let entity_object = EntityObjectBuilder { context };
+
     let condition = T::Column::iter().fold(Condition::all(), |condition, column: T::Column| {
-        let filter = filters.get(column.as_str().to_lower_camel_case().as_str());
+        let column_name = entity_object.column_name::<T>(column);
+
+        let filter = filters.get(&column_name);
 
         if let Some(filter) = filter {
             let filter = filter
-                .object()
-                .expect("We expect the column filter to be object type");
+                .object().unwrap();
 
             match column.def().get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
@@ -139,15 +140,14 @@ where
 
     let condition = if let Some(and) = filters.get("and") {
         let filters = and
-            .list()
-            .expect("We expect to find a list of FiltersInput");
+            .list().unwrap();
 
         condition.add(
             filters
                 .iter()
                 .fold(Condition::all(), |condition, filters: ValueAccessor| {
-                    let filters = filters.object().expect("We expect an FiltersInput object");
-                    condition.add(recursive_prepare_condition::<T>(filters))
+                    let filters = filters.object().unwrap();
+                    condition.add(recursive_prepare_condition::<T>(context, filters))
                 }),
         )
     } else {
@@ -155,14 +155,14 @@ where
     };
 
     let condition = if let Some(or) = filters.get("or") {
-        let filters = or.list().expect("We expect to find a list of FiltersInput");
+        let filters = or.list().unwrap();
 
         condition.add(
             filters
                 .iter()
                 .fold(Condition::any(), |condition, filters: ValueAccessor| {
-                    let filters = filters.object().expect("We expect an FiltersInput object");
-                    condition.add(recursive_prepare_condition::<T>(filters))
+                    let filters = filters.object().unwrap();
+                    condition.add(recursive_prepare_condition::<T>(context, filters))
                 }),
         )
     } else {

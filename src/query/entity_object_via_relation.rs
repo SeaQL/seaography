@@ -1,18 +1,16 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
-use heck::{ToSnakeCase, ToUpperCamelCase};
+use heck::ToSnakeCase;
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
 };
 
-use crate::{apply_order, apply_pagination, get_filter_conditions, BuilderContext};
+use crate::{apply_order, apply_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder, ConnectionObjectBuilder, FilterInputBuilder, OrderInputBuilder};
 
-#[derive(Clone, Debug)]
 pub struct EntityObjectViaRelationBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl EntityObjectViaRelationBuilder {
-    // FIXME: read names from context
     pub fn get_relation<T, R>(&self, name: &str) -> Field
     where
         T: Related<R>,
@@ -29,28 +27,12 @@ impl EntityObjectViaRelationBuilder {
             "We expect this function to be used with Related that has `via` method implemented!",
         );
 
-        let type_name: String = match to_relation_definition.to_tbl {
-            sea_orm::sea_query::TableRef::Table(table) => table.to_string(),
-            sea_orm::sea_query::TableRef::TableAlias(table, _alias) => table.to_string(),
-            sea_orm::sea_query::TableRef::SchemaTable(_schema, table) => table.to_string(),
-            sea_orm::sea_query::TableRef::DatabaseSchemaTable(_database, _schema, table) => {
-                table.to_string()
-            }
-            sea_orm::sea_query::TableRef::SchemaTableAlias(_schema, table, _alias) => {
-                table.to_string()
-            }
-            sea_orm::sea_query::TableRef::DatabaseSchemaTableAlias(
-                _database,
-                _schema,
-                table,
-                _alias,
-            ) => table.to_string(),
-            // FIXME: what if empty ?
-            sea_orm::sea_query::TableRef::SubQuery(_stmt, alias) => alias.to_string(),
-            sea_orm::sea_query::TableRef::ValuesList(_values, alias) => alias.to_string(),
-            sea_orm::sea_query::TableRef::FunctionCall(_, alias) => alias.to_string(),
-        }
-        .to_upper_camel_case();
+        let entity_object_builder = EntityObjectBuilder { context };
+        let connection_object_builder = ConnectionObjectBuilder { context };
+        let filter_input_builder = FilterInputBuilder { context };
+        let order_input_builder = OrderInputBuilder { context };
+
+        let object_name: String = entity_object_builder.type_name::<R>();
 
         let from_col = <T::Column as std::str::FromStr>::from_str(
             via_relation_definition
@@ -72,7 +54,7 @@ impl EntityObjectViaRelationBuilder {
 
         let field = match via_relation_definition.is_owner {
             false => {
-                Field::new(name, TypeRef::named(type_name.to_string()), move |ctx| {
+                Field::new(name, TypeRef::named(&object_name), move |ctx| {
                     // FIXME: optimize by adding dataloader
                     FieldFuture::new(async move {
                         let parent: &T::Model = ctx
@@ -104,7 +86,7 @@ impl EntityObjectViaRelationBuilder {
             }
             true => Field::new(
                 name,
-                TypeRef::named_nn(format!("{}Connection", type_name)),
+                TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
                 move |ctx| {
                     let context: &'static BuilderContext = context;
                     FieldFuture::new(async move {
@@ -123,11 +105,11 @@ impl EntityObjectViaRelationBuilder {
 
                         let condition = Condition::all().add(to_col.eq(parent.get(from_col)));
 
-                        let filters = ctx.args.get("filters");
-                        let order_by = ctx.args.get("orderBy");
-                        let pagination = ctx.args.get("pagination");
+                        let filters = ctx.args.get(&context.entity_query_field.filters);
+                        let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                        let pagination = ctx.args.get(&context.entity_query_field.pagination);
 
-                        let base_condition = get_filter_conditions::<R>(filters);
+                        let base_condition = get_filter_conditions::<R>(context, filters);
 
                         let stmt = stmt.filter(condition.add(base_condition));
                         let stmt = apply_order(context, stmt, order_by);
@@ -147,16 +129,16 @@ impl EntityObjectViaRelationBuilder {
             false => field,
             true => field
                 .argument(InputValue::new(
-                    "filters",
-                    TypeRef::named(format!("{}FilterInput", type_name)),
+                    &context.entity_query_field.filters,
+                    TypeRef::named(filter_input_builder.type_name(&object_name)),
                 ))
                 .argument(InputValue::new(
-                    "orderBy",
-                    TypeRef::named(format!("{}OrderInput", type_name)),
+                    &context.entity_query_field.order_by,
+                    TypeRef::named(order_input_builder.type_name(&object_name)),
                 ))
                 .argument(InputValue::new(
-                    "pagination",
-                    TypeRef::named("PaginationInput"),
+                    &context.entity_query_field.pagination,
+                    TypeRef::named(&context.pagination_input.type_name),
                 )),
         };
 
