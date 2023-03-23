@@ -1,6 +1,6 @@
 use async_graphql::dynamic::Enum;
 use heck::ToUpperCamelCase;
-use sea_orm::{ActiveEnum, Value, DynIden};
+use sea_orm::{ActiveEnum, DynIden, Value};
 
 use crate::BuilderContext;
 
@@ -17,7 +17,7 @@ impl std::default::Default for ActiveEnumConfig {
             }),
             variant_name: Box::new(|_enum_name: &str, variant: &str| -> String {
                 variant.to_upper_camel_case().to_ascii_uppercase()
-            })
+            }),
         }
     }
 }

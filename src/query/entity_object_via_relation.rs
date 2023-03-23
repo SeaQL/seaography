@@ -1,10 +1,16 @@
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
+use async_graphql::{
+    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
+    Error,
+};
 use heck::ToSnakeCase;
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
 };
 
-use crate::{apply_order, apply_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder, ConnectionObjectBuilder, FilterInputBuilder, OrderInputBuilder};
+use crate::{
+    apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
+    EntityObjectBuilder, FilterInputBuilder, OrderInputBuilder,
+};
 
 pub struct EntityObjectViaRelationBuilder {
     pub context: &'static BuilderContext,
@@ -33,6 +39,7 @@ impl EntityObjectViaRelationBuilder {
         let order_input_builder = OrderInputBuilder { context };
 
         let object_name: String = entity_object_builder.type_name::<R>();
+        let guard = self.context.guards.entity_guards.get(&object_name);
 
         let from_col = <T::Column as std::str::FromStr>::from_str(
             via_relation_definition
@@ -57,6 +64,16 @@ impl EntityObjectViaRelationBuilder {
                 Field::new(name, TypeRef::named(&object_name), move |ctx| {
                     // FIXME: optimize by adding dataloader
                     FieldFuture::new(async move {
+                        let guard_flag = if let Some(guard) = guard {
+                            (*guard)(&ctx)
+                        } else {
+                            false
+                        };
+
+                        if guard_flag {
+                            return Err(Error::new("Entity guard triggered."));
+                        }
+
                         let parent: &T::Model = ctx
                             .parent_value
                             .try_downcast_ref::<T::Model>()
@@ -90,6 +107,16 @@ impl EntityObjectViaRelationBuilder {
                 move |ctx| {
                     let context: &'static BuilderContext = context;
                     FieldFuture::new(async move {
+                        let guard_flag = if let Some(guard) = guard {
+                            (*guard)(&ctx)
+                        } else {
+                            false
+                        };
+
+                        if guard_flag {
+                            return Err(Error::new("Entity guard triggered."));
+                        }
+
                         // FIXME: optimize union queries
                         // NOTE: each has unique query in order to apply pagination...
                         let parent: &T::Model = ctx

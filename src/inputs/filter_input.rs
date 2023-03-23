@@ -57,9 +57,12 @@ impl FilterInputBuilder {
             let column_name = entity_object_builder.column_name::<T>(column);
 
             let field = match column.def().get_column_type() {
-                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => Some(
-                    InputValue::new(column_name, TypeRef::named(&self.context.filter_input.string_type)),
-                ),
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
+                    Some(InputValue::new(
+                        column_name,
+                        TypeRef::named(&self.context.filter_input.string_type),
+                    ))
+                }
                 ColumnType::TinyInteger
                 | ColumnType::SmallInteger
                 | ColumnType::Integer

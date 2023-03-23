@@ -14,8 +14,7 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     if let Some(order_by) = order_by {
-        let order_by = order_by
-            .object().unwrap();
+        let order_by = order_by.object().unwrap();
 
         let entity_object = EntityObjectBuilder { context };
 
@@ -25,8 +24,7 @@ where
             let order = order_by.get(&column_name);
 
             if let Some(order) = order {
-                let order = order
-                    .enum_name().unwrap();
+                let order = order.enum_name().unwrap();
 
                 let asc_variant = &context.order_by_enum.asc_variant;
                 let desc_variant = &context.order_by_enum.desc_variant;

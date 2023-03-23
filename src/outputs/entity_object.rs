@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
-use async_graphql::Value;
+use async_graphql::{Error, Value};
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
@@ -21,7 +21,7 @@ impl std::default::Default for EntityObjectConfig {
     }
 }
 
-use crate::{BuilderContext, ActiveEnumBuilder};
+use crate::{ActiveEnumBuilder, BuilderContext};
 
 pub struct EntityObjectBuilder {
     pub context: &'static BuilderContext,
@@ -52,11 +52,13 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let name = self.type_name::<T>();
-        let active_enum_builder = ActiveEnumBuilder { context: self.context };
+        let object_name = self.type_name::<T>();
+        let active_enum_builder = ActiveEnumBuilder {
+            context: self.context,
+        };
 
-        T::Column::iter().fold(Object::new(name), |object, column: T::Column| {
-            let name = self.column_name::<T>(column);
+        T::Column::iter().fold(Object::new(&object_name), |object, column: T::Column| {
+            let column_name = self.column_name::<T>(column);
 
             let column_def = column.def();
 
@@ -123,8 +125,30 @@ impl EntityObjectBuilder {
                 }
             );
 
+            let guard = self
+                .context
+                .guards
+                .field_guards
+                .get(&format!("{}.{}", &object_name, &column_name));
+
             // convert SeaQL value to GraphQL value
-            let field = Field::new(name, graphql_type, move |ctx| {
+            let field = Field::new(column_name, graphql_type, move |ctx| {
+                let guard_flag = if let Some(guard) = guard {
+                    (*guard)(&ctx)
+                } else {
+                    false
+                };
+
+                if guard_flag {
+                    return FieldFuture::new(async move {
+                        if guard_flag {
+                            Err(Error::new("Field guard triggered."))
+                        } else {
+                            Ok(Some(Value::from(false)))
+                        }
+                    });
+                }
+
                 let object = ctx
                     .parent_value
                     .try_downcast_ref::<T::Model>()

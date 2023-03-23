@@ -1,4 +1,7 @@
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
+use async_graphql::{
+    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
+    Error,
+};
 use heck::ToLowerCamelCase;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
@@ -68,13 +71,25 @@ impl EntityQueryFieldBuilder {
         let object_name = entity_object.type_name::<T>();
         let type_name = connection_object_builder.type_name(&object_name);
 
+        let guard = self.context.guards.entity_guards.get(&object_name);
+
         let context: &'static BuilderContext = self.context;
         Field::new(
-            object_name.to_lower_camel_case(),
+            object_name.to_lower_camel_case(), // FIXME: use naming context
             TypeRef::named_nn(type_name),
             move |ctx| {
                 let context: &'static BuilderContext = context;
                 FieldFuture::new(async move {
+                    let guard_flag = if let Some(guard) = guard {
+                        (*guard)(&ctx)
+                    } else {
+                        false
+                    };
+
+                    if guard_flag {
+                        return Err(Error::new("Entity guard triggered."));
+                    }
+
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
                     let pagination = ctx.args.get(&context.entity_query_field.pagination);

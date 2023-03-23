@@ -6,14 +6,16 @@ use crate::{
     prepare_string_condition, prepare_unsigned_condition, BuilderContext, EntityObjectBuilder,
 };
 
-pub fn get_filter_conditions<T>(context: &'static BuilderContext, filters: Option<ValueAccessor>) -> Condition
+pub fn get_filter_conditions<T>(
+    context: &'static BuilderContext,
+    filters: Option<ValueAccessor>,
+) -> Condition
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
     if let Some(filters) = filters {
-        let filters = filters
-            .object().unwrap();
+        let filters = filters.object().unwrap();
 
         recursive_prepare_condition::<T>(context, filters)
     } else {
@@ -21,7 +23,10 @@ where
     }
 }
 
-pub fn recursive_prepare_condition<T>(context: &'static BuilderContext, filters: ObjectAccessor) -> Condition
+pub fn recursive_prepare_condition<T>(
+    context: &'static BuilderContext,
+    filters: ObjectAccessor,
+) -> Condition
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -34,8 +39,7 @@ where
         let filter = filters.get(&column_name);
 
         if let Some(filter) = filter {
-            let filter = filter
-                .object().unwrap();
+            let filter = filter.object().unwrap();
 
             match column.def().get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
@@ -139,8 +143,7 @@ where
     });
 
     let condition = if let Some(and) = filters.get("and") {
-        let filters = and
-            .list().unwrap();
+        let filters = and.list().unwrap();
 
         condition.add(
             filters

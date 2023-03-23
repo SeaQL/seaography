@@ -1,8 +1,8 @@
 use crate::{
     ActiveEnumConfig, ActiveEnumFilterInputConfig, ConnectionObjectConfig, CursorInputConfig,
-    EdgeObjectConfig, EntityQueryFieldConfig, FilterInputConfig, OffsetInputConfig,
-    OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
-    PaginationInfoObjectConfig, PaginationInputConfig, EntityObjectConfig,
+    EdgeObjectConfig, EntityObjectConfig, EntityQueryFieldConfig, FilterInputConfig, GuardsConfig,
+    OffsetInputConfig, OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
+    PaginationInfoObjectConfig, PaginationInputConfig,
 };
 
 #[derive(Default)]
@@ -26,6 +26,8 @@ pub struct BuilderContext {
     pub entity_object: EntityObjectConfig,
     pub connection_object: ConnectionObjectConfig,
     pub entity_query_field: EntityQueryFieldConfig,
+
+    pub guards: GuardsConfig,
     // guards functions
     // is_skipped function
     // naming function
