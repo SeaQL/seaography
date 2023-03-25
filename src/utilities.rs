@@ -88,10 +88,7 @@ pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
                 }
                 _ => {
                     // FIXME: missing value types
-                    panic!(
-                        "cannot
-                         current type"
-                    )
+                    panic!("Cannot convert type to cursor")
                 }
             }
         })

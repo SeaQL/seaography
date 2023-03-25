@@ -1,9 +1,12 @@
 use crate::{
     ActiveEnumConfig, ActiveEnumFilterInputConfig, ConnectionObjectConfig, CursorInputConfig,
-    EdgeObjectConfig, EntityObjectConfig, EntityQueryFieldConfig, FilterInputConfig, GuardsConfig,
+    EdgeObjectConfig, EntityObjectConfig, EntityQueryFieldConfig, FilterInputConfig,
     OffsetInputConfig, OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
     PaginationInfoObjectConfig, PaginationInputConfig,
 };
+
+pub mod guards;
+pub use guards::*;
 
 #[derive(Default)]
 pub struct BuilderContext {

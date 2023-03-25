@@ -5,6 +5,7 @@ use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iter
 
 pub struct EntityObjectConfig {
     pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub query_entity_name: Box<dyn Fn(&str) -> String + Sync>,
     pub column_name: Box<dyn Fn(&str, &str) -> String + Sync>,
 }
 
@@ -13,6 +14,9 @@ impl std::default::Default for EntityObjectConfig {
         Self {
             type_name: Box::new(|entity_name: &str| -> String {
                 entity_name.to_upper_camel_case()
+            }),
+            query_entity_name: Box::new(|entity_name: &str| -> String {
+                entity_name.to_lower_camel_case()
             }),
             column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
                 column_name.to_lower_camel_case()
@@ -35,6 +39,15 @@ impl EntityObjectBuilder {
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
         self.context.entity_object.type_name.as_ref()(&name)
+    }
+
+    pub fn query_entity_name<T>(&self) -> String
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let name: String = <T as EntityName>::table_name(&T::default()).into();
+        self.context.entity_object.query_entity_name.as_ref()(&name)
     }
 
     pub fn column_name<T>(&self, column: T::Column) -> String
@@ -90,22 +103,16 @@ impl EntityObjectBuilder {
                 | ColumnType::Bit(_) => TypeRef::STRING.into(),
                 ColumnType::Boolean => TypeRef::BOOLEAN.into(),
                 ColumnType::Money(_) => TypeRef::STRING.into(),
-                ColumnType::Json | ColumnType::JsonBinary => {
-                    // FIXME
-                    TypeRef::STRING.into()
-                }
+                // FIXME: json type
+                ColumnType::Json | ColumnType::JsonBinary => TypeRef::STRING.into(),
                 ColumnType::Uuid => TypeRef::STRING.into(),
-                ColumnType::Custom(_) => {
-                    // FIXME
-                    TypeRef::STRING.into()
-                }
+                // FIXME: custom type
+                // ColumnType::Custom(_) => TypeRef::STRING.into(),
                 ColumnType::Enum { name, variants: _ } => {
                     active_enum_builder.type_name_from_iden(name)
                 }
-                ColumnType::Array(_) => {
-                    // FIXME
-                    TypeRef::STRING.into()
-                }
+                // FIXME: array type
+                // ColumnType::Array(_) => TypeRef::STRING.into()
                 ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => TypeRef::STRING.into(),
                 _ => todo!(),
             };
@@ -254,45 +261,35 @@ impl EntityObjectBuilder {
                     }),
                     #[cfg(feature = "with-json")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
-                    sea_orm::sea_query::Value::Json(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::Json(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-chrono")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoDate(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::ChronoDate(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-chrono")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoTime(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::ChronoTime(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-chrono")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
                     sea_orm::sea_query::Value::ChronoDateTime(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -304,7 +301,6 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
                     sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -316,7 +312,6 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
                     sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -328,7 +323,6 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
                     sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -338,33 +332,26 @@ impl EntityObjectBuilder {
 
                     #[cfg(feature = "with-time")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-                    sea_orm::sea_query::Value::TimeDate(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::TimeDate(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-time")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-                    sea_orm::sea_query::Value::TimeTime(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::TimeTime(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-time")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
                     sea_orm::sea_query::Value::TimeDateTime(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -376,7 +363,6 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
                     sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -386,45 +372,36 @@ impl EntityObjectBuilder {
 
                     #[cfg(feature = "with-uuid")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]
-                    sea_orm::sea_query::Value::Uuid(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::Uuid(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-decimal")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-decimal")))]
-                    sea_orm::sea_query::Value::Decimal(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::Decimal(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-bigdecimal")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
-                    sea_orm::sea_query::Value::BigDecimal(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::BigDecimal(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "postgres-array")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "postgres-array")))]
                     sea_orm::sea_query::Value::Array(array_type, value) => {
                         FieldFuture::new(async move {
-                            // FIXME
+                            // FIXME: array type
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -436,7 +413,7 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
                     sea_orm::sea_query::Value::IpNetwork(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
+                            // FIXME: ipnet type
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -448,7 +425,7 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
                     sea_orm::sea_query::Value::MacAddress(value) => {
                         FieldFuture::new(async move {
-                            // FIXME
+                            // FIXME: mac type
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),

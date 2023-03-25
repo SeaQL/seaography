@@ -94,10 +94,27 @@ impl FilterInputBuilder {
                     column_name,
                     TypeRef::named(&self.context.filter_input.integer_type),
                 )),
+                ColumnType::Interval(_, _) => Some(InputValue::new(
+                    column_name,
+                    TypeRef::named(&self.context.filter_input.text_type),
+                )),
+                // FIXME: binary type
+                // ColumnType::Binary(_) |
+                // ColumnType::VarBinary(_) |
+                // ColumnType::Bit(_) |
+                // ColumnType::VarBit(_) => Some(InputValue::new(
+                //     column_name,
+                //     TypeRef::named(&self.context.filter_input.text_type),
+                // )),
                 ColumnType::Boolean => Some(InputValue::new(
                     column_name,
                     TypeRef::named(&self.context.filter_input.boolean_type),
                 )),
+                // FIXME: json type
+                // ColumnType::Json | ColumnType::JsonBinary => Some(InputValue::new(
+                //     column_name,
+                //     TypeRef::named(&self.context.filter_input.text_type),
+                // )),
                 ColumnType::Uuid => Some(InputValue::new(
                     column_name,
                     TypeRef::named(&self.context.filter_input.text_type),
@@ -111,11 +128,15 @@ impl FilterInputBuilder {
                         active_enum_filter_input_builder.type_name_from_iden(&enum_name),
                     ),
                 )),
+                // FIXME: cidr, inet, mac type
                 ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => Some(InputValue::new(
                     column_name,
                     TypeRef::named(&self.context.filter_input.text_type),
                 )),
-                // FIXME: support more types
+                // FIXME: support array types
+                // ColumnType::Array(_) => {}
+                // FIXME: support custom types
+                // ColumnType::Custom(iden) => {}
                 _ => None,
             };
 

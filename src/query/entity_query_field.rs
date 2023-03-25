@@ -75,7 +75,7 @@ impl EntityQueryFieldBuilder {
 
         let context: &'static BuilderContext = self.context;
         Field::new(
-            object_name.to_lower_camel_case(), // FIXME: use naming context
+            entity_object.query_entity_name::<T>(),
             TypeRef::named_nn(type_name),
             move |ctx| {
                 let context: &'static BuilderContext = context;

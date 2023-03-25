@@ -38,7 +38,6 @@ pub struct EdgeObjectBuilder {
 }
 
 impl EdgeObjectBuilder {
-    // FIXME: use context naming function
     pub fn type_name(&self, object_name: &str) -> String {
         self.context.edge_object.type_name.as_ref()(object_name)
     }

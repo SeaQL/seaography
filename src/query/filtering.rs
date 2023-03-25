@@ -3,7 +3,8 @@ use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable};
 
 use crate::{
     prepare_enumeration_condition, prepare_float_condition, prepare_integer_condition,
-    prepare_string_condition, prepare_unsigned_condition, BuilderContext, EntityObjectBuilder,
+    prepare_string_condition, prepare_text_condition, prepare_unsigned_condition, BuilderContext,
+    EntityObjectBuilder,
 };
 
 pub fn get_filter_conditions<T>(
@@ -31,16 +32,17 @@ where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
-    let entity_object = EntityObjectBuilder { context };
+    let entity_object_builder = EntityObjectBuilder { context };
 
     let condition = T::Column::iter().fold(Condition::all(), |condition, column: T::Column| {
-        let column_name = entity_object.column_name::<T>(column);
+        let column_name = entity_object_builder.column_name::<T>(column);
 
         let filter = filters.get(&column_name);
 
         if let Some(filter) = filter {
             let filter = filter.object().unwrap();
 
+            // for more info on supported types read "filter_input.rs"
             match column.def().get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
                     prepare_string_condition(&filter, column, condition)
@@ -57,8 +59,9 @@ where
                 ColumnType::Float | ColumnType::Double => {
                     prepare_float_condition(&filter, column, condition)
                 }
+                // FIXME: research how to integrate big decimal
                 #[cfg(feature = "with-decimal")]
-                ColumnType::Decimal(_) => crate::prepare_parsed_condition(
+                ColumnType::Decimal(_) | ColumnType::Money(_) => crate::prepare_parsed_condition(
                     &filter,
                     column,
                     |v| {
@@ -69,71 +72,61 @@ where
                     },
                     condition,
                 ),
-                // ColumnType::DateTime => {
-                // FIXME
-                // },
-                // ColumnType::Timestamp => {
-                // FIXME
-                // },
-                // ColumnType::TimestampWithTimeZone => {
-                // FIXME
-                // },
-                // ColumnType::Time => {
-                // FIXME
-                // },
-                // ColumnType::Date => {
-                // FIXME
-                // },
-                // ColumnType::Year => {
-                // FIXME
-                // },
-                // ColumnType::Interval => {
-                // FIXME
-                // },
-                // ColumnType::Binary => {
-                // FIXME
-                // },
-                // ColumnType::VarBinary => {
-                // FIXME
-                // },
-                // ColumnType::Bit => {
-                // FIXME
-                // },
-                // ColumnType::VarBit => {
-                // FIXME
-                // },
-                // ColumnType::Boolean => {
-                // FIXME
-                // },
-                // ColumnType::Money(_) => {
-                // FIXME
-                // },
-                // ColumnType::Json => {
-                // FIXME
-                // },
-                // ColumnType::JsonBinary => {
-                // FIXME
-                // },
-                // ColumnType::Custom(_) => {
-                // FIXME
-                // },
-                // ColumnType::Uuid => {
-                // FIXME
-                // },
+                ColumnType::DateTime
+                | ColumnType::Timestamp
+                | ColumnType::TimestampWithTimeZone
+                | ColumnType::Time
+                | ColumnType::Date
+                | ColumnType::Interval(_, _) => prepare_text_condition(&filter, column, condition),
+                ColumnType::Year(_) => prepare_integer_condition(&filter, column, condition),
+                ColumnType::Boolean => crate::prepare_boolean_condition(&filter, column, condition),
+                #[cfg(feature = "with-uuid")]
+                ColumnType::Uuid => crate::prepare_parsed_condition(
+                    &filter,
+                    column,
+                    |v| {
+                        use std::str::FromStr;
+
+                        sea_orm::entity::prelude::Uuid::from_str(&v)
+                            .expect("We expect value to be Uuid")
+                    },
+                    condition,
+                ),
                 ColumnType::Enum { name: _, variants } => {
                     prepare_enumeration_condition(&filter, column, variants, condition)
                 }
+                // ColumnType::Binary => {
+                // FIXME: binary type
+                // },
+                // ColumnType::VarBinary => {
+                // FIXME: binary type
+                // },
+                // ColumnType::Bit => {
+                // FIXME: binary type
+                // },
+                // ColumnType::VarBit => {
+                // FIXME: binary type
+                // },
+                // ColumnType::Json => {
+                // FIXME: json type
+                // },
+                // ColumnType::JsonBinary => {
+                // FIXME: json type
+                // },
                 // ColumnType::Array(_) => {
-                // FIXME
+                // FIXME: array type
                 // },
                 // ColumnType::Cidr => {
-                // FIXME
+                // FIXME: cidr type
                 // },
                 // ColumnType::Inet => {
-                // FIXME
+                // FIXME: inet type
                 // },
                 // ColumnType::MacAddr => {
-                // FIXME
+                // FIXME: mac type
+                // },
+                // ColumnType::Custom(_) => {
+                // FIXME: custom type
                 // },
                 _ => panic!("Type is not supported"),
             }
