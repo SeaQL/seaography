@@ -5,7 +5,7 @@ use sea_orm::{ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
 use crate::{ActiveEnumBuilder, BuilderContext};
 
 pub struct ActiveEnumFilterInputConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
 }
 
 impl std::default::Default for ActiveEnumFilterInputConfig {

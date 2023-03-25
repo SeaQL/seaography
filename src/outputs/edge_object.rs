@@ -18,7 +18,7 @@ where
 }
 
 pub struct EdgeObjectConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
     pub cursor: String,
     pub node: String,
 }

@@ -4,7 +4,7 @@ use sea_orm::{EntityTrait, Iterable};
 use crate::{BuilderContext, EntityObjectBuilder};
 
 pub struct OrderInputConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
 }
 
 impl std::default::Default for OrderInputConfig {

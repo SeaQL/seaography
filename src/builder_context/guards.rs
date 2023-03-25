@@ -7,7 +7,7 @@ pub struct GuardsConfig {
     pub field_guards: BTreeMap<String, FnGuard>,
 }
 
-pub type FnGuard = Box<dyn Fn(&ResolverContext) -> bool + Sync>;
+pub type FnGuard = Box<dyn Fn(&ResolverContext) -> bool + Sync + Send>;
 
 impl std::default::Default for GuardsConfig {
     fn default() -> Self {

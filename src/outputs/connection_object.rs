@@ -23,7 +23,7 @@ where
 }
 
 pub struct ConnectionObjectConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
     pub page_info: String,
     pub pagination_info: String,
     pub edges: String,

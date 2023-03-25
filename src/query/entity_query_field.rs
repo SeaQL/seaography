@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub struct EntityQueryFieldConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
     pub filters: String,
     pub order_by: String,
     pub pagination: String,

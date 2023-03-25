@@ -759,3 +759,56 @@ async fn related_queries_pagination() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn enumeration_filter() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: { rating: { eq: NC17 } }
+                    pagination: { page: { page: 1, limit: 5 } }
+                  ) {
+                    nodes {
+                      filmId
+                      rating
+                    }
+                  }
+                }
+        "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 27,
+                "rating": "NC17"
+              },
+              {
+                "filmId": 29,
+                "rating": "NC17"
+              },
+              {
+                "filmId": 31,
+                "rating": "NC17"
+              },
+              {
+                "filmId": 34,
+                "rating": "NC17"
+              },
+              {
+                "filmId": 38,
+                "rating": "NC17"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}

@@ -4,9 +4,9 @@ use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
 pub struct EntityObjectConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
-    pub query_entity_name: Box<dyn Fn(&str) -> String + Sync>,
-    pub column_name: Box<dyn Fn(&str, &str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub query_entity_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub column_name: Box<dyn Fn(&str, &str) -> String + Sync + Send>,
 }
 
 impl std::default::Default for EntityObjectConfig {
@@ -76,9 +76,9 @@ impl EntityObjectBuilder {
             let column_def = column.def();
 
             // map column type to GraphQL type
-            let type_name: String = match &column_def.get_column_type() {
+            let type_name: Option<String> = match &column_def.get_column_type() {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                    TypeRef::STRING.into()
+                    Some(TypeRef::STRING.into())
                 }
                 ColumnType::TinyInteger
                 | ColumnType::SmallInteger
@@ -87,34 +87,42 @@ impl EntityObjectBuilder {
                 | ColumnType::TinyUnsigned
                 | ColumnType::SmallUnsigned
                 | ColumnType::Unsigned
-                | ColumnType::BigUnsigned => TypeRef::INT.into(),
-                ColumnType::Float | ColumnType::Double => TypeRef::FLOAT.into(),
-                ColumnType::Decimal(_) => TypeRef::STRING.into(),
+                | ColumnType::BigUnsigned => Some(TypeRef::INT.into()),
+                ColumnType::Float | ColumnType::Double => Some(TypeRef::FLOAT.into()),
+                ColumnType::Decimal(_) => Some(TypeRef::STRING.into()),
                 ColumnType::DateTime
                 | ColumnType::Timestamp
                 | ColumnType::TimestampWithTimeZone
                 | ColumnType::Time
-                | ColumnType::Date => TypeRef::STRING.into(),
-                ColumnType::Year(_) => TypeRef::INT.into(),
-                ColumnType::Interval(_, _) => TypeRef::STRING.into(),
+                | ColumnType::Date => Some(TypeRef::STRING.into()),
+                ColumnType::Year(_) => Some(TypeRef::INT.into()),
+                ColumnType::Interval(_, _) => Some(TypeRef::STRING.into()),
                 ColumnType::Binary(_)
                 | ColumnType::VarBinary(_)
                 | ColumnType::VarBit(_)
-                | ColumnType::Bit(_) => TypeRef::STRING.into(),
-                ColumnType::Boolean => TypeRef::BOOLEAN.into(),
-                ColumnType::Money(_) => TypeRef::STRING.into(),
+                | ColumnType::Bit(_) => Some(TypeRef::STRING.into()),
+                ColumnType::Boolean => Some(TypeRef::BOOLEAN.into()),
+                ColumnType::Money(_) => Some(TypeRef::STRING.into()),
                 // FIXME: json type
-                ColumnType::Json | ColumnType::JsonBinary => TypeRef::STRING.into(),
-                ColumnType::Uuid => TypeRef::STRING.into(),
-                // FIXME: custom type
-                // ColumnType::Custom(_) => TypeRef::STRING.into(),
+                ColumnType::Json | ColumnType::JsonBinary => Some(TypeRef::STRING.into()),
+                ColumnType::Uuid => Some(TypeRef::STRING.into()),
+                // FIXME: research what type is behind the custom type
+                ColumnType::Custom(_) => Some(TypeRef::STRING.into()),
                 ColumnType::Enum { name, variants: _ } => {
-                    active_enum_builder.type_name_from_iden(name)
+                    Some(active_enum_builder.type_name_from_iden(name))
                 }
                 // FIXME: array type
-                // ColumnType::Array(_) => TypeRef::STRING.into()
-                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => TypeRef::STRING.into(),
-                _ => todo!(),
+                // ColumnType::Array(_) => Some(TypeRef::STRING.into())
+                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
+                    Some(TypeRef::STRING.into())
+                }
+                _ => None,
+            };
+
+            let type_name = if let Some(type_name) = type_name {
+                type_name
+            } else {
+                return object;
             };
 
             // map if field is nullable

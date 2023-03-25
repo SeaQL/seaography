@@ -26,11 +26,11 @@
 ## Features
 
 * Relational query (1-to-1, 1-to-N)
-* Pagination on query's root entity
-* Pagination on relations
-* Filter with operators (e.g. gt, lt, eq)
-* Filter related items
+* Pagination for queries and relations (1-N)
+* Filtering with operators (e.g. gt, lt, eq)
 * Order by any column
+* Guard fields, queries or relations
+* Rename fields
 
 (Right now there is no mutation, but it's on our plan!)
 
@@ -65,12 +65,10 @@ Go to http://localhost:8000/ and try out the following queries:
       title
       description
       releaseYear
-      filmActor {
+      actor {
         nodes {
-          actor {
-            firstName
-            lastName
-          }
+          firstName
+          lastName
         }
       }
     }
@@ -111,8 +109,10 @@ Go to http://localhost:8000/ and try out the following queries:
       lastName
       email
     }
-    pages
-    current
+    paginationInfo {
+      pages
+      current
+    }
   }
 }
 ```
@@ -165,8 +165,10 @@ Find all inactive customers, include their address, and their payments with amou
           paymentId
           amount
         }
-        pages
-        current
+        paginationInfo {
+          pages
+          current
+        }
         pageInfo {
           hasPreviousPage
           hasNextPage
@@ -177,6 +179,21 @@ Find all inactive customers, include their address, and their payments with amou
       hasPreviousPage
       hasNextPage
       endCursor
+    }
+  }
+}
+```
+
+### Filter using enumeration
+```graphql
+{
+  film(
+    filters: { rating: { eq: NC17 } }
+    pagination: { page: { page: 1, limit: 5 } }
+  ) {
+    nodes {
+      filmId
+      rating
     }
   }
 }

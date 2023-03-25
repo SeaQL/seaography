@@ -5,8 +5,8 @@ use sea_orm::{ActiveEnum, DynIden, Value};
 use crate::BuilderContext;
 
 pub struct ActiveEnumConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
-    pub variant_name: Box<dyn Fn(&str, &str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub variant_name: Box<dyn Fn(&str, &str) -> String + Sync + Send>,
 }
 
 impl std::default::Default for ActiveEnumConfig {

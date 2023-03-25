@@ -4,7 +4,7 @@ use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable, Value};
 use crate::{ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder};
 
 pub struct FilterInputConfig {
-    pub type_name: Box<dyn Fn(&str) -> String + Sync>,
+    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
     pub string_type: String,
     pub integer_type: String,
     pub float_type: String,
