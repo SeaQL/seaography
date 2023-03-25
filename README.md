@@ -27,7 +27,9 @@
 
 * Relational query (1-to-1, 1-to-N)
 * Pagination on query's root entity
+* Pagination on relations
 * Filter with operators (e.g. gt, lt, eq)
+* Filter related items
 * Order by any column
 
 (Right now there is no mutation, but it's on our plan!)
@@ -37,6 +39,7 @@
 ### Install
 
 ```sh
+cargo install sea-orm-cli # used to generate entities
 cargo install seaography-cli
 ```
 
@@ -46,7 +49,8 @@ Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/mysql/
 
 ```sh
 cd examples/mysql
-seaography-cli mysql://user:pw@localhost/sakila seaography-mysql-example .
+sea-orm-cli generate entity -o src/entities -u mysql://user:pw@127.0.0.1/sakila
+seaography-cli ./ src/entities mysql://user:pw@127.0.0.1/sakila seaography-mysql-example
 cargo run
 ```
 
@@ -184,7 +188,8 @@ Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/postgr
 
 ```sh
 cd examples/postgres
-seaography-cli postgres://user:pw@localhost/sakila seaography-postgres-example .
+sea-orm-cli generate entity -o src/entities -u postgres://user:pw@localhost/sakila
+seaography-cli ./ src/entities postgres://user:pw@localhost/sakila seaography-postgres-example
 cargo run
 ```
 
@@ -192,7 +197,8 @@ cargo run
 
 ```sh
 cd examples/sqlite
-seaography-cli sqlite://sakila.db seaography-sqlite-example .
+sea-orm-cli generate entity -o src/entities -u sqlite://sakila.db
+seaography-cli ./ src/entities sqlite://sakila.db seaography-sqlite-example
 cargo run
 ```
 
