@@ -16,5 +16,4 @@ categories = ["database"]
 async-std = { version = "1.12.0", features = [ "attributes", "tokio1" ] }
 clap = { version = "4.1.8", features = ["derive"] }
 seaography-generator = { version = "^1.0.0", path = "../generator" }
-seaography-discoverer = { version = "^1.0.0", path = "../discoverer" }
 url = "2.3.1"

@@ -93,15 +93,7 @@ async fn main() {
 
     let database_url = parse_database_url(&args.database_url).unwrap();
 
-    let (_, sql_version) = seaography_discoverer::extract_database_metadata(&database_url)
-        .await
-        .unwrap();
-
-    let sql_library = match sql_version {
-        seaography_discoverer::SqlVersion::Sqlite => "sqlx-sqlite",
-        seaography_discoverer::SqlVersion::Mysql => "sqlx-mysql",
-        seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
-    };
+    let sql_library = &map_sql_version(&database_url);
 
     let db_url = database_url.as_str();
 
@@ -131,5 +123,14 @@ impl From<WebFrameworkEnum> for seaography_generator::WebFrameworkEnum {
             WebFrameworkEnum::Actix => seaography_generator::WebFrameworkEnum::Actix,
             WebFrameworkEnum::Poem => seaography_generator::WebFrameworkEnum::Poem,
         }
+    }
+}
+
+fn map_sql_version(database_url: &url::Url) -> String {
+    match database_url.scheme() {
+        "mysql" => String::from("sqlx-sqlite"),
+        "sqlite" => String::from("sqlx-mysql"),
+        "postgres" | "postgresql" => String::from("sqlx-postgres"),
+        _ => unimplemented!("{} is not supported", database_url.scheme()),
     }
 }
