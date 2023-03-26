@@ -79,7 +79,7 @@ pub fn create_mutation(name: &TokenStream, fields: &[IdentTypeTuple]) -> TokenSt
 
     let variables: Vec<TokenStream> = fields
         .iter()
-        .filter(|(i, _, skip)| { !*skip })
+        .filter(|(_, _, skip)| { !*skip })
         .map(|(i, tp, _)| {
             quote! {
                 #i: #tp,
@@ -160,7 +160,7 @@ pub fn update_mutation(name: &TokenStream, fields: &[IdentTypeTuple]) -> TokenSt
 
     let variables: Vec<TokenStream> = fields
         .iter()
-        .filter(|(i, _, skip)| { !*skip })
+        .filter(|(_, _, skip)| { !*skip })
         .map(|(i, tp, _)| {
             quote! {
                 #i: Option<#tp>,
