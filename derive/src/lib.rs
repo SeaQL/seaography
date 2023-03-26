@@ -6,6 +6,7 @@ mod error;
 mod filter;
 mod relation;
 mod root_query;
+mod mutation;
 
 #[proc_macro_derive(Filter, attributes(sea_orm))]
 pub fn derive_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -134,6 +135,43 @@ pub fn derive_root_query_fn(input: proc_macro::TokenStream) -> proc_macro::Token
 
     res.into()
 }
+
+#[proc_macro_derive(Mutation, attributes(sea_orm, seaography_mutation))]
+pub fn derive_mutation_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let DeriveInput {
+        ident, data, attrs, ..
+    } = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    let item = match data {
+        syn::Data::Struct(item) => item,
+        _ => {
+            return quote::quote! {
+                compile_error!("Input not structure")
+            }
+            .into()
+        }
+    };
+
+    if ident.ne("Model") {
+        return quote::quote! {
+            compile_error!("Struct must be SeaOrm Model structure")
+        }
+        .into();
+    }
+
+    let attrs = mutation::SeaOrm::from_attributes(&attrs).unwrap();
+    
+    mutation::mutation_fn(item, attrs)
+        .unwrap_or_else(|err| {
+            let error = format!("{:?}", err);
+
+            quote::quote! {
+                compile_error!(#error)
+            }
+        })
+        .into()
+}
+
 
 #[proc_macro_derive(EnumFilter, attributes())]
 pub fn derive_enum_filter_fn(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
