@@ -46,9 +46,6 @@ pub fn mutation_fn(item: syn::DataStruct, attrs_seaorm: SeaOrm) -> Result<TokenS
         })
         .collect();
 
-    dbg!(fields.clone());
-
-
     let name = if let syn::Lit::Str(item) = attrs_seaorm.table_name.as_ref().unwrap() {
         Ok(item.value().parse::<TokenStream>()?)
     } else {
@@ -82,7 +79,7 @@ pub fn create_mutation(name: &TokenStream, fields: &[IdentTypeTuple]) -> TokenSt
 
     let variables: Vec<TokenStream> = fields
         .iter()
-        .filter(|(i, _, skip)| { dbg!(&*i); dbg!(&*skip); !*skip })
+        .filter(|(i, _, skip)| { !*skip })
         .map(|(i, tp, _)| {
             quote! {
                 #i: #tp,
@@ -163,7 +160,7 @@ pub fn update_mutation(name: &TokenStream, fields: &[IdentTypeTuple]) -> TokenSt
 
     let variables: Vec<TokenStream> = fields
         .iter()
-        .filter(|(i, _, skip)| { dbg!(&*i); dbg!(&*skip); !*skip })
+        .filter(|(i, _, skip)| { !*skip })
         .map(|(i, tp, _)| {
             quote! {
                 #i: Option<#tp>,
