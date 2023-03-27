@@ -4,7 +4,7 @@ use quote::{format_ident, quote};
 #[derive(Debug, Eq, PartialEq, bae::FromAttributes, Clone)]
 pub struct Seaography {
     entity: Option<syn::Lit>,
-    object_config: Option<syn::Expr>,
+    object_config: Option<syn::Lit>,
 }
 
 pub fn root_query_fn(
@@ -24,9 +24,10 @@ pub fn root_query_fn(
                     ))
                 }?;
 
-                let config = if let Some(config) = &attribute.object_config {
+                let config = if let Some(syn::Lit::Str(item)) = attribute.object_config.as_ref() {
+                    let tt = item.value().parse::<TokenStream>()?;
                     quote! {
-                        #[graphql(#config)]
+                        #[graphql(#tt)]
                     }
                 } else {
                     quote! {}
