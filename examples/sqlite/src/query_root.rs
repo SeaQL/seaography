@@ -1,34 +1,34 @@
+use std::collections::BTreeMap;
+
 use crate::OrmDataloader;
 use async_graphql::{dataloader::DataLoader, dynamic::*};
 use sea_orm::{DatabaseConnection, RelationTrait};
 use seaography::{
-    Builder, BuilderContext, EntityObjectRelationBuilder, EntityObjectViaRelationBuilder
+    Builder, BuilderContext, EntityObjectRelationBuilder, EntityObjectViaRelationBuilder, FnGuard, GuardsConfig
 };
 
-// lazy_static::lazy_static! {
-//     static ref CONTEXT : BuilderContext = {
-//         let context = BuilderContext::default();
-//         let mut entity_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
-//         entity_guards.insert("Customer".into(), Box::new(|ctx| {
-//             println!("BLOCKED");
-//             true
-//         }));
-//         let mut field_guards: BTreeMap<String, FnGuard> = BTreeMap::new();`
-//         field_guards.insert("Customer.customerId".into(), Box::new(|ctx| {
-//             println!("BLOCKED");
-//             true
-//         }));
-//         BuilderContext {
-//             guards: GuardsConfig {
-//                 entity_guards,
-//                 field_guards,
-//             },
-//             ..context
-//         }
-//     };
-// }
+lazy_static::lazy_static! {
+    static ref CONTEXT : BuilderContext = {
+        let context = BuilderContext::default();
+        let mut entity_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
+        entity_guards.insert("FilmCategory".into(), Box::new(|_ctx| {
+            true
+        }));
+        let mut field_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
+        field_guards.insert("Language.lastUpdate".into(), Box::new(|_ctx| {
+            true
+        }));
+        BuilderContext {
+            guards: GuardsConfig {
+                entity_guards,
+                field_guards,
+            },
+            ..context
+        }
+    };
+}
 
-lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
+// lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
 
 pub fn schema(
     database: DatabaseConnection,

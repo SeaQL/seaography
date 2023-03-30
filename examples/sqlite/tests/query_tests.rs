@@ -758,3 +758,108 @@ async fn related_queries_pagination() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn entity_guard() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    language {
+                      nodes {
+                        languageId
+                        name
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "language": {
+              "nodes": [
+                {
+                  "languageId": 1,
+                  "name": "English"
+                },
+                {
+                  "languageId": 2,
+                  "name": "Italian"
+                },
+                {
+                  "languageId": 3,
+                  "name": "Japanese"
+                },
+                {
+                  "languageId": 4,
+                  "name": "Mandarin"
+                },
+                {
+                  "languageId": 5,
+                  "name": "French"
+                },
+                {
+                  "languageId": 6,
+                  "name": "German"
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    let response = schema
+    .execute(
+        r#"
+        {
+            filmCategory {
+              nodes {
+                filmId
+              }
+            }
+        }
+        "#,
+    )
+    .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(
+        response.errors[0].message,
+        "Entity guard triggered."
+    );
+
+}
+
+#[tokio::test]
+async fn field_guard() {
+    let schema = get_schema().await;
+
+    let response = schema
+    .execute(
+        r#"
+            {
+                language {
+                nodes {
+                    languageId
+                    name
+                    lastUpdate
+                }
+                }
+            }
+        "#,
+    )
+    .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(
+        response.errors[0].message,
+        "Field guard triggered."
+    );
+
+}
