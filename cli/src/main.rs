@@ -128,8 +128,8 @@ impl From<WebFrameworkEnum> for seaography_generator::WebFrameworkEnum {
 
 fn map_sql_version(database_url: &url::Url) -> String {
     match database_url.scheme() {
-        "mysql" => String::from("sqlx-sqlite"),
-        "sqlite" => String::from("sqlx-mysql"),
+        "mysql" => String::from("sqlx-mysql"),
+        "sqlite" => String::from("sqlx-sqlite"),
         "postgres" | "postgresql" => String::from("sqlx-postgres"),
         _ => unimplemented!("{} is not supported", database_url.scheme()),
     }
