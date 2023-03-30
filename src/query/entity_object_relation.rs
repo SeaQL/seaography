@@ -13,11 +13,14 @@ use crate::{
     EntityObjectBuilder, FilterInputBuilder, OrderInputBuilder,
 };
 
+/// This builder produces a GraphQL field for an SeaORM entity relationship
+/// that can be added to the entity object
 pub struct EntityObjectRelationBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl EntityObjectRelationBuilder {
+    /// used to get a GraphQL field for an SeaORM entity relationship
     pub fn get_relation<T, R>(&self, name: &str, relation_definition: RelationDef) -> Field
     where
         T: EntityTrait,

@@ -2,15 +2,20 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 
 use crate::BuilderContext;
 
+/// used to hold information about offset pagination
 #[derive(Clone, Debug)]
 pub struct OffsetInput {
     pub offset: u64,
     pub limit: u64,
 }
 
+/// The configuration structure for OffsetInputBuilder
 pub struct OffsetInputConfig {
+    /// name of the object
     pub type_name: String,
+    /// name for 'offset' field
     pub offset: String,
+    /// name for 'limit' field
     pub limit: String,
 }
 
@@ -24,15 +29,18 @@ impl std::default::Default for OffsetInputConfig {
     }
 }
 
+/// This builder produces the offset pagination options input object
 pub struct OffsetInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl OffsetInputBuilder {
+    /// used to get type name
     pub fn type_name(&self) -> String {
         self.context.offset_input.type_name.clone()
     }
 
+    /// used to get offset pagination options object
     pub fn input_object(&self) -> InputObject {
         InputObject::new(&self.context.offset_input.type_name)
             .field(InputValue::new(
@@ -45,6 +53,7 @@ impl OffsetInputBuilder {
             ))
     }
 
+    /// used to parse query input to offset pagination options struct
     pub fn parse_object(&self, object: &ObjectAccessor) -> OffsetInput {
         let offset = object
             .get(&self.context.offset_input.offset)

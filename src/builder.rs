@@ -9,6 +9,9 @@ use crate::{
     PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
+/// The Builder is used to create the Schema for GraphQL
+///
+/// You can populate it with the entities, enumerations of your choice
 pub struct Builder {
     pub entities: Vec<Object>,
     pub edges: Vec<Object>,
@@ -22,6 +25,7 @@ pub struct Builder {
 }
 
 impl Builder {
+    /// Used to create a new Builder from the given configuration context
     pub fn new(context: &'static BuilderContext) -> Self {
         Self {
             entities: Vec::new(),
@@ -36,6 +40,7 @@ impl Builder {
         }
     }
 
+    /// used to register a new entity to the Builder context
     pub fn register_entity<T>(&mut self, relations: Vec<Field>)
     where
         T: EntityTrait,
@@ -91,6 +96,7 @@ impl Builder {
         self.queries.extend(vec![query]);
     }
 
+    /// used to register a new enumeration to the builder context
     pub fn register_enumeration<A>(&mut self)
     where
         A: ActiveEnum,
@@ -111,6 +117,7 @@ impl Builder {
         self.filters.extend(vec![filter]);
     }
 
+    /// used to consume the builder context and generate a ready to be completed GraphQL schema
     pub fn schema_builder(self) -> SchemaBuilder {
         let query = Object::new("Query");
 
@@ -172,6 +179,7 @@ impl Builder {
             context: self.context,
         };
 
+        // register static filter types
         schema
             .register(filter_input_builder.string_filter())
             .register(filter_input_builder.integer_filter())

@@ -2,15 +2,20 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 
 use crate::BuilderContext;
 
+/// used to hold information about page pagination
 #[derive(Clone, Debug)]
 pub struct PageInput {
     pub page: u64,
     pub limit: u64,
 }
 
+/// The configuration structure for PageInputBuilder
 pub struct PageInputConfig {
+    /// name of the object
     pub type_name: String,
+    /// name for 'page' field
     pub page: String,
+    /// name for 'limit' field
     pub limit: String,
 }
 
@@ -24,15 +29,18 @@ impl std::default::Default for PageInputConfig {
     }
 }
 
+/// This builder produces the page pagination options input object
 pub struct PageInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl PageInputBuilder {
+    /// used to get type name
     pub fn type_name(&self) -> String {
         self.context.page_input.type_name.clone()
     }
 
+    /// used to get page pagination options object
     pub fn input_object(&self) -> InputObject {
         InputObject::new(&self.context.page_input.type_name)
             .field(InputValue::new(
@@ -45,6 +53,7 @@ impl PageInputBuilder {
             ))
     }
 
+    /// used to parse query input to page pagination options struct
     pub fn parse_object(&self, object: &ObjectAccessor) -> PageInput {
         let page = object
             .get(&self.context.page_input.page)

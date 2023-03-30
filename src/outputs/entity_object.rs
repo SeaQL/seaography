@@ -3,9 +3,14 @@ use async_graphql::{Error, Value};
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
+
+/// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
+    /// used to format the type name of the object
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    /// used to format the name for the query field of the object
     pub query_entity_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    /// used to format the name of column fields
     pub column_name: Box<dyn Fn(&str, &str) -> String + Sync + Send>,
 }
 
@@ -27,11 +32,13 @@ impl std::default::Default for EntityObjectConfig {
 
 use crate::{ActiveEnumBuilder, BuilderContext};
 
+/// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl EntityObjectBuilder {
+    /// used to get type name
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
@@ -41,6 +48,7 @@ impl EntityObjectBuilder {
         self.context.entity_object.type_name.as_ref()(&name)
     }
 
+    /// used to get query field name of entity
     pub fn query_entity_name<T>(&self) -> String
     where
         T: EntityTrait,
@@ -50,6 +58,7 @@ impl EntityObjectBuilder {
         self.context.entity_object.query_entity_name.as_ref()(&name)
     }
 
+    /// used to get column field name of entity column
     pub fn column_name<T>(&self, column: T::Column) -> String
     where
         T: EntityTrait,
@@ -60,6 +69,7 @@ impl EntityObjectBuilder {
         self.context.entity_object.column_name.as_ref()(&entity_name, &column_name)
     }
 
+    /// used to get the GraphQL object of a SeaORM entity
     pub fn to_object<T>(&self) -> Object
     where
         T: EntityTrait,

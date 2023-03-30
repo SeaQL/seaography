@@ -12,11 +12,17 @@ pub struct PageInfo {
     pub end_cursor: Option<String>,
 }
 
+/// The configuration structure for PageInfoObjectBuilder
 pub struct PageInfoObjectConfig {
+    /// type name
     pub type_name: String,
+    /// name for 'hasPreviousPage' field
     pub has_previous_page: String,
+    /// name for 'hasNextPage' field
     pub has_next_page: String,
+    /// name for 'startCursor' field
     pub start_cursor: String,
+    /// name for 'endCursor' field
     pub end_cursor: String,
 }
 
@@ -32,15 +38,20 @@ impl std::default::Default for PageInfoObjectConfig {
     }
 }
 
+/// This builder produces the PageInfo object
+/// that contains cursor pagination information
+/// for a query
 pub struct PageInfoObjectBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl PageInfoObjectBuilder {
+    /// used to get type name
     pub fn type_name(&self) -> String {
         self.context.page_info_object.type_name.clone()
     }
 
+    /// used to get GraphQL object for PageInfo
     pub fn to_object(&self) -> Object {
         Object::new(&self.context.page_info_object.type_name)
             .field(Field::new(

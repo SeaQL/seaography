@@ -4,7 +4,9 @@ use sea_orm::{ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
 
 use crate::{ActiveEnumBuilder, BuilderContext};
 
+/// The configuration structure for ActiveEnumFilterInputConfig
 pub struct ActiveEnumFilterInputConfig {
+    /// used to format type_name
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
 }
 
@@ -18,21 +20,25 @@ impl std::default::Default for ActiveEnumFilterInputConfig {
     }
 }
 
+/// This builder produces a filter input for a SeaORM enumeration
 pub struct ActiveEnumFilterInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl ActiveEnumFilterInputBuilder {
+    /// used to get filter input name for SeaORM enumeration
     pub fn type_name<A: ActiveEnum>(&self) -> String {
         let enum_name = A::name().to_string();
         self.context.active_enum_filter_input.type_name.as_ref()(&enum_name)
     }
 
+    /// used to get filter input name for SeaORM enumeration Iden
     pub fn type_name_from_iden(&self, enum_name: &DynIden) -> String {
         let enum_name = enum_name.to_string();
         self.context.active_enum_filter_input.type_name.as_ref()(&enum_name)
     }
 
+    /// used to get filter input object for SeaORM enumeration
     pub fn input_object<A: ActiveEnum>(&self) -> InputObject {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
@@ -58,6 +64,7 @@ impl ActiveEnumFilterInputBuilder {
     }
 }
 
+/// used to update the query condition with enumeration filters
 pub fn prepare_enumeration_condition<T>(
     filter: &ObjectAccessor,
     column: T,

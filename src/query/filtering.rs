@@ -7,6 +7,8 @@ use crate::{
     EntityObjectBuilder,
 };
 
+/// utility function used to create the query filter condition
+/// for a SeaORM entity using query filter inputs
 pub fn get_filter_conditions<T>(
     context: &'static BuilderContext,
     filters: Option<ValueAccessor>,
@@ -24,6 +26,7 @@ where
     }
 }
 
+/// used to prepare recursively the query filtering condition
 pub fn recursive_prepare_condition<T>(
     context: &'static BuilderContext,
     filters: ObjectAccessor,

@@ -3,13 +3,21 @@ use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable, Value};
 
 use crate::{ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder};
 
+/// The configuration structure for FilterInputBuilder
 pub struct FilterInputConfig {
+    /// the filter input type name formatter function
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    /// filter input object name for string type
     pub string_type: String,
+    /// filter input object name for integer type
     pub integer_type: String,
+    /// filter input object name for float type
     pub float_type: String,
+    /// filter input object name for text type
     pub text_type: String,
+    /// filter input object name for boolean type
     pub boolean_type: String,
+    /// filter input object name for id type
     pub id_type: String,
 }
 
@@ -29,15 +37,19 @@ impl std::default::Default for FilterInputConfig {
     }
 }
 
+/// This builder is used to produce the filter input object of a SeaORM entity
 pub struct FilterInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl FilterInputBuilder {
+    /// used to get the filter input object name
+    /// object_name is the name of the SeaORM Entity GraphQL object
     pub fn type_name(&self, object_name: &str) -> String {
         self.context.filter_input.type_name.as_ref()(object_name)
     }
 
+    /// used to produce the filter input object of a SeaORM entity
     pub fn to_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
@@ -152,6 +164,7 @@ impl FilterInputBuilder {
             .field(InputValue::new("or", TypeRef::named_nn_list(&name)))
     }
 
+    /// used to get the input object for string type fields
     pub fn string_filter(&self) -> InputObject {
         InputObject::new(&self.context.filter_input.string_type)
             .field(InputValue::new("eq", TypeRef::named(TypeRef::STRING)))
@@ -182,6 +195,7 @@ impl FilterInputBuilder {
             .field(InputValue::new("not_like", TypeRef::named(TypeRef::STRING)))
     }
 
+    /// used to get the input object for text type fields
     pub fn text_filter(&self) -> InputObject {
         InputObject::new(&self.context.filter_input.text_type)
             .field(InputValue::new("eq", TypeRef::named(TypeRef::STRING)))
@@ -201,6 +215,7 @@ impl FilterInputBuilder {
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
+    /// used to get the input object for integer type fields
     pub fn integer_filter(&self) -> InputObject {
         InputObject::new(&self.context.filter_input.integer_type)
             .field(InputValue::new("eq", TypeRef::named(TypeRef::INT)))
@@ -220,6 +235,7 @@ impl FilterInputBuilder {
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
+    /// used to get the input object for float type fields
     pub fn float_filter(&self) -> InputObject {
         InputObject::new(&self.context.filter_input.float_type)
             .field(InputValue::new("eq", TypeRef::named(TypeRef::FLOAT)))
@@ -239,6 +255,7 @@ impl FilterInputBuilder {
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
+    /// used to get the input object for boolean type fields
     pub fn boolean_filter(&self) -> InputObject {
         InputObject::new(&self.context.filter_input.boolean_type)
             .field(InputValue::new("eq", TypeRef::named(TypeRef::BOOLEAN)))
@@ -258,6 +275,7 @@ impl FilterInputBuilder {
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
+    /// used to get the input object for id type fields
     pub fn id_filter(&self) -> InputObject {
         InputObject::new(&self.context.filter_input.id_type)
             .field(InputValue::new("eq", TypeRef::named(TypeRef::ID)))
@@ -278,6 +296,7 @@ impl FilterInputBuilder {
     }
 }
 
+/// used to update the query condition with string filters
 pub fn prepare_string_condition<T>(
     filter: &ObjectAccessor,
     column: T,
@@ -427,6 +446,7 @@ where
     condition
 }
 
+/// used to update the query condition with text filters
 pub fn prepare_text_condition<T>(
     filter: &ObjectAccessor,
     column: T,
@@ -531,6 +551,7 @@ where
     condition
 }
 
+/// used to update the query condition with custom parse filters
 pub fn prepare_parsed_condition<T, Y, F>(
     filter: &ObjectAccessor,
     column: T,
@@ -648,6 +669,7 @@ where
     condition
 }
 
+/// used to update the query condition with integer filters
 pub fn prepare_integer_condition<T>(
     filter: &ObjectAccessor,
     column: T,
@@ -754,6 +776,7 @@ where
     condition
 }
 
+/// used to update the query condition with unsigned filters
 pub fn prepare_unsigned_condition<T>(
     filter: &ObjectAccessor,
     column: T,
@@ -860,6 +883,7 @@ where
     condition
 }
 
+/// used to update the query condition with float filters
 pub fn prepare_float_condition<T>(
     filter: &ObjectAccessor,
     column: T,
@@ -966,6 +990,7 @@ where
     condition
 }
 
+/// used to update the query condition with boolean filters
 pub fn prepare_boolean_condition<T>(
     filter: &ObjectAccessor,
     column: T,

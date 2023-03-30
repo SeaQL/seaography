@@ -3,7 +3,9 @@ use sea_orm::{EntityTrait, Iterable};
 
 use crate::{BuilderContext, EntityObjectBuilder};
 
+/// The configuration structure for OrderInputBuilder
 pub struct OrderInputConfig {
+    /// used to format OrderInput object name
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
 }
 
@@ -17,15 +19,18 @@ impl std::default::Default for OrderInputConfig {
     }
 }
 
+/// This builder produces the OrderInput object of a SeaORM entity
 pub struct OrderInputBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl OrderInputBuilder {
+    /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
         self.context.order_input.type_name.as_ref()(object_name)
     }
 
+    /// used to get the OrderInput object of a SeaORM entity
     pub fn to_object<T>(&self) -> InputObject
     where
         T: EntityTrait,

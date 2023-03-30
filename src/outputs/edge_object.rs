@@ -17,9 +17,13 @@ where
     pub node: T::Model,
 }
 
+/// The configuration structure for EdgeObjectBuilder
 pub struct EdgeObjectConfig {
+    /// used to format the type name of the object
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    /// name for 'cursor' field
     pub cursor: String,
+    /// name for 'node' field
     pub node: String,
 }
 
@@ -33,15 +37,18 @@ impl std::default::Default for EdgeObjectConfig {
     }
 }
 
+/// This builder produces the Node object for a SeaORM entity
 pub struct EdgeObjectBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl EdgeObjectBuilder {
+    /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
         self.context.edge_object.type_name.as_ref()(object_name)
     }
 
+    /// used to get the Node object for a SeaORM entity
     pub fn to_object<T>(&self) -> Object
     where
         T: EntityTrait,

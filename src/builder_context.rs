@@ -8,6 +8,10 @@ use crate::{
 pub mod guards;
 pub use guards::*;
 
+/// Used to hold the configuration for various aspects
+/// related to our builder options. You can modify the
+/// context to make the generated GraphQL nodes match
+/// your needs.
 #[derive(Default)]
 pub struct BuilderContext {
     pub order_by_enum: OrderByEnumConfig,

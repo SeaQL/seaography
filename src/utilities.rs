@@ -1,5 +1,6 @@
 use itertools::Itertools;
 
+/// used to encode the primary key values of a SeaORM entity to a String
 pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
     values
         .iter()
@@ -119,6 +120,7 @@ pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> sea_orm::sea_query::val
     }
 }
 
+/// used to decode a String to a vector of SeaORM values
 pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbErr> {
     let chars = s.chars();
 

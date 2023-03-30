@@ -4,6 +4,8 @@ use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBui
 
 use super::{CursorInput, OffsetInput, PageInput};
 
+/// used to hold information about which pagination
+/// strategy will be applied on the query
 #[derive(Clone, Debug)]
 pub struct PaginationInput {
     pub cursor: Option<CursorInput>,
@@ -11,10 +13,15 @@ pub struct PaginationInput {
     pub offset: Option<OffsetInput>,
 }
 
+/// The configuration structure for PaginationInputBuilder
 pub struct PaginationInputConfig {
+    /// name of the object
     pub type_name: String,
+    /// name for 'cursor' field
     pub cursor: String,
+    /// name for 'page' field
     pub page: String,
+    /// name for 'offset' field
     pub offset: String,
 }
 
@@ -34,10 +41,12 @@ pub struct PaginationInputBuilder {
 }
 
 impl PaginationInputBuilder {
+    /// used to get type name
     pub fn type_name(&self) -> String {
         self.context.pagination_input.type_name.clone()
     }
 
+    /// used to get pagination input object
     pub fn input_object(&self) -> InputObject {
         InputObject::new(&self.context.pagination_input.type_name)
             .field(InputValue::new(
@@ -55,6 +64,7 @@ impl PaginationInputBuilder {
             .oneof()
     }
 
+    /// used to parse query input to pagination information structure
     pub fn parse_object(&self, object: &ObjectAccessor) -> PaginationInput {
         let cursor_input_builder = CursorInputBuilder {
             context: self.context,

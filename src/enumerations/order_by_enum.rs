@@ -2,9 +2,13 @@ use async_graphql::dynamic::{Enum, EnumItem};
 
 use crate::BuilderContext;
 
+/// The configuration structure for OrderByEnumBuilder
 pub struct OrderByEnumConfig {
+    /// the enumeration name
     pub type_name: String,
+    /// the ASC variant name
     pub asc_variant: String,
+    /// the DESC variant name
     pub desc_variant: String,
 }
 
@@ -18,6 +22,7 @@ impl std::default::Default for OrderByEnumConfig {
     }
 }
 
+/// The OrderByEnumeration is used for Entities Fields sorting
 pub struct OrderByEnumBuilder {
     pub context: &'static BuilderContext,
 }
@@ -43,6 +48,7 @@ impl OrderByEnumBuilder {
         self.context.order_by_enum.desc_variant.eq(value)
     }
 
+    /// used to get the GraphQL enumeration config
     pub fn enumeration(&self) -> Enum {
         Enum::new(self.type_name())
             .item(EnumItem::new(self.asc_variant()))

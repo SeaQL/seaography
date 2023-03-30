@@ -10,10 +10,15 @@ use crate::{
     EntityObjectBuilder, FilterInputBuilder, OrderInputBuilder, PaginationInputBuilder,
 };
 
+/// The configuration structure for EntityQueryFieldBuilder
 pub struct EntityQueryFieldConfig {
+    /// used to format entity field name
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    /// name for 'filters' field
     pub filters: String,
+    /// name for 'orderBy' field
     pub order_by: String,
+    /// name for 'pagination' field
     pub pagination: String,
 }
 
@@ -30,11 +35,13 @@ impl std::default::Default for EntityQueryFieldConfig {
     }
 }
 
+/// This builder produces a field for the Query object that queries a SeaORM entity
 pub struct EntityQueryFieldBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl EntityQueryFieldBuilder {
+    /// used to get field name for a SeaORM entity
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
@@ -47,6 +54,7 @@ impl EntityQueryFieldBuilder {
         self.context.entity_query_field.type_name.as_ref()(&object_name)
     }
 
+    /// used to get the Query object field for a SeaORM entity
     pub fn to_field<T>(&self) -> Field
     where
         T: EntityTrait,

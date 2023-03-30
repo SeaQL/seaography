@@ -22,11 +22,17 @@ where
     pub edges: Vec<Edge<T>>,
 }
 
+/// The configuration structure for ConnectionObjectBuilder
 pub struct ConnectionObjectConfig {
+    /// used to format the type name of the object
     pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    /// name for 'pageInfo' field
     pub page_info: String,
+    /// name for 'paginationInfo' field
     pub pagination_info: String,
+    /// name for 'edges' field
     pub edges: String,
+    /// name for 'nodes' field
     pub nodes: String,
 }
 
@@ -44,15 +50,18 @@ impl std::default::Default for ConnectionObjectConfig {
     }
 }
 
+/// This builder produces the Connection object for a SeaORM entity
 pub struct ConnectionObjectBuilder {
     pub context: &'static BuilderContext,
 }
 
 impl ConnectionObjectBuilder {
+    /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
         self.context.connection_object.type_name.as_ref()(object_name)
     }
 
+    /// used to get the Connection object for a SeaORM entity
     pub fn to_object<T>(&self) -> Object
     where
         T: EntityTrait,
