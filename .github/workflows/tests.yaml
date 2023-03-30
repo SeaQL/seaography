@@ -91,7 +91,8 @@ jobs:
                 profile: minimal
                 toolchain: stable
                 override: true
-            - uses: actions-rs/install@v0.1
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
               with:
                 crate: sea-orm-cli
                 version: '0.11.0'
@@ -101,7 +102,8 @@ jobs:
               run: cp ./examples/sqlite/sakila.db .
             - name: Generate entities
               run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db
-            - uses: actions-rs/cargo@v1
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
@@ -129,7 +131,8 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
-            - uses: actions-rs/install@v0.1
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
               with:
                 crate: sea-orm-cli
                 version: '0.11.0'
@@ -139,7 +142,8 @@ jobs:
               run: cp ./examples/sqlite/sakila.db .
             - name: Generate entities
               run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db
-            - uses: actions-rs/cargo@v1
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
@@ -182,7 +186,8 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
-            - uses: actions-rs/install@v0.1
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
               with:
                 crate: sea-orm-cli
                 version: '0.11.0'
@@ -200,7 +205,8 @@ jobs:
               working-directory: ./examples/mysql
             - name: Generate entities
               run: sea-orm-cli generate entity -o ./examples/mysql/src/entities -u mysql://sea:sea@127.0.0.1/sakila
-            - uses: actions-rs/cargo@v1
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
@@ -242,7 +248,8 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
-            - uses: actions-rs/install@v0.1
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
               with:
                 crate: sea-orm-cli
                 version: '0.11.0'
@@ -258,7 +265,8 @@ jobs:
               working-directory: ./examples/postgres
             - name: Generate entities
               run: sea-orm-cli generate entity -o ./examples/postgres/src/entities -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
-            - uses: actions-rs/cargo@v1
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
               with:
                   command: run
                   args: >
