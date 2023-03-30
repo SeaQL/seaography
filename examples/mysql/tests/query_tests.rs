@@ -12,12 +12,11 @@ pub async fn get_schema() -> Schema<QueryRoot, EmptyMutation, EmptySubscription>
         },
         tokio::spawn,
     );
-    let schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
+
+    Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
         .data(database)
         .data(orm_dataloader)
-        .finish();
-
-    schema
+        .finish()
 }
 
 pub fn assert_eq(a: Response, b: &str) {
