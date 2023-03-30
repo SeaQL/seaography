@@ -26,9 +26,11 @@
 //! ## Features
 //!
 //! * Relational query (1-to-1, 1-to-N)
-//! * Pagination on query's root entity
-//! * Filter with operators (e.g. gt, lt, eq)
+//! * Pagination for queries and relations (1-N)
+//! * Filtering with operators (e.g. gt, lt, eq)
 //! * Order by any column
+//! * Guard fields, queries or relations
+//! * Rename fields
 //!
 //! (Right now there is no mutation, but it's on our plan!)
 //!
@@ -47,17 +49,18 @@
 //!
 //! ```sh
 //! cd examples/mysql
-//! sea-orm-cli generate entity -o ./src/entities -u mysql://user:pw@localhost/sakila
-//! seaography-cli . ./src/entities mysql://user:pw@localhost/sakila seaography-mysql-example
+//! sea-orm-cli generate entity -o src/entities -u mysql://user:pw@127.0.0.1/sakila
+//! seaography-cli ./ src/entities mysql://user:pw@127.0.0.1/sakila seaography-mysql-example
 //! cargo run
 //! ```
 //!
 //! Go to http://localhost:8000/ and try out the following queries:
 //!
 //! #### Fetch films and their actors
+//!
 //! ```graphql
 //! {
-//!   film( pagination: { page:{limit: 10, page: 0}}, orderBy: { title:ASC}) {
+//!   film(pagination: { page: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
 //!     nodes {
 //!       title
 //!       description
@@ -181,14 +184,29 @@
 //! }
 //! ```
 //!
+//! ### Filter using enumeration
+//! ```graphql
+//! {
+//!   film(
+//!     filters: { rating: { eq: NC17 } }
+//!     pagination: { page: { page: 1, limit: 5 } }
+//!   ) {
+//!     nodes {
+//!       filmId
+//!       rating
+//!     }
+//!   }
+//! }
+//! ```
+//!
 //! ### Postgres
 //!
 //! Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/postgres/sakila-schema.sql) sample database.
 //!
 //! ```sh
 //! cd examples/postgres
-//! sea-orm-cli generate entity -o ./src/entities -u postgres://user:pw@localhost/sakila
-//! seaography-cli . ./src/entities postgres://user:pw@localhost/sakila seaography-postgres-example
+//! sea-orm-cli generate entity -o src/entities -u postgres://user:pw@localhost/sakila
+//! seaography-cli ./ src/entities postgres://user:pw@localhost/sakila seaography-postgres-example
 //! cargo run
 //! ```
 //!
@@ -196,8 +214,8 @@
 //!
 //! ```sh
 //! cd examples/sqlite
-//! sea-orm-cli generate entity -o ./src/entities -u sqlite://sakila.db
-//! seaography-cli . ./src/entities sqlite://sakila.db seaography-sqlite-example
+//! sea-orm-cli generate entity -o src/entities -u sqlite://sakila.db
+//! seaography-cli ./ src/entities sqlite://sakila.db seaography-sqlite-example
 //! cargo run
 //! ```
 //!
