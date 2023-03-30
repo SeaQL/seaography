@@ -13,7 +13,7 @@ use crate::{
 /// The configuration structure for EntityQueryFieldBuilder
 pub struct EntityQueryFieldConfig {
     /// used to format entity field name
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
     /// name for 'filters' field
     pub filters: String,
     /// name for 'orderBy' field

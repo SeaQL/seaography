@@ -25,7 +25,7 @@ where
 /// The configuration structure for ConnectionObjectBuilder
 pub struct ConnectionObjectConfig {
     /// used to format the type name of the object
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
     /// name for 'pageInfo' field
     pub page_info: String,
     /// name for 'paginationInfo' field

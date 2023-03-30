@@ -20,7 +20,7 @@ where
 /// The configuration structure for EdgeObjectBuilder
 pub struct EdgeObjectConfig {
     /// used to format the type name of the object
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
     /// name for 'cursor' field
     pub cursor: String,
     /// name for 'node' field

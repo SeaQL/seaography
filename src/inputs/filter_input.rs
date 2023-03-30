@@ -6,7 +6,7 @@ use crate::{ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder};
 /// The configuration structure for FilterInputBuilder
 pub struct FilterInputConfig {
     /// the filter input type name formatter function
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
     /// filter input object name for string type
     pub string_type: String,
     /// filter input object name for integer type
@@ -137,7 +137,7 @@ impl FilterInputBuilder {
                 } => Some(InputValue::new(
                     column_name,
                     TypeRef::named(
-                        active_enum_filter_input_builder.type_name_from_iden(&enum_name),
+                        active_enum_filter_input_builder.type_name_from_iden(enum_name),
                     ),
                 )),
                 // FIXME: cidr, inet, mac type

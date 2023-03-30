@@ -7,9 +7,9 @@ use crate::BuilderContext;
 /// The configuration structure for ActiveEnumBuilder
 pub struct ActiveEnumConfig {
     /// used to format enumeration name
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
     /// used to format variant name
-    pub variant_name: Box<dyn Fn(&str, &str) -> String + Sync + Send>,
+    pub variant_name: crate::ComplexNamingFn
 }
 
 impl std::default::Default for ActiveEnumConfig {

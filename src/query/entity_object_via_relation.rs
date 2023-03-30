@@ -155,7 +155,7 @@ impl EntityObjectViaRelationBuilder {
             ),
         };
 
-        let field = match via_relation_definition.is_owner {
+        match via_relation_definition.is_owner {
             false => field,
             true => field
                 .argument(InputValue::new(
@@ -170,8 +170,6 @@ impl EntityObjectViaRelationBuilder {
                     &context.entity_query_field.pagination,
                     TypeRef::named(&context.pagination_input.type_name),
                 )),
-        };
-
-        field
+        }
     }
 }

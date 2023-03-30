@@ -6,7 +6,7 @@ use crate::{BuilderContext, EntityObjectBuilder};
 /// The configuration structure for OrderInputBuilder
 pub struct OrderInputConfig {
     /// used to format OrderInput object name
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
 }
 
 impl std::default::Default for OrderInputConfig {

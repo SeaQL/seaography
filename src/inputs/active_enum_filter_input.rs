@@ -7,7 +7,7 @@ use crate::{ActiveEnumBuilder, BuilderContext};
 /// The configuration structure for ActiveEnumFilterInputConfig
 pub struct ActiveEnumFilterInputConfig {
     /// used to format type_name
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
 }
 
 impl std::default::Default for ActiveEnumFilterInputConfig {

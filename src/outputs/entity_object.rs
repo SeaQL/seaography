@@ -3,15 +3,14 @@ use async_graphql::{Error, Value};
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
-
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
     /// used to format the type name of the object
-    pub type_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub type_name: crate::SimpleNamingFn,
     /// used to format the name for the query field of the object
-    pub query_entity_name: Box<dyn Fn(&str) -> String + Sync + Send>,
+    pub query_entity_name: crate::SimpleNamingFn,
     /// used to format the name of column fields
-    pub column_name: Box<dyn Fn(&str, &str) -> String + Sync + Send>,
+    pub column_name: crate::ComplexNamingFn
 }
 
 impl std::default::Default for EntityObjectConfig {
