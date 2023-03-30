@@ -10,7 +10,7 @@ pub struct EntityObjectConfig {
     /// used to format the name for the query field of the object
     pub query_entity_name: crate::SimpleNamingFn,
     /// used to format the name of column fields
-    pub column_name: crate::ComplexNamingFn
+    pub column_name: crate::ComplexNamingFn,
 }
 
 impl std::default::Default for EntityObjectConfig {

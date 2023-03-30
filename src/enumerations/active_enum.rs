@@ -9,7 +9,7 @@ pub struct ActiveEnumConfig {
     /// used to format enumeration name
     pub type_name: crate::SimpleNamingFn,
     /// used to format variant name
-    pub variant_name: crate::ComplexNamingFn
+    pub variant_name: crate::ComplexNamingFn,
 }
 
 impl std::default::Default for ActiveEnumConfig {

@@ -136,9 +136,7 @@ impl FilterInputBuilder {
                     variants: _,
                 } => Some(InputValue::new(
                     column_name,
-                    TypeRef::named(
-                        active_enum_filter_input_builder.type_name_from_iden(enum_name),
-                    ),
+                    TypeRef::named(active_enum_filter_input_builder.type_name_from_iden(enum_name)),
                 )),
                 // FIXME: cidr, inet, mac type
                 ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => Some(InputValue::new(
