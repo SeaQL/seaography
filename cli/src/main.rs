@@ -67,7 +67,7 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
         // information from a particular database
         let database_name = url
             .path_segments()
-            .expect(format!("There is no database name as part of the url path: {}", url).as_str())
+            .unwrap_or_else(|| panic!("There is no database name as part of the url path: {}", url))
             .next()
             .unwrap();
 
