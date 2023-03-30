@@ -197,12 +197,16 @@ pub fn recursive_filter_fn(fields: &[IdentTypeTuple]) -> Result<TokenStream, cra
                     if let Some(is_null_value) = seaography::FilterTrait::is_null(#column_name) {
                         if is_null_value {
                             condition = condition.add(Column::#column_enum_name.is_null())
+                        } else {
+                            condition = condition.add(Column::#column_enum_name.is_not_null())
                         }
                     }
 
                     if let Some(is_not_null_value) = seaography::FilterTrait::is_not_null(#column_name) {
                         if is_not_null_value {
                             condition = condition.add(Column::#column_enum_name.is_not_null())
+                        } else {
+                            condition = condition.add(Column::#column_enum_name.is_null())
                         }
                     }
 
