@@ -180,6 +180,7 @@ impl FilterInputBuilder {
                 TypeRef::named_nn_list(TypeRef::STRING),
             ))
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+            .field(InputValue::new("is_not_null", TypeRef::named(TypeRef::BOOLEAN)))
             .field(InputValue::new("contains", TypeRef::named(TypeRef::STRING)))
             .field(InputValue::new(
                 "starts_with",
@@ -211,6 +212,7 @@ impl FilterInputBuilder {
                 TypeRef::named_nn_list(TypeRef::STRING),
             ))
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+            .field(InputValue::new("is_not_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
     /// used to get the input object for integer type fields
@@ -231,6 +233,7 @@ impl FilterInputBuilder {
                 TypeRef::named_nn_list(TypeRef::INT),
             ))
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+            .field(InputValue::new("is_not_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
     /// used to get the input object for float type fields
@@ -251,6 +254,7 @@ impl FilterInputBuilder {
                 TypeRef::named_nn_list(TypeRef::FLOAT),
             ))
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+            .field(InputValue::new("is_not_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
     /// used to get the input object for boolean type fields
@@ -271,6 +275,7 @@ impl FilterInputBuilder {
                 TypeRef::named_nn_list(TypeRef::BOOLEAN),
             ))
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+            .field(InputValue::new("is_not_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 
     /// used to get the input object for id type fields
@@ -291,6 +296,7 @@ impl FilterInputBuilder {
                 TypeRef::named_nn_list(TypeRef::ID),
             ))
             .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+            .field(InputValue::new("is_not_null", TypeRef::named(TypeRef::BOOLEAN)))
     }
 }
 
@@ -389,6 +395,19 @@ where
 
             if data {
                 condition.add(column.is_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
             } else {
                 condition
             }
@@ -546,6 +565,19 @@ where
         None => condition,
     };
 
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
     condition
 }
 
@@ -664,6 +696,19 @@ where
         None => condition,
     };
 
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
     condition
 }
 
@@ -764,6 +809,19 @@ where
 
             if data {
                 condition.add(column.is_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
             } else {
                 condition
             }
@@ -878,6 +936,19 @@ where
         None => condition,
     };
 
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
     condition
 }
 
@@ -985,6 +1056,19 @@ where
         None => condition,
     };
 
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
     condition
 }
 
@@ -1085,6 +1169,19 @@ where
 
             if data {
                 condition.add(column.is_null())
+            } else {
+                condition
+            }
+        }
+        None => condition,
+    };
+
+    let condition = match filter.get("is_not_null") {
+        Some(data) => {
+            let data = data.boolean().unwrap();
+
+            if data {
+                condition.add(column.is_not_null())
             } else {
                 condition
             }
