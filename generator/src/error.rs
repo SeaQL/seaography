@@ -1,14 +1,11 @@
-#[derive(Debug)]
-pub enum Error {
-    Error(String),
-    SeaOrmCodegenError(sea_orm_codegen::Error),
-    IoError(std::io::Error),
-}
+use thiserror::Error;
 
-impl From<sea_orm_codegen::Error> for Error {
-    fn from(err: sea_orm_codegen::Error) -> Self {
-        Self::SeaOrmCodegenError(err)
-    }
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("Code generator: {0}")]
+    Error(String),
+    #[error("IO: {0}")]
+    IoError(std::io::Error),
 }
 
 impl From<std::io::Error> for Error {

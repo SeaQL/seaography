@@ -1,7 +1,6 @@
 use async_graphql::{
     dataloader::DataLoader,
     http::{playground_source, GraphQLPlaygroundConfig},
-    EmptyMutation, EmptySubscription, Schema,
 };
 use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
@@ -27,7 +26,7 @@ lazy_static! {
 
 #[handler]
 async fn graphql_playground() -> impl IntoResponse {
-    Html(playground_source(GraphQLPlaygroundConfig::new(&ENDPOINT)))
+    Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
 }
 
 #[tokio::main]
@@ -46,16 +45,13 @@ async fn main() {
         },
         tokio::spawn,
     );
-    let mut schema = Schema::build(QueryRoot, EmptyMutation, EmptySubscription)
-        .data(database)
-        .data(orm_dataloader);
-    if let Some(depth) = *DEPTH_LIMIT {
-        schema = schema.limit_depth(depth);
-    }
-    if let Some(complexity) = *COMPLEXITY_LIMIT {
-        schema = schema.limit_complexity(complexity);
-    }
-    let schema = schema.finish();
+    let schema = seaography_sqlite_example::query_root::schema(
+        database,
+        orm_dataloader,
+        *DEPTH_LIMIT,
+        *COMPLEXITY_LIMIT,
+    )
+    .unwrap();
     let app = Route::new().at(
         &*ENDPOINT,
         get(graphql_playground).post(GraphQL::new(schema)),

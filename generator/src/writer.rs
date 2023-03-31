@@ -1,44 +1,184 @@
+use std::collections::BTreeMap;
+use std::path::Path;
+
+use heck::ToLowerCamelCase;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::{util::add_line_break, WebFrameworkEnum};
+use crate::{
+    parser::{parse_entity, parse_enumerations, RelationDef},
+    util::add_line_break,
+    WebFrameworkEnum,
+};
 
-pub fn generate_query_root(
-    entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
-) -> Result<TokenStream, crate::error::Error> {
-    let items: Vec<_> = entities_hashmap
-        .keys()
-        .filter(|entity| {
-            entity.ne(&&"mod.rs".to_string())
-                && entity.ne(&&"prelude.rs".to_string())
-                && entity.ne(&&"sea_orm_active_enums.rs".to_string())
-        })
-        .map(|entity| {
-            let entity = &entity.as_str()[..entity.len() - 3];
-            format!("crate::entities::{}", entity)
+pub struct EntityDefinition {
+    pub name: TokenStream,
+    pub relations: BTreeMap<String, RelationDef>,
+}
+
+pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
+    let entities_paths = std::fs::read_dir(entities_path)
+        .unwrap()
+        .into_iter()
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap().path())
+        .filter(|r| r.is_file())
+        .filter(|r| {
+            let name = r.file_stem();
+
+            if let Some(v) = name {
+                !v.eq(std::ffi::OsStr::new("prelude"))
+                    && !v.eq(std::ffi::OsStr::new("sea_orm_active_enums"))
+                    && !v.eq(std::ffi::OsStr::new("mod"))
+            } else {
+                false
+            }
+        });
+
+    let entities: Vec<EntityDefinition> = entities_paths
+        .map(|path| {
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+            let file_content =
+                std::fs::read_to_string(entities_path.as_ref().join(file_name)).unwrap();
+            parse_entity(file_name.into(), file_content)
         })
         .collect();
 
-    Ok(quote! {
-      #[derive(Debug, seaography::macros::QueryRoot)]
-      #(#[seaography(entity = #items)])*
-      pub struct QueryRoot;
-    })
+    let entities: Vec<TokenStream> = entities.iter().map(|entity| {
+        let entity_path = &entity.name;
+
+        let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, rel_def)| {
+            let variant = &rel_def.variant;
+            let target = &rel_def.target;
+            let relationship_name = relationship_name.to_lower_camel_case();
+
+            if rel_def.self_rel && rel_def.reverse {
+                quote!{
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
+                }
+            } else if rel_def.related {
+                quote!{
+                    entity_object_via_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name)
+                }
+            } else if rel_def.self_rel {
+                quote!{
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def())
+                }
+            } else if rel_def.reverse {
+                quote!{
+                    entity_object_relation_builder.get_relation::<#target, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
+                }
+            } else {
+                quote!{
+                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def())
+                }
+            }
+        }).collect();
+
+        quote!{
+
+            builder.register_entity::<#entity_path::Entity>(vec![#(#relations),*]);
+
+        }
+    }).collect();
+
+    let enumerations = std::fs::read_dir(entities_path)
+        .unwrap()
+        .into_iter()
+        .filter(|r| r.is_ok())
+        .map(|r| r.unwrap().path())
+        .find(|r| {
+            let name = r.file_stem();
+
+            if let Some(v) = name {
+                v.eq(std::ffi::OsStr::new("sea_orm_active_enums"))
+            } else {
+                false
+            }
+        });
+
+    let enumerations = match enumerations {
+        Some(_) => {
+            let file_content =
+                std::fs::read_to_string(entities_path.as_ref().join("sea_orm_active_enums.rs"))
+                    .unwrap();
+
+            parse_enumerations(file_content)
+        }
+        None => vec![],
+    };
+
+    let enumerations = enumerations.iter().map(|definition| {
+        let name = &definition.name;
+
+        quote! {
+
+            builder.register_enumeration::<crate::entities::sea_orm_active_enums::#name>();
+
+        }
+    });
+
+    quote! {
+        use crate::OrmDataloader;
+        use async_graphql::{dataloader::DataLoader, dynamic::*};
+        use sea_orm::{DatabaseConnection, RelationTrait};
+        use seaography::{
+            Builder, BuilderContext, EntityObjectRelationBuilder, EntityObjectViaRelationBuilder,
+        };
+
+        lazy_static::lazy_static! {
+            static ref CONTEXT: BuilderContext = BuilderContext::default();
+        }
+
+        pub fn schema(
+            database: DatabaseConnection,
+            orm_dataloader: DataLoader<OrmDataloader>,
+            depth: Option<usize>,
+            complexity: Option<usize>,
+        ) -> Result<Schema, SchemaError> {
+            let mut builder = Builder::new(&CONTEXT);
+            let entity_object_relation_builder = EntityObjectRelationBuilder { context: &CONTEXT };
+            let entity_object_via_relation_builder = EntityObjectViaRelationBuilder { context: &CONTEXT };
+
+            #(#entities)*
+
+            #(#enumerations)*
+
+            let schema = builder.schema_builder();
+
+            let schema = if let Some(depth) = depth {
+                schema.limit_depth(depth)
+            } else {
+                schema
+            };
+
+            let schema = if let Some(complexity) = complexity {
+                schema.limit_complexity(complexity)
+            } else {
+                schema
+            };
+
+            schema.data(database).data(orm_dataloader).finish()
+        }
+    }
 }
 
-pub fn write_query_root<P: AsRef<std::path::Path>>(
-    path: &P,
-    entities_hashmap: &crate::sea_orm_codegen::EntityHashMap,
+pub fn write_query_root<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
+    src_path: &P,
+    entities_path: &T,
 ) -> Result<(), crate::error::Error> {
-    let tokens = generate_query_root(entities_hashmap)?;
+    let tokens = generate_query_root(entities_path);
 
-    let file_name = path.as_ref().join("query_root.rs");
+    let file_name = src_path.as_ref().join("query_root.rs");
 
     std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
 
+///
+/// Used to generate project/Cargo.toml file content
+///
 pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
     path: &P,
     crate_name: &str,
@@ -71,34 +211,29 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ///
 /// Used to generate project/src/lib.rs file content
 ///
-pub fn generate_lib() -> TokenStream {
-    quote! {
+pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
+    let tokens = quote! {
         use sea_orm::prelude::*;
 
         pub mod entities;
         pub mod query_root;
 
-        pub use query_root::QueryRoot;
-
         pub struct OrmDataloader {
             pub db: DatabaseConnection,
         }
-    }
-}
 
-pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
-    let tokens = generate_lib();
+    };
 
     let file_name = path.as_ref().join("lib.rs");
 
-    std::fs::write(
-        file_name,
-        format!("#![recursion_limit = \"1024\"]\n{}", add_line_break(tokens)),
-    )?;
+    std::fs::write(file_name, add_line_break(tokens))?;
 
     Ok(())
 }
 
+///
+/// Used to generate project/.env file content
+///
 pub fn write_env<P: AsRef<std::path::Path>>(
     path: &P,
     db_url: &str,

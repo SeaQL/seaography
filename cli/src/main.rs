@@ -1,35 +1,32 @@
-use clap::{ArgEnum, Parser};
+use clap::{Parser, ValueEnum};
 use seaography_generator::write_project;
 
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    #[clap(value_parser)]
-    pub database_url: String,
-
-    #[clap(value_parser)]
-    pub crate_name: String,
-
-    #[clap(value_parser)]
+    /// project destination folder
     pub destination: String,
 
-    #[clap(short, long)]
-    pub expanded_format: Option<bool>,
+    /// entities folder to depend on
+    pub entities: String,
 
-    #[clap(short, long)]
+    /// database URL to write it in .env
+    pub database_url: String,
+
+    /// crate name for generated project
+    pub crate_name: String,
+
+    /// web framework
+    #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
+    pub framework: WebFrameworkEnum,
+
+    /// GraphQL depth limit
+    #[clap(long)]
     pub depth_limit: Option<usize>,
 
-    #[clap(short, long)]
+    /// GraphQL complexity limit
+    #[clap(long)]
     pub complexity_limit: Option<usize>,
-
-    #[clap(short, long)]
-    pub ignore_tables: Option<String>,
-
-    #[clap(short, long)]
-    pub hidden_tables: Option<bool>,
-
-    #[clap(short, long, arg_enum, value_parser, default_value = "poem")]
-    pub framework: WebFrameworkEnum,
 }
 
 /**
@@ -90,58 +87,21 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
 async fn main() {
     let args = Args::parse();
 
-    let path = std::path::Path::new(&args.destination);
+    let root_path = std::path::Path::new(&args.destination);
+
+    let entities_path = std::path::Path::new(&args.entities);
 
     let database_url = parse_database_url(&args.database_url).unwrap();
 
-    let (tables, sql_version) = seaography_discoverer::extract_database_metadata(&database_url)
-        .await
-        .unwrap();
-
-    let sql_library = match sql_version {
-        seaography_discoverer::SqlVersion::Sqlite => "sqlx-sqlite",
-        seaography_discoverer::SqlVersion::Mysql => "sqlx-mysql",
-        seaography_discoverer::SqlVersion::Postgres => "sqlx-postgres",
-    };
-
-    let expanded_format = args.expanded_format.unwrap_or(false);
-
-    let ignore_tables = args
-        .ignore_tables
-        .unwrap_or_else(|| "seaql_migrations".into());
-    let ignore_tables: Vec<&str> = ignore_tables.split(',').collect();
-
-    let hidden_tables = args.hidden_tables.unwrap_or(true);
-
-    let tables: std::collections::BTreeMap<
-        String,
-        seaography_discoverer::sea_schema::sea_query::TableCreateStatement,
-    > = tables
-        .into_iter()
-        .filter(|(key, _)| {
-            if hidden_tables {
-                !key.starts_with('_')
-            } else {
-                true
-            }
-        })
-        .filter(|(key, _)| {
-            if !ignore_tables.is_empty() {
-                !ignore_tables.contains(&key.as_str())
-            } else {
-                true
-            }
-        })
-        .collect();
+    let sql_library = &map_sql_version(&database_url);
 
     let db_url = database_url.as_str();
 
     write_project(
-        &path,
+        &root_path,
+        &entities_path,
         db_url,
         &args.crate_name,
-        expanded_format,
-        tables,
         sql_library,
         args.framework.into(),
         args.depth_limit,
@@ -151,7 +111,7 @@ async fn main() {
     .unwrap();
 }
 
-#[derive(ArgEnum, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum WebFrameworkEnum {
     Actix,
     Poem,
@@ -163,5 +123,14 @@ impl From<WebFrameworkEnum> for seaography_generator::WebFrameworkEnum {
             WebFrameworkEnum::Actix => seaography_generator::WebFrameworkEnum::Actix,
             WebFrameworkEnum::Poem => seaography_generator::WebFrameworkEnum::Poem,
         }
+    }
+}
+
+fn map_sql_version(database_url: &url::Url) -> String {
+    match database_url.scheme() {
+        "mysql" => String::from("sqlx-mysql"),
+        "sqlite" => String::from("sqlx-sqlite"),
+        "postgres" | "postgresql" => String::from("sqlx-postgres"),
+        _ => unimplemented!("{} is not supported", database_url.scheme()),
     }
 }
