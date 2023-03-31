@@ -174,7 +174,10 @@ pub fn update_mutation(name: &TokenStream, fields: &[IdentTypeTuple]) -> TokenSt
         .filter(|(_, _, i)| { !*i })
         .map(|(i, _, _)| {
             quote! {
-                if let v = #i.unwrap() {
+
+                //c.#i = Set(v)
+
+                if let Some(v) = #i {
                     c.#i = Set(v);
                 }
             }
