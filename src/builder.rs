@@ -235,3 +235,23 @@ impl Builder {
             .register(query)
     }
 }
+
+pub trait RelationBuilder {
+    fn get_relation(&self, context: &'static crate::BuilderContext) -> async_graphql::dynamic::Field;
+}
+
+#[macro_export]
+macro_rules! register_entity {
+    ($builder:expr, $context:expr, $module_path:ident) => {
+        {
+            use sea_orm::Iterable;
+
+            $builder.register_entity::<$module_path::Entity>(
+                $module_path::RelatedEntity::iter()
+                    .map(|rel| seaography::RelationBuilder::get_relation(&rel, $context))
+                    .collect()
+            );
+        }
+
+    };
+}

@@ -32,9 +32,10 @@ impl EntityObjectViaRelationBuilder {
     {
         let context: &'static BuilderContext = self.context;
         let to_relation_definition = <T as Related<R>>::to();
-        let via_relation_definition = <T as Related<R>>::via().expect(
-            "We expect this function to be used with Related that has `via` method implemented!",
-        );
+        let via_relation_definition = match <T as Related<R>>::via() {
+            Some(def) => def,
+            None => <T as Related<R>>::to(),
+        };
 
         let entity_object_builder = EntityObjectBuilder { context };
         let connection_object_builder = ConnectionObjectBuilder { context };

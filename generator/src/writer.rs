@@ -1,20 +1,13 @@
-use std::collections::BTreeMap;
 use std::path::Path;
 
-use heck::ToLowerCamelCase;
 use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{
-    parser::{parse_entity, parse_enumerations, RelationDef},
+    parser::{parse_entity, parse_enumerations, EntityDefinition},
     util::add_line_break,
     WebFrameworkEnum,
 };
-
-pub struct EntityDefinition {
-    pub name: TokenStream,
-    pub relations: BTreeMap<String, RelationDef>,
-}
 
 pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
     let entities_paths = std::fs::read_dir(entities_path)
@@ -38,47 +31,15 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
     let entities: Vec<EntityDefinition> = entities_paths
         .map(|path| {
             let file_name = path.file_name().unwrap().to_str().unwrap();
-            let file_content =
-                std::fs::read_to_string(entities_path.as_ref().join(file_name)).unwrap();
-            parse_entity(file_name.into(), file_content)
+            parse_entity(file_name.into())
         })
         .collect();
 
     let entities: Vec<TokenStream> = entities.iter().map(|entity| {
         let entity_path = &entity.name;
 
-        let relations: Vec<TokenStream> = entity.relations.iter().map(|(relationship_name, rel_def)| {
-            let variant = &rel_def.variant;
-            let target = &rel_def.target;
-            let relationship_name = relationship_name.to_lower_camel_case();
-
-            if rel_def.self_rel && rel_def.reverse {
-                quote!{
-                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
-                }
-            } else if rel_def.related {
-                quote!{
-                    entity_object_via_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name)
-                }
-            } else if rel_def.self_rel {
-                quote!{
-                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def())
-                }
-            } else if rel_def.reverse {
-                quote!{
-                    entity_object_relation_builder.get_relation::<#target, #entity_path::Entity>(#relationship_name, #entity_path::Relation::#variant.def().rev())
-                }
-            } else {
-                quote!{
-                    entity_object_relation_builder.get_relation::<#entity_path::Entity, #target>(#relationship_name, #entity_path::Relation::#variant.def())
-                }
-            }
-        }).collect();
-
         quote!{
-
-            builder.register_entity::<#entity_path::Entity>(vec![#(#relations),*]);
-
+            seaography::register_entity!(builder, &CONTEXT, #entity_path);
         }
     }).collect();
 
@@ -112,19 +73,15 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         let name = &definition.name;
 
         quote! {
-
             builder.register_enumeration::<crate::entities::sea_orm_active_enums::#name>();
-
         }
     });
 
     quote! {
-        use crate::OrmDataloader;
+        use crate::{entities::*, OrmDataloader};
         use async_graphql::{dataloader::DataLoader, dynamic::*};
-        use sea_orm::{DatabaseConnection, RelationTrait};
-        use seaography::{
-            Builder, BuilderContext, EntityObjectRelationBuilder, EntityObjectViaRelationBuilder,
-        };
+        use sea_orm::DatabaseConnection;
+        use seaography::{Builder, BuilderContext};
 
         lazy_static::lazy_static! {
             static ref CONTEXT: BuilderContext = BuilderContext::default();
