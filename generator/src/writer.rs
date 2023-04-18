@@ -35,13 +35,16 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         })
         .collect();
 
-    let entities: Vec<TokenStream> = entities.iter().map(|entity| {
-        let entity_path = &entity.name;
+    let entities: Vec<TokenStream> = entities
+        .iter()
+        .map(|entity| {
+            let entity_path = &entity.name;
 
-        quote!{
-            seaography::register_entity!(builder, &CONTEXT, #entity_path);
-        }
-    }).collect();
+            quote! {
+                seaography::register_entity!(builder, &CONTEXT, #entity_path);
+            }
+        })
+        .collect();
 
     let enumerations = std::fs::read_dir(entities_path)
         .unwrap()
