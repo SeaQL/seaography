@@ -7,10 +7,10 @@ use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iter
 pub struct EntityObjectConfig {
     /// used to format the type name of the object
     pub type_name: crate::SimpleNamingFn,
-    /// used to format the name for the query field of the object
-    pub query_entity_name: crate::SimpleNamingFn,
     /// used to format the name of column fields
     pub column_name: crate::ComplexNamingFn,
+    /// suffix that is appended on basic version of entity type
+    pub basic_type_suffix: String,
 }
 
 impl std::default::Default for EntityObjectConfig {
@@ -19,17 +19,15 @@ impl std::default::Default for EntityObjectConfig {
             type_name: Box::new(|entity_name: &str| -> String {
                 entity_name.to_upper_camel_case()
             }),
-            query_entity_name: Box::new(|entity_name: &str| -> String {
-                entity_name.to_lower_camel_case()
-            }),
             column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
                 column_name.to_lower_camel_case()
             }),
+            basic_type_suffix: "Basic".into(),
         }
     }
 }
 
-use crate::{ActiveEnumBuilder, BuilderContext, GuardAction};
+use crate::{BuilderContext, GuardAction, map_sea_orm_column_type_to_graphql_type};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {
@@ -47,14 +45,14 @@ impl EntityObjectBuilder {
         self.context.entity_object.type_name.as_ref()(&name)
     }
 
-    /// used to get query field name of entity
-    pub fn query_entity_name<T>(&self) -> String
+    /// used to get type name for basic version
+    pub fn basic_type_name<T>(&self) -> String
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
-        self.context.entity_object.query_entity_name.as_ref()(&name)
+        format!("{}{}",self.context.entity_object.type_name.as_ref()(&name), self.context.entity_object.basic_type_suffix)
     }
 
     /// used to get column field name of entity column
@@ -74,74 +72,49 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let object_name = self.type_name::<T>();
-        let active_enum_builder = ActiveEnumBuilder {
-            context: self.context,
-        };
 
-        T::Column::iter().fold(Object::new(&object_name), |object, column: T::Column| {
+        let object_name = self.type_name::<T>();
+
+        self.base_to_object::<T>(&object_name)
+    }
+
+    /// used to get the GraphQL basic object of a SeaORM entity
+    pub fn basic_to_object<T>(&self) -> Object
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+
+        let object_name = self.basic_type_name::<T>();
+
+        self.base_to_object::<T>(&object_name)
+    }
+
+    /// used to create a SeaORM entity basic GraphQL object type
+    fn base_to_object<T>(&self, object_name: &str) -> Object
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        T::Column::iter().fold(Object::new(object_name), |object, column: T::Column| {
             let column_name = self.column_name::<T>(column);
 
             let column_def = column.def();
 
-            // map column type to GraphQL type
-            let type_name: Option<String> = match &column_def.get_column_type() {
-                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                    Some(TypeRef::STRING.into())
-                }
-                ColumnType::TinyInteger
-                | ColumnType::SmallInteger
-                | ColumnType::Integer
-                | ColumnType::BigInteger
-                | ColumnType::TinyUnsigned
-                | ColumnType::SmallUnsigned
-                | ColumnType::Unsigned
-                | ColumnType::BigUnsigned => Some(TypeRef::INT.into()),
-                ColumnType::Float | ColumnType::Double => Some(TypeRef::FLOAT.into()),
-                ColumnType::Decimal(_) => Some(TypeRef::STRING.into()),
-                ColumnType::DateTime
-                | ColumnType::Timestamp
-                | ColumnType::TimestampWithTimeZone
-                | ColumnType::Time
-                | ColumnType::Date => Some(TypeRef::STRING.into()),
-                ColumnType::Year(_) => Some(TypeRef::INT.into()),
-                ColumnType::Interval(_, _) => Some(TypeRef::STRING.into()),
-                ColumnType::Binary(_)
-                | ColumnType::VarBinary(_)
-                | ColumnType::VarBit(_)
-                | ColumnType::Bit(_) => Some(TypeRef::STRING.into()),
-                ColumnType::Boolean => Some(TypeRef::BOOLEAN.into()),
-                ColumnType::Money(_) => Some(TypeRef::STRING.into()),
-                // FIXME: json type
-                ColumnType::Json | ColumnType::JsonBinary => Some(TypeRef::STRING.into()),
-                ColumnType::Uuid => Some(TypeRef::STRING.into()),
-                // FIXME: research what type is behind the custom type
-                ColumnType::Custom(_) => Some(TypeRef::STRING.into()),
-                ColumnType::Enum { name, variants: _ } => {
-                    Some(active_enum_builder.type_name_from_iden(name))
-                }
-                // FIXME: array type
-                // ColumnType::Array(_) => Some(TypeRef::STRING.into())
-                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
-                    Some(TypeRef::STRING.into())
-                }
-                _ => None,
+            let type_name = match map_sea_orm_column_type_to_graphql_type(
+                self.context,
+                column_def.get_column_type(),
+            ) {
+                Some(type_name) => type_name,
+                None => return object,
             };
-
-            let type_name = if let Some(type_name) = type_name {
-                type_name
-            } else {
-                return object;
-            };
-
-            // map if field is nullable
             let graphql_type = if column_def.is_null() {
                 TypeRef::named(type_name)
             } else {
                 TypeRef::named_nn(type_name)
             };
 
-            let is_enum = matches!(
+            let is_enum: bool = matches!(
                 column_def.get_column_type(),
                 ColumnType::Enum {
                     name: _,
