@@ -11,25 +11,28 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT);
-
-    seaography::register_entity!(builder, &CONTEXT, film_actor);
-    seaography::register_entity!(builder, &CONTEXT, rental);
-    seaography::register_entity!(builder, &CONTEXT, category);
-    seaography::register_entity!(builder, &CONTEXT, staff);
-    seaography::register_entity!(builder, &CONTEXT, country);
-    seaography::register_entity!(builder, &CONTEXT, film);
-    seaography::register_entity!(builder, &CONTEXT, actor);
-    seaography::register_entity!(builder, &CONTEXT, language);
-    seaography::register_entity!(builder, &CONTEXT, city);
-    seaography::register_entity!(builder, &CONTEXT, inventory);
-    seaography::register_entity!(builder, &CONTEXT, film_text);
-    seaography::register_entity!(builder, &CONTEXT, film_category);
-    seaography::register_entity!(builder, &CONTEXT, customer);
-    seaography::register_entity!(builder, &CONTEXT, store);
-    seaography::register_entity!(builder, &CONTEXT, payment);
-    seaography::register_entity!(builder, &CONTEXT, address);
-
+    let builder = seaography::register_entities!(
+        Builder::new(&CONTEXT),
+        &CONTEXT,
+        [
+            film_actor,
+            rental,
+            category,
+            staff,
+            country,
+            film,
+            actor,
+            language,
+            city,
+            inventory,
+            film_text,
+            film_category,
+            customer,
+            store,
+            payment,
+            address,
+        ]
+    );
     let schema = builder.schema_builder();
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)

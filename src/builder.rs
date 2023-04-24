@@ -255,3 +255,16 @@ macro_rules! register_entity {
         );
     }};
 }
+
+#[macro_export]
+macro_rules! register_entities {
+    ($builder:expr, $context:expr, [$($module_paths:ident),+ $(,)?]) => {{
+        {
+            let mut builder = $builder;
+
+            $(seaography::register_entity!(builder, $context, $module_paths);)*
+
+            builder
+        }
+    }};
+}

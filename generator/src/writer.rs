@@ -41,7 +41,7 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             let entity_path = &entity.name;
 
             quote! {
-                seaography::register_entity!(builder, &CONTEXT, #entity_path);
+                #entity_path
             }
         })
         .collect();
@@ -96,11 +96,9 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             depth: Option<usize>,
             complexity: Option<usize>,
         ) -> Result<Schema, SchemaError> {
-            let mut builder = Builder::new(&CONTEXT);
-            let entity_object_relation_builder = EntityObjectRelationBuilder { context: &CONTEXT };
-            let entity_object_via_relation_builder = EntityObjectViaRelationBuilder { context: &CONTEXT };
-
-            #(#entities)*
+            let builder = seaography::register_entities!(Builder::new(&CONTEXT), &CONTEXT, [
+                #(#entities,)*
+            ]);
 
             #(#enumerations)*
 
