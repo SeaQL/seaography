@@ -1,7 +1,10 @@
-use async_graphql::dynamic::{Field, TypeRef, FieldFuture, FieldValue, InputValue};
-use sea_orm::{EntityTrait, DatabaseConnection, ActiveModelTrait, Iterable, PrimaryKeyToColumn, PrimaryKeyTrait, IntoActiveModel};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
+use sea_orm::{
+    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Iterable,
+    PrimaryKeyToColumn, PrimaryKeyTrait,
+};
 
-use crate::{BuilderContext, EntityInputBuilder, EntityQueryFieldBuilder, EntityObjectBuilder};
+use crate::{BuilderContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder};
 
 /// The configuration structure of EntityCreateOneMutationBuilder
 pub struct EntityCreateOneMutationConfig {
@@ -32,8 +35,14 @@ impl EntityCreateOneMutationBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let entity_query_field_builder = EntityQueryFieldBuilder { context: self.context };
-        format!("{}{}", entity_query_field_builder.type_name::<T>(), self.context.entity_create_mutation.mutation_suffix)
+        let entity_query_field_builder = EntityQueryFieldBuilder {
+            context: self.context,
+        };
+        format!(
+            "{}{}",
+            entity_query_field_builder.type_name::<T>(),
+            self.context.entity_create_mutation.mutation_suffix
+        )
     }
 
     /// used to get the create mutation field for a SeaORM entity
@@ -44,7 +53,9 @@ impl EntityCreateOneMutationBuilder {
         <T as EntityTrait>::Model: IntoActiveModel<A>,
         A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
     {
-        let entity_input_builder = EntityInputBuilder { context: self.context };
+        let entity_input_builder = EntityInputBuilder {
+            context: self.context,
+        };
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
@@ -59,36 +70,46 @@ impl EntityCreateOneMutationBuilder {
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
 
-                    let mut data = entity_input_builder.parse_object::<T>(&ctx.args.get(&context.entity_create_mutation.data_field).unwrap().object()?)?;
+                    let mut data = entity_input_builder.parse_object::<T>(
+                        &ctx.args
+                            .get(&context.entity_create_mutation.data_field)
+                            .unwrap()
+                            .object()?,
+                    )?;
 
-                    let mut model = A::default();
+                    let mut active_model = A::default();
 
                     for column in T::Column::iter() {
-                        let auto_increment = match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
-                            Some(_) => T::PrimaryKey::auto_increment(),
-                            None => false,
-                        };
+                        // used to skip auto created primary keys
+                        let auto_increment =
+                            match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
+                                Some(_) => T::PrimaryKey::auto_increment(),
+                                None => false,
+                            };
 
                         if auto_increment {
                             continue;
                         }
 
-                        match data.remove(&entity_object_builder.column_name::<T>(column)) {
+                        match data.remove(&entity_object_builder.column_name::<T>(&column)) {
                             Some(value) => {
-                                model.set(column, value);
-                            },
+                                active_model.set(column, value);
+                            }
                             None => continue,
                         }
                     }
 
                     let db = ctx.data::<DatabaseConnection>()?;
 
-                    let result = model.insert(db).await?;
+                    let result = active_model.insert(db).await?;
 
                     Ok(Some(FieldValue::owned_any(result)))
                 })
-            }
+            },
         )
-        .argument(InputValue::new(&context.entity_create_mutation.data_field, TypeRef::named_nn(entity_input_builder.insert_type_name::<T>())))
+        .argument(InputValue::new(
+            &context.entity_create_mutation.data_field,
+            TypeRef::named_nn(entity_input_builder.insert_type_name::<T>()),
+        ))
     }
 }

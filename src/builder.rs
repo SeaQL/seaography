@@ -1,11 +1,12 @@
 use async_graphql::dynamic::{Enum, Field, InputObject, Object, Schema, SchemaBuilder};
-use sea_orm::{ActiveEnum, EntityTrait, IntoActiveModel, ActiveModelTrait};
+use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, EdgeObjectBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
-    FilterInputBuilder, OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder,
-    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, EntityCreateOneMutationBuilder, EntityInputBuilder,
+    CursorInputBuilder, EdgeObjectBuilder, EntityCreateOneMutationBuilder, EntityInputBuilder,
+    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, OffsetInputBuilder,
+    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -53,11 +54,10 @@ impl Builder {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
-        let entity_object = relations
-            .into_iter()
-            .fold(entity_object_builder.to_object::<T>(), |entity_object, field| {
-                entity_object.field(field)
-            });
+        let entity_object = relations.into_iter().fold(
+            entity_object_builder.to_object::<T>(),
+            |entity_object, field| entity_object.field(field),
+        );
 
         let edge_object_builder = EdgeObjectBuilder {
             context: self.context,
@@ -70,7 +70,6 @@ impl Builder {
         let connection = connection_object_builder.to_object::<T>();
 
         self.outputs.extend(vec![entity_object, edge, connection]);
-
 
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
@@ -103,7 +102,9 @@ impl Builder {
         let basic_entity_object = entity_object_builder.basic_to_object::<T>();
         self.outputs.push(basic_entity_object);
 
-        let entity_input_builder = EntityInputBuilder { context: self.context };
+        let entity_input_builder = EntityInputBuilder {
+            context: self.context,
+        };
 
         if self.context.entity_input.unified {
             let entity_input_object = entity_input_builder.insert_input_object::<T>();
@@ -111,7 +112,8 @@ impl Builder {
         } else {
             let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
             let entity_update_input_object = entity_input_builder.update_input_object::<T>();
-            self.inputs.extend(vec![entity_insert_input_object, entity_update_input_object]);
+            self.inputs
+                .extend(vec![entity_insert_input_object, entity_update_input_object]);
         }
 
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
@@ -120,7 +122,6 @@ impl Builder {
         let create_mutation = entity_create_one_mutation_builder.to_field::<T, A>();
         self.mutations.push(create_mutation);
     }
-
 
     /// used to register a new enumeration to the builder context
     pub fn register_enumeration<A>(&mut self)
@@ -133,30 +134,39 @@ impl Builder {
         let active_enum_filter_input_builder = ActiveEnumFilterInputBuilder {
             context: self.context,
         };
+        let filter_input_builder = FilterInputBuilder {
+            context: self.context,
+        };
 
         let enumeration = active_enum_builder.enumeration::<A>();
         self.enumerations.push(enumeration);
 
-        let filter = active_enum_filter_input_builder.input_object::<A>();
-        self.inputs.push(filter);
+        let filter_info = active_enum_filter_input_builder.filter_info::<A>();
+        self.inputs
+            .push(filter_input_builder.generate_filter_input(&filter_info));
     }
 
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
     pub fn schema_builder(self) -> SchemaBuilder {
-        // register queries
         let query: Object = Object::new("Query");
+
+        let schema = if !self.mutations.is_empty() {
+            let mutation = Object::new("Mutation");
+            // register mutations
+            let mutation = self
+                .mutations
+                .into_iter()
+                .fold(mutation, |mutation, field| mutation.field(field));
+            Schema::build(query.type_name(), Some(mutation.type_name()), None).register(mutation)
+        } else {
+            Schema::build(query.type_name(), None, None)
+        };
+
+        // register queries
         let query = self
             .queries
             .into_iter()
             .fold(query, |query, field| query.field(field));
-
-        // register mutations
-        let mutation = Object::new("Mutation");
-        let mutation = self.mutations
-            .into_iter()
-            .fold(mutation, |mutation, field| mutation.field(field));
-
-        let schema = Schema::build(query.type_name(), Some(mutation.type_name()), None);
 
         // register output types to schema
         let schema = self
@@ -176,16 +186,16 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, enumeration| schema.register(enumeration));
 
-        // register static filter types
+        // register input filters
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
         };
+        let schema = filter_input_builder
+            .get_input_filters()
+            .into_iter()
+            .fold(schema, |schema, cur| schema.register(cur));
+
         schema
-            .register(filter_input_builder.string_filter())
-            .register(filter_input_builder.integer_filter())
-            .register(filter_input_builder.float_filter())
-            .register(filter_input_builder.text_filter())
-            .register(filter_input_builder.boolean_filter())
             .register(
                 OrderByEnumBuilder {
                     context: self.context,
@@ -235,7 +245,6 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
-            .register(mutation)
     }
 }
 

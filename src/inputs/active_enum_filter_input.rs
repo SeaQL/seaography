@@ -1,8 +1,10 @@
-use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
+use std::collections::BTreeSet;
+
+use async_graphql::dynamic::ObjectAccessor;
 use heck::ToUpperCamelCase;
 use sea_orm::{sea_query::SeaRc, ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
 
-use crate::{ActiveEnumBuilder, BuilderContext};
+use crate::{ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation};
 
 /// The configuration structure for ActiveEnumFilterInputConfig
 pub struct ActiveEnumFilterInputConfig {
@@ -38,29 +40,33 @@ impl ActiveEnumFilterInputBuilder {
         self.context.active_enum_filter_input.type_name.as_ref()(&enum_name)
     }
 
-    /// used to get filter input object for SeaORM enumeration
-    pub fn input_object<A: ActiveEnum>(&self) -> InputObject {
+    /// used to get filter input name from string
+    pub fn type_name_from_string(&self, enum_name: &str) -> String {
+        self.context.active_enum_filter_input.type_name.as_ref()(enum_name)
+    }
+
+    /// used to map an active enum to an input filter info object
+    pub fn filter_info<A: ActiveEnum>(&self) -> FilterInfo {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
         };
 
-        let name = self.type_name::<A>();
-
-        let enum_name = active_enum_builder.type_name::<A>();
-
-        InputObject::new(name)
-            .field(InputValue::new("eq", TypeRef::named(&enum_name)))
-            .field(InputValue::new("ne", TypeRef::named(&enum_name)))
-            .field(InputValue::new("gt", TypeRef::named(&enum_name)))
-            .field(InputValue::new("gte", TypeRef::named(&enum_name)))
-            .field(InputValue::new("lt", TypeRef::named(&enum_name)))
-            .field(InputValue::new("lte", TypeRef::named(&enum_name)))
-            .field(InputValue::new("is_in", TypeRef::named_nn_list(&enum_name)))
-            .field(InputValue::new(
-                "is_not_in",
-                TypeRef::named_nn_list(&enum_name),
-            ))
-            .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+        FilterInfo {
+            type_name: self.type_name::<A>(),
+            base_type: active_enum_builder.type_name::<A>(),
+            supported_operations: BTreeSet::from([
+                FilterOperation::Equals,
+                FilterOperation::NotEquals,
+                FilterOperation::GreaterThan,
+                FilterOperation::GreaterThanEquals,
+                FilterOperation::LessThan,
+                FilterOperation::LessThanEquals,
+                FilterOperation::IsIn,
+                FilterOperation::IsNotIn,
+                FilterOperation::IsNull,
+                FilterOperation::IsNotNull,
+            ]),
+        }
     }
 }
 

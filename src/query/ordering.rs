@@ -19,7 +19,7 @@ where
         let entity_object = EntityObjectBuilder { context };
 
         T::Column::iter().fold(stmt, |stmt, column: T::Column| {
-            let column_name = entity_object.column_name::<T>(column);
+            let column_name = entity_object.column_name::<T>(&column);
 
             let order = order_by.get(&column_name);
 

@@ -27,7 +27,7 @@ impl std::default::Default for EntityObjectConfig {
     }
 }
 
-use crate::{BuilderContext, map_sea_orm_column_type_to_graphql_type};
+use crate::{BuilderContext, TypesMapHelper};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {
@@ -52,11 +52,15 @@ impl EntityObjectBuilder {
         <T as EntityTrait>::Model: Sync,
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
-        format!("{}{}",self.context.entity_object.type_name.as_ref()(&name), self.context.entity_object.basic_type_suffix)
+        format!(
+            "{}{}",
+            self.context.entity_object.type_name.as_ref()(&name),
+            self.context.entity_object.basic_type_suffix
+        )
     }
 
     /// used to get column field name of entity column
-    pub fn column_name<T>(&self, column: T::Column) -> String
+    pub fn column_name<T>(&self, column: &T::Column) -> String
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -72,10 +76,9 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-
         let object_name = self.type_name::<T>();
 
-        self.base_to_object::<T>(&object_name)
+        self.basic_object::<T>(&object_name)
     }
 
     /// used to get the GraphQL basic object of a SeaORM entity
@@ -84,30 +87,33 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-
         let object_name = self.basic_type_name::<T>();
 
-        self.base_to_object::<T>(&object_name)
+        self.basic_object::<T>(&object_name)
     }
 
     /// used to create a SeaORM entity basic GraphQL object type
-    fn base_to_object<T>(&self, object_name: &str) -> Object
+    fn basic_object<T>(&self, object_name: &str) -> Object
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
+        let types_map_helper = TypesMapHelper {
+            context: self.context,
+        };
+
         T::Column::iter().fold(Object::new(object_name), |object, column: T::Column| {
-            let column_name = self.column_name::<T>(column);
+            let column_name = self.column_name::<T>(&column);
 
             let column_def = column.def();
 
-            let type_name = match map_sea_orm_column_type_to_graphql_type(
-                self.context,
-                column_def.get_column_type(),
-            ) {
+            let type_name = match types_map_helper
+                .sea_orm_column_type_to_graphql_type(column_def.get_column_type())
+            {
                 Some(type_name) => type_name,
                 None => return object,
             };
+
             let graphql_type = if column_def.is_null() {
                 TypeRef::named(type_name)
             } else {
@@ -129,6 +135,8 @@ impl EntityObjectBuilder {
                 .get(&format!("{}.{}", &object_name, &column_name));
 
             // convert SeaQL value to GraphQL value
+            // FIXME: allow custom conversions
+            // FIXME: move to types_map file
             let field = Field::new(column_name, graphql_type, move |ctx| {
                 let guard_flag = if let Some(guard) = guard {
                     (*guard)(&ctx)
@@ -370,7 +378,6 @@ impl EntityObjectBuilder {
                     }),
 
                     #[cfg(feature = "with-decimal")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-decimal")))]
                     sea_orm::sea_query::Value::Decimal(value) => FieldFuture::new(async move {
                         match value {
                             Some(value) => Ok(Some(Value::from(value.to_string()))),
@@ -391,7 +398,7 @@ impl EntityObjectBuilder {
                     #[cfg_attr(docsrs, doc(cfg(feature = "postgres-array")))]
                     sea_orm::sea_query::Value::Array(array_type, value) => {
                         FieldFuture::new(async move {
-                            // FIXME: array type
+                            // FIXME: test array type
                             match value {
                                 Some(value) => Ok(Some(Value::from(value.to_string()))),
                                 None => Ok(None),
@@ -401,29 +408,23 @@ impl EntityObjectBuilder {
 
                     #[cfg(feature = "with-ipnetwork")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
-                    sea_orm::sea_query::Value::IpNetwork(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME: ipnet type
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::IpNetwork(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
 
                     #[cfg(feature = "with-mac_address")]
                     #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
-                    sea_orm::sea_query::Value::MacAddress(value) => {
-                        FieldFuture::new(async move {
-                            // FIXME: mac type
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
+                    sea_orm::sea_query::Value::MacAddress(value) => FieldFuture::new(async move {
+                        match value {
+                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            None => Ok(None),
+                        }
+                    }),
                     #[allow(unreachable_patterns)]
-                    _ => todo!(),
+                    _ => panic!("Cannot convert SeaORM value"),
                 }
             });
 
