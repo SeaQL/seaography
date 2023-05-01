@@ -45,7 +45,7 @@ impl OrderInputBuilder {
 
         T::Column::iter().fold(InputObject::new(name), |object, column| {
             object.field(InputValue::new(
-                entity_object_builder.column_name::<T>(column),
+                entity_object_builder.column_name::<T>(&column),
                 TypeRef::named(&self.context.order_by_enum.type_name),
             ))
         })

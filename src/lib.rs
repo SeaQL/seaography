@@ -252,5 +252,8 @@ pub use builder_context::*;
 pub mod builder;
 pub use builder::*;
 
+pub mod error;
+pub use error::*;
+
 pub type SimpleNamingFn = Box<dyn Fn(&str) -> String + Sync + Send>;
 pub type ComplexNamingFn = Box<dyn Fn(&str, &str) -> String + Sync + Send>;

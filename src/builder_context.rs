@@ -1,12 +1,16 @@
 use crate::{
     ActiveEnumConfig, ActiveEnumFilterInputConfig, ConnectionObjectConfig, CursorInputConfig,
-    EdgeObjectConfig, EntityObjectConfig, EntityQueryFieldConfig, FilterInputConfig,
-    OffsetInputConfig, OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
-    PaginationInfoObjectConfig, PaginationInputConfig, EntityCreateOneMutationConfig, EntityInputConfig,
+    EdgeObjectConfig, EntityCreateOneMutationConfig, EntityInputConfig, EntityObjectConfig,
+    EntityQueryFieldConfig, FilterInputConfig, OffsetInputConfig, OrderByEnumConfig,
+    OrderInputConfig, PageInfoObjectConfig, PageInputConfig, PaginationInfoObjectConfig,
+    PaginationInputConfig,
 };
 
 pub mod guards;
 pub use guards::*;
+
+pub mod types_map;
+pub use types_map::*;
 
 /// Used to hold the configuration for various aspects
 /// related to our builder options. You can modify the
@@ -38,6 +42,7 @@ pub struct BuilderContext {
     pub entity_input: EntityInputConfig,
 
     pub guards: GuardsConfig,
+    pub types: TypesMapConfig,
     // guards functions
     // is_skipped function
     // naming function
