@@ -416,48 +416,43 @@ impl FilterInputBuilder {
                         condition = condition.add(column.eq(value));
                     }
                 }
-                FilterOperation::NotEquals => match filter.get("ne") {
-                    Some(value) => {
+                FilterOperation::NotEquals => {
+                    if let Some(value) = filter.get("ne") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.ne(value));
                     }
-                    None => (),
-                },
-                FilterOperation::GreaterThan => match filter.get("gt") {
-                    Some(value) => {
+                }
+                FilterOperation::GreaterThan => {
+                    if let Some(value) = filter.get("gt") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.gt(value));
                     }
-                    None => (),
-                },
-                FilterOperation::GreaterThanEquals => match filter.get("gte") {
-                    Some(value) => {
+                }
+                FilterOperation::GreaterThanEquals => {
+                    if let Some(value) = filter.get("gte") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.gte(value));
                     }
-                    None => (),
-                },
-                FilterOperation::LessThan => match filter.get("lt") {
-                    Some(value) => {
+                }
+                FilterOperation::LessThan => {
+                    if let Some(value) = filter.get("lt") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.lt(value));
                     }
-                    None => (),
-                },
-                FilterOperation::LessThanEquals => match filter.get("lte") {
-                    Some(value) => {
+                }
+                FilterOperation::LessThanEquals => {
+                    if let Some(value) = filter.get("lte") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.lte(value));
                     }
-                    None => (),
-                },
-                FilterOperation::IsIn => match filter.get("is_in") {
-                    Some(value) => {
+                }
+                FilterOperation::IsIn => {
+                    if let Some(value) = filter.get("is_in") {
                         let value = value
                             .list()?
                             .iter()
@@ -468,10 +463,9 @@ impl FilterInputBuilder {
                             .collect::<SeaResult<Vec<_>>>()?;
                         condition = condition.add(column.is_in(value));
                     }
-                    None => (),
-                },
-                FilterOperation::IsNotIn => match filter.get("is_not_in") {
-                    Some(value) => {
+                }
+                FilterOperation::IsNotIn => {
+                    if let Some(value) = filter.get("is_not_in") {
                         let value = value
                             .list()?
                             .iter()
@@ -482,62 +476,54 @@ impl FilterInputBuilder {
                             .collect::<SeaResult<Vec<_>>>()?;
                         condition = condition.add(column.is_not_in(value));
                     }
-                    None => (),
-                },
-                FilterOperation::IsNull => match filter.get("is_null") {
-                    Some(_) => {
+                }
+                FilterOperation::IsNull => {
+                    if filter.get("is_null").is_some() {
                         condition = condition.add(column.is_null());
                     }
-                    None => (),
-                },
-                FilterOperation::IsNotNull => match filter.get("is_not_null") {
-                    Some(_) => {
+                }
+                FilterOperation::IsNotNull => {
+                    if filter.get("is_not_null").is_some() {
                         condition = condition.add(column.is_not_null());
                     }
-                    None => (),
-                },
-                FilterOperation::Contains => match filter.get("contains") {
-                    Some(value) => {
+                }
+                FilterOperation::Contains => {
+                    if let Some(value) = filter.get("contains") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.contains(&value.to_string()));
                     }
-                    None => (),
-                },
-                FilterOperation::StartsWith => match filter.get("starts_with") {
-                    Some(value) => {
+                }
+                FilterOperation::StartsWith => {
+                    if let Some(value) = filter.get("starts_with") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.starts_with(&value.to_string()));
                     }
-                    None => (),
-                },
-                FilterOperation::EndsWith => match filter.get("ends_with") {
-                    Some(value) => {
+                }
+                FilterOperation::EndsWith => {
+                    if let Some(value) = filter.get("ends_with") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.ends_with(&value.to_string()));
                     }
-                    None => (),
-                },
-                FilterOperation::Like => match filter.get("like") {
-                    Some(value) => {
+                }
+                FilterOperation::Like => {
+                    if let Some(value) = filter.get("like") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.like(&value.to_string()));
                     }
-                    None => (),
-                },
-                FilterOperation::NotLike => match filter.get("not_like") {
-                    Some(value) => {
+                }
+                FilterOperation::NotLike => {
+                    if let Some(value) = filter.get("not_like") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.not_like(&value.to_string()));
                     }
-                    None => (),
-                },
-                FilterOperation::Between => match filter.get("between") {
-                    Some(value) => {
+                }
+                FilterOperation::Between => {
+                    if let Some(value) = filter.get("between") {
                         let value = value
                             .list()?
                             .iter()
@@ -552,10 +538,9 @@ impl FilterInputBuilder {
 
                         condition = condition.add(column.between(a, b));
                     }
-                    None => (),
-                },
-                FilterOperation::NotBetween => match filter.get("not_between") {
-                    Some(value) => {
+                }
+                FilterOperation::NotBetween => {
+                    if let Some(value) = filter.get("not_between") {
                         let value = value
                             .list()?
                             .iter()
@@ -570,8 +555,7 @@ impl FilterInputBuilder {
 
                         condition = condition.add(column.not_between(a, b));
                     }
-                    None => (),
-                },
+                }
             }
         }
 
