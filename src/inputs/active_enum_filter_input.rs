@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use heck::ToUpperCamelCase;
-use sea_orm::{ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
+use sea_orm::{ActiveEnum, ColumnTrait, Condition, DynIden, Iden, sea_query::SeaRc};
 
 use crate::{ActiveEnumBuilder, BuilderContext};
 
@@ -68,7 +68,7 @@ impl ActiveEnumFilterInputBuilder {
 pub fn prepare_enumeration_condition<T>(
     filter: &ObjectAccessor,
     column: T,
-    variants: &[std::sync::Arc<dyn Iden>],
+    variants: &[SeaRc<dyn Iden>],
     condition: Condition,
 ) -> Condition
 where

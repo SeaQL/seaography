@@ -244,27 +244,33 @@ pub trait RelationBuilder {
 }
 
 #[macro_export]
-macro_rules! register_entity {
-    ($builder:expr, $context:expr, $module_path:ident) => {{
-        use sea_orm::Iterable;
-
+macro_rules! register_related_entity {
+    ($builder:expr, $module_path:ident) => {
         $builder.register_entity::<$module_path::Entity>(
-            $module_path::RelatedEntity::iter()
-                .map(|rel| seaography::RelationBuilder::get_relation(&rel, $context))
+            <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
+                .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
                 .collect(),
         );
-    }};
+    };
+}
+
+#[macro_export]
+macro_rules! register_related_entities {
+    ($builder:expr, [$($module_paths:ident),+ $(,)?]) => {
+        $(seaography::register_related_entity!($builder, $module_paths);)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_entity {
+    ($builder:expr, $module_path:ident) => {
+        $builder.register_entity::<$module_path::Entity>(vec![]);
+    };
 }
 
 #[macro_export]
 macro_rules! register_entities {
-    ($builder:expr, $context:expr, [$($module_paths:ident),+ $(,)?]) => {{
-        {
-            let mut builder = $builder;
-
-            $(seaography::register_entity!(builder, $context, $module_paths);)*
-
-            builder
-        }
-    }};
+    ($builder:expr, [$($module_paths:ident),+ $(,)?]) => {
+        $(seaography::register_entity!($builder, $module_paths);)*
+    };
 }

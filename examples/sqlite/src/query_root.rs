@@ -11,7 +11,7 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let builder = seaography::register_entities!(
+    let builder = seaography::register_related_entities!(
         Builder::new(&CONTEXT),
         &CONTEXT,
         [
