@@ -244,7 +244,7 @@ pub trait RelationBuilder {
 }
 
 #[macro_export]
-macro_rules! register_related_entity {
+macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
         $builder.register_entity::<$module_path::Entity>(
             <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
@@ -255,22 +255,22 @@ macro_rules! register_related_entity {
 }
 
 #[macro_export]
-macro_rules! register_related_entities {
+macro_rules! register_entities {
     ($builder:expr, [$($module_paths:ident),+ $(,)?]) => {
-        $(seaography::register_related_entity!($builder, $module_paths);)*
+        $(seaography::register_entity!($builder, $module_paths);)*
     };
 }
 
 #[macro_export]
-macro_rules! register_entity {
+macro_rules! register_entity_without_relation {
     ($builder:expr, $module_path:ident) => {
         $builder.register_entity::<$module_path::Entity>(vec![]);
     };
 }
 
 #[macro_export]
-macro_rules! register_entities {
+macro_rules! register_entities_without_relation {
     ($builder:expr, [$($module_paths:ident),+ $(,)?]) => {
-        $(seaography::register_entity!($builder, $module_paths);)*
+        $(seaography::register_entity_without_relation!($builder, $module_paths);)*
     };
 }

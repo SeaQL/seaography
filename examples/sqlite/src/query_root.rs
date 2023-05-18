@@ -11,9 +11,10 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let builder = seaography::register_related_entities!(
-        Builder::new(&CONTEXT),
-        &CONTEXT,
+    let mut builder = Builder::new(&CONTEXT);
+
+    seaography::register_entities!(
+        builder,
         [
             film_actor,
             rental,
@@ -33,16 +34,20 @@ pub fn schema(
             address,
         ]
     );
+
     let schema = builder.schema_builder();
+
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
     } else {
         schema
     };
+
     let schema = if let Some(complexity) = complexity {
         schema.limit_complexity(complexity)
     } else {
         schema
     };
+
     schema.data(database).data(orm_dataloader).finish()
 }

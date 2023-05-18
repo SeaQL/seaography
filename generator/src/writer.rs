@@ -96,9 +96,14 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             depth: Option<usize>,
             complexity: Option<usize>,
         ) -> Result<Schema, SchemaError> {
-            let builder = seaography::register_related_entities!(Builder::new(&CONTEXT), &CONTEXT, [
-                #(#entities,)*
-            ]);
+            let mut builder = Builder::new(&CONTEXT);
+
+            seaography::register_entities!(
+                builder,
+                [
+                    #(#entities,)*
+                ]
+            );
 
             #(#enumerations)*
 

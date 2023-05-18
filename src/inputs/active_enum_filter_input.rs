@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use heck::ToUpperCamelCase;
-use sea_orm::{ActiveEnum, ColumnTrait, Condition, DynIden, Iden, sea_query::SeaRc};
+use sea_orm::{sea_query::SeaRc, ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
 
 use crate::{ActiveEnumBuilder, BuilderContext};
 
