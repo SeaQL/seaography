@@ -3,7 +3,7 @@ use sea_orm::Database;
 use seaography_mysql_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("mysql://root:root@127.0.0.1/sakila")
+    let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
     let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
