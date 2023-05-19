@@ -91,26 +91,26 @@ jobs:
                 profile: minimal
                 toolchain: stable
                 override: true
-            # - name: Install sea-orm-cli
-            #   uses: baptiste0928/cargo-install@v2
-            #   with:
-            #     crate: sea-orm-cli
-            #     version: '0.11.0'
-            # - name: Remove generated folder
-            #   run: rm -rf ./examples/sqlite/src
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
+              with:
+                crate: sea-orm-cli
+                version: '0.12.0-rc.2'
+            - name: Remove generated folder
+              run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
               run: cp ./examples/sqlite/sakila.db .
-            # - name: Generate entities
-            #   run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db
-            # - name: Generate Seaography project
-            #   uses: actions-rs/cargo@v1
-            #   with:
-            #       command: run
-            #       args: >
-            #           --package seaography-cli --
-            #           ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f poem
-            # - name: Depends on local seaography
-            #   run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db --seaography
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: >
+                      --package seaography-cli --
+                      ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f poem
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Build example
               working-directory: ./examples/sqlite
               run: cargo build
@@ -131,26 +131,26 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
-            # - name: Install sea-orm-cli
-            #   uses: baptiste0928/cargo-install@v2
-            #   with:
-            #     crate: sea-orm-cli
-            #     version: '0.11.0'
-            # - name: Remove generated folder
-            #   run: rm -rf ./examples/sqlite/src
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
+              with:
+                crate: sea-orm-cli
+                version: '0.12.0-rc.2'
+            - name: Remove generated folder
+              run: rm -rf ./examples/sqlite/src
             - name: Copy sample database
               run: cp ./examples/sqlite/sakila.db .
-            # - name: Generate entities
-            #   run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db
-            # - name: Generate Seaography project
-            #   uses: actions-rs/cargo@v1
-            #   with:
-            #       command: run
-            #       args: >
-            #           --package seaography-cli --
-            #           ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f actix
-            # - name: Depends on local seaography
-            #   run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db --seaography
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: >
+                      --package seaography-cli --
+                      ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f actix
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
             - name: Build example
               working-directory: ./examples/sqlite
               run: cargo build
@@ -186,13 +186,13 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
-            # - name: Install sea-orm-cli
-            #   uses: baptiste0928/cargo-install@v2
-            #   with:
-            #     crate: sea-orm-cli
-            #     version: '0.11.0'
-            # - name: Remove generated folder
-            #   run: rm -rf ./examples/mysql/src
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
+              with:
+                crate: sea-orm-cli
+                version: '0.12.0-rc.2'
+            - name: Remove generated folder
+              run: rm -rf ./examples/mysql/src
             - name: Create DB
               run: mysql -uroot -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
             - name: Grant Privilege
@@ -203,17 +203,17 @@ jobs:
             - name: Import DB Data
               run: mysql -uroot -h 127.0.0.1 sakila < sakila-data.sql
               working-directory: ./examples/mysql
-            # - name: Generate entities
-            #   run: sea-orm-cli generate entity -o ./examples/mysql/src/entities -u mysql://sea:sea@127.0.0.1/sakila
-            # - name: Generate Seaography project
-            #   uses: actions-rs/cargo@v1
-            #   with:
-            #       command: run
-            #       args: >
-            #           --package seaography-cli --
-            #           ./examples/mysql ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example
-            # - name: Depends on local seaography
-            #   run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o ./examples/mysql/src/entities -u mysql://sea:sea@127.0.0.1/sakila --seaography
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: >
+                      --package seaography-cli --
+                      ./examples/mysql ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
             - name: Build example
               working-directory: ./examples/mysql
               run: cargo build
@@ -248,13 +248,13 @@ jobs:
                   profile: minimal
                   toolchain: stable
                   override: true
-            # - name: Install sea-orm-cli
-            #   uses: baptiste0928/cargo-install@v2
-            #   with:
-            #     crate: sea-orm-cli
-            #     version: '0.11.0'
-            # - name: Remove generated folder
-            #   run: rm -rf ./examples/postgres/src
+            - name: Install sea-orm-cli
+              uses: baptiste0928/cargo-install@v2
+              with:
+                crate: sea-orm-cli
+                version: '0.12.0-rc.2'
+            - name: Remove generated folder
+              run: rm -rf ./examples/postgres/src
             - name: Create DB
               run: psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE "sakila"'
             - name: Import DB Schema
@@ -263,19 +263,19 @@ jobs:
             - name: Import DB Data
               run: psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
               working-directory: ./examples/postgres
-            # - name: Generate entities
-            #   run: sea-orm-cli generate entity -o ./examples/postgres/src/entities -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
-            # - name: Generate Seaography project
-            #   uses: actions-rs/cargo@v1
-            #   with:
-            #       command: run
-            #       args: >
-            #           --package seaography-cli --
-            #           ./examples/postgres ./examples/postgres/src/entities postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example
-            # - name: Depends on local seaography
-            #   run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
-            # - name: Fix Nullable not implemented for Vec<String> and tsvector
-            #   run: sed -i "25,27d" ./examples/postgres/src/entities/film.rs
+            - name: Generate entities
+              run: sea-orm-cli generate entity -o ./examples/postgres/src/entities -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public --seaography
+            - name: Generate Seaography project
+              uses: actions-rs/cargo@v1
+              with:
+                  command: run
+                  args: >
+                      --package seaography-cli --
+                      ./examples/postgres ./examples/postgres/src/entities postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example
+            - name: Depends on local seaography
+              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
+            - name: Fix Nullable not implemented for Vec<String> and tsvector
+              run: sed -i "25,27d" ./examples/postgres/src/entities/film.rs
             - name: Build example
               working-directory: ./examples/postgres
               run: cargo build
