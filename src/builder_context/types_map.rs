@@ -122,9 +122,9 @@ impl TypesMapHelper {
             ColumnType::TimestampWithTimeZone => match context.types.time_library {
                 TimeLibrary::String => ConvertedType::String,
                 #[cfg(feature = "with-time")]
-                TimeLibrary::Time => ConvertedType::TimeDateTimeWithTimeZone,
+                TimeLibrary::Time => ConvertedType::TimeDateTime,
                 #[cfg(feature = "with-chrono")]
-                TimeLibrary::Chrono => ConvertedType::ChronoDateTimeWithTimeZone,
+                TimeLibrary::Chrono => ConvertedType::ChronoDateTimeUtc,
             },
             ColumnType::Time => match context.types.time_library {
                 TimeLibrary::String => ConvertedType::String,
@@ -220,9 +220,6 @@ impl TypesMapHelper {
         {
             return parser.as_ref()(value);
         }
-
-        // FIXME: remove
-        println!("{:?}: {:?}", column, self.get_column_type::<T>(column));
 
         Ok(match self.get_column_type::<T>(column) {
             ConvertedType::Bool => value.boolean().map(|v| v.into())?,
@@ -338,7 +335,7 @@ impl TypesMapHelper {
                     sea_orm::entity::prelude::ChronoDateTimeLocal::from_str(value.string()?)
                         .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string()))?;
 
-                sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
+                    sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
             }
             #[cfg(feature = "with-chrono")]
             ConvertedType::ChronoDateTimeWithTimeZone => {
@@ -389,17 +386,6 @@ impl TypesMapHelper {
             #[cfg(feature = "with-time")]
             ConvertedType::TimeDateTimeWithTimeZone => {
                 use std::str::FromStr;
-
-                // FIXME: remove
-                println!("TimeDateTimeWithTimeZone: {:?}", value.string()?);
-                println!(
-                    "TimeDateTimeWithTimeZone: {:?}",
-                    sea_orm::entity::prelude::TimeDateTimeWithTimeZone::parse(
-                        value.string()?,
-                        sea_orm::sea_query::value::time_format::FORMAT_DATETIME_TZ,
-                    )
-                );
-
                 let value = sea_orm::entity::prelude::TimeDateTimeWithTimeZone::parse(
                     value.string()?,
                     sea_orm::sea_query::value::time_format::FORMAT_DATETIME_TZ,
