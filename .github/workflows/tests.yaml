@@ -274,6 +274,8 @@ jobs:
                       ./examples/postgres ./examples/postgres/src/entities postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
+            - name: Fix Nullable not implemented for Vec<String> and tsvector
+              run: sed -i "26,27d" ./examples/postgres/src/entities/film.rs
             - name: Build example
               working-directory: ./examples/postgres
               run: cargo build

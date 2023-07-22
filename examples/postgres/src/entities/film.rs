@@ -23,8 +23,6 @@ pub struct Model {
     pub rating: Option<MpaaRating>,
     pub last_update: DateTime,
     pub special_features: Option<Vec<String>>,
-    #[sea_orm(column_type = "custom(\"tsvector\")")]
-    pub fulltext: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
