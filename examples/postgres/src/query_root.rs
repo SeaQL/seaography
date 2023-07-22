@@ -15,21 +15,21 @@ pub fn schema(
     seaography::register_entities!(
         builder,
         [
-            rental,
             film_actor,
-            staff,
-            address,
-            store,
-            film,
-            city,
-            payment,
-            inventory,
+            rental,
             category,
-            actor,
-            customer,
-            language,
-            film_category,
+            staff,
             country,
+            film,
+            actor,
+            language,
+            city,
+            inventory,
+            film_category,
+            customer,
+            store,
+            payment,
+            address,
         ]
     );
     builder.register_enumeration::<crate::entities::sea_orm_active_enums::MpaaRating>();
