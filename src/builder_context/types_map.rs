@@ -283,8 +283,10 @@ impl TypesMapHelper {
             ConvertedType::Json => {
                 use std::str::FromStr;
 
-                let value = sea_orm::entity::prelude::Json::from_str(value.string()?)
-                    .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "Json".into()))?;
+                let value =
+                    sea_orm::entity::prelude::Json::from_str(value.string()?).map_err(|e| {
+                        crate::SeaographyError::TypeConversionError(e.to_string(), "Json".into())
+                    })?;
 
                 sea_orm::Value::Json(Some(Box::new(value)))
             }
@@ -294,7 +296,9 @@ impl TypesMapHelper {
                     value.string()?,
                     "%Y-%m-%d",
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoDate".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoDate".into())
+                })?;
 
                 sea_orm::Value::ChronoDate(Some(Box::new(value)))
             }
@@ -304,7 +308,9 @@ impl TypesMapHelper {
                     value.string()?,
                     "%H:%M:%S",
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoTime".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoTime".into())
+                })?;
 
                 sea_orm::Value::ChronoTime(Some(Box::new(value)))
             }
@@ -314,7 +320,12 @@ impl TypesMapHelper {
                     value.string()?,
                     "%Y-%m-%d %H:%M:%S",
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoDateTime".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(
+                        e.to_string(),
+                        "ChronoDateTime".into(),
+                    )
+                })?;
 
                 sea_orm::Value::ChronoDateTime(Some(Box::new(value)))
             }
@@ -323,7 +334,12 @@ impl TypesMapHelper {
                 use std::str::FromStr;
 
                 let value = sea_orm::entity::prelude::ChronoDateTimeUtc::from_str(value.string()?)
-                    .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoDateTimeUtc".into()))?;
+                    .map_err(|e| {
+                        crate::SeaographyError::TypeConversionError(
+                            e.to_string(),
+                            "ChronoDateTimeUtc".into(),
+                        )
+                    })?;
 
                 sea_orm::Value::ChronoDateTimeUtc(Some(Box::new(value)))
             }
@@ -333,7 +349,12 @@ impl TypesMapHelper {
 
                 let value =
                     sea_orm::entity::prelude::ChronoDateTimeLocal::from_str(value.string()?)
-                        .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoDateTimeLocal".into()))?;
+                        .map_err(|e| {
+                            crate::SeaographyError::TypeConversionError(
+                                e.to_string(),
+                                "ChronoDateTimeLocal".into(),
+                            )
+                        })?;
 
                 sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
             }
@@ -343,7 +364,12 @@ impl TypesMapHelper {
                     value.string()?,
                     "%Y-%m-%d %H:%M:%S %:z",
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "ChronoDateTimeWithTimeZone".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(
+                        e.to_string(),
+                        "ChronoDateTimeWithTimeZone".into(),
+                    )
+                })?;
 
                 sea_orm::Value::ChronoDateTimeWithTimeZone(Some(Box::new(value)))
             }
@@ -355,7 +381,9 @@ impl TypesMapHelper {
                     value.string()?,
                     sea_orm::sea_query::value::time_format::FORMAT_DATE,
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "TimeDate".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(e.to_string(), "TimeDate".into())
+                })?;
 
                 sea_orm::Value::TimeDate(Some(Box::new(value)))
             }
@@ -367,7 +395,9 @@ impl TypesMapHelper {
                     value.string()?,
                     sea_orm::sea_query::value::time_format::FORMAT_TIME,
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "TimeTime".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(e.to_string(), "TimeTime".into())
+                })?;
 
                 sea_orm::Value::TimeTime(Some(Box::new(value)))
             }
@@ -379,7 +409,12 @@ impl TypesMapHelper {
                     value.string()?,
                     sea_orm::sea_query::value::time_format::FORMAT_DATETIME,
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "TimeDateTime".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(
+                        e.to_string(),
+                        "TimeDateTime".into(),
+                    )
+                })?;
 
                 sea_orm::Value::TimeDateTime(Some(Box::new(value)))
             }
@@ -390,7 +425,12 @@ impl TypesMapHelper {
                     value.string()?,
                     sea_orm::sea_query::value::time_format::FORMAT_DATETIME_TZ,
                 )
-                .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "TimeDateTimeWithTimeZone".into()))?;
+                .map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(
+                        e.to_string(),
+                        "TimeDateTimeWithTimeZone".into(),
+                    )
+                })?;
 
                 sea_orm::Value::TimeDateTimeWithTimeZone(Some(Box::new(value)))
             }
@@ -398,8 +438,10 @@ impl TypesMapHelper {
             ConvertedType::Uuid => {
                 use std::str::FromStr;
 
-                let value = sea_orm::entity::prelude::Uuid::from_str(value.string()?)
-                    .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "Uuid".into()))?;
+                let value =
+                    sea_orm::entity::prelude::Uuid::from_str(value.string()?).map_err(|e| {
+                        crate::SeaographyError::TypeConversionError(e.to_string(), "Uuid".into())
+                    })?;
 
                 sea_orm::Value::Uuid(Some(Box::new(value)))
             }
@@ -407,8 +449,10 @@ impl TypesMapHelper {
             ConvertedType::Decimal => {
                 use std::str::FromStr;
 
-                let value = sea_orm::entity::prelude::Decimal::from_str(value.string()?)
-                    .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "Decimal".into()))?;
+                let value =
+                    sea_orm::entity::prelude::Decimal::from_str(value.string()?).map_err(|e| {
+                        crate::SeaographyError::TypeConversionError(e.to_string(), "Decimal".into())
+                    })?;
 
                 sea_orm::Value::Decimal(Some(Box::new(value)))
             }
@@ -417,7 +461,12 @@ impl TypesMapHelper {
                 use std::str::FromStr;
 
                 let value = sea_orm::entity::prelude::BigDecimal::from_str(value.string()?)
-                    .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string(), "BigDecimal".into()))?;
+                    .map_err(|e| {
+                        crate::SeaographyError::TypeConversionError(
+                            e.to_string(),
+                            "BigDecimal".into(),
+                        )
+                    })?;
 
                 sea_orm::Value::BigDecimal(Some(Box::new(value)))
             }
