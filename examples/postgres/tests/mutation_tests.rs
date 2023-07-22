@@ -150,12 +150,12 @@ async fn test_complex_insert_one() {
                     rentalCreateOne(
                       data: {
                         rentalId: 16050
-                        rentalDate: "2030-01-01 11:11:11 UTC"
+                        rentalDate: "2030-01-25 21:50:05"
                         inventoryId: 4452
                         customerId: 319
-                        returnDate: "2030-01-01 11:11:11 UTC"
+                        returnDate: "2030-01-12 21:50:05"
                         staffId: 1
-                        lastUpdate: "2030-01-01 11:11:11 UTC"
+                        lastUpdate: "2030-01-01 21:50:05 UTC"
                       }
                     ) {
                       rentalId
@@ -165,20 +165,21 @@ async fn test_complex_insert_one() {
                       returnDate
                       staffId
                     }
-                }
-
+                }x
                 "#,
             )
             .await,
         r#"
-            {
-                "rentalCreateOne": {
-                    "rentalId": 16050,
-                    "rentalDate": "2030-01-01 11:11:11 UTC",
-                    "inventoryId": 4452,
-                    "customerId": 319,
-                    "returnDate": "2030-01-01 11:11:11 UTC",
-                    "staffId": 1
+                {
+                    "rentalCreateOne": {
+                        "rentalCreateOne": {
+                        "rentalId": 16050,
+                        "rentalDate": "2023-07-22 17:44:33",
+                        "inventoryId": 4452,
+                        "customerId": 319,
+                        "returnDate": "2030-01-12 21:50:05",
+                        "staffId": 1
+                    }
                 }
             }
             "#,
@@ -208,12 +209,12 @@ async fn test_complex_insert_one() {
             "rental": {
               "nodes": [
                 {
-                  "rentalId": 16050,
-                  "rentalDate": "2030-01-01 11:11:11 UTC",
-                  "inventoryId": 4452,
-                  "customerId": 319,
-                  "returnDate": "2030-01-01 11:11:11 UTC",
-                  "staffId": 1
+                    "rentalId": 16050,
+                    "rentalDate": "2023-07-22 17:44:33",
+                    "inventoryId": 4452,
+                    "customerId": 319,
+                    "returnDate": "2030-01-12 21:50:05",
+                    "staffId": 1
                 }
               ]
             }
@@ -221,4 +222,3 @@ async fn test_complex_insert_one() {
             "#,
     );
 }
-
