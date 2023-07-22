@@ -169,16 +169,14 @@ async fn test_complex_insert_one() {
             )
             .await,
         r#"
-                {
-                    "rentalCreateOne": {
-                        "rentalCreateOne": {
-                        "rentalId": 16050,
-                        "rentalDate": "2023-07-22 17:44:33",
-                        "inventoryId": 4452,
-                        "customerId": 319,
-                        "returnDate": "2030-01-12 21:50:05",
-                        "staffId": 1
-                    }
+            {
+                "rentalCreateOne": {
+                    "rentalId": 16050,
+                    "rentalDate": "2030-01-25 21:50:05",
+                    "inventoryId": 4452,
+                    "customerId": 319,
+                    "returnDate": "2030-01-12 21:50:05",
+                    "staffId": 1
                 }
             }
             "#,
@@ -208,12 +206,12 @@ async fn test_complex_insert_one() {
             "rental": {
               "nodes": [
                 {
-                    "rentalId": 16050,
-                    "rentalDate": "2023-07-22 17:44:33",
-                    "inventoryId": 4452,
-                    "customerId": 319,
-                    "returnDate": "2030-01-12 21:50:05",
-                    "staffId": 1
+                  "rentalId": 16050,
+                  "rentalDate": "2030-01-25 21:50:05",
+                  "inventoryId": 4452,
+                  "customerId": 319,
+                  "returnDate": "2030-01-12 21:50:05",
+                  "staffId": 1
                 }
               ]
             }
