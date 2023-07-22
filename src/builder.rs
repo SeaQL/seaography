@@ -263,6 +263,7 @@ macro_rules! register_entity {
                 .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
                 .collect(),
         );
+        $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
     };
 }
 
