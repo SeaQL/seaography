@@ -35,7 +35,7 @@ async fn test_simple_insert_one() {
             .execute(
                 r#"
                 {
-                    filmActor(filters: { lastUpdate: { gt: "2022-11-14 10:30:12 UTC" } }) {
+                    filmActor(filters: { lastUpdate: { gt: "2022-11-14 10:30:12" } }) {
                       nodes {
                         actorId
                         filmId
@@ -59,7 +59,7 @@ async fn test_simple_insert_one() {
             .execute(
                 r#"
                 mutation {
-                    filmActorCreateOne(data: { actorId: 1, filmId: 2,  lastUpdate: "2030-01-01 11:11:11 UTC"}) {
+                    filmActorCreateOne(data: { actorId: 1, filmId: 2,  lastUpdate: "2030-01-01 11:11:11"}) {
                       actorId
                       filmId
                          __typename
@@ -84,7 +84,7 @@ async fn test_simple_insert_one() {
             .execute(
                 r#"
                 {
-                    filmActor(filters: { lastUpdate: { gt: "2022-11-14 10:30:12 UTC" } }) {
+                    filmActor(filters: { lastUpdate: { gt: "2022-11-14 10:30:12" } }) {
                       nodes {
                         actorId
                         filmId
