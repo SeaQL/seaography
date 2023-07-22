@@ -8,8 +8,8 @@ pub enum SeaographyError {
     TryFromIntError(#[from] std::num::TryFromIntError),
     #[error("[parsing] {0}")]
     ParseIntError(#[from] std::num::ParseIntError),
-    #[error("[type conversion] {0}")]
-    TypeConversionError(String),
+    #[error("[type conversion: {1}] {0}")]
+    TypeConversionError(String, String),
 }
 
 impl From<async_graphql::Error> for SeaographyError {
