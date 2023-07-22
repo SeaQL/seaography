@@ -335,7 +335,7 @@ impl TypesMapHelper {
                     sea_orm::entity::prelude::ChronoDateTimeLocal::from_str(value.string()?)
                         .map_err(|e| crate::SeaographyError::TypeConversionError(e.to_string()))?;
 
-                    sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
+                sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
             }
             #[cfg(feature = "with-chrono")]
             ConvertedType::ChronoDateTimeWithTimeZone => {

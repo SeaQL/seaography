@@ -24,7 +24,7 @@ async-graphql = { version = "5.0.10", features = ["decimal", "chrono", "dataload
 sea-orm = { version = "0.12.0", default-features = false, features = ["seaography"] }
 itertools = { version = "0.11.0" }
 heck = { version = "0.4.1" }
-thiserror = "1.0"
+thiserror = "1.0.44"
 
 [features]
 default = []
