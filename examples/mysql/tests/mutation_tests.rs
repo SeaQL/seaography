@@ -120,7 +120,6 @@ async fn test_complex_insert_one() {
                     rental(filters: { rentalId: { eq: 16050 } }) {
                       nodes {
                         rentalId
-                        rentalDate
                         inventoryId
                         customerId
                         returnDate
@@ -158,7 +157,6 @@ async fn test_complex_insert_one() {
                       }
                     ) {
                       rentalId
-                      rentalDate
                       inventoryId
                       customerId
                       returnDate
@@ -172,7 +170,6 @@ async fn test_complex_insert_one() {
             {
                 "rentalCreateOne": {
                     "rentalId": 16050,
-                    "rentalDate": "2030-01-25 21:50:05",
                     "inventoryId": 4452,
                     "customerId": 319,
                     "returnDate": "2030-01-12 21:50:05",
@@ -190,7 +187,6 @@ async fn test_complex_insert_one() {
                     rental(filters: { rentalId: { eq: 16050 } }) {
                       nodes {
                         rentalId
-                        rentalDate
                         inventoryId
                         customerId
                         returnDate
@@ -207,7 +203,6 @@ async fn test_complex_insert_one() {
               "nodes": [
                 {
                   "rentalId": 16050,
-                  "rentalDate": "2030-01-25 21:50:05",
                   "inventoryId": 4452,
                   "customerId": 319,
                   "returnDate": "2030-01-12 21:50:05",
