@@ -38,7 +38,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
 
         #[handler]
         async fn graphql_playground() -> impl IntoResponse {
-            Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
+            Html(playground_source(GraphQLPlaygroundConfig::new(&ENDPOINT)))
         }
 
         #[tokio::main]

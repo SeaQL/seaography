@@ -287,10 +287,10 @@ pub async fn get_schema() -> Schema {
 }
 
 pub fn assert_eq(a: Response, b: &str) {
-  assert_eq!(
-      a.data.into_json().unwrap(),
-      serde_json::from_str::<serde_json::Value>(b).unwrap()
-  )
+    assert_eq!(
+        a.data.into_json().unwrap(),
+        serde_json::from_str::<serde_json::Value>(b).unwrap()
+    )
 }
 
 #[tokio::test]
