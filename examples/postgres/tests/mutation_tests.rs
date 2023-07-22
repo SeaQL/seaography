@@ -165,7 +165,7 @@ async fn test_complex_insert_one() {
                       returnDate
                       staffId
                     }
-                }x
+                }
                 "#,
             )
             .await,
@@ -219,6 +219,6 @@ async fn test_complex_insert_one() {
               ]
             }
         }
-            "#,
+        "#,
     );
 }
