@@ -1,6 +1,6 @@
 use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
 use sea_orm::Database;
-use seaography_sqlite_example::OrmDataloader;
+use seaography_postgres_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
