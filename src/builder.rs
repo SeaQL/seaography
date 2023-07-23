@@ -6,7 +6,7 @@ use crate::{
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateOneMutationBuilder, EntityInputBuilder,
     EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, OffsetInputBuilder,
     OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder, FilterTypesMapHelper,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -134,8 +134,8 @@ impl Builder {
         let active_enum_filter_input_builder = ActiveEnumFilterInputBuilder {
             context: self.context,
         };
-        let filter_input_builder = FilterInputBuilder {
-            context: self.context,
+        let filter_types_map_helper = FilterTypesMapHelper {
+            context: self.context
         };
 
         let enumeration = active_enum_builder.enumeration::<A>();
@@ -143,7 +143,7 @@ impl Builder {
 
         let filter_info = active_enum_filter_input_builder.filter_info::<A>();
         self.inputs
-            .push(filter_input_builder.generate_filter_input(&filter_info));
+            .push(filter_types_map_helper.generate_filter_input(&filter_info));
     }
 
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
@@ -187,10 +187,10 @@ impl Builder {
             .fold(schema, |schema, enumeration| schema.register(enumeration));
 
         // register input filters
-        let filter_input_builder = FilterInputBuilder {
-            context: self.context,
+        let filter_types_map_helper = FilterTypesMapHelper {
+            context: self.context
         };
-        let schema = filter_input_builder
+        let schema = filter_types_map_helper
             .get_input_filters()
             .into_iter()
             .fold(schema, |schema, cur| schema.register(cur));

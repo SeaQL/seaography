@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 
 use async_graphql::dynamic::ObjectAccessor;
 use heck::ToUpperCamelCase;
-use sea_orm::{sea_query::SeaRc, ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
+use sea_orm::{ActiveEnum, ColumnTrait, ColumnType, Condition, DynIden, EntityTrait};
 
-use crate::{ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation};
+use crate::{ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult};
 
 /// The configuration structure for ActiveEnumFilterInputConfig
 pub struct ActiveEnumFilterInputConfig {
@@ -73,13 +73,19 @@ impl ActiveEnumFilterInputBuilder {
 /// used to update the query condition with enumeration filters
 pub fn prepare_enumeration_condition<T>(
     filter: &ObjectAccessor,
-    column: T,
-    variants: &[SeaRc<dyn Iden>],
+    column: &T::Column,
     condition: Condition,
-) -> Condition
+) -> SeaResult<Condition>
 where
-    T: ColumnTrait,
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
 {
+    let variants = if let ColumnType::Enum { name: _, variants } = column.def().get_column_type() {
+        variants.clone()
+    } else {
+        return Ok(condition);
+    };
+
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
             let variant = variant
@@ -176,5 +182,5 @@ where
         None => condition,
     };
 
-    condition
+    Ok(condition)
 }

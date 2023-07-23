@@ -12,6 +12,9 @@ pub use guards::*;
 pub mod types_map;
 pub use types_map::*;
 
+pub mod filter_types_map;
+pub use filter_types_map::*;
+
 /// Used to hold the configuration for various aspects
 /// related to our builder options. You can modify the
 /// context to make the generated GraphQL nodes match
@@ -43,8 +46,7 @@ pub struct BuilderContext {
 
     pub guards: GuardsConfig,
     pub types: TypesMapConfig,
-    // guards functions
+    pub filter_types: FilterTypesMapConfig,
     // is_skipped function
     // naming function
-    // fields type overrides
 }
