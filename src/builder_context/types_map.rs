@@ -5,13 +5,17 @@ use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
 use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
 
-pub type FnTypeConversion = Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
+pub type FnInputTypeConversion = Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
+pub type FnOutputTypeConversion = Box<dyn Fn(&sea_orm::Value) -> SeaResult<async_graphql::Value> + Send + Sync>;
 
 pub struct TypesMapConfig {
-    /// used to map entity_name.column_name to a custom ColumnType
+    /// used to map entity_name.column_name to a custom Type
     pub overwrites: BTreeMap<String, ConvertedType>,
-    /// used to map entity_name.column_name to a custom parser
-    pub conversions: BTreeMap<String, FnTypeConversion>,
+    /// used to map entity_name.column_name input to a custom parser
+    pub input_conversions: BTreeMap<String, FnInputTypeConversion>,
+    // TODO: use it
+    /// used to map entity_name.column_name output to a custom formatter
+    pub output_conversions: BTreeMap<String, FnOutputTypeConversion>,
     /// used to configure default time library
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
@@ -22,7 +26,8 @@ impl std::default::Default for TypesMapConfig {
     fn default() -> Self {
         Self {
             overwrites: BTreeMap::new(),
-            conversions: BTreeMap::new(),
+            input_conversions: BTreeMap::new(),
+            output_conversions: BTreeMap::new(),
 
             #[cfg(all(not(feature = "with-time"), not(feature = "with-chrono")))]
             time_library: TimeLibrary::String,
@@ -215,7 +220,7 @@ impl TypesMapHelper {
         if let Some(parser) = self
             .context
             .types
-            .conversions
+            .input_conversions
             .get(&format!("{}.{}", entity_name, column_name))
         {
             return parser.as_ref()(value);

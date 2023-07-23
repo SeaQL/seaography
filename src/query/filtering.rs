@@ -1,8 +1,8 @@
 use async_graphql::dynamic::{ObjectAccessor, ValueAccessor};
-use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, Iterable};
+use sea_orm::{Condition, EntityTrait, Iterable};
 
 use crate::{
-    prepare_enumeration_condition, BuilderContext, EntityObjectBuilder, FilterInputBuilder,
+    BuilderContext, EntityObjectBuilder, FilterTypesMapHelper,
 };
 
 /// utility function used to create the query filter condition
@@ -34,7 +34,7 @@ where
     <T as EntityTrait>::Model: Sync,
 {
     let entity_object_builder = EntityObjectBuilder { context };
-    let filter_input_builder = FilterInputBuilder { context };
+    let filter_types_map_helper = FilterTypesMapHelper { context };
 
     let condition = T::Column::iter().fold(Condition::all(), |condition, column: T::Column| {
         let column_name = entity_object_builder.column_name::<T>(&column);
@@ -44,13 +44,7 @@ where
         if let Some(filter) = filter {
             let filter = filter.object().unwrap();
 
-            if let ColumnType::Enum { name: _, variants } = column.def().get_column_type() {
-                prepare_enumeration_condition(&filter, column, variants, condition)
-            } else {
-                filter_input_builder
-                    .prepare_column_condition::<T>(condition, &filter, &column)
-                    .unwrap()
-            }
+            filter_types_map_helper.prepare_column_condition::<T>(condition, &filter, &column).unwrap()
         } else {
             condition
         }
