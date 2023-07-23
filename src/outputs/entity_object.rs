@@ -97,6 +97,8 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
+        let entity_name = self.type_name::<T>();
+
         let types_map_helper = TypesMapHelper {
             context: self.context,
         };
@@ -133,9 +135,12 @@ impl EntityObjectBuilder {
                 .field_guards
                 .get(&format!("{}.{}", &object_name, &column_name));
 
-            // convert SeaQL value to GraphQL value
-            // FIXME: allow custom conversions
-            // FIXME: move to types_map file
+            let conversion_fn = self
+                .context
+                .types
+                .output_conversions
+                .get(&format!("{}.{}", entity_name, column_name));
+
             let field = Field::new(column_name, graphql_type, move |ctx| {
                 let guard_flag = if let Some(guard) = guard {
                     (*guard)(&ctx)
@@ -156,10 +161,23 @@ impl EntityObjectBuilder {
                     });
                 }
 
+                // convert SeaQL value to GraphQL value
+                // FIXME: move to types_map file
                 let object = ctx
                     .parent_value
                     .try_downcast_ref::<T::Model>()
                     .expect("Something went wrong when trying to downcast entity object.");
+
+                if let Some(conversion_fn) = conversion_fn {
+                    let result = conversion_fn(&object.get(column));
+                    return FieldFuture::new(async move {
+                        match result {
+                            Ok(value) => Ok(Some(value)),
+                            // FIXME: proper error reporting
+                            Err(_) => Ok(None),
+                        }
+                    })
+                }
 
                 match object.get(column) {
                     sea_orm::sea_query::Value::Bool(value) => FieldFuture::new(async move {

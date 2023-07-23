@@ -10,6 +10,7 @@ use crate::{
 type FnFilterCondition =
     Box<dyn Fn(Condition, &ObjectAccessor) -> SeaResult<Condition> + Send + Sync>;
 
+/// The configuration for FilterTypesMapHelper
 pub struct FilterTypesMapConfig {
     /// used to map entity_name.column_name to a custom filter type
     pub overwrites: BTreeMap<String, Option<FilterType>>,
@@ -150,12 +151,17 @@ impl std::default::Default for FilterTypesMapConfig {
     }
 }
 
+/// The FilterTypesMapHelper
+/// * provides basic input filter types
+/// * provides entity filter object type mappings
+/// * helper functions that assist filtering on queries
+/// * helper function that generate input filter types
 pub struct FilterTypesMapHelper {
     pub context: &'static BuilderContext,
 }
 
 impl FilterTypesMapHelper {
-    /// used to map sea orm column type to filter types
+    /// used to map sea orm column type to filter type
     pub fn get_column_filter_type<T>(&self, column: &T::Column) -> Option<FilterType>
     where
         T: EntityTrait,
@@ -222,6 +228,7 @@ impl FilterTypesMapHelper {
         }
     }
 
+    /// used to get the GraphQL input value field for a SeaORM entity column
     pub fn get_column_filter_input_value<T>(&self, column: &T::Column) -> Option<InputValue>
     where
         T: EntityTrait,

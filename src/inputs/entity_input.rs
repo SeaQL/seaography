@@ -31,6 +31,7 @@ impl std::default::Default for EntityInputConfig {
     }
 }
 
+/// Used to create the entity create/update input object
 pub struct EntityInputBuilder {
     pub context: &'static BuilderContext,
 }

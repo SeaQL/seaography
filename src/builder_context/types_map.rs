@@ -6,14 +6,14 @@ use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
 
 pub type FnInputTypeConversion = Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
-pub type FnOutputTypeConversion = Box<dyn Fn(&sea_orm::Value) -> SeaResult<async_graphql::Value> + Send + Sync>;
+pub type FnOutputTypeConversion = Box<dyn Fn(&sea_orm::sea_query::Value) -> SeaResult<async_graphql::Value> + Send + Sync>;
 
+/// Used to provide configuration for TypesMapHelper
 pub struct TypesMapConfig {
     /// used to map entity_name.column_name to a custom Type
     pub overwrites: BTreeMap<String, ConvertedType>,
     /// used to map entity_name.column_name input to a custom parser
     pub input_conversions: BTreeMap<String, FnInputTypeConversion>,
-    // TODO: use it
     /// used to map entity_name.column_name output to a custom formatter
     pub output_conversions: BTreeMap<String, FnOutputTypeConversion>,
     /// used to configure default time library
@@ -46,6 +46,7 @@ impl std::default::Default for TypesMapConfig {
     }
 }
 
+/// The TypesMapHelper is used to provide type mapping for entity objects
 pub struct TypesMapHelper {
     pub context: &'static BuilderContext,
 }
