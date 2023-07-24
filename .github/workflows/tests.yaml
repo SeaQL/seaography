@@ -214,6 +214,8 @@ jobs:
                       ./examples/mysql ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example
             - name: Depends on local seaography
               run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
+            - name: Fix Nullable not implemented for Vec<String> and tsvector
+              run: sed -i "24,27d" ./examples/postgres/src/entities/film.rs
             - name: Build example
               working-directory: ./examples/mysql
               run: cargo build
