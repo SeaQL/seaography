@@ -41,7 +41,7 @@ impl EntityCreateOneMutationBuilder {
         format!(
             "{}{}",
             entity_query_field_builder.type_name::<T>(),
-            self.context.entity_create_mutation.mutation_suffix
+            self.context.entity_create_one_mutation.mutation_suffix
         )
     }
 
@@ -72,7 +72,7 @@ impl EntityCreateOneMutationBuilder {
 
                     let mut data = entity_input_builder.parse_object::<T>(
                         &ctx.args
-                            .get(&context.entity_create_mutation.data_field)
+                            .get(&context.entity_create_one_mutation.data_field)
                             .unwrap()
                             .object()?,
                     )?;
@@ -108,7 +108,7 @@ impl EntityCreateOneMutationBuilder {
             },
         )
         .argument(InputValue::new(
-            &context.entity_create_mutation.data_field,
+            &context.entity_create_one_mutation.data_field,
             TypeRef::named_nn(entity_input_builder.insert_type_name::<T>()),
         ))
     }
