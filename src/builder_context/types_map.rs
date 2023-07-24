@@ -5,8 +5,10 @@ use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
 use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
 
-pub type FnInputTypeConversion = Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
-pub type FnOutputTypeConversion = Box<dyn Fn(&sea_orm::sea_query::Value) -> SeaResult<async_graphql::Value> + Send + Sync>;
+pub type FnInputTypeConversion =
+    Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
+pub type FnOutputTypeConversion =
+    Box<dyn Fn(&sea_orm::sea_query::Value) -> SeaResult<async_graphql::Value> + Send + Sync>;
 
 /// Used to provide configuration for TypesMapHelper
 pub struct TypesMapConfig {

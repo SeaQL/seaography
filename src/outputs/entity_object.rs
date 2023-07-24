@@ -176,7 +176,7 @@ impl EntityObjectBuilder {
                             // FIXME: proper error reporting
                             Err(_) => Ok(None),
                         }
-                    })
+                    });
                 }
 
                 match object.get(column) {

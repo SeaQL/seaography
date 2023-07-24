@@ -1,9 +1,7 @@
 use async_graphql::dynamic::{ObjectAccessor, ValueAccessor};
 use sea_orm::{Condition, EntityTrait, Iterable};
 
-use crate::{
-    BuilderContext, EntityObjectBuilder, FilterTypesMapHelper,
-};
+use crate::{BuilderContext, EntityObjectBuilder, FilterTypesMapHelper};
 
 /// utility function used to create the query filter condition
 /// for a SeaORM entity using query filter inputs
@@ -44,7 +42,9 @@ where
         if let Some(filter) = filter {
             let filter = filter.object().unwrap();
 
-            filter_types_map_helper.prepare_column_condition::<T>(condition, &filter, &column).unwrap()
+            filter_types_map_helper
+                .prepare_column_condition::<T>(condition, &filter, &column)
+                .unwrap()
         } else {
             condition
         }
