@@ -173,7 +173,7 @@ impl FilterTypesMapHelper {
         };
 
         let entity_name = entity_object_builder.type_name::<T>();
-        let column_name = entity_object_builder.column_name::<T>(&column);
+        let column_name = entity_object_builder.column_name::<T>(column);
 
         // used to honor overwrites
         if let Some(ty) = self
@@ -238,7 +238,7 @@ impl FilterTypesMapHelper {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
-        let column_name = entity_object_builder.column_name::<T>(&column);
+        let column_name = entity_object_builder.column_name::<T>(column);
 
         let filter_type: Option<FilterType> = self.get_column_filter_type::<T>(column);
 
@@ -402,7 +402,7 @@ impl FilterTypesMapHelper {
             context: self.context,
         };
 
-        let filter_info = match self.get_column_filter_type::<T>(&column) {
+        let filter_info = match self.get_column_filter_type::<T>(column) {
             Some(filter_type) => match filter_type {
                 FilterType::Text => &self.context.filter_types.text_filter_info,
                 FilterType::String => &self.context.filter_types.string_filter_info,
@@ -419,7 +419,7 @@ impl FilterTypesMapHelper {
                     };
 
                     let entity_name = entity_object_builder.type_name::<T>();
-                    let column_name = entity_object_builder.column_name::<T>(&column);
+                    let column_name = entity_object_builder.column_name::<T>(column);
 
                     if let Some(filter_condition_fn) = self
                         .context
