@@ -4,7 +4,8 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait};
 
 use crate::{
-    ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder, SeaResult, TypesMapHelper, prepare_enumeration_condition,
+    prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext,
+    EntityObjectBuilder, SeaResult, TypesMapHelper,
 };
 
 type FnFilterCondition =
@@ -411,7 +412,7 @@ impl FilterTypesMapHelper {
                 FilterType::Id => &self.context.filter_types.id_filter_info,
                 FilterType::Enumeration(_) => {
                     return prepare_enumeration_condition::<T>(filter, column, condition)
-                },
+                }
                 FilterType::Custom(_) => {
                     let entity_object_builder = EntityObjectBuilder {
                         context: self.context,
@@ -420,13 +421,18 @@ impl FilterTypesMapHelper {
                     let entity_name = entity_object_builder.type_name::<T>();
                     let column_name = entity_object_builder.column_name::<T>(&column);
 
-                    if let Some(filter_condition_fn) = self.context.filter_types.condition_functions.get(&format!("{}.{}", entity_name, column_name)) {
-                        return filter_condition_fn(condition, filter)
+                    if let Some(filter_condition_fn) = self
+                        .context
+                        .filter_types
+                        .condition_functions
+                        .get(&format!("{}.{}", entity_name, column_name))
+                    {
+                        return filter_condition_fn(condition, filter);
                     } else {
                         // FIXME: add log warning to console
-                        return Ok(condition)
+                        return Ok(condition);
                     }
-                },
+                }
             },
             None => return Ok(condition),
         };

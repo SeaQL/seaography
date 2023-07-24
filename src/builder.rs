@@ -4,9 +4,9 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateOneMutationBuilder, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, OffsetInputBuilder,
-    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder, FilterTypesMapHelper,
+    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, FilterTypesMapHelper,
+    OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder,
+    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -135,7 +135,7 @@ impl Builder {
             context: self.context,
         };
         let filter_types_map_helper = FilterTypesMapHelper {
-            context: self.context
+            context: self.context,
         };
 
         let enumeration = active_enum_builder.enumeration::<A>();
@@ -188,7 +188,7 @@ impl Builder {
 
         // register input filters
         let filter_types_map_helper = FilterTypesMapHelper {
-            context: self.context
+            context: self.context,
         };
         let schema = filter_types_map_helper
             .get_input_filters()
