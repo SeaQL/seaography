@@ -3,7 +3,7 @@ use crate::{
     EdgeObjectConfig, EntityCreateOneMutationConfig, EntityInputConfig, EntityObjectConfig,
     EntityQueryFieldConfig, FilterInputConfig, OffsetInputConfig, OrderByEnumConfig,
     OrderInputConfig, PageInfoObjectConfig, PageInputConfig, PaginationInfoObjectConfig,
-    PaginationInputConfig,
+    PaginationInputConfig, EntityCreateBatchMutationConfig,
 };
 
 pub mod guards;
@@ -41,7 +41,8 @@ pub struct BuilderContext {
     pub connection_object: ConnectionObjectConfig,
     pub entity_query_field: EntityQueryFieldConfig,
 
-    pub entity_create_mutation: EntityCreateOneMutationConfig,
+    pub entity_create_one_mutation: EntityCreateOneMutationConfig,
+    pub entity_create_batch_mutation: EntityCreateBatchMutationConfig,
     pub entity_input: EntityInputConfig,
 
     pub guards: GuardsConfig,

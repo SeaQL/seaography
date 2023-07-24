@@ -6,7 +6,7 @@ use crate::{
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateOneMutationBuilder, EntityInputBuilder,
     EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, FilterTypesMapHelper,
     OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder,
-    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
+    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, EntityCreateBatchMutationBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -119,8 +119,14 @@ impl Builder {
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
             context: self.context,
         };
-        let create_mutation = entity_create_one_mutation_builder.to_field::<T, A>();
-        self.mutations.push(create_mutation);
+        let create_one_mutation = entity_create_one_mutation_builder.to_field::<T, A>();
+        self.mutations.push(create_one_mutation);
+
+        let entity_create_batch_mutation_builder: EntityCreateBatchMutationBuilder = EntityCreateBatchMutationBuilder {
+            context: self.context,
+        };
+        let create_batch_mutation = entity_create_batch_mutation_builder.to_field::<T, A>();
+        self.mutations.push(create_batch_mutation);
     }
 
     /// used to register a new enumeration to the builder context
