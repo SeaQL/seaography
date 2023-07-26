@@ -95,7 +95,7 @@ impl EntityCreateOneMutationBuilder {
     }
 }
 
-pub fn prepare_active_model<'a, T, A>(
+pub fn prepare_active_model<T, A>(
     entity_input_builder: &EntityInputBuilder,
     entity_object_builder: &EntityObjectBuilder,
     input_object: &ObjectAccessor<'_>,

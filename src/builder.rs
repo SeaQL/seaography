@@ -3,10 +3,11 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, EdgeObjectBuilder, EntityCreateOneMutationBuilder, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, FilterTypesMapHelper,
-    OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder,
-    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, EntityCreateBatchMutationBuilder,
+    CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
+    EntityCreateOneMutationBuilder, EntityInputBuilder, EntityObjectBuilder,
+    EntityQueryFieldBuilder, FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder,
+    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -122,9 +123,10 @@ impl Builder {
         let create_one_mutation = entity_create_one_mutation_builder.to_field::<T, A>();
         self.mutations.push(create_one_mutation);
 
-        let entity_create_batch_mutation_builder: EntityCreateBatchMutationBuilder = EntityCreateBatchMutationBuilder {
-            context: self.context,
-        };
+        let entity_create_batch_mutation_builder: EntityCreateBatchMutationBuilder =
+            EntityCreateBatchMutationBuilder {
+                context: self.context,
+            };
         let create_batch_mutation = entity_create_batch_mutation_builder.to_field::<T, A>();
         self.mutations.push(create_batch_mutation);
     }
