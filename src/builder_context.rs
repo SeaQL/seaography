@@ -1,9 +1,9 @@
 use crate::{
     ActiveEnumConfig, ActiveEnumFilterInputConfig, ConnectionObjectConfig, CursorInputConfig,
-    EdgeObjectConfig, EntityCreateOneMutationConfig, EntityInputConfig, EntityObjectConfig,
-    EntityQueryFieldConfig, FilterInputConfig, OffsetInputConfig, OrderByEnumConfig,
-    OrderInputConfig, PageInfoObjectConfig, PageInputConfig, PaginationInfoObjectConfig,
-    PaginationInputConfig, EntityCreateBatchMutationConfig,
+    EdgeObjectConfig, EntityCreateBatchMutationConfig, EntityCreateOneMutationConfig,
+    EntityInputConfig, EntityObjectConfig, EntityQueryFieldConfig, FilterInputConfig,
+    OffsetInputConfig, OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
+    PaginationInfoObjectConfig, PaginationInputConfig,
 };
 
 pub mod guards;

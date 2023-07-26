@@ -97,7 +97,7 @@ impl EntityCreateBatchMutationBuilder {
                     Ok(Some(FieldValue::list(
                         results
                             .into_iter()
-                            .map(|item: T::Model| FieldValue::owned_any(item)),
+                            .map(FieldValue::owned_any),
                     )))
                 })
             },
