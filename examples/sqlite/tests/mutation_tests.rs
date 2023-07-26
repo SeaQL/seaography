@@ -220,3 +220,105 @@ async fn test_complex_insert_one() {
     );
 }
 
+#[tokio::test]
+async fn test_create_batch_mutation() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmText{
+                      nodes {
+                        filmId
+                          title
+                        description
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+            {
+                "filmText": {
+                "nodes": []
+                }
+            }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    filmTextCreateBatch(
+                      data: [
+                        { filmId: 1, title: "TEST 1", description: "TEST DESC 1" }
+                        { filmId: 2, title: "TEST 2", description: "TEST DESC 2" }
+                      ]
+                    ) {
+                      filmId
+                      title
+                      description
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+            {
+                "filmTextCreateBatch": [
+                {
+                    "filmId": 1,
+                    "title": "TEST 1",
+                    "description": "TEST DESC 1"
+                },
+                {
+                    "filmId": 2,
+                    "title": "TEST 2",
+                    "description": "TEST DESC 2"
+                }
+                ]
+            }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmText{
+                      nodes {
+                        filmId
+                          title
+                        description
+                      }
+                    }
+                  }
+                "#,
+            )
+            .await,
+        r#"
+            {
+                "filmText": {
+                "nodes": [
+                    {
+                    "filmId": 1,
+                    "title": "TEST 1",
+                    "description": "TEST DESC 1"
+                    },
+                    {
+                    "filmId": 2,
+                    "title": "TEST 2",
+                    "description": "TEST DESC 2"
+                    }
+                ]
+                }
+            }
+            "#,
+    );
+}

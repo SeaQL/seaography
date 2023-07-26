@@ -1,13 +1,11 @@
-use std::collections::BTreeMap;
-
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef, ValueAccessor};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Iterable,
-    PrimaryKeyToColumn, PrimaryKeyTrait, TransactionTrait,
+    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, TransactionTrait,
 };
 
 use crate::{
-    BuilderContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, SeaResult,
+    prepare_active_model, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
+    EntityQueryFieldBuilder,
 };
 
 /// The configuration structure of EntityCreateBatchMutationBuilder
@@ -68,7 +66,7 @@ impl EntityCreateBatchMutationBuilder {
 
         Field::new(
             self.type_name::<T>(),
-            TypeRef::named_nn(entity_object_builder.basic_type_name::<T>()),
+            TypeRef::named_nn_list_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
                 FieldFuture::new(async move {
                     let db = ctx.data::<DatabaseConnection>()?;
@@ -77,50 +75,30 @@ impl EntityCreateBatchMutationBuilder {
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
 
-                    let items = ctx
+                    let mut results: Vec<_> = Vec::new();
+                    for input_object in ctx
                         .args
                         .get(&context.entity_create_batch_mutation.data_field)
                         .unwrap()
                         .list()?
                         .iter()
-                        .map(|item: ValueAccessor<'_>| {
-                            entity_input_builder.parse_object::<T>(&item.object()?)
-                        })
-                        .collect::<SeaResult<Vec<BTreeMap<String, sea_orm::sea_query::Value>>>>()?;
-
-
-                    let mut results: Vec<_> = Vec::new();
-                    for mut item in items.into_iter() {
-                        let mut active_model = A::default();
-
-                        for column in T::Column::iter() {
-                            // used to skip auto created primary keys
-                            let auto_increment =
-                                match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
-                                    Some(_) => T::PrimaryKey::auto_increment(),
-                                    None => false,
-                                };
-
-                            if auto_increment {
-                                continue;
-                            }
-
-                            match item.remove(&entity_object_builder.column_name::<T>(&column)) {
-                                Some(value) => {
-                                    active_model.set(column, value);
-                                }
-                                None => continue,
-                            }
-                        }
-                        //
-
+                    {
+                        let active_model = prepare_active_model::<T, A>(
+                            &entity_input_builder,
+                            &entity_object_builder,
+                            &(input_object.object()?),
+                        )?;
                         let result = active_model.insert(&transaction).await?;
-                        results.push(FieldValue::owned_any(result));
+                        results.push(result);
                     }
 
                     transaction.commit().await?;
 
-                    Ok(Some(FieldValue::list(results)))
+                    Ok(Some(FieldValue::list(
+                        results
+                            .into_iter()
+                            .map(|item: T::Model| FieldValue::owned_any(item)),
+                    )))
                 })
             },
         )

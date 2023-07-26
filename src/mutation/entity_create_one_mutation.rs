@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Iterable,
     PrimaryKeyToColumn, PrimaryKeyTrait,
@@ -69,37 +69,18 @@ impl EntityCreateOneMutationBuilder {
                 FieldFuture::new(async move {
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
-
-                    let mut data = entity_input_builder.parse_object::<T>(
-                        &ctx.args
-                            .get(&context.entity_create_one_mutation.data_field)
-                            .unwrap()
-                            .object()?,
-                    )?;
-
-                    let mut active_model = A::default();
-
-                    for column in T::Column::iter() {
-                        // used to skip auto created primary keys
-                        let auto_increment =
-                            match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
-                                Some(_) => T::PrimaryKey::auto_increment(),
-                                None => false,
-                            };
-
-                        if auto_increment {
-                            continue;
-                        }
-
-                        match data.remove(&entity_object_builder.column_name::<T>(&column)) {
-                            Some(value) => {
-                                active_model.set(column, value);
-                            }
-                            None => continue,
-                        }
-                    }
-
                     let db = ctx.data::<DatabaseConnection>()?;
+                    let value_accessor = ctx
+                        .args
+                        .get(&context.entity_create_one_mutation.data_field)
+                        .unwrap();
+                    let input_object = &value_accessor.object()?;
+
+                    let active_model = prepare_active_model::<T, A>(
+                        &entity_input_builder,
+                        &entity_object_builder,
+                        input_object,
+                    )?;
 
                     let result = active_model.insert(db).await?;
 
@@ -112,4 +93,41 @@ impl EntityCreateOneMutationBuilder {
             TypeRef::named_nn(entity_input_builder.insert_type_name::<T>()),
         ))
     }
+}
+
+pub fn prepare_active_model<'a, T, A>(
+    entity_input_builder: &EntityInputBuilder,
+    entity_object_builder: &EntityObjectBuilder,
+    input_object: &ObjectAccessor<'_>,
+) -> async_graphql::Result<A>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+    <T as EntityTrait>::Model: IntoActiveModel<A>,
+    A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+{
+    let mut data = entity_input_builder.parse_object::<T>(input_object)?;
+
+    let mut active_model = A::default();
+
+    for column in T::Column::iter() {
+        // used to skip auto created primary keys
+        let auto_increment = match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
+            Some(_) => T::PrimaryKey::auto_increment(),
+            None => false,
+        };
+
+        if auto_increment {
+            continue;
+        }
+
+        match data.remove(&entity_object_builder.column_name::<T>(&column)) {
+            Some(value) => {
+                active_model.set(column, value);
+            }
+            None => continue,
+        }
+    }
+
+    Ok(active_model)
 }
