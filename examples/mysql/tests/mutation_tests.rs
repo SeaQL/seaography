@@ -224,11 +224,10 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    filmText{
+                    language {
                       nodes {
-                        filmId
-                          title
-                        description
+                        languageId
+                        name
                       }
                     }
                 }
@@ -237,8 +236,33 @@ async fn test_create_batch_mutation() {
             .await,
         r#"
             {
-                "filmText": {
-                "nodes": []
+                "language": {
+                "nodes": [
+                    {
+                        "languageId": 1,
+                        "name": "English"
+                    },
+                    {
+                        "languageId": 2,
+                        "name": "Italian"
+                    },
+                    {
+                        "languageId": 3,
+                        "name": "Japanese"
+                    },
+                    {
+                        "languageId": 4,
+                        "name": "Mandarin"
+                    },
+                    {
+                        "languageId": 5,
+                        "name": "French"
+                    },
+                    {
+                        "languageId": 6,
+                        "name": "German"
+                    }
+                ]
                 }
             }
             "#,
@@ -249,15 +273,14 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 mutation {
-                    filmTextCreateBatch(
+                    languageCreateBatch(
                       data: [
-                        { filmId: 1, title: "TEST 1", description: "TEST DESC 1" }
-                        { filmId: 2, title: "TEST 2", description: "TEST DESC 2" }
+                        { languageId: 7, name: "Swedish", lastUpdate: "2030-01-12 21:50:05 UTC" }
+                        { languageId: 8, name: "Danish", lastUpdate: "2030-01-12 21:50:05 UTC" }
                       ]
                     ) {
-                      filmId
-                      title
-                      description
+                      languageId
+                      name
                     }
                 }
                 "#,
@@ -265,16 +288,14 @@ async fn test_create_batch_mutation() {
             .await,
         r#"
             {
-                "filmTextCreateBatch": [
+                "languageCreateBatch": [
                 {
-                    "filmId": 1,
-                    "title": "TEST 1",
-                    "description": "TEST DESC 1"
+                    "languageId": 7,
+                    "name": "Swedish"
                 },
                 {
-                    "filmId": 2,
-                    "title": "TEST 2",
-                    "description": "TEST DESC 2"
+                    "languageId": 8,
+                    "name": "Danish"
                 }
                 ]
             }
@@ -286,34 +307,55 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    filmText{
+                    language {
                       nodes {
-                        filmId
-                          title
-                        description
+                        languageId
+                        name
                       }
                     }
-                  }
+                }
                 "#,
             )
             .await,
         r#"
-            {
-                "filmText": {
-                "nodes": [
-                    {
-                    "filmId": 1,
-                    "title": "TEST 1",
-                    "description": "TEST DESC 1"
-                    },
-                    {
-                    "filmId": 2,
-                    "title": "TEST 2",
-                    "description": "TEST DESC 2"
-                    }
-                ]
+        {
+            "language": {
+              "nodes": [
+                {
+                  "languageId": 1,
+                  "name": "English"
+                },
+                {
+                  "languageId": 2,
+                  "name": "Italian"
+                },
+                {
+                  "languageId": 3,
+                  "name": "Japanese"
+                },
+                {
+                  "languageId": 4,
+                  "name": "Mandarin"
+                },
+                {
+                  "languageId": 5,
+                  "name": "French"
+                },
+                {
+                  "languageId": 6,
+                  "name": "German"
+                },
+                {
+                  "languageId": 7,
+                  "name": "Swedish"
+                },
+                {
+                  "languageId": 8,
+                  "name": "Danish"
                 }
+              ]
             }
-            "#,
-    );
+        }
+        "#,
+    )
 }

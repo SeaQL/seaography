@@ -95,9 +95,7 @@ impl EntityCreateBatchMutationBuilder {
                     transaction.commit().await?;
 
                     Ok(Some(FieldValue::list(
-                        results
-                            .into_iter()
-                            .map(FieldValue::owned_any),
+                        results.into_iter().map(FieldValue::owned_any),
                     )))
                 })
             },

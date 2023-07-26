@@ -21,11 +21,6 @@ pub struct Model {
     #[sea_orm(column_type = "Decimal(Some((5, 2)))")]
     pub replacement_cost: Decimal,
     pub rating: Option<Rating>,
-    #[sea_orm(
-        column_type = "custom(\"SET ('Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes')\")",
-        nullable
-    )]
-    pub special_features: Option<String>,
     pub last_update: DateTimeUtc,
 }
 
