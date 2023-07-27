@@ -238,32 +238,32 @@ async fn test_create_batch_mutation() {
         r#"
             {
                 "language": {
-                "nodes": [
-                    {
+                    "nodes": [
+                        {
                         "languageId": 1,
                         "name": "English             "
-                    },
-                    {
+                        },
+                        {
                         "languageId": 2,
                         "name": "Italian             "
-                    },
-                    {
+                        },
+                        {
                         "languageId": 3,
-                        "name": "Japanese             "
-                    },
-                    {
+                        "name": "Japanese            "
+                        },
+                        {
                         "languageId": 4,
-                        "name": "Mandarin             "
-                    },
-                    {
+                        "name": "Mandarin            "
+                        },
+                        {
                         "languageId": 5,
-                        "name": "French             "
-                    },
-                    {
+                        "name": "French              "
+                        },
+                        {
                         "languageId": 6,
-                        "name": "German             "
-                    }
-                ]
+                        "name": "German              "
+                        }
+                    ]
                 }
             }
             "#,
@@ -319,42 +319,43 @@ async fn test_create_batch_mutation() {
             )
             .await,
         r#"
+
         {
             "language": {
-              "nodes": [
-                {
-                  "languageId": 1,
-                  "name": "English             "
-                },
-                {
-                  "languageId": 2,
-                  "name": "Italian             "
-                },
-                {
-                  "languageId": 3,
-                  "name": "Japanese             "
-                },
-                {
-                  "languageId": 4,
-                  "name": "Mandarin             "
-                },
-                {
-                  "languageId": 5,
-                  "name": "French             "
-                },
-                {
-                  "languageId": 6,
-                  "name": "German             "
-                },
-                {
-                  "languageId": 7,
-                  "name": "Swedish"
-                },
-                {
-                  "languageId": 8,
-                  "name": "Danish"
-                }
-              ]
+                "nodes": [
+                    {
+                        "languageId": 1,
+                        "name": "English             "
+                    },
+                    {
+                        "languageId": 2,
+                        "name": "Italian             "
+                    },
+                    {
+                        "languageId": 3,
+                        "name": "Japanese            "
+                    },
+                    {
+                        "languageId": 4,
+                        "name": "Mandarin            "
+                    },
+                    {
+                        "languageId": 5,
+                        "name": "French              "
+                    },
+                    {
+                        "languageId": 6,
+                        "name": "German              "
+                    },
+                    {
+                        "languageId": 7,
+                        "name": "Swedish             "
+                    },
+                    {
+                        "languageId": 8,
+                        "name": "Danish              "
+                    }
+                ]
             }
         }
         "#,
