@@ -241,27 +241,27 @@ async fn test_create_batch_mutation() {
                 "nodes": [
                     {
                         "languageId": 1,
-                        "name": "English"
+                        "name": "English             "
                     },
                     {
                         "languageId": 2,
-                        "name": "Italian"
+                        "name": "Italian             "
                     },
                     {
                         "languageId": 3,
-                        "name": "Japanese"
+                        "name": "Japanese             "
                     },
                     {
                         "languageId": 4,
-                        "name": "Mandarin"
+                        "name": "Mandarin             "
                     },
                     {
                         "languageId": 5,
-                        "name": "French"
+                        "name": "French             "
                     },
                     {
                         "languageId": 6,
-                        "name": "German"
+                        "name": "German             "
                     }
                 ]
                 }
@@ -324,27 +324,27 @@ async fn test_create_batch_mutation() {
               "nodes": [
                 {
                   "languageId": 1,
-                  "name": "English"
+                  "name": "English             "
                 },
                 {
                   "languageId": 2,
-                  "name": "Italian"
+                  "name": "Italian             "
                 },
                 {
                   "languageId": 3,
-                  "name": "Japanese"
+                  "name": "Japanese             "
                 },
                 {
                   "languageId": 4,
-                  "name": "Mandarin"
+                  "name": "Mandarin             "
                 },
                 {
                   "languageId": 5,
-                  "name": "French"
+                  "name": "French             "
                 },
                 {
                   "languageId": 6,
-                  "name": "German"
+                  "name": "German             "
                 },
                 {
                   "languageId": 7,
