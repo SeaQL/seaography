@@ -32,9 +32,9 @@ impl EntityObjectViaRelationBuilder {
     {
         let context: &'static BuilderContext = self.context;
         let to_relation_definition = <T as Related<R>>::to();
-        let via_relation_definition = match <T as Related<R>>::via() {
-            Some(def) => def,
-            None => <T as Related<R>>::to(),
+        let (via_relation_definition, is_via_relation) = match <T as Related<R>>::via() {
+            Some(def) => (def, true),
+            None => (<T as Related<R>>::to(), false),
         };
 
         let entity_object_builder = EntityObjectBuilder { context };
@@ -134,7 +134,11 @@ impl EntityObjectViaRelationBuilder {
                             R::find()
                         };
 
-                        let condition = Condition::all().add(from_col.eq(parent.get(from_col)));
+                        let condition = if is_via_relation {
+                            Condition::all().add(from_col.eq(parent.get(from_col)))
+                        } else {
+                            Condition::all().add(to_col.eq(parent.get(from_col)))
+                        };
 
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);

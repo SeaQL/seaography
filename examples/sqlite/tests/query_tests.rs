@@ -637,6 +637,11 @@ async fn related_queries_filters() {
                             lastName
                           }
                         }
+                        category {
+                          nodes {
+                            name
+                          }
+                        }
                       }
                     }
                 }
@@ -649,8 +654,8 @@ async fn related_queries_filters() {
               "nodes": [
                 {
                   "title": "ACADEMY DINOSAUR",
-                  "description": "A Epic Drama of a Feminist And a Mad Scientist who must Battle a Teacher in The Canadian Rockies",
-                  "releaseYear": 2006,
+                  "description": "An Epic Drama of a Feminist And a Mad Scientist who must Battle a Teacher in The Canadian Rockies",
+                  "releaseYear": "2006",
                   "actor": {
                     "nodes": [
                       {
@@ -692,6 +697,13 @@ async fn related_queries_filters() {
                       {
                         "firstName": "MARY",
                         "lastName": "KEITEL"
+                      }
+                    ]
+                  },
+                  "category": {
+                    "nodes": [
+                      {
+                        "name": "Documentary"
                       }
                     ]
                   }
