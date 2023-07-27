@@ -134,7 +134,7 @@ impl EntityObjectViaRelationBuilder {
                             R::find()
                         };
 
-                        let condition = Condition::all().add(to_col.eq(parent.get(from_col)));
+                        let condition = Condition::all().add(from_col.eq(parent.get(from_col)));
 
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
