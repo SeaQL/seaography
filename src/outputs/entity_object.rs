@@ -29,7 +29,7 @@ impl std::default::Default for EntityObjectConfig {
     }
 }
 
-use crate::{ActiveEnumBuilder, BuilderContext};
+use crate::{ActiveEnumBuilder, BuilderContext, GuardAction};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {
@@ -160,15 +160,18 @@ impl EntityObjectBuilder {
                 let guard_flag = if let Some(guard) = guard {
                     (*guard)(&ctx)
                 } else {
-                    false
+                    GuardAction::Allow
                 };
 
-                if guard_flag {
+                if let GuardAction::Block(reason) = guard_flag {
                     return FieldFuture::new(async move {
-                        if guard_flag {
-                            Err(Error::new("Field guard triggered."))
-                        } else {
-                            Ok(Some(Value::from(false)))
+                        match reason {
+                            Some(reason) => {
+                                Err::<Option<()>, async_graphql::Error>(Error::new(reason))
+                            }
+                            None => Err::<Option<()>, async_graphql::Error>(Error::new(
+                                "Field guard triggered.",
+                            )),
                         }
                     });
                 }

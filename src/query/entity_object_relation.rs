@@ -10,7 +10,7 @@ use sea_orm::{
 
 use crate::{
     apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
-    EntityObjectBuilder, FilterInputBuilder, OrderInputBuilder,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, OrderInputBuilder,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -65,11 +65,18 @@ impl EntityObjectRelationBuilder {
                         let guard_flag = if let Some(guard) = guard {
                             (*guard)(&ctx)
                         } else {
-                            false
+                            GuardAction::Allow
                         };
 
-                        if guard_flag {
-                            return Err(Error::new("Entity guard triggered."));
+                        if let GuardAction::Block(reason) = guard_flag {
+                            return match reason {
+                                Some(reason) => {
+                                    Err::<Option<_>, async_graphql::Error>(Error::new(reason))
+                                }
+                                None => Err::<Option<_>, async_graphql::Error>(Error::new(
+                                    "Entity guard triggered.",
+                                )),
+                            };
                         }
 
                         let parent: &T::Model = ctx
@@ -104,11 +111,18 @@ impl EntityObjectRelationBuilder {
                         let guard_flag = if let Some(guard) = guard {
                             (*guard)(&ctx)
                         } else {
-                            false
+                            GuardAction::Allow
                         };
 
-                        if guard_flag {
-                            return Err(Error::new("Entity guard triggered."));
+                        if let GuardAction::Block(reason) = guard_flag {
+                            return match reason {
+                                Some(reason) => {
+                                    Err::<Option<_>, async_graphql::Error>(Error::new(reason))
+                                }
+                                None => Err::<Option<_>, async_graphql::Error>(Error::new(
+                                    "Entity guard triggered.",
+                                )),
+                            };
                         }
 
                         // FIXME: optimize union queries
