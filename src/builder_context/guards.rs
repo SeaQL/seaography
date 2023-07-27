@@ -13,4 +13,10 @@ pub struct GuardsConfig {
 }
 
 /// guards are functions that receive the application context
-pub type FnGuard = Box<dyn Fn(&ResolverContext) -> bool + Sync + Send>;
+pub type FnGuard = Box<dyn Fn(&ResolverContext) -> GuardAction + Sync + Send>;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum GuardAction {
+    Block(Option<String>),
+    Allow,
+}
