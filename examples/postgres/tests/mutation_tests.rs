@@ -292,11 +292,11 @@ async fn test_create_batch_mutation() {
                 "languageCreateBatch": [
                 {
                     "languageId": 7,
-                    "name": "Swedish"
+                    "name": "Swedish             "
                 },
                 {
                     "languageId": 8,
-                    "name": "Danish"
+                    "name": "Danish              "
                 }
                 ]
             }
