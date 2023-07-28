@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
-    let entities_paths = std::fs::read_dir(entities_path)
+    let mut entities_paths: Vec<_> = std::fs::read_dir(entities_path)
         .unwrap()
         .into_iter()
         .filter(|r| r.is_ok())
@@ -26,9 +26,12 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             } else {
                 false
             }
-        });
+        })
+        .collect();
+    entities_paths.sort();
 
     let entities: Vec<EntityDefinition> = entities_paths
+        .into_iter()
         .map(|path| {
             let file_name = path.file_name().unwrap().to_str().unwrap();
             parse_entity(file_name.into())
