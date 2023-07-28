@@ -619,6 +619,99 @@ async fn related_queries_filters() {
           }
         }
         "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    film(filters:{filmId: {eq: 1}}) {
+                      nodes {
+                        title
+                        description
+                        releaseYear
+                        actor {
+                          nodes {
+                            firstName
+                            lastName
+                          }
+                        }
+                        category {
+                          nodes {
+                            name
+                          }
+                        }
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "film": {
+              "nodes": [
+                {
+                  "title": "ACADEMY DINOSAUR",
+                  "description": "An Epic Drama of a Feminist And a Mad Scientist who must Battle a Teacher in The Canadian Rockies",
+                  "releaseYear": "2006",
+                  "actor": {
+                    "nodes": [
+                      {
+                        "firstName": "PENELOPE",
+                        "lastName": "GUINESS"
+                      },
+                      {
+                        "firstName": "CHRISTIAN",
+                        "lastName": "GABLE"
+                      },
+                      {
+                        "firstName": "LUCILLE",
+                        "lastName": "TRACY"
+                      },
+                      {
+                        "firstName": "SANDRA",
+                        "lastName": "PECK"
+                      },
+                      {
+                        "firstName": "JOHNNY",
+                        "lastName": "CAGE"
+                      },
+                      {
+                        "firstName": "MENA",
+                        "lastName": "TEMPLE"
+                      },
+                      {
+                        "firstName": "WARREN",
+                        "lastName": "NOLTE"
+                      },
+                      {
+                        "firstName": "OPRAH",
+                        "lastName": "KILMER"
+                      },
+                      {
+                        "firstName": "ROCK",
+                        "lastName": "DUKAKIS"
+                      },
+                      {
+                        "firstName": "MARY",
+                        "lastName": "KEITEL"
+                      }
+                    ]
+                  },
+                  "category": {
+                    "nodes": [
+                      {
+                        "name": "Documentary"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+        }
+        "#,
     )
 }
 
