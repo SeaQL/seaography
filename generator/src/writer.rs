@@ -153,11 +153,7 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
 ) -> std::io::Result<()> {
     let file_path = path.as_ref().join("Cargo.toml");
 
-    let ver = format!(
-        "^{}.{}.0",
-        env!("CARGO_PKG_VERSION_MAJOR"),
-        env!("CARGO_PKG_VERSION_MINOR")
-    );
+    let ver = env!("CARGO_PKG_VERSION");
 
     let content = match framework {
         WebFrameworkEnum::Actix => include_str!("./templates/actix_cargo.toml"),
