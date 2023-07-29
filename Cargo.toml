@@ -7,7 +7,7 @@ members = [
 
 [package]
 name = "seaography"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 edition = "2021"
 rust-version = "1.60"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
