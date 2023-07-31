@@ -8,8 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## 1.0.0 - Pending
 
 `1.0.0-rc.1`: 2023-07-28
+`1.0.0-rc.2`: 2023-07-29
 
 Introduction the functional API of Seaography. Warning, this version has breaking changes, but it was a sacrifice in order to make the project easier to maintain. With this version we have support for field guards and field renames.
+
+### New Features
+
+* Functional API
+* Field renames
+* Field guards
 
 ### Breaking changes
 
@@ -26,12 +33,6 @@ Introduction the functional API of Seaography. Warning, this version has breakin
   The Dataloader optimizations are going to be added in future versions
 
 * Some renames in Connection node fields, and pagination filtering
-
-### New Features
-
-* Functional API
-* Field renames
-* Field guards
 
 ## 0.3.0 - 2022-12-02
 
