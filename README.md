@@ -40,7 +40,7 @@
 
 ```sh
 cargo install sea-orm-cli@^0.12 # used to generate entities
-cargo install seaography-cli@1
+cargo install seaography-cli@^1.0.0-rc.2
 ```
 
 ### MySQL
