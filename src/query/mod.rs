@@ -1,3 +1,6 @@
+pub mod loader;
+pub use loader::*;
+
 pub mod entity_query_field;
 pub use entity_query_field::*;
 

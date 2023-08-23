@@ -1,19 +1,12 @@
-use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
+use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
-use seaography_postgres_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-        OrmDataloader {
-            db: database.clone(),
-        },
-        tokio::spawn,
-    );
     let schema =
-        seaography_postgres_example::query_root::schema(database, orm_dataloader, None, None)
+        seaography_postgres_example::query_root::schema(database, None, None)
             .unwrap();
 
     schema

@@ -107,16 +107,19 @@ impl EntityQueryFieldBuilder {
                     }
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);
+                    let filters = get_filter_conditions::<T>(context, filters);
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                    let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
                     let pagination = ctx.args.get(&context.entity_query_field.pagination);
+                    let pagination = PaginationInputBuilder { context }.parse_object(pagination);
 
                     let stmt = T::find();
-                    let stmt = stmt.filter(get_filter_conditions::<T>(context, filters));
-                    let stmt = apply_order(context, stmt, order_by);
+                    let stmt = stmt.filter(filters);
+                    let stmt = apply_order(stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;
 
-                    let connection = apply_pagination::<T>(context, db, stmt, pagination).await?;
+                    let connection = apply_pagination::<T>(db, stmt, pagination).await?;
 
                     Ok(Some(FieldValue::owned_any(connection)))
                 })

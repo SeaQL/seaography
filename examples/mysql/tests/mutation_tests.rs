@@ -3,17 +3,10 @@ use sea_orm::Database;
 use seaography_mysql_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
-        .await
-        .unwrap();
-    let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-        OrmDataloader {
-            db: database.clone(),
-        },
-        tokio::spawn,
-    );
+    let database = Database::connect("sqlite://sakila.db").await.unwrap();
     let schema =
-        seaography_mysql_example::query_root::schema(database, orm_dataloader, None, None).unwrap();
+        seaography_sqlite_example::query_root::schema(database, None, None)
+            .unwrap();
 
     schema
 }

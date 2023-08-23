@@ -3,7 +3,7 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use crate::BuilderContext;
 
 /// used to hold information about cursor pagination
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CursorInput {
     pub cursor: Option<String>,
     pub limit: u64,

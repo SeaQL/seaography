@@ -12,7 +12,6 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     quote! {
         use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
         use async_graphql::{
-            dataloader::DataLoader,
             http::{playground_source, GraphQLPlaygroundConfig},
             dynamic::*,
         };
@@ -20,7 +19,6 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
         use dotenv::dotenv;
         use lazy_static::lazy_static;
         use sea_orm::Database;
-        use #crate_name_token::*;
         use std::env;
 
         lazy_static! {
@@ -61,14 +59,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .await
                 .expect("Fail to initialize database connection");
 
-            let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-                OrmDataloader {
-                    db: database.clone(),
-                },
-                tokio::spawn,
-            );
-
-            let schema = #crate_name_token::query_root::schema(database, orm_dataloader, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
+            let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
 
             println!("Visit GraphQL Playground at http://{}", *URL);
 
