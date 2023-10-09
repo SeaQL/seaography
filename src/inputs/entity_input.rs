@@ -7,6 +7,7 @@ use crate::{BuilderContext, EntityObjectBuilder, SeaResult, TypesMapHelper};
 
 /// The configuration structure of EntityInputBuilder
 pub struct EntityInputConfig {
+
     /// suffix that is appended on insert input objects
     pub insert_suffix: String,
     /// names of "{entity}.{column}" you want to skip the insert input to be generated

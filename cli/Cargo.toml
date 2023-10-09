@@ -1,6 +1,6 @@
 [package]
 name = "seaography-cli"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 edition = "2021"
 rust-version = "1.60"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
@@ -15,5 +15,5 @@ categories = ["database"]
 [dependencies]
 async-std = { version = "1.12.0", features = [ "attributes", "tokio1" ] }
 clap = { version = "4.3.19", features = ["derive"] }
-seaography-generator = { version = "^1.0.0-rc.1", path = "../generator" }
+seaography-generator = { version = "^1.0.0-rc.2", path = "../generator" }
 url = "2.4.0"
