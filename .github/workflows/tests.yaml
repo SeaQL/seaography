@@ -1,284 +1,276 @@
 name: tests
-
-on:
-    pull_request:
-        paths-ignore:
-            - "**.md"
-            - ".github/ISSUE_TEMPLATE/**"
-    push:
-        paths-ignore:
-            - "**.md"
-            - ".github/ISSUE_TEMPLATE/**"
-        branches:
-            - main
-            - pr/**/ci
-
+'on':
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - .github/ISSUE_TEMPLATE/**
+  push:
+    paths-ignore:
+      - '**.md'
+      - .github/ISSUE_TEMPLATE/**
+    branches:
+      - main
+      - pr/**/ci
 concurrency:
-    group: ${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}
-    cancel-in-progress: true
-
+  group: '${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}'
+  cancel-in-progress: true
 env:
-    CARGO_TERM_COLOR: always
-
+  CARGO_TERM_COLOR: always
 jobs:
-    check:
-        name: Check
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - uses: actions-rs/cargo@v1
-              with:
-                  command: check
-    test:
-        name: Test
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - uses: actions-rs/cargo@v1
-              with:
-                  command: test
-                  args: "--workspace"
-    fmt:
-        name: Format
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - run: rustup component add rustfmt
-            - uses: actions-rs/cargo@v1
-              with:
-                  command: fmt
-                  args: "--all -- --check"
-    clippy:
-        name: Lint
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - run: rustup component add clippy
-            - uses: actions-rs/cargo@v1
-              with:
-                  command: clippy
-                  args: "-- -D warnings"
-    integration-sqlite-poem:
-        name: SQLite integration tests
-        runs-on: ubuntu-latest
-        needs:
-            - check
-            - test
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                profile: minimal
-                toolchain: stable
-                override: true
-            - name: Install sea-orm-cli
-              uses: baptiste0928/cargo-install@v2
-              with:
-                crate: sea-orm-cli
-                version: '0.12.0-rc.5'
-            - name: Remove generated folder
-              run: rm -rf ./examples/sqlite/src
-            - name: Copy sample database
-              run: cp ./examples/sqlite/sakila.db .
-            - name: Generate entities
-              run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db --seaography
-            - name: Generate Seaography project
-              uses: actions-rs/cargo@v1
-              with:
-                  command: run
-                  args: >
-                      --package seaography-cli --
-                      ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f poem
-            - name: Depends on local seaography
-              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
-            - name: Build example
-              working-directory: ./examples/sqlite
-              run: cargo build
-            - name: Integration tests
-              working-directory: ./examples/sqlite
-              run: cargo test
-
-    integration-sqlite-actix:
-        name: SQLite integration tests
-        runs-on: ubuntu-latest
-        needs:
-            - check
-            - test
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - name: Install sea-orm-cli
-              uses: baptiste0928/cargo-install@v2
-              with:
-                crate: sea-orm-cli
-                version: '0.12.0-rc.5'
-            - name: Remove generated folder
-              run: rm -rf ./examples/sqlite/src
-            - name: Copy sample database
-              run: cp ./examples/sqlite/sakila.db .
-            - name: Generate entities
-              run: sea-orm-cli generate entity -o examples/sqlite/src/entities -u sqlite://sakila.db --seaography
-            - name: Generate Seaography project
-              uses: actions-rs/cargo@v1
-              with:
-                  command: run
-                  args: >
-                      --package seaography-cli --
-                      ./examples/sqlite ./examples/sqlite/src/entities sqlite://sakila.db seaography-sqlite-example -f actix
-            - name: Depends on local seaography
-              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
-            - name: Build example
-              working-directory: ./examples/sqlite
-              run: cargo build
-            - name: Integration tests
-              working-directory: ./examples/sqlite
-              run: cargo test
-
-    integration-mysql:
-        name: MySQL integration tests
-        runs-on: ubuntu-latest
-        needs:
-            - check
-            - test
-        services:
-            mysql:
-                image: "mysql:8.0"
-                env:
-                    MYSQL_HOST: 127.0.0.1
-                    MYSQL_DB: mysql
-                    MYSQL_USER: sea
-                    MYSQL_PASSWORD: sea
-                    MYSQL_ALLOW_EMPTY_PASSWORD: yes
-                    MYSQL_ROOT_PASSWORD: ""
-                ports:
-                    - "3306:3306"
-                options: >-
-                    --health-cmd="mysqladmin ping" --health-interval=10s
-                    --health-timeout=5s --health-retries=3
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - name: Install sea-orm-cli
-              uses: baptiste0928/cargo-install@v2
-              with:
-                crate: sea-orm-cli
-                version: '0.12.0-rc.5'
-            - name: Remove generated folder
-              run: rm -rf ./examples/mysql/src
-            - name: Create DB
-              run: mysql -uroot -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
-            - name: Grant Privilege
-              run: mysql -uroot -h 127.0.0.1 mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'sea'@'%'"
-            - name: Import DB Schema
-              run: mysql -uroot -h 127.0.0.1 sakila < sakila-schema.sql
-              working-directory: ./examples/mysql
-            - name: Import DB Data
-              run: mysql -uroot -h 127.0.0.1 sakila < sakila-data.sql
-              working-directory: ./examples/mysql
-            - name: Generate entities
-              run: sea-orm-cli generate entity -o ./examples/mysql/src/entities -u mysql://sea:sea@127.0.0.1/sakila --seaography
-            - name: Generate Seaography project
-              uses: actions-rs/cargo@v1
-              with:
-                  command: run
-                  args: >
-                      --package seaography-cli --
-                      ./examples/mysql ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila seaography-mysql-example
-            - name: Depends on local seaography
-              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
-            - name: Build example
-              working-directory: ./examples/mysql
-              run: cargo build
-            - name: Integration tests
-              working-directory: ./examples/mysql
-              run: cargo test
-
-    integration-postgres:
-        name: Postgres integration tests
-        runs-on: ubuntu-latest
-        needs:
-            - check
-            - test
-        services:
-            mysql:
-                image: "postgres:14.4"
-                env:
-                    POSTGRES_HOST: 127.0.0.1
-                    POSTGRES_USER: sea
-                    POSTGRES_PASSWORD: sea
-                ports:
-                    - "5432:5432"
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions-rs/toolchain@v1
-              with:
-                  profile: minimal
-                  toolchain: stable
-                  override: true
-            - name: Install sea-orm-cli
-              uses: baptiste0928/cargo-install@v2
-              with:
-                crate: sea-orm-cli
-                version: '0.12.0-rc.5'
-            - name: Remove generated folder
-              run: rm -rf ./examples/postgres/src
-            - name: Create DB
-              run: psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE "sakila"'
-            - name: Import DB Schema
-              run: psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql
-              working-directory: ./examples/postgres
-            - name: Import DB Data
-              run: psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
-              working-directory: ./examples/postgres
-            - name: Generate entities
-              run: sea-orm-cli generate entity -o ./examples/postgres/src/entities -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public --seaography
-            - name: Generate Seaography project
-              uses: actions-rs/cargo@v1
-              with:
-                  command: run
-                  args: >
-                      --package seaography-cli --
-                      ./examples/postgres ./examples/postgres/src/entities postgres://sea:sea@127.0.0.1/sakila?currentSchema=public seaography-postgres-example
-            - name: Depends on local seaography
-              run: sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
-            - name: Fix Nullable not implemented for Vec<String> and tsvector
-              run: sed -i "26,27d" ./examples/postgres/src/entities/film.rs
-            - name: Build example
-              working-directory: ./examples/postgres
-              run: cargo build
-            - name: Integration tests
-              working-directory: ./examples/postgres
-              run: cargo test
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: '--workspace'
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: clippy
+      - run: cargo clippy --all -- -D warnings
+  integration-sqlite-poem:
+    name: SQLite integration tests
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install sea-orm-cli
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: sea-orm-cli
+          version: 0.12.3
+      - name: Remove generated folder
+        run: rm -rf ./examples/sqlite/src
+      - name: Copy sample database
+        run: cp ./examples/sqlite/sakila.db .
+      - name: Generate entities
+        run: >-
+          sea-orm-cli generate entity -o examples/sqlite/src/entities -u
+          sqlite://sakila.db --seaography
+      - name: Generate Seaography project
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: >
+            --package seaography-cli -- ./examples/sqlite
+            ./examples/sqlite/src/entities sqlite://sakila.db
+            seaography-sqlite-example -f poem
+      - name: Depends on local seaography
+        run: >-
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
+          ./examples/sqlite/Cargo.toml
+      - name: Build example
+        working-directory: ./examples/sqlite
+        run: cargo build
+      - name: Integration tests
+        working-directory: ./examples/sqlite
+        run: cargo test
+  integration-sqlite-actix:
+    name: SQLite integration tests actix
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install sea-orm-cli
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: sea-orm-cli
+          version: 0.12.3
+      - name: Remove generated folder
+        run: rm -rf ./examples/sqlite/src
+      - name: Copy sample database
+        run: cp ./examples/sqlite/sakila.db .
+      - name: Generate entities
+        run: >-
+          sea-orm-cli generate entity -o examples/sqlite/src/entities -u
+          sqlite://sakila.db --seaography
+      - name: Generate Seaography project
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: >
+            --package seaography-cli -- ./examples/sqlite
+            ./examples/sqlite/src/entities sqlite://sakila.db
+            seaography-sqlite-example -f actix
+      - name: Depends on local seaography
+        run: >-
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
+          ./examples/sqlite/Cargo.toml
+      - name: Build example
+        working-directory: ./examples/sqlite
+        run: cargo build
+      - name: Integration tests
+        working-directory: ./examples/sqlite
+        run: cargo test
+  integration-mysql:
+    name: MySQL integration tests
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - test
+    services:
+      mysql:
+        image: 'mysql:8.0'
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_DB: mysql
+          MYSQL_USER: sea
+          MYSQL_PASSWORD: sea
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_ROOT_PASSWORD: ''
+        ports:
+          - '3306:3306'
+        options: >-
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install sea-orm-cli
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: sea-orm-cli
+          version: 0.12.3
+      - name: Remove generated folder
+        run: rm -rf ./examples/mysql/src
+      - name: Create DB
+        run: mysql -uroot -h 127.0.0.1 mysql -e 'CREATE DATABASE `sakila`'
+      - name: Grant Privilege
+        run: >-
+          mysql -uroot -h 127.0.0.1 mysql -e "GRANT ALL PRIVILEGES ON *.* TO
+          'sea'@'%'"
+      - name: Import DB Schema
+        run: mysql -uroot -h 127.0.0.1 sakila < sakila-schema.sql
+        working-directory: ./examples/mysql
+      - name: Import DB Data
+        run: mysql -uroot -h 127.0.0.1 sakila < sakila-data.sql
+        working-directory: ./examples/mysql
+      - name: Generate entities
+        run: >-
+          sea-orm-cli generate entity -o ./examples/mysql/src/entities -u
+          mysql://sea:sea@127.0.0.1/sakila --seaography
+      - name: Generate Seaography project
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: >
+            --package seaography-cli -- ./examples/mysql
+            ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila
+            seaography-mysql-example
+      - name: Depends on local seaography
+        run: >-
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
+          ./examples/mysql/Cargo.toml
+      - name: Fix Nullable not implemented for Vec<String> and tsvector
+        run: 'sed -i "24,28d" ./examples/mysql/src/entities/film.rs'
+      - name: Build example
+        working-directory: ./examples/mysql
+        run: cargo build
+      - name: Integration tests
+        working-directory: ./examples/mysql
+        run: cargo test
+  integration-postgres:
+    name: Postgres integration tests
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - test
+    services:
+      mysql:
+        image: 'postgres:14.4'
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: sea
+          POSTGRES_PASSWORD: sea
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install sea-orm-cli
+        uses: baptiste0928/cargo-install@v2
+        with:
+          crate: sea-orm-cli
+          version: 0.12.3
+      - name: Remove generated folder
+        run: rm -rf ./examples/postgres/src
+      - name: Create DB
+        run: >-
+          psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE
+          "sakila"'
+      - name: Import DB Schema
+        run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql'
+        working-directory: ./examples/postgres
+      - name: Import DB Data
+        run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql'
+        working-directory: ./examples/postgres
+      - name: Generate entities
+        run: >-
+          sea-orm-cli generate entity -o ./examples/postgres/src/entities -u
+          postgres://sea:sea@127.0.0.1/sakila?currentSchema=public --seaography
+      - name: Generate Seaography project
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: >
+            --package seaography-cli -- ./examples/postgres
+            ./examples/postgres/src/entities
+            postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
+            seaography-postgres-example
+      - name: Depends on local seaography
+        run: >-
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
+          ./examples/postgres/Cargo.toml
+      - name: Fix Nullable not implemented for Vec<String> and tsvector
+        run: 'sed -i "26,27d" ./examples/postgres/src/entities/film.rs'
+      - name: Build example
+        working-directory: ./examples/postgres
+        run: cargo build
+      - name: Integration tests
+        working-directory: ./examples/postgres
+        run: cargo test

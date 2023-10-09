@@ -5,10 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 1.0.0 - Pending
+## 1.0.2 - 2023-10-09
 
-`1.0.0-rc.1`: 2023-07-28
-`1.0.0-rc.2`: 2023-07-29
+* add `create_one_mutation`
+
+  This module is responsible to allow the Create One mutation. The mutation takes data for a single entity and returns the created entity
+
+* add `create_batch_mutation`
+
+  This module is responsible to allow the Create Batch mutation. The mutation takes and array of data for multiple entities and returns the created entities
+
+* refactor entity types
+
+  * add `types_map` This is responsible to allow the API user to provide custom entity field types, parsers and formatters
+  * refactor `entity_object` to remove code responsible for type mapping
+
+* simplify schema builder
+
+  * register functions
+  * internal context
+
+* extend schema builder entity register function to include mutations
+
+* refactor `filtering` functionality
+
+  * add `FilterConfig` for basic types
+  * add `filter_types_map` That is responsible to allow the API user to provide custom entity field filter types and condition functions
+  * add `apply_condition` that takes `FilterInputConfig` and `condition` as input and updates the `condition`
+  * refactor `active_enum_filter_input` to utilize `FilterConfig` and provide `apply_condition` function
+  * remove condition code from `filter_input` and utilize `apply_condition` function that uses `FilterConfig`
+
+* add `entity_input`
+
+  This module is responsible to create a GraphQL input object for an SeaORM entity. Used in the create mutation
+
+* start error handling
+
+## 1.0.1 - 2023-03-25
+
+* slim down code generation for the `query_root.rs` file of a generated project
+
+* update crates
+
+* update examples
+
+## 1.0.0 - 2023-03-25
 
 Introduction the functional API of Seaography. Warning, this version has breaking changes, but it was a sacrifice in order to make the project easier to maintain. With this version we have support for field guards and field renames.
 

@@ -1,8 +1,10 @@
-use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
-use heck::ToUpperCamelCase;
-use sea_orm::{sea_query::SeaRc, ActiveEnum, ColumnTrait, Condition, DynIden, Iden};
+use std::collections::BTreeSet;
 
-use crate::{ActiveEnumBuilder, BuilderContext};
+use async_graphql::dynamic::ObjectAccessor;
+use heck::ToUpperCamelCase;
+use sea_orm::{ActiveEnum, ColumnTrait, ColumnType, Condition, DynIden, EntityTrait};
+
+use crate::{ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult};
 
 /// The configuration structure for ActiveEnumFilterInputConfig
 pub struct ActiveEnumFilterInputConfig {
@@ -38,42 +40,52 @@ impl ActiveEnumFilterInputBuilder {
         self.context.active_enum_filter_input.type_name.as_ref()(&enum_name)
     }
 
-    /// used to get filter input object for SeaORM enumeration
-    pub fn input_object<A: ActiveEnum>(&self) -> InputObject {
+    /// used to get filter input name from string
+    pub fn type_name_from_string(&self, enum_name: &str) -> String {
+        self.context.active_enum_filter_input.type_name.as_ref()(enum_name)
+    }
+
+    /// used to map an active enum to an input filter info object
+    pub fn filter_info<A: ActiveEnum>(&self) -> FilterInfo {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
         };
 
-        let name = self.type_name::<A>();
-
-        let enum_name = active_enum_builder.type_name::<A>();
-
-        InputObject::new(name)
-            .field(InputValue::new("eq", TypeRef::named(&enum_name)))
-            .field(InputValue::new("ne", TypeRef::named(&enum_name)))
-            .field(InputValue::new("gt", TypeRef::named(&enum_name)))
-            .field(InputValue::new("gte", TypeRef::named(&enum_name)))
-            .field(InputValue::new("lt", TypeRef::named(&enum_name)))
-            .field(InputValue::new("lte", TypeRef::named(&enum_name)))
-            .field(InputValue::new("is_in", TypeRef::named_nn_list(&enum_name)))
-            .field(InputValue::new(
-                "is_not_in",
-                TypeRef::named_nn_list(&enum_name),
-            ))
-            .field(InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN)))
+        FilterInfo {
+            type_name: self.type_name::<A>(),
+            base_type: active_enum_builder.type_name::<A>(),
+            supported_operations: BTreeSet::from([
+                FilterOperation::Equals,
+                FilterOperation::NotEquals,
+                FilterOperation::GreaterThan,
+                FilterOperation::GreaterThanEquals,
+                FilterOperation::LessThan,
+                FilterOperation::LessThanEquals,
+                FilterOperation::IsIn,
+                FilterOperation::IsNotIn,
+                FilterOperation::IsNull,
+                FilterOperation::IsNotNull,
+            ]),
+        }
     }
 }
 
 /// used to update the query condition with enumeration filters
 pub fn prepare_enumeration_condition<T>(
     filter: &ObjectAccessor,
-    column: T,
-    variants: &[SeaRc<dyn Iden>],
+    column: &T::Column,
     condition: Condition,
-) -> Condition
+) -> SeaResult<Condition>
 where
-    T: ColumnTrait,
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
 {
+    let variants = if let ColumnType::Enum { name: _, variants } = column.def().get_column_type() {
+        variants.clone()
+    } else {
+        return Ok(condition);
+    };
+
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
             let variant = variant
@@ -170,5 +182,5 @@ where
         None => condition,
     };
 
-    condition
+    Ok(condition)
 }

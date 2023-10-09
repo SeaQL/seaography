@@ -12,7 +12,6 @@ use crate::{
 pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
     let mut entities_paths: Vec<_> = std::fs::read_dir(entities_path)
         .unwrap()
-        .into_iter()
         .filter(|r| r.is_ok())
         .map(|r| r.unwrap().path())
         .filter(|r| r.is_file())
@@ -51,7 +50,6 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
 
     let enumerations = std::fs::read_dir(entities_path)
         .unwrap()
-        .into_iter()
         .filter(|r| r.is_ok())
         .map(|r| r.unwrap().path())
         .find(|r| {
@@ -163,7 +161,7 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
     let content = content
         .replace("<seaography-package-name>", crate_name)
         .replace("<seaography-sql-library>", sql_library)
-        .replace("<seaography-version>", &ver);
+        .replace("<seaography-version>", ver);
 
     std::fs::write(file_path, content.as_bytes())?;
 

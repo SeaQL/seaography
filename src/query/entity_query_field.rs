@@ -84,7 +84,7 @@ impl EntityQueryFieldBuilder {
 
         let context: &'static BuilderContext = self.context;
         Field::new(
-            entity_object.query_entity_name::<T>(),
+            self.type_name::<T>(),
             TypeRef::named_nn(type_name),
             move |ctx| {
                 let context: &'static BuilderContext = context;
