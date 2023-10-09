@@ -371,11 +371,11 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 {
-                    country(pagination: { page: { limit: 10, page: 0 } }) {
-                        nodes {
-                            country
-                            countryId
-                        }
+                    country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                      nodes {
+                        country
+                        countryId
+                      }
                     }
                 }
                 "#,
@@ -408,22 +408,6 @@ async fn test_update_mutation() {
                 {
                   "country": "Argentina",
                   "countryId": 6
-                },
-                {
-                  "country": "Armenia",
-                  "countryId": 7
-                },
-                {
-                  "country": "Australia",
-                  "countryId": 8
-                },
-                {
-                  "country": "Austria",
-                  "countryId": 9
-                },
-                {
-                  "country": "Azerbaijan",
-                  "countryId": 10
                 }
               ]
             }
@@ -480,11 +464,11 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 {
-                    country(pagination: { page: { limit: 10, page: 0 } }) {
-                        nodes {
-                            country
-                            countryId
-                        }
+                    country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                      nodes {
+                        country
+                        countryId
+                      }
                     }
                 }
                 "#,
@@ -517,22 +501,6 @@ async fn test_update_mutation() {
                 {
                   "country": "Argentina",
                   "countryId": 6
-                },
-                {
-                  "country": "Armenia",
-                  "countryId": 7
-                },
-                {
-                  "country": "Australia",
-                  "countryId": 8
-                },
-                {
-                  "country": "Austria",
-                  "countryId": 9
-                },
-                {
-                  "country": "Azerbaijan",
-                  "countryId": 10
                 }
               ]
             }
