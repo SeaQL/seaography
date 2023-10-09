@@ -7,8 +7,6 @@ use crate::{BuilderContext, EntityObjectBuilder, SeaResult, TypesMapHelper};
 
 /// The configuration structure of EntityInputBuilder
 pub struct EntityInputConfig {
-    /// if true both insert and update are the same input object
-    pub unified: bool,
     /// suffix that is appended on insert input objects
     pub insert_suffix: String,
     /// names of "{entity}.{column}" you want to skip the insert input to be generated
@@ -22,7 +20,6 @@ pub struct EntityInputConfig {
 impl std::default::Default for EntityInputConfig {
     fn default() -> Self {
         EntityInputConfig {
-            unified: true,
             insert_suffix: "InsertInput".into(),
             insert_skips: Vec::new(),
             update_suffix: "UpdateInput".into(),
@@ -56,9 +53,6 @@ impl EntityInputBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        if self.context.entity_input.unified {
-            return self.insert_type_name::<T>();
-        }
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
@@ -67,12 +61,12 @@ impl EntityInputBuilder {
     }
 
     /// used to produce the SeaORM entity input object
-    fn input_object<T>(&self, insert: bool) -> InputObject
+    fn input_object<T>(&self, is_insert: bool) -> InputObject
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let name = if insert {
+        let name = if is_insert {
             self.insert_type_name::<T>()
         } else {
             self.update_type_name::<T>()
@@ -90,7 +84,7 @@ impl EntityInputBuilder {
 
             let full_name = format!("{}.{}", entity_object_builder.type_name::<T>(), column_name);
 
-            let skip = if insert {
+            let skip = if is_insert {
                 self.context.entity_input.insert_skips.contains(&full_name)
             } else {
                 self.context.entity_input.update_skips.contains(&full_name)
@@ -110,7 +104,7 @@ impl EntityInputBuilder {
                 None => return object,
             };
 
-            let graphql_type = if column_def.is_null() {
+            let graphql_type = if column_def.is_null() || !is_insert {
                 TypeRef::named(type_name)
             } else {
                 TypeRef::named_nn(type_name)
@@ -135,7 +129,7 @@ impl EntityInputBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        self.input_object::<T>(self.context.entity_input.unified)
+        self.input_object::<T>(false)
     }
 
     pub fn parse_object<T>(

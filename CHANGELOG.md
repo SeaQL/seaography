@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 1.0.2 - 2023-10-09
+## 1.0.3 - Pending
+
+* add `update_mutation`
+
+  This module enabled the update mutation for entities. The update mutation takes an entity data object with a filter condition object,
+  applies the update to the database and returns the modified entities.
+
+## 1.0.2 - Pending
 
 * add `create_one_mutation`
 
@@ -41,13 +48,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 * start error handling
 
-## 1.0.1 - 2023-03-25
+## 1.0.1 - Pending
 
 * slim down code generation for the `query_root.rs` file of a generated project
 
 * update crates
 
 * update examples
+
+## 1.0.0 - Pending
+=======
 
 ## 1.0.0 - 2023-03-25
 

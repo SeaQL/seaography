@@ -62,7 +62,7 @@ async fn test_simple_insert_one() {
                     filmActorCreateOne(data: { actorId: 1, filmId: 2,  lastUpdate: "2030-01-01 11:11:11"}) {
                       actorId
                       filmId
-                         __typename
+                      __typename
                     }
                 }
                 "#,
@@ -360,4 +360,151 @@ async fn test_create_batch_mutation() {
         }
         "#,
     )
+}
+
+#[tokio::test]
+async fn test_update_mutation() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                      nodes {
+                        country
+                        countryId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "country": {
+              "nodes": [
+                {
+                  "country": "Afghanistan",
+                  "countryId": 1
+                },
+                {
+                  "country": "Algeria",
+                  "countryId": 2
+                },
+                {
+                  "country": "American Samoa",
+                  "countryId": 3
+                },
+                {
+                  "country": "Angola",
+                  "countryId": 4
+                },
+                {
+                  "country": "Anguilla",
+                  "countryId": 5
+                },
+                {
+                  "country": "Argentina",
+                  "countryId": 6
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    countryUpdate(
+                      data: { country: "[DELETED]" }
+                      filter: { countryId: { lt: 6 } }
+                    ) {
+                      countryId
+                      country
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "countryUpdate": [
+              {
+                "countryId": 1,
+                "country": "[DELETED]"
+              },
+              {
+                "countryId": 2,
+                "country": "[DELETED]"
+              },
+              {
+                "countryId": 3,
+                "country": "[DELETED]"
+              },
+              {
+                "countryId": 4,
+                "country": "[DELETED]"
+              },
+              {
+                "countryId": 5,
+                "country": "[DELETED]"
+              }
+            ]
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                      nodes {
+                        country
+                        countryId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "country": {
+              "nodes": [
+                {
+                  "country": "[DELETED]",
+                  "countryId": 1
+                },
+                {
+                  "country": "[DELETED]",
+                  "countryId": 2
+                },
+                {
+                  "country": "[DELETED]",
+                  "countryId": 3
+                },
+                {
+                  "country": "[DELETED]",
+                  "countryId": 4
+                },
+                {
+                  "country": "[DELETED]",
+                  "countryId": 5
+                },
+                {
+                  "country": "Argentina",
+                  "countryId": 6
+                }
+              ]
+            }
+        }
+        "#,
+    );
 }

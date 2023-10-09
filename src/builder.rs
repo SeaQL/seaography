@@ -5,9 +5,9 @@ use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
     EntityCreateOneMutationBuilder, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder,
-    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder,
+    EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper,
+    OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder,
+    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -107,15 +107,12 @@ impl Builder {
             context: self.context,
         };
 
-        if self.context.entity_input.unified {
-            let entity_input_object = entity_input_builder.insert_input_object::<T>();
-            self.inputs.push(entity_input_object);
-        } else {
-            let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
-            let entity_update_input_object = entity_input_builder.update_input_object::<T>();
-            self.inputs
-                .extend(vec![entity_insert_input_object, entity_update_input_object]);
-        }
+        let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
+        let entity_update_input_object = entity_input_builder.update_input_object::<T>();
+        self.inputs
+            .extend(vec![entity_insert_input_object, entity_update_input_object]);
+
+        // create one mutation
 
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
             context: self.context,
@@ -123,12 +120,20 @@ impl Builder {
         let create_one_mutation = entity_create_one_mutation_builder.to_field::<T, A>();
         self.mutations.push(create_one_mutation);
 
+        // create batch mutation
         let entity_create_batch_mutation_builder: EntityCreateBatchMutationBuilder =
             EntityCreateBatchMutationBuilder {
                 context: self.context,
             };
         let create_batch_mutation = entity_create_batch_mutation_builder.to_field::<T, A>();
         self.mutations.push(create_batch_mutation);
+
+        // update mutation
+        let entity_update_mutation_builder = EntityUpdateMutationBuilder {
+            context: self.context,
+        };
+        let update_mutation = entity_update_mutation_builder.to_field::<T, A>();
+        self.mutations.push(update_mutation);
     }
 
     /// used to register a new enumeration to the builder context
