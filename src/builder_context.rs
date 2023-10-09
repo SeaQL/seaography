@@ -44,7 +44,7 @@ pub struct BuilderContext {
     pub entity_create_one_mutation: EntityCreateOneMutationConfig,
     pub entity_create_batch_mutation: EntityCreateBatchMutationConfig,
     pub entity_update_mutation: EntityUpdateMutationConfig,
-  
+
     pub entity_input: EntityInputConfig,
 
     pub guards: GuardsConfig,
