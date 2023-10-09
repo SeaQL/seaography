@@ -22,10 +22,7 @@ pub fn parse_enumerations(file_content: String) -> Vec<EnumerationDefinition> {
     let items: Vec<EnumerationDefinition> = tree
         .items
         .iter()
-        .filter(|item| match item {
-            syn::Item::Enum(_) => true,
-            _ => false,
-        })
+        .filter(|item| matches!(item, syn::Item::Enum(_)))
         .map(|item| match item {
             syn::Item::Enum(enumeration) => EnumerationDefinition {
                 name: enumeration.ident.clone(),

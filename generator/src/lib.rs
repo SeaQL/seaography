@@ -12,7 +12,7 @@ pub enum WebFrameworkEnum {
     Poem,
 }
 
-pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
+#[allow(clippy::too_many_arguments)] pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
     root_path: &P,
     entities_path: &T,
     db_url: &str,
@@ -22,7 +22,7 @@ pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>
     depth_limit: Option<usize>,
     complexity_limit: Option<usize>,
 ) -> Result<()> {
-    writer::write_cargo_toml(root_path, crate_name, &sql_library, framework)?;
+    writer::write_cargo_toml(root_path, crate_name, sql_library, framework)?;
 
     let src_path = &root_path.as_ref().join("src");
 
@@ -38,7 +38,7 @@ pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>
 
     std::process::Command::new("cargo")
         .arg("fmt")
-        .current_dir(&root_path)
+        .current_dir(root_path)
         .spawn()?
         .wait()?;
 
