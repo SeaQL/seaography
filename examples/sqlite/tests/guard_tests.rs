@@ -13,11 +13,11 @@ lazy_static::lazy_static! {
         let context = BuilderContext::default();
         let mut entity_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
         entity_guards.insert("FilmCategory".into(), Box::new(|_ctx| {
-            true
+            seaography::GuardAction::Block(None)
         }));
         let mut field_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
         field_guards.insert("Language.lastUpdate".into(), Box::new(|_ctx| {
-            true
+            seaography::GuardAction::Block(None)
         }));
         BuilderContext {
             guards: GuardsConfig {

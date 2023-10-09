@@ -4,19 +4,19 @@ use seaography_generator::write_project;
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    /// project destination folder
+    /// Project destination folder
     pub destination: String,
 
-    /// entities folder to depend on
+    /// SeaORM entities folder
     pub entities: String,
 
-    /// database URL to write it in .env
+    /// Database URL to write in .env
     pub database_url: String,
 
-    /// crate name for generated project
+    /// Crate name for generated project
     pub crate_name: String,
 
-    /// web framework
+    /// Which web framework to use
     #[clap(short, long, value_enum, default_value_t = WebFrameworkEnum::Poem)]
     pub framework: WebFrameworkEnum,
 
