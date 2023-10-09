@@ -895,3 +895,37 @@ async fn enumeration_filter() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn test_boolean_field() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    customer(filters: { customerId: { eq: 1 } }) {
+                      nodes {
+                        customerId
+                        activebool
+                      }
+                    }
+                }
+              "#,
+            )
+            .await,
+        r#"
+                {
+                    "customer": {
+                        "nodes": [
+                            {
+                                "customerId": 1,
+                                "activebool": true
+                            }
+                        ]
+                    }
+                }
+                "#,
+    )
+}

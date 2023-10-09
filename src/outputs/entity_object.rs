@@ -183,7 +183,7 @@ impl EntityObjectBuilder {
                 match object.get(column) {
                     sea_orm::sea_query::Value::Bool(value) => FieldFuture::new(async move {
                         match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
+                            Some(value) => Ok(Some(Value::from(value))),
                             None => Ok(None),
                         }
                     }),
