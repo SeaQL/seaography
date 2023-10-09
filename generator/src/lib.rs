@@ -12,7 +12,8 @@ pub enum WebFrameworkEnum {
     Poem,
 }
 
-#[allow(clippy::too_many_arguments)] pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
+#[allow(clippy::too_many_arguments)]
+pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
     root_path: &P,
     entities_path: &T,
     db_url: &str,

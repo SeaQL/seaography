@@ -20,7 +20,7 @@ keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
 [dependencies]
-async-graphql = { version = "5.0.10", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+async-graphql = { version = "6.0.7", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 sea-orm = { version = "0.12.0", default-features = false, features = ["seaography"] }
 itertools = { version = "0.11.0" }
 heck = { version = "0.4.1" }

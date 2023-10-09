@@ -1,8 +1,9 @@
 use async_graphql::dynamic::ValueAccessor;
 use itertools::Itertools;
+use sea_orm::CursorTrait;
 use sea_orm::{
-    ConnectionTrait, CursorTrait, DatabaseConnection, DbErr, EntityTrait, Iterable, ModelTrait,
-    PaginatorTrait, PrimaryKeyToColumn, QuerySelect, QueryTrait, Select,
+    ConnectionTrait, DatabaseConnection, DbErr, EntityTrait, Iterable, ModelTrait, PaginatorTrait,
+    PrimaryKeyToColumn, QuerySelect, QueryTrait, Select,
 };
 
 use crate::{
