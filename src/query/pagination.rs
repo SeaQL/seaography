@@ -1,6 +1,7 @@
 use async_graphql::dynamic::ValueAccessor;
 use itertools::Itertools;
-#[allow(unused_imports)] use sea_orm::CursorTrait;
+#[allow(unused_imports)]
+use sea_orm::CursorTrait;
 use sea_orm::{
     ConnectionTrait, DatabaseConnection, DbErr, EntityTrait, Iterable, ModelTrait, PaginatorTrait,
     PrimaryKeyToColumn, QuerySelect, QueryTrait, Select,
