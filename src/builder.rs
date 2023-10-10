@@ -1,4 +1,7 @@
-use async_graphql::{dynamic::{Enum, Field, InputObject, Object, Schema, SchemaBuilder, TypeRef, FieldFuture}, dataloader::DataLoader};
+use async_graphql::{
+    dataloader::DataLoader,
+    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+};
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
@@ -6,8 +9,8 @@ use crate::{
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
     EntityCreateOneMutationBuilder, EntityInputBuilder, EntityObjectBuilder,
     EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper,
-    OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder,
-    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, OneToOneLoader, OneToManyLoader,
+    OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder, OrderInputBuilder,
+    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -44,11 +47,11 @@ impl Builder {
     /// Used to create a new Builder from the given configuration context
     pub fn new(context: &'static BuilderContext, connection: sea_orm::DatabaseConnection) -> Self {
         let query: Object = Object::new("Query");
-        let mutation = Object::new("Mutation").field(Field::new("_ping", TypeRef::named(TypeRef::STRING), |_| {
-            FieldFuture::new(async move {
-                Ok(Some(async_graphql::Value::from("pong")))
-            })
-        }));
+        let mutation = Object::new("Mutation").field(Field::new(
+            "_ping",
+            TypeRef::named(TypeRef::STRING),
+            |_| FieldFuture::new(async move { Ok(Some(async_graphql::Value::from("pong"))) }),
+        ));
         let schema = Schema::build(query.type_name(), Some(mutation.type_name()), None);
 
         Self {
