@@ -1,4 +1,4 @@
-use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
+use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 
 pub async fn get_schema() -> Schema {
