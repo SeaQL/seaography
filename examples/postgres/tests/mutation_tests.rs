@@ -2,7 +2,9 @@ use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
 use sea_orm::Database;
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("sqlite://sakila.db").await.unwrap();
+    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
+        .await
+        .unwrap();
     let schema =
         seaography_postgres_example::query_root::schema(database, None, None)
             .unwrap();

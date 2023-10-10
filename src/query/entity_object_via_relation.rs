@@ -171,6 +171,7 @@ impl EntityObjectViaRelationBuilder {
                         let db = ctx.data::<DatabaseConnection>()?;
 
                         let connection = if is_via_relation {
+                            // TODO optimize query
                             let condition = Condition::all().add(from_col.eq(parent.get(from_col)));
 
                             let stmt = stmt.filter(condition.add(filters));
