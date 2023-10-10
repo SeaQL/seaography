@@ -1,11 +1,10 @@
 use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
 use sea_orm::Database;
-use seaography_mysql_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
     let schema =
-        seaography_sqlite_example::query_root::schema(database, None, None)
+        seaography_mysql_example::query_root::schema(database, None, None)
             .unwrap();
 
     schema
