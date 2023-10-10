@@ -532,3 +532,108 @@ async fn test_update_mutation() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn test_delete_mutation() {
+    let schema = get_schema().await;
+
+    schema.execute(
+        r#"
+        mutation {
+            filmTextCreateBatch(
+              data: [
+                { filmId: 6, title: "TEST 6", description: "TEST DESC 6" }
+                { filmId: 7, title: "TEST 7", description: "TEST DESC 7" }
+                { filmId: 8, title: "TEST 8", description: "TEST DESC 8" }
+              ]
+            ) {
+              filmId
+            }
+        }
+        "#
+    )
+    .await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmText(filters: { filmId: { gte: 6 } }, orderBy: { filmId: ASC }) {
+                      nodes {
+                        filmId
+                        title
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmText": {
+              "nodes": [
+                {
+                  "filmId": 6,
+                  "title": "TEST 6"
+                },
+                {
+                  "filmId": 7,
+                  "title": "TEST 7"
+                },
+                {
+                  "filmId": 8,
+                  "title": "TEST 8"
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    filmTextDelete(filter: { filmId: { gte: 7 } })
+                }
+                "#,
+            )
+            .await,
+            r#"
+            {
+                "filmTextDelete": 2
+            }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmText(filters: { filmId: { gte: 6 } }, orderBy: { filmId: ASC }) {
+                      nodes {
+                        filmId
+                        title
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmText": {
+              "nodes": [
+                {
+                  "filmId": 6,
+                  "title": "TEST 6"
+                }
+              ]
+            }
+        }
+        "#,
+    );
+}

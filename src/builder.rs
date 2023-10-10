@@ -10,7 +10,7 @@ use crate::{
     EntityCreateOneMutationBuilder, EntityInputBuilder, EntityObjectBuilder,
     EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper,
     OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder, OrderInputBuilder,
-    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
+    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, EntityDeleteMutationBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -155,6 +155,12 @@ impl Builder {
         };
         let update_mutation = entity_update_mutation_builder.to_field::<T, A>();
         self.mutations.push(update_mutation);
+
+        let entity_delete_mutation_builder = EntityDeleteMutationBuilder {
+            context: self.context,
+        };
+        let delete_mutation = entity_delete_mutation_builder.to_field::<T, A>();
+        self.mutations.push(delete_mutation);
     }
 
     pub fn register_entity_dataloader_one_to_one<T, R, S>(mut self, _entity: T, spawner: S) -> Self

@@ -54,7 +54,6 @@ impl EntityUpdateMutationBuilder {
     }
 
     /// used to get the update mutation field for a SeaORM entity
-    /// used to get the create mutation field for a SeaORM entity
     pub fn to_field<T, A>(&self) -> Field
     where
         T: EntityTrait,
@@ -88,11 +87,10 @@ impl EntityUpdateMutationBuilder {
 
                     let filters = ctx.args.get(&context.entity_update_mutation.filter_field);
                     let filter_condition = get_filter_conditions::<T>(context, filters);
-                    println!("{:?}", filter_condition);
 
                     let value_accessor = ctx
                         .args
-                        .get(&context.entity_create_one_mutation.data_field)
+                        .get(&context.entity_update_mutation.data_field)
                         .unwrap();
                     let input_object = &value_accessor.object()?;
                     let active_model = prepare_active_model::<T, A>(
