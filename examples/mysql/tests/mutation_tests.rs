@@ -537,29 +537,12 @@ async fn test_update_mutation() {
 async fn test_delete_mutation() {
     let schema = get_schema().await;
 
-    schema.execute(
-        r#"
-        mutation {
-            filmTextCreateBatch(
-              data: [
-                { filmId: 6, title: "TEST 6", description: "TEST DESC 6" }
-                { filmId: 7, title: "TEST 7", description: "TEST DESC 7" }
-                { filmId: 8, title: "TEST 8", description: "TEST DESC 8" }
-              ]
-            ) {
-              filmId
-            }
-        }
-        "#
-    )
-    .await;
-
     assert_eq(
         schema
             .execute(
                 r#"
                 {
-                    filmText(filters: { filmId: { gte: 6 } }, orderBy: { filmId: ASC }) {
+                    filmText(filters: { filmId: { gte: 998 } }, orderBy: { filmId: ASC }) {
                       nodes {
                         filmId
                         title
@@ -574,16 +557,16 @@ async fn test_delete_mutation() {
             "filmText": {
               "nodes": [
                 {
-                  "filmId": 6,
-                  "title": "TEST 6"
+                  "filmId": 998,
+                  "title": "ZHIVAGO CORE"
                 },
                 {
-                  "filmId": 7,
-                  "title": "TEST 7"
+                  "filmId": 999,
+                  "title": "ZOOLANDER FICTION"
                 },
                 {
-                  "filmId": 8,
-                  "title": "TEST 8"
+                  "filmId": 1000,
+                  "title": "ZORRO ARK"
                 }
               ]
             }
@@ -596,7 +579,7 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 mutation {
-                    filmTextDelete(filter: { filmId: { gte: 7 } })
+                    filmTextDelete(filter: { filmId: { gte: 999 } })
                 }
                 "#,
             )
@@ -628,8 +611,8 @@ async fn test_delete_mutation() {
             "filmText": {
               "nodes": [
                 {
-                  "filmId": 6,
-                  "title": "TEST 6"
+                  "filmId": 998,
+                  "title": "ZHIVAGO CORE"
                 }
               ]
             }

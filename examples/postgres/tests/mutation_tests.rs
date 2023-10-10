@@ -218,7 +218,7 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    language {
+                    language(filters: { languageId: { lt: 9 } }, orderBy: { languageId: ASC }) {
                       nodes {
                         languageId
                         name
@@ -301,7 +301,7 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    language {
+                    language(filters: { languageId: { lt: 9 } }, orderBy: { languageId: ASC }) {
                       nodes {
                         languageId
                         name
@@ -506,53 +506,93 @@ async fn test_update_mutation() {
 async fn test_delete_mutation() {
     let schema = get_schema().await;
 
-    schema.execute(
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
+                      nodes {
+                        languageId
+                      }
+                    }
+                }
+
+                "#,
+            )
+            .await,
         r#"
-        mutation {
-            filmTextCreateBatch(
-              data: [
-                { filmId: 6, title: "TEST 6", description: "TEST DESC 6" }
-                { filmId: 7, title: "TEST 7", description: "TEST DESC 7" }
-                { filmId: 8, title: "TEST 8", description: "TEST DESC 8" }
-              ]
-            ) {
-              filmId
+            {
+                "language": {
+                "nodes": []
+                }
             }
-        }
-        "#
-    )
-    .await;
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    languageCreateBatch(
+                      data: [
+                        { languageId: 9, name: "9", lastUpdate: "2030-01-12 21:50:05" }
+                        { languageId: 10, name: "10", lastUpdate: "2030-01-12 21:50:05" }
+                        { languageId: 11, name: "11", lastUpdate: "2030-01-12 21:50:05" }
+                      ]
+                    ) {
+                      languageId
+                    }
+                }
+
+                "#,
+            )
+            .await,
+        r#"
+            {
+                "languageCreateBatch": [
+                {
+                    "languageId": 9,
+                },
+                {
+                    "languageId": 10,
+                },
+                {
+                    "languageId": 11,
+                }
+                ]
+            }
+            "#,
+    );
 
     assert_eq(
         schema
             .execute(
                 r#"
                 {
-                    filmText(filters: { filmId: { gte: 6 } }, orderBy: { filmId: ASC }) {
+                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
                       nodes {
-                        filmId
-                        title
+                        languageId
                       }
                     }
                 }
+
                 "#,
             )
             .await,
         r#"
         {
-            "filmText": {
+            "language": {
               "nodes": [
                 {
-                  "filmId": 6,
-                  "title": "TEST 6"
+                  "languageId": 9
                 },
                 {
-                  "filmId": 7,
-                  "title": "TEST 7"
+                  "languageId": 10
                 },
                 {
-                  "filmId": 8,
-                  "title": "TEST 8"
+                  "languageId": 11
                 }
               ]
             }
@@ -565,7 +605,7 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 mutation {
-                    filmTextDelete(filter: { filmId: { gte: 7 } })
+                    languageDelete(filter: { languageId: { gte: 10 } })
                 }
                 "#,
             )
@@ -582,23 +622,22 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 {
-                    filmText(filters: { filmId: { gte: 6 } }, orderBy: { filmId: ASC }) {
+                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
                       nodes {
-                        filmId
-                        title
+                        languageId
                       }
                     }
                 }
+
                 "#,
             )
             .await,
         r#"
         {
-            "filmText": {
+            "language": {
               "nodes": [
                 {
-                  "filmId": 6,
-                  "title": "TEST 6"
+                  "languageId": 9
                 }
               ]
             }
