@@ -31,6 +31,7 @@
 * Order by any column
 * Guard fields, queries or relations
 * Rename fields
+* Mutations (create, update, delete)
 
 (Right now there is no mutation, but it's on our plan!)
 
