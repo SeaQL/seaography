@@ -11,7 +11,7 @@ use sea_orm::{
 use crate::{
     apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, BuilderContext,
     ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashAbleGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
+    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
     PaginationInputBuilder,
 };
 
@@ -105,7 +105,7 @@ impl EntityObjectViaRelationBuilder {
                     let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
                     let key = KeyComplex::<R> {
                         key: vec![parent.get(from_col)],
-                        meta: HashAbleGroupKey::<R> {
+                        meta: HashableGroupKey::<R> {
                             stmt,
                             columns: vec![to_col],
                             filters: Some(filters),
@@ -181,7 +181,7 @@ impl EntityObjectViaRelationBuilder {
 
                             let key = KeyComplex::<R> {
                                 key: vec![parent.get(from_col)],
-                                meta: HashAbleGroupKey::<R> {
+                                meta: HashableGroupKey::<R> {
                                     stmt,
                                     columns: vec![to_col],
                                     filters: Some(filters),

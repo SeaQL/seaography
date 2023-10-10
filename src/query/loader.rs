@@ -11,7 +11,7 @@ where
     /// The key tuple to equal with columns
     pub key: Vec<sea_orm::Value>,
     /// Meta Information
-    pub meta: HashAbleGroupKey<T>,
+    pub meta: HashableGroupKey<T>,
 }
 
 impl<T> PartialEq for KeyComplex<T>
@@ -36,7 +36,7 @@ where
 }
 
 #[derive(Clone)]
-pub struct HashAbleGroupKey<T>
+pub struct HashableGroupKey<T>
 where
     T: sea_orm::EntityTrait,
 {
@@ -50,7 +50,7 @@ where
     pub order_by: Vec<(T::Column, sea_orm::sea_query::Order)>,
 }
 
-impl<T> PartialEq for HashAbleGroupKey<T>
+impl<T> PartialEq for HashableGroupKey<T>
 where
     T: sea_orm::EntityTrait,
 {
@@ -61,9 +61,9 @@ where
     }
 }
 
-impl<T> Eq for HashAbleGroupKey<T> where T: sea_orm::EntityTrait {}
+impl<T> Eq for HashableGroupKey<T> where T: sea_orm::EntityTrait {}
 
-impl<T> Hash for HashAbleGroupKey<T>
+impl<T> Hash for HashableGroupKey<T>
 where
     T: sea_orm::EntityTrait,
 {
@@ -75,11 +75,11 @@ where
 }
 
 #[derive(Clone, Debug)]
-pub struct HashAbleColumn<T>(T::Column)
+pub struct HashableColumn<T>(T::Column)
 where
     T: sea_orm::EntityTrait;
 
-impl<T> PartialEq for HashAbleColumn<T>
+impl<T> PartialEq for HashableColumn<T>
 where
     T: sea_orm::EntityTrait,
 {
@@ -88,9 +88,9 @@ where
     }
 }
 
-impl<T> Eq for HashAbleColumn<T> where T: sea_orm::EntityTrait {}
+impl<T> Eq for HashableColumn<T> where T: sea_orm::EntityTrait {}
 
-impl<T> Hash for HashAbleColumn<T>
+impl<T> Hash for HashableColumn<T>
 where
     T: sea_orm::EntityTrait,
 {
@@ -133,12 +133,12 @@ where
         &self,
         keys: &[KeyComplex<T>],
     ) -> Result<HashMap<KeyComplex<T>, Self::Value>, Self::Error> {
-        let items: HashMap<HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>> = keys
+        let items: HashMap<HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>> = keys
             .iter()
             .cloned()
             .map(|item: KeyComplex<T>| {
                 (
-                    HashAbleGroupKey {
+                    HashableGroupKey {
                         stmt: item.meta.stmt,
                         columns: item.meta.columns,
                         filters: item.meta.filters,
@@ -148,9 +148,9 @@ where
                 )
             })
             .fold(
-                HashMap::<HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>>::new(),
-                |mut acc: HashMap<HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>>,
-                 cur: (HashAbleGroupKey<T>, Vec<sea_orm::Value>)| {
+                HashMap::<HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>>::new(),
+                |mut acc: HashMap<HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>>,
+                 cur: (HashableGroupKey<T>, Vec<sea_orm::Value>)| {
                     match acc.get_mut(&cur.0) {
                         Some(items) => {
                             items.push(cur.1);
@@ -164,10 +164,10 @@ where
                 },
             );
 
-        let promises: HashMap<HashAbleGroupKey<T>, _> = items
+        let promises: HashMap<HashableGroupKey<T>, _> = items
             .into_iter()
             .map(
-                |(key, values): (HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>)| {
+                |(key, values): (HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>)| {
                     let cloned_key = key.clone();
 
                     let stmt = key.stmt;
@@ -194,7 +194,7 @@ where
         let mut results: HashMap<KeyComplex<T>, Vec<T::Model>> = HashMap::new();
 
         for (key, promise) in promises.into_iter() {
-            let key = key as HashAbleGroupKey<T>;
+            let key = key as HashableGroupKey<T>;
             let result: Vec<T::Model> = promise.await.map_err(Arc::new)?;
             for item in result.into_iter() {
                 let key = &KeyComplex::<T> {
@@ -254,12 +254,12 @@ where
         &self,
         keys: &[KeyComplex<T>],
     ) -> Result<HashMap<KeyComplex<T>, Self::Value>, Self::Error> {
-        let items: HashMap<HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>> = keys
+        let items: HashMap<HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>> = keys
             .iter()
             .cloned()
             .map(|item: KeyComplex<T>| {
                 (
-                    HashAbleGroupKey {
+                    HashableGroupKey {
                         stmt: item.meta.stmt,
                         columns: item.meta.columns,
                         filters: item.meta.filters,
@@ -269,9 +269,9 @@ where
                 )
             })
             .fold(
-                HashMap::<HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>>::new(),
-                |mut acc: HashMap<HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>>,
-                 cur: (HashAbleGroupKey<T>, Vec<sea_orm::Value>)| {
+                HashMap::<HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>>::new(),
+                |mut acc: HashMap<HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>>,
+                 cur: (HashableGroupKey<T>, Vec<sea_orm::Value>)| {
                     match acc.get_mut(&cur.0) {
                         Some(items) => {
                             items.push(cur.1);
@@ -285,10 +285,10 @@ where
                 },
             );
 
-        let promises: HashMap<HashAbleGroupKey<T>, _> = items
+        let promises: HashMap<HashableGroupKey<T>, _> = items
             .into_iter()
             .map(
-                |(key, values): (HashAbleGroupKey<T>, Vec<Vec<sea_orm::Value>>)| {
+                |(key, values): (HashableGroupKey<T>, Vec<Vec<sea_orm::Value>>)| {
                     let cloned_key = key.clone();
 
                     let stmt = key.stmt;
@@ -315,7 +315,7 @@ where
         let mut results: HashMap<KeyComplex<T>, T::Model> = HashMap::new();
 
         for (key, promise) in promises.into_iter() {
-            let key = key as HashAbleGroupKey<T>;
+            let key = key as HashableGroupKey<T>;
             let result: Vec<T::Model> = promise.await.map_err(Arc::new)?;
             for item in result.into_iter() {
                 let key = &KeyComplex::<T> {
