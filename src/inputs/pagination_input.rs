@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
+use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
 
 use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBuilder};
 
@@ -6,7 +6,7 @@ use super::{CursorInput, OffsetInput, PageInput};
 
 /// used to hold information about which pagination
 /// strategy will be applied on the query
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PaginationInput {
     pub cursor: Option<CursorInput>,
     pub page: Option<PageInput>,
@@ -65,7 +65,18 @@ impl PaginationInputBuilder {
     }
 
     /// used to parse query input to pagination information structure
-    pub fn parse_object(&self, object: &ObjectAccessor) -> PaginationInput {
+    pub fn parse_object(&self, value: Option<ValueAccessor<'_>>) -> PaginationInput {
+        if value.is_none() {
+            return PaginationInput {
+                cursor: None,
+                offset: None,
+                page: None,
+            };
+        }
+
+        let binding = value.unwrap();
+        let object = binding.object().unwrap();
+
         let cursor_input_builder = CursorInputBuilder {
             context: self.context,
         };

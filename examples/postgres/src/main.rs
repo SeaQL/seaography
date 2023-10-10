@@ -1,13 +1,9 @@
-use async_graphql::{
-    dataloader::DataLoader,
-    http::{playground_source, GraphQLPlaygroundConfig},
-};
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
-use seaography_postgres_example::*;
 use std::env;
 
 lazy_static! {
@@ -39,15 +35,8 @@ async fn main() {
     let database = Database::connect(&*DATABASE_URL)
         .await
         .expect("Fail to initialize database connection");
-    let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-        OrmDataloader {
-            db: database.clone(),
-        },
-        tokio::spawn,
-    );
     let schema = seaography_postgres_example::query_root::schema(
         database,
-        orm_dataloader,
         *DEPTH_LIMIT,
         *COMPLEXITY_LIMIT,
     )

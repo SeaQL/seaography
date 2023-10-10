@@ -1,12 +1,11 @@
 use std::collections::BTreeMap;
 
-use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
+use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection, RelationTrait};
 use seaography::{
     Builder, BuilderContext, EntityObjectRelationBuilder, EntityObjectViaRelationBuilder, FnGuard,
     GuardsConfig,
 };
-use seaography_sqlite_example::OrmDataloader;
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {
@@ -31,11 +30,10 @@ lazy_static::lazy_static! {
 
 pub fn schema(
     database: DatabaseConnection,
-    orm_dataloader: DataLoader<OrmDataloader>,
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT);
+    let mut builder = Builder::new(&CONTEXT, database.clone());
     let entity_object_relation_builder = EntityObjectRelationBuilder { context: &CONTEXT };
     let entity_object_via_relation_builder = EntityObjectViaRelationBuilder { context: &CONTEXT };
     builder.register_entity::<seaography_sqlite_example::entities::film_actor::Entity>(vec![
@@ -270,18 +268,12 @@ pub fn schema(
     } else {
         schema
     };
-    schema.data(database).data(orm_dataloader).finish()
+    schema.data(database).finish()
 }
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-        OrmDataloader {
-            db: database.clone(),
-        },
-        tokio::spawn,
-    );
-    let schema = schema(database, orm_dataloader, None, None).unwrap();
+    let schema = schema(database, None, None).unwrap();
 
     schema
 }

@@ -1,4 +1,7 @@
-use async_graphql::dynamic::{Enum, Field, InputObject, Object, Schema, SchemaBuilder};
+use async_graphql::{
+    dataloader::DataLoader,
+    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+};
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
@@ -6,14 +9,18 @@ use crate::{
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
     EntityCreateOneMutationBuilder, EntityInputBuilder, EntityObjectBuilder,
     EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper,
-    OffsetInputBuilder, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder,
-    PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
+    OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder, OrderInputBuilder,
+    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
 ///
 /// You can populate it with the entities, enumerations of your choice
 pub struct Builder {
+    pub query: Object,
+    pub mutation: Object,
+    pub schema: SchemaBuilder,
+
     /// holds all output object types
     pub outputs: Vec<Object>,
 
@@ -29,19 +36,34 @@ pub struct Builder {
     /// holds all entities mutations
     pub mutations: Vec<Field>,
 
+    /// holds a copy to the database connection
+    pub connection: sea_orm::DatabaseConnection,
+
     /// configuration for builder
     pub context: &'static BuilderContext,
 }
 
 impl Builder {
     /// Used to create a new Builder from the given configuration context
-    pub fn new(context: &'static BuilderContext) -> Self {
+    pub fn new(context: &'static BuilderContext, connection: sea_orm::DatabaseConnection) -> Self {
+        let query: Object = Object::new("Query");
+        let mutation = Object::new("Mutation").field(Field::new(
+            "_ping",
+            TypeRef::named(TypeRef::STRING),
+            |_| FieldFuture::new(async move { Ok(Some(async_graphql::Value::from("pong"))) }),
+        ));
+        let schema = Schema::build(query.type_name(), Some(mutation.type_name()), None);
+
         Self {
+            query,
+            mutation,
+            schema,
             outputs: Vec::new(),
             inputs: Vec::new(),
             enumerations: Vec::new(),
             queries: Vec::new(),
             mutations: Vec::new(),
+            connection,
             context,
         }
     }
@@ -113,7 +135,6 @@ impl Builder {
             .extend(vec![entity_insert_input_object, entity_update_input_object]);
 
         // create one mutation
-
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
             context: self.context,
         };
@@ -134,6 +155,38 @@ impl Builder {
         };
         let update_mutation = entity_update_mutation_builder.to_field::<T, A>();
         self.mutations.push(update_mutation);
+    }
+
+    pub fn register_entity_dataloader_one_to_one<T, R, S>(mut self, _entity: T, spawner: S) -> Self
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+        S: Fn(async_graphql::futures_util::future::BoxFuture<'static, ()>) -> R
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.schema = self.schema.data(DataLoader::new(
+            OneToOneLoader::<T>::new(self.connection.clone()),
+            spawner,
+        ));
+        self
+    }
+
+    pub fn register_entity_dataloader_one_to_many<T, R, S>(mut self, _entity: T, spawner: S) -> Self
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+        S: Fn(async_graphql::futures_util::future::BoxFuture<'static, ()>) -> R
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.schema = self.schema.data(DataLoader::new(
+            OneToManyLoader::<T>::new(self.connection.clone()),
+            spawner,
+        ));
+        self
     }
 
     /// used to register a new enumeration to the builder context
@@ -161,19 +214,9 @@ impl Builder {
 
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
     pub fn schema_builder(self) -> SchemaBuilder {
-        let query: Object = Object::new("Query");
-
-        let schema = if !self.mutations.is_empty() {
-            let mutation = Object::new("Mutation");
-            // register mutations
-            let mutation = self
-                .mutations
-                .into_iter()
-                .fold(mutation, |mutation, field| mutation.field(field));
-            Schema::build(query.type_name(), Some(mutation.type_name()), None).register(mutation)
-        } else {
-            Schema::build(query.type_name(), None, None)
-        };
+        let query = self.query;
+        let mutation = self.mutation;
+        let schema = self.schema;
 
         // register queries
         let query = self
@@ -181,7 +224,13 @@ impl Builder {
             .into_iter()
             .fold(query, |query, field| query.field(field));
 
-        // register output types to schema
+        // register mutations
+        let mutation = self
+            .mutations
+            .into_iter()
+            .fold(mutation, |mutation, field| mutation.field(field));
+
+        // register entities to schema
         let schema = self
             .outputs
             .into_iter()
@@ -258,6 +307,7 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
+            .register(mutation)
     }
 }
 
@@ -276,6 +326,10 @@ macro_rules! register_entity {
                 .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
                 .collect(),
         );
+        $builder =
+            $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
+        $builder =
+            $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
         $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
     };
 }

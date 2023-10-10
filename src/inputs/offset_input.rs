@@ -3,7 +3,7 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use crate::BuilderContext;
 
 /// used to hold information about offset pagination
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OffsetInput {
     pub offset: u64,
     pub limit: u64,

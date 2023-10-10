@@ -10,16 +10,12 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.replace('-', "_").parse().unwrap();
 
     quote! {
-        use async_graphql::{
-            dataloader::DataLoader,
-            http::{playground_source, GraphQLPlaygroundConfig}
-        };
+        use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
         use async_graphql_poem::GraphQL;
         use dotenv::dotenv;
         use lazy_static::lazy_static;
         use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
         use sea_orm::Database;
-        use #crate_name_token::*;
         use std::env;
 
         lazy_static! {
@@ -51,14 +47,8 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             let database = Database::connect(&*DATABASE_URL)
                 .await
                 .expect("Fail to initialize database connection");
-            let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-                OrmDataloader {
-                    db: database.clone(),
-                },
-                tokio::spawn,
-            );
 
-            let schema = #crate_name_token::query_root::schema(database, orm_dataloader, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
+            let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
 
             let app = Route::new().at(
                 &*ENDPOINT,

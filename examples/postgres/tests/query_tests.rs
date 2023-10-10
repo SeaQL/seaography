@@ -1,19 +1,12 @@
-use async_graphql::{dataloader::DataLoader, dynamic::*, Response};
+use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
-use seaography_postgres_example::OrmDataloader;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let orm_dataloader: DataLoader<OrmDataloader> = DataLoader::new(
-        OrmDataloader {
-            db: database.clone(),
-        },
-        tokio::spawn,
-    );
     let schema =
-        seaography_postgres_example::query_root::schema(database, orm_dataloader, None, None)
+        seaography_postgres_example::query_root::schema(database, None, None)
             .unwrap();
 
     schema
@@ -524,104 +517,101 @@ async fn related_queries_filters() {
         schema
             .execute(
                 r#"
-              {
-                  customer(
-                    filters: { active: { eq: 0 } }
-                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
-                  ) {
-                    nodes {
-                      customerId
-                      lastName
-                      email
-                      address {
-                        address
-                      }
-                      payment(filters: { amount: { gt: "8" } }, orderBy: { amount: DESC }) {
-                        nodes {
-                          paymentId
+                {
+                    customer(
+                      filters: { active: { eq: 0 } }
+                      pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                      orderBy: { customerId: ASC }
+                    ) {
+                      nodes {
+                        customerId
+                        lastName
+                        email
+                        address {
+                          address
+                        }
+                        payment(
+                          filters: { amount: { gt: "8" } }
+                          orderBy: { amount: DESC }
+                          pagination: { offset: { limit: 1, offset: 0 } }
+                        ) {
+                          nodes {
+                            paymentId
+                            amount
+                          }
                         }
                       }
+                      pageInfo {
+                        hasPreviousPage
+                        hasNextPage
+                        endCursor
+                      }
                     }
-                    pageInfo {
-                      hasPreviousPage
-                      hasNextPage
-                      endCursor
-                    }
-                  }
-              }
+                }
               "#,
             )
             .await,
         r#"
-            {
-              "customer": {
-                "nodes": [
-                  {
-                    "customerId": 315,
-                    "lastName": "GOODEN",
-                    "email": "KENNETH.GOODEN@sakilacustomer.org",
-                    "address": {
-                      "address": "1542 Lubumbashi Boulevard"
-                    },
-                    "payment": {
-                      "nodes": [
-                        {
-                          "paymentId": 8547
-                        },
-                        {
-                          "paymentId": 8537
-                        }
-                      ]
-                    }
+        {
+            "customer": {
+              "nodes": [
+                {
+                  "customerId": 315,
+                  "lastName": "GOODEN",
+                  "email": "KENNETH.GOODEN@sakilacustomer.org",
+                  "address": {
+                    "address": "1542 Lubumbashi Boulevard"
                   },
-                  {
-                    "customerId": 368,
-                    "lastName": "ARCE",
-                    "email": "HARRY.ARCE@sakilacustomer.org",
-                    "address": {
-                      "address": "1922 Miraj Way"
-                    },
-                    "payment": {
-                      "nodes": [
-                        {
-                          "paymentId": 9945
-                        },
-                        {
-                          "paymentId": 9953
-                        },
-                        {
-                          "paymentId": 9962
-                        },
-                        {
-                          "paymentId": 9967
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "customerId": 406,
-                    "lastName": "RUNYON",
-                    "email": "NATHAN.RUNYON@sakilacustomer.org",
-                    "address": {
-                      "address": "264 Bhimavaram Manor"
-                    },
-                    "payment": {
-                      "nodes": [
-                        {
-                          "paymentId": 10998
-                        }
-                      ]
-                    }
+                  "payment": {
+                    "nodes": [
+                      {
+                        "paymentId": 8547,
+                        "amount": "9.9900"
+                      }
+                    ]
                   }
-                ],
-                "pageInfo": {
-                  "hasPreviousPage": true,
-                  "hasNextPage": true,
-                  "endCursor": "Int[3]:406"
+                },
+                {
+                  "customerId": 368,
+                  "lastName": "ARCE",
+                  "email": "HARRY.ARCE@sakilacustomer.org",
+                  "address": {
+                    "address": "1922 Miraj Way"
+                  },
+                  "payment": {
+                    "nodes": [
+                      {
+                        "paymentId": 9945,
+                        "amount": "9.9900"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "customerId": 406,
+                  "lastName": "RUNYON",
+                  "email": "NATHAN.RUNYON@sakilacustomer.org",
+                  "address": {
+                    "address": "264 Bhimavaram Manor"
+                  },
+                  "payment": {
+                    "nodes": [
+                      {
+                        "paymentId": 10998,
+                        "amount": "8.9900"
+                      }
+                    ]
+                  }
                 }
+              ],
+              "pageInfo": {
+                "hasPreviousPage": true,
+                "hasNextPage": true,
+                "endCursor": "Int[3]:406"
               }
             }
-            "#,
+        }
+        "#,
     );
 
     assert_eq(

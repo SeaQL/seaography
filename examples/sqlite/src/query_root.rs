@@ -1,5 +1,5 @@
-use crate::{entities::*, OrmDataloader};
-use async_graphql::{dataloader::DataLoader, dynamic::*};
+use crate::entities::*;
+use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
 use seaography::{Builder, BuilderContext};
 
@@ -7,30 +7,29 @@ lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext
 
 pub fn schema(
     database: DatabaseConnection,
-    orm_dataloader: DataLoader<OrmDataloader>,
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT);
+    let mut builder = Builder::new(&CONTEXT, database.clone());
     seaography::register_entities!(
         builder,
         [
-            film_actor,
-            rental,
-            category,
-            staff,
-            country,
-            film,
             actor,
-            language,
-            city,
-            inventory,
-            film_text,
-            film_category,
-            customer,
-            store,
-            payment,
             address,
+            category,
+            city,
+            country,
+            customer,
+            film,
+            film_actor,
+            film_category,
+            film_text,
+            inventory,
+            language,
+            payment,
+            rental,
+            staff,
+            store,
         ]
     );
     let schema = builder.schema_builder();
@@ -44,5 +43,5 @@ pub fn schema(
     } else {
         schema
     };
-    schema.data(database).data(orm_dataloader).finish()
+    schema.data(database).finish()
 }
