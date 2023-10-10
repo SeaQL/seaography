@@ -1,5 +1,7 @@
 use async_graphql::dynamic::{Field, FieldFuture, InputValue, TypeRef};
-use sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter, DeleteResult};
+use sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DeleteResult, EntityTrait, IntoActiveModel, QueryFilter,
+};
 
 use crate::{
     get_filter_conditions, BuilderContext, EntityObjectBuilder, EntityQueryFieldBuilder,
@@ -74,7 +76,8 @@ impl EntityDeleteMutationBuilder {
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
                     let filter_condition = get_filter_conditions::<T>(context, filters);
 
-                    let res: DeleteResult = T::delete_many().filter(filter_condition).exec(db).await?;
+                    let res: DeleteResult =
+                        T::delete_many().filter(filter_condition).exec(db).await?;
 
                     Ok(Some(async_graphql::Value::from(res.rows_affected)))
                 })

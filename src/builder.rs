@@ -7,10 +7,11 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
-    EntityCreateOneMutationBuilder, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper,
-    OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder, OrderInputBuilder,
-    PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, EntityDeleteMutationBuilder,
+    EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
+    EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
+    FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
+    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
+    PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
