@@ -3,7 +3,7 @@ use std::{collections::HashMap, hash::Hash, marker::PhantomData, sync::Arc};
 
 use crate::apply_order;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct KeyComplex<T>
 where
     T: sea_orm::EntityTrait,
@@ -19,7 +19,37 @@ where
     T: sea_orm::EntityTrait,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.key.eq(&other.key) && self.meta.eq(&other.meta)
+        self.key.iter().map(map_key).eq(other.key.iter().map(map_key)) && self.meta.eq(&other.meta)
+    }
+}
+
+fn map_key(key: &sea_orm::Value) -> sea_orm::Value {
+    match key {
+        sea_orm::Value::TinyInt(value) => {
+            let value: Option<i64> = value.map(|value| value as i64);
+            sea_orm::Value::BigInt(value)
+        },
+        sea_orm::Value::SmallInt(value) => {
+            let value: Option<i64> = value.map(|value| value as i64);
+            sea_orm::Value::BigInt(value)
+        },
+        sea_orm::Value::Int(value) => {
+            let value: Option<i64> = value.map(|value| value as i64);
+            sea_orm::Value::BigInt(value)
+        },
+        sea_orm::Value::TinyUnsigned(value) => {
+            let value: Option<u64> = value.map(|value| value as u64);
+            sea_orm::Value::BigUnsigned(value)
+        },
+        sea_orm::Value::SmallUnsigned(value) => {
+            let value: Option<u64> = value.map(|value| value as u64);
+            sea_orm::Value::BigUnsigned(value)
+        },
+        sea_orm::Value::Unsigned(value) => {
+            let value: Option<u64> = value.map(|value| value as u64);
+            sea_orm::Value::BigUnsigned(value)
+        },
+        _ => key.clone()
     }
 }
 
@@ -30,12 +60,40 @@ where
     T: sea_orm::EntityTrait,
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.key.hash(state);
+        for key in self.key.iter() {
+            match key {
+                sea_orm::Value::TinyInt(value) => {
+                    let value: Option<i64> = value.map(|value| value as i64);
+                    value.hash(state);
+                },
+                sea_orm::Value::SmallInt(value) => {
+                    let value: Option<i64> = value.map(|value| value as i64);
+                    value.hash(state);
+                },
+                sea_orm::Value::Int(value) => {
+                    let value: Option<i64> = value.map(|value| value as i64);
+                    value.hash(state);
+                },
+                sea_orm::Value::TinyUnsigned(value) => {
+                    let value: Option<u64> = value.map(|value| value as u64);
+                    value.hash(state);
+                },
+                sea_orm::Value::SmallUnsigned(value) => {
+                    let value: Option<u64> = value.map(|value| value as u64);
+                    value.hash(state);
+                },
+                sea_orm::Value::Unsigned(value) => {
+                    let value: Option<u64> = value.map(|value| value as u64);
+                    value.hash(state);
+                },
+                _ => key.hash(state)
+            }
+        }
         self.meta.hash(state);
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct HashableGroupKey<T>
 where
     T: sea_orm::EntityTrait,
