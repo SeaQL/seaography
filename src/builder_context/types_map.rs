@@ -176,16 +176,16 @@ impl TypesMapHelper {
                 variants: _variants,
             } => ConvertedType::Enum(name.to_string()),
 
-            #[cfg(not(feature = "postgres-array"))]
+            #[cfg(not(feature = "with-postgres-array"))]
             ColumnType::Array(_) => ConvertedType::String,
-            #[cfg(feature = "postgres-array")]
+            #[cfg(feature = "with-postgres-array")]
             ColumnType::Array(ty) => {
-                let inner = self.map_sea_orm_type_helper(
+                let inner = self.get_column_type_helper(
                     entity_name,
                     &format!("{}.array", column_name),
                     column_type,
                 );
-                ConvertedType::Array(inner)
+                ConvertedType::Array(Box::new(inner))
             }
 
             #[cfg(not(feature = "with-ipnetwork"))]
@@ -503,7 +503,7 @@ impl TypesMapHelper {
                 sea_orm::Value::BigDecimal(Some(Box::new(value)))
             }
             // FIXME: support array type
-            #[cfg(feature = "postgres-array")]
+            #[cfg(feature = "with-postgres-array")]
             ConvertedType::Array(ConvertedType) => {
                 let value = value.string()?;
                 sea_orm::Value::String(Some(Box::new(value.to_string())))
@@ -525,14 +525,14 @@ impl TypesMapHelper {
 
     /// used to map from a SeaORM column type to an async_graphql type
     /// None indicates that we do not support the type
-    pub fn sea_orm_column_type_to_graphql_type(&self, ty: &ColumnType) -> Option<String> {
+    pub fn sea_orm_column_type_to_graphql_type(&self, ty: &ColumnType, not_null: bool) -> Option<TypeRef> {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
         };
 
         match ty {
             ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                Some(TypeRef::STRING.into())
+                Some(TypeRef::named(TypeRef::STRING))
             }
             ColumnType::TinyInteger
             | ColumnType::SmallInteger
@@ -541,36 +541,73 @@ impl TypesMapHelper {
             | ColumnType::TinyUnsigned
             | ColumnType::SmallUnsigned
             | ColumnType::Unsigned
-            | ColumnType::BigUnsigned => Some(TypeRef::INT.into()),
-            ColumnType::Float | ColumnType::Double => Some(TypeRef::FLOAT.into()),
-            ColumnType::Decimal(_) | ColumnType::Money(_) => Some(TypeRef::STRING.into()),
+            | ColumnType::BigUnsigned => Some(TypeRef::named(TypeRef::INT)),
+            ColumnType::Float | ColumnType::Double => Some(TypeRef::named(TypeRef::FLOAT)),
+            ColumnType::Decimal(_) | ColumnType::Money(_) => Some(TypeRef::named(TypeRef::STRING)),
             ColumnType::DateTime
             | ColumnType::Timestamp
             | ColumnType::TimestampWithTimeZone
             | ColumnType::Time
-            | ColumnType::Date => Some(TypeRef::STRING.into()),
-            ColumnType::Year(_) => Some(TypeRef::INT.into()),
-            ColumnType::Interval(_, _) => Some(TypeRef::STRING.into()),
+            | ColumnType::Date => Some(TypeRef::named(TypeRef::STRING)),
+            ColumnType::Year(_) => Some(TypeRef::named(TypeRef::INT)),
+            ColumnType::Interval(_, _) => Some(TypeRef::named(TypeRef::STRING)),
             ColumnType::Binary(_)
             | ColumnType::VarBinary(_)
             | ColumnType::Bit(_)
-            | ColumnType::VarBit(_) => Some(TypeRef::STRING.into()),
-            ColumnType::Boolean => Some(TypeRef::BOOLEAN.into()),
+            | ColumnType::VarBit(_) => Some(TypeRef::named(TypeRef::STRING)),
+            ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
             // FIXME: support json type
             ColumnType::Json | ColumnType::JsonBinary => None,
-            ColumnType::Uuid => Some(TypeRef::STRING.into()),
+            ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
             ColumnType::Enum {
                 name: enum_name,
                 variants: _,
-            } => Some(active_enum_builder.type_name_from_iden(enum_name)),
+            } => Some(TypeRef::named(active_enum_builder.type_name_from_iden(enum_name))),
             ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
-                Some(TypeRef::STRING.into())
+                Some(TypeRef::named(TypeRef::STRING))
             }
-            // FIXME: support array type
-            ColumnType::Array(_) => None,
-            ColumnType::Custom(_iden) => Some(TypeRef::STRING.into()),
+            ColumnType::Array(iden) => {
+                // FIXME: Propagating the not_null flag here is probably incorrect. The following
+                // types are all logically valid:
+                // - [T]
+                // - [T!]
+                // - [T]!
+                // - [T!]!
+                // - [[T]]
+                // - [[T!]]
+                // - [[T]!]
+                // - [[T!]!]
+                // - [[T!]!]!
+                // - [[T!]]! (etc, recursively)
+                //
+                // This is true for both GraphQL itself but also for the equivalent types in some
+                // backends, like Postgres.
+                //
+                // However, the not_null flag lives on the column definition in sea_query, not on
+                // the type itself. That means we lose the ability to represent nullability
+                // reliably on any inner type. We have three options:
+                // - pass down the flag (what we're doing here):
+                //   pros: likely the most common intent from those who care about nullability
+                //   cons: can be incorrect in both inserts and queries
+                // - always pass true:
+                //   pros: none? maybe inserts are easier to reason about?
+                //   cons: just as likely to be wrong as flag passing
+                // - always pass false:
+                //   pros: always technically workable for queries (annoying for non-null data)
+                //   conts: bad for inserts
+                let iden_type = self.sea_orm_column_type_to_graphql_type(iden.as_ref(), true);
+                iden_type.map(|it| TypeRef::List(Box::new(it)))
+            },
+            ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
             _ => None,
         }
+            .map(|ty| {
+                if not_null {
+                    TypeRef::NonNull(Box::new(ty))
+                } else {
+                    ty
+                }
+        })
     }
 }
 
@@ -648,9 +685,9 @@ pub enum ConvertedType {
     #[cfg(feature = "with-bigdecimal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
     BigDecimal,
-    #[cfg(feature = "postgres-array")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "postgres-array")))]
-    Array(ConvertedType),
+    #[cfg(feature = "with-postgres-array")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "with-postgres-array")))]
+    Array(Box<ConvertedType>),
     #[cfg(feature = "with-ipnetwork")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
     IpNetwork,
