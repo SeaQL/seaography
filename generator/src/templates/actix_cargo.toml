@@ -4,15 +4,15 @@ name = "<seaography-package-name>"
 version = "0.3.0"
 
 [dependencies]
-actix-web = { version = "4.3.1", default-features = false, features = ["macros"] }
-async-graphql-actix-web = { version = "6.0.7" }
-async-graphql = { version = "6.0.7", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
-async-trait = { version = "0.1.72" }
+actix-web = { version = "4.4.0", default-features = false, features = ["macros"] }
+async-graphql-actix-web = { version = "6.0.11" }
+async-graphql = { version = "6.0.11", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+async-trait = { version = "0.1.74" }
 dotenv = "0.15.0"
-sea-orm = { version = "0.12.0", features = ["<seaography-sql-library>", "runtime-async-std-native-tls", "seaography"] }
-tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
-tracing = { version = "0.1.37" }
-tracing-subscriber = { version = "0.3.17" }
+sea-orm = { version = "0.12.10", features = ["<seaography-sql-library>", "runtime-async-std-native-tls", "seaography"] }
+tokio = { version = "1.35.0", features = ["macros", "rt-multi-thread"] }
+tracing = { version = "0.1.40" }
+tracing-subscriber = { version = "0.3.18" }
 lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
@@ -20,7 +20,7 @@ version = "<seaography-version>" # seaography version
 features = ["with-decimal", "with-chrono"]
 
 [dev-dependencies]
-serde_json = { version = "1.0.103" }
+serde_json = { version = "1.0.108" }
 
 [workspace]
 members = []
