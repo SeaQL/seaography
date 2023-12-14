@@ -187,11 +187,11 @@ async fn test_complex_filter_with_pagination() {
                     "nodes": [
                         {
                         "paymentId": 8272,
-                        "amount": "11.9900"
+                        "amount": "11.99"
                         },
                         {
                         "paymentId": 9803,
-                        "amount": "11.9900"
+                        "amount": "11.99"
                         }
                     ],
                     "paginationInfo": {
@@ -244,7 +244,7 @@ async fn test_cursor_pagination() {
                     {
                         "node": {
                         "paymentId": 342,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "KAREN"
                         }
@@ -253,7 +253,7 @@ async fn test_cursor_pagination() {
                     {
                         "node": {
                         "paymentId": 3146,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "VICTORIA"
                         }
@@ -262,7 +262,7 @@ async fn test_cursor_pagination() {
                     {
                         "node": {
                         "paymentId": 5280,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "VANESSA"
                         }
@@ -271,7 +271,7 @@ async fn test_cursor_pagination() {
                     {
                         "node": {
                         "paymentId": 5281,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "ALMA"
                         }
@@ -280,7 +280,7 @@ async fn test_cursor_pagination() {
                     {
                         "node": {
                         "paymentId": 5550,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "ROSEMARY"
                         }
@@ -339,7 +339,7 @@ async fn test_cursor_pagination_prev() {
                     {
                         "node": {
                         "paymentId": 6409,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "TANYA"
                         }
@@ -348,7 +348,7 @@ async fn test_cursor_pagination_prev() {
                     {
                         "node": {
                         "paymentId": 8272,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "RICHARD"
                         }
@@ -357,7 +357,7 @@ async fn test_cursor_pagination_prev() {
                     {
                         "node": {
                         "paymentId": 9803,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "NICHOLAS"
                         }
@@ -416,7 +416,7 @@ async fn test_cursor_pagination_no_next() {
                     {
                         "node": {
                         "paymentId": 15821,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "KENT"
                         }
@@ -425,7 +425,7 @@ async fn test_cursor_pagination_no_next() {
                     {
                         "node": {
                         "paymentId": 15850,
-                        "amount": "11.9900",
+                        "amount": "11.99",
                         "customer": {
                             "firstName": "TERRANCE"
                         }
@@ -566,7 +566,7 @@ async fn related_queries_filters() {
                     "nodes": [
                       {
                         "paymentId": 8547,
-                        "amount": "9.9900"
+                        "amount": "9.99"
                       }
                     ]
                   }
@@ -582,7 +582,7 @@ async fn related_queries_filters() {
                     "nodes": [
                       {
                         "paymentId": 9945,
-                        "amount": "9.9900"
+                        "amount": "9.99"
                       }
                     ]
                   }
@@ -598,7 +598,7 @@ async fn related_queries_filters() {
                     "nodes": [
                       {
                         "paymentId": 10998,
-                        "amount": "8.9900"
+                        "amount": "8.99"
                       }
                     ]
                   }
@@ -760,7 +760,7 @@ async fn related_queries_pagination() {
                     "nodes": [
                       {
                         "paymentId": 8547,
-                        "amount": "9.9900"
+                        "amount": "9.99"
                       }
                     ],
                     "paginationInfo": {
@@ -784,7 +784,7 @@ async fn related_queries_pagination() {
                     "nodes": [
                       {
                         "paymentId": 9972,
-                        "amount": "7.9900"
+                        "amount": "7.99"
                       }
                     ],
                     "paginationInfo": {
@@ -808,7 +808,7 @@ async fn related_queries_pagination() {
                     "nodes": [
                       {
                         "paymentId": 10989,
-                        "amount": "7.9900"
+                        "amount": "7.99"
                       }
                     ],
                     "paginationInfo": {
