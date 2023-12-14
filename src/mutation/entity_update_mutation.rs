@@ -6,7 +6,7 @@ use sea_orm::{
 
 use crate::{
     get_filter_conditions, prepare_active_model, BuilderContext, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder,
+    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, GuardAction,
 };
 
 /// The configuration structure of EntityUpdateMutationBuilder
@@ -75,11 +75,31 @@ impl EntityUpdateMutationBuilder {
 
         let context = self.context;
 
+        let guard = self.context.guards.entity_guards.get(&object_name);
+        let field_guards = &self.context.guards.field_guards;
+
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn_list_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
                 FieldFuture::new(async move {
+                    let guard_flag = if let Some(guard) = guard {
+                        (*guard)(&ctx)
+                    } else {
+                        GuardAction::Allow
+                    };
+
+                    if let GuardAction::Block(reason) = guard_flag {
+                        return match reason {
+                            Some(reason) => Err::<Option<_>, async_graphql::Error>(
+                                async_graphql::Error::new(reason),
+                            ),
+                            None => Err::<Option<_>, async_graphql::Error>(
+                                async_graphql::Error::new("Entity guard triggered."),
+                            ),
+                        };
+                    }
+
                     let db = ctx.data::<DatabaseConnection>()?;
                     let transaction = db.begin().await?;
 
@@ -95,6 +115,30 @@ impl EntityUpdateMutationBuilder {
                         .get(&context.entity_create_one_mutation.data_field)
                         .unwrap();
                     let input_object = &value_accessor.object()?;
+
+                    for (column, _) in input_object.iter() {
+                        let field_guard = field_guards.get(&format!(
+                            "{}.{}",
+                            entity_object_builder.type_name::<T>(),
+                            column
+                        ));
+                        let field_guard_flag = if let Some(field_guard) = field_guard {
+                            (*field_guard)(&ctx)
+                        } else {
+                            GuardAction::Allow
+                        };
+                        if let GuardAction::Block(reason) = field_guard_flag {
+                            return match reason {
+                                Some(reason) => Err::<Option<_>, async_graphql::Error>(
+                                    async_graphql::Error::new(reason),
+                                ),
+                                None => Err::<Option<_>, async_graphql::Error>(
+                                    async_graphql::Error::new("Field guard triggered."),
+                                ),
+                            };
+                        }
+                    }
+
                     let active_model = prepare_active_model::<T, A>(
                         &entity_input_builder,
                         &entity_object_builder,
