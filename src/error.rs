@@ -10,6 +10,8 @@ pub enum SeaographyError {
     ParseIntError(#[from] std::num::ParseIntError),
     #[error("[type conversion: {1}] {0}")]
     TypeConversionError(String, String),
+    #[error("[array conversion] postgres array can not be nested type of array")]
+    NestedArrayConversionError
 }
 
 impl From<async_graphql::Error> for SeaographyError {

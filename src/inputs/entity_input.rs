@@ -98,7 +98,7 @@ impl EntityInputBuilder {
 
             let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
                 column_def.get_column_type(),
-                !column_def.is_null() || is_insert,
+                !column_def.is_null() && is_insert,
             ) {
                 Some(type_name) => type_name,
                 None => return object,
