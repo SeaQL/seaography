@@ -189,17 +189,17 @@ impl EntityObjectBuilder {
 
 fn sea_query_value_to_graphql_value(sea_query_value: sea_orm::sea_query::Value, is_enum: bool) -> Option<Value> {
     match sea_query_value {
-        sea_orm::Value::Bool(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::TinyInt(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::SmallInt(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::Int(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::BigInt(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::TinyUnsigned(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::SmallUnsigned(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::Unsigned(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::BigUnsigned(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::Float(value) => value.map(|it| Value::from(it)),
-        sea_orm::Value::Double(value) => value.map(|it| Value::from(it)),
+        sea_orm::Value::Bool(value) => value.map(Value::from),
+        sea_orm::Value::TinyInt(value) => value.map(Value::from),
+        sea_orm::Value::SmallInt(value) => value.map(Value::from),
+        sea_orm::Value::Int(value) => value.map(Value::from),
+        sea_orm::Value::BigInt(value) => value.map(Value::from),
+        sea_orm::Value::TinyUnsigned(value) => value.map(Value::from),
+        sea_orm::Value::SmallUnsigned(value) => value.map(Value::from),
+        sea_orm::Value::Unsigned(value) => value.map(Value::from),
+        sea_orm::Value::BigUnsigned(value) => value.map(Value::from),
+        sea_orm::Value::Float(value) => value.map(Value::from),
+        sea_orm::Value::Double(value) => value.map(Value::from),
         sea_orm::Value::String(value) if is_enum =>
             value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase())),
         sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
