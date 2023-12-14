@@ -109,9 +109,10 @@ impl EntityObjectBuilder {
 
             let column_def = column.def();
 
-            let graphql_type = match types_map_helper
-                .sea_orm_column_type_to_graphql_type(column_def.get_column_type(), !column_def.is_null())
-            {
+            let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                !column_def.is_null(),
+            ) {
                 Some(type_name) => type_name,
                 None => return object,
             };
@@ -124,7 +125,7 @@ impl EntityObjectBuilder {
             let is_enum: bool = match column_def.get_column_type() {
                 ColumnType::Enum { .. } => true,
                 ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
-                _ => false
+                _ => false,
             };
 
             let guard = self
@@ -178,7 +179,10 @@ impl EntityObjectBuilder {
                 }
 
                 FieldFuture::new(async move {
-                    Ok(sea_query_value_to_graphql_value(object.get(column), is_enum))
+                    Ok(sea_query_value_to_graphql_value(
+                        object.get(column),
+                        is_enum,
+                    ))
                 })
             });
 
@@ -187,7 +191,10 @@ impl EntityObjectBuilder {
     }
 }
 
-fn sea_query_value_to_graphql_value(sea_query_value: sea_orm::sea_query::Value, is_enum: bool) -> Option<Value> {
+fn sea_query_value_to_graphql_value(
+    sea_query_value: sea_orm::sea_query::Value,
+    is_enum: bool,
+) -> Option<Value> {
     match sea_query_value {
         sea_orm::Value::Bool(value) => value.map(Value::from),
         sea_orm::Value::TinyInt(value) => value.map(Value::from),
@@ -200,8 +207,9 @@ fn sea_query_value_to_graphql_value(sea_query_value: sea_orm::sea_query::Value, 
         sea_orm::Value::BigUnsigned(value) => value.map(Value::from),
         sea_orm::Value::Float(value) => value.map(Value::from),
         sea_orm::Value::Double(value) => value.map(Value::from),
-        sea_orm::Value::String(value) if is_enum =>
-            value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase())),
+        sea_orm::Value::String(value) if is_enum => {
+            value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase()))
+        }
         sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
         sea_orm::Value::Char(value) => value.map(|it| Value::from(it.to_string())),
 
@@ -209,18 +217,15 @@ fn sea_query_value_to_graphql_value(sea_query_value: sea_orm::sea_query::Value, 
         sea_orm::Value::Bytes(value) => value.map(|it| Value::from(String::from_utf8_lossy(&it))),
 
         #[cfg(feature = "with-postgres-array")]
-        sea_orm::Value::Array(_array_value, value) =>
-            value
-                .map(|it|
-                    Value::List(
-                        it
-                            .into_iter()
-                            .map(|item|
-                                sea_query_value_to_graphql_value(item, is_enum)
-                                    .unwrap_or(Value::Null))
-                            .collect()
-                    )
-                ),
+        sea_orm::Value::Array(_array_value, value) => value.map(|it| {
+            Value::List(
+                it.into_iter()
+                    .map(|item| {
+                        sea_query_value_to_graphql_value(item, is_enum).unwrap_or(Value::Null)
+                    })
+                    .collect(),
+            )
+        }),
 
         #[cfg(feature = "with-json")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
@@ -236,19 +241,27 @@ fn sea_query_value_to_graphql_value(sea_query_value: sea_orm::sea_query::Value, 
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTime(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::ChronoDateTime(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
@@ -260,11 +273,15 @@ fn sea_query_value_to_graphql_value(sea_query_value: sea_orm::sea_query::Value, 
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-        sea_orm::sea_query::Value::TimeDateTime(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::TimeDateTime(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
 
         #[cfg(feature = "with-uuid")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]

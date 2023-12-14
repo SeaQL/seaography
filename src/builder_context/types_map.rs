@@ -525,7 +525,11 @@ impl TypesMapHelper {
 
     /// used to map from a SeaORM column type to an async_graphql type
     /// None indicates that we do not support the type
-    pub fn sea_orm_column_type_to_graphql_type(&self, ty: &ColumnType, not_null: bool) -> Option<TypeRef> {
+    pub fn sea_orm_column_type_to_graphql_type(
+        &self,
+        ty: &ColumnType,
+        not_null: bool,
+    ) -> Option<TypeRef> {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
         };
@@ -562,7 +566,9 @@ impl TypesMapHelper {
             ColumnType::Enum {
                 name: enum_name,
                 variants: _,
-            } => Some(TypeRef::named(active_enum_builder.type_name_from_iden(enum_name))),
+            } => Some(TypeRef::named(
+                active_enum_builder.type_name_from_iden(enum_name),
+            )),
             ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
                 Some(TypeRef::named(TypeRef::STRING))
             }
@@ -597,16 +603,16 @@ impl TypesMapHelper {
                 //   conts: bad for inserts
                 let iden_type = self.sea_orm_column_type_to_graphql_type(iden.as_ref(), true);
                 iden_type.map(|it| TypeRef::List(Box::new(it)))
-            },
+            }
             ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
             _ => None,
         }
-            .map(|ty| {
-                if not_null {
-                    TypeRef::NonNull(Box::new(ty))
-                } else {
-                    ty
-                }
+        .map(|ty| {
+            if not_null {
+                TypeRef::NonNull(Box::new(ty))
+            } else {
+                ty
+            }
         })
     }
 }
