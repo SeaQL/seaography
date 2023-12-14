@@ -11,7 +11,7 @@ pub enum SeaographyError {
     #[error("[type conversion: {1}] {0}")]
     TypeConversionError(String, String),
     #[error("[array conversion] postgres array can not be nested type of array")]
-    NestedArrayConversionError
+    NestedArrayConversionError,
 }
 
 impl From<async_graphql::Error> for SeaographyError {
