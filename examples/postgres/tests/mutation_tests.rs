@@ -218,7 +218,7 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    language {
+                    language(filters: { languageId: { lte: 8 } }, orderBy: { languageId: ASC }) {
                       nodes {
                         languageId
                         name
@@ -269,11 +269,10 @@ async fn test_create_batch_mutation() {
                 mutation {
                     languageCreateBatch(
                       data: [
-                        { languageId: 7, name: "Swedish", lastUpdate: "2030-01-12 21:50:05" }
-                        { languageId: 8, name: "Danish", lastUpdate: "2030-01-12 21:50:05" }
+                        { languageId: 1, name: "Swedish", lastUpdate: "2030-01-12 21:50:05" }
+                        { languageId: 1, name: "Danish", lastUpdate: "2030-01-12 21:50:05" }
                       ]
                     ) {
-                      languageId
                       name
                     }
                 }
@@ -284,11 +283,9 @@ async fn test_create_batch_mutation() {
             {
                 "languageCreateBatch": [
                 {
-                    "languageId": 7,
                     "name": "Swedish             "
                 },
                 {
-                    "languageId": 8,
                     "name": "Danish              "
                 }
                 ]
@@ -301,9 +298,8 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    language {
+                    language(filters: { languageId: { lte: 8 } }, orderBy: { languageId: ASC }) {
                       nodes {
-                        languageId
                         name
                       }
                     }
@@ -317,35 +313,27 @@ async fn test_create_batch_mutation() {
             "language": {
                 "nodes": [
                     {
-                        "languageId": 1,
                         "name": "English             "
                     },
                     {
-                        "languageId": 2,
                         "name": "Italian             "
                     },
                     {
-                        "languageId": 3,
                         "name": "Japanese            "
                     },
                     {
-                        "languageId": 4,
                         "name": "Mandarin            "
                     },
                     {
-                        "languageId": 5,
                         "name": "French              "
                     },
                     {
-                        "languageId": 6,
                         "name": "German              "
                     },
                     {
-                        "languageId": 7,
                         "name": "Swedish             "
                     },
                     {
-                        "languageId": 8,
                         "name": "Danish              "
                     }
                 ]
@@ -494,6 +482,146 @@ async fn test_update_mutation() {
                 {
                   "country": "Argentina",
                   "countryId": 6
+                }
+              ]
+            }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn test_delete_mutation() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
+                      nodes {
+                        languageId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "language": {
+              "nodes": []
+            }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    languageCreateBatch(
+                      data: [
+                        { languageId: 9, name: "9", lastUpdate: "2030-01-12 21:50:05" }
+                        { languageId: 10, name: "10", lastUpdate: "2030-01-12 21:50:05" }
+                        { languageId: 11, name: "11", lastUpdate: "2030-01-12 21:50:05" }
+                      ]
+                    ) {
+                      languageId
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "languageCreateBatch": [
+              {
+                "languageId": 9
+              },
+              {
+                "languageId": 10
+              },
+              {
+                "languageId": 11
+              }
+            ]
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
+                      nodes {
+                        languageId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "language": {
+              "nodes": [
+                {
+                  "languageId": 9
+                },
+                {
+                  "languageId": 10
+                },
+                {
+                  "languageId": 11
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    languageDelete(filter: { languageId: { gte: 10 } })
+                }
+                "#,
+            )
+            .await,
+            r#"
+            {
+                "languageDelete": 2
+            }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
+                      nodes {
+                        languageId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "language": {
+              "nodes": [
+                {
+                  "languageId": 9
                 }
               ]
             }

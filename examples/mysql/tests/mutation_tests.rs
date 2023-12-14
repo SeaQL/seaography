@@ -532,3 +532,91 @@ async fn test_update_mutation() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn test_delete_mutation() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmText(filters: { filmId: { gte: 998 } }, orderBy: { filmId: ASC }) {
+                      nodes {
+                        filmId
+                        title
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmText": {
+              "nodes": [
+                {
+                  "filmId": 998,
+                  "title": "ZHIVAGO CORE"
+                },
+                {
+                  "filmId": 999,
+                  "title": "ZOOLANDER FICTION"
+                },
+                {
+                  "filmId": 1000,
+                  "title": "ZORRO ARK"
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    filmTextDelete(filter: { filmId: { gte: 999 } })
+                }
+                "#,
+            )
+            .await,
+            r#"
+            {
+                "filmTextDelete": 2
+            }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmText(filters: { filmId: { gte: 998 } }, orderBy: { filmId: ASC }) {
+                      nodes {
+                        filmId
+                        title
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmText": {
+              "nodes": [
+                {
+                  "filmId": 998,
+                  "title": "ZHIVAGO CORE"
+                }
+              ]
+            }
+        }
+        "#,
+    );
+}

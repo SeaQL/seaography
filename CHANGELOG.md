@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 * add `update_mutation`
 
-  This module enabled the update mutation for entities. The update mutation takes an entity data object with a filter condition object,
+  This module enables the update mutation for entities. The update mutation takes an entity data object with a filter condition object,
   applies the update to the database and returns the modified entities.
+
+
+* add `delete_mutation`
+
+  This module enables the delete mutation for entities. The delete mutation takes an entity condition filter object,
+  deletes the selected entities from database and returns the number of deleted items.
 
 ## 1.0.2 - Pending
 
