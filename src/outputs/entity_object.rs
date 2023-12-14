@@ -124,6 +124,7 @@ impl EntityObjectBuilder {
             // Array types such that arrays of arrays of enums would be resolved correctly.
             let is_enum: bool = match column_def.get_column_type() {
                 ColumnType::Enum { .. } => true,
+                #[cfg(feature = "with-postgres-array")]
                 ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
                 _ => false,
             };

@@ -572,6 +572,9 @@ impl TypesMapHelper {
             ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
                 Some(TypeRef::named(TypeRef::STRING))
             }
+            #[cfg(not(feature = "with-postgres-array"))]
+            ColumnType::Array(_) => None,
+            #[cfg(feature = "with-postgres-array")]
             ColumnType::Array(iden) => {
                 // FIXME: Propagating the not_null flag here is probably incorrect. The following
                 // types are all logically valid:
