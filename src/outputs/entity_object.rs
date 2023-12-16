@@ -1,4 +1,4 @@
-use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
+use async_graphql::dynamic::{Field, FieldFuture, Object};
 use async_graphql::{Error, Value};
 use heck::{ToLowerCamelCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
@@ -109,26 +109,25 @@ impl EntityObjectBuilder {
 
             let column_def = column.def();
 
-            let type_name = match types_map_helper
-                .sea_orm_column_type_to_graphql_type(column_def.get_column_type())
-            {
+            let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                !column_def.is_null(),
+            ) {
                 Some(type_name) => type_name,
                 None => return object,
             };
 
-            let graphql_type = if column_def.is_null() {
-                TypeRef::named(type_name)
-            } else {
-                TypeRef::named_nn(type_name)
+            // This isn't the most beautiful flag: it's indicating whether the leaf type is an
+            // enum, rather than the type itself. Ideally we'd only calculate this for the leaf
+            // type itself. Could be a good candidate for refactor as this code evolves to support
+            // more container types. For example, this at the very least should be recursive on
+            // Array types such that arrays of arrays of enums would be resolved correctly.
+            let is_enum: bool = match column_def.get_column_type() {
+                ColumnType::Enum { .. } => true,
+                #[cfg(feature = "with-postgres-array")]
+                ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
+                _ => false,
             };
-
-            let is_enum: bool = matches!(
-                column_def.get_column_type(),
-                ColumnType::Enum {
-                    name: _,
-                    variants: _
-                }
-            );
 
             let guard = self
                 .context
@@ -180,276 +179,131 @@ impl EntityObjectBuilder {
                     });
                 }
 
-                match object.get(column) {
-                    sea_orm::sea_query::Value::Bool(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::TinyInt(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::SmallInt(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::Int(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::BigInt(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::TinyUnsigned(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-                    sea_orm::sea_query::Value::SmallUnsigned(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-                    sea_orm::sea_query::Value::Unsigned(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::BigUnsigned(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::Float(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::Double(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value))),
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::String(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => {
-                                if is_enum {
-                                    Ok(Some(Value::from(
-                                        value.as_str().to_upper_camel_case().to_ascii_uppercase(),
-                                    )))
-                                } else {
-                                    Ok(Some(Value::from(value.as_str())))
-                                }
-                            }
-                            None => Ok(None),
-                        }
-                    }),
-                    sea_orm::sea_query::Value::Char(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-                    #[allow(clippy::box_collection)]
-                    sea_orm::sea_query::Value::Bytes(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(String::from_utf8_lossy(&value)))),
-                            None => Ok(None),
-                        }
-                    }),
-                    #[cfg(feature = "with-json")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
-                    sea_orm::sea_query::Value::Json(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-chrono")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoDate(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-chrono")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoTime(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-chrono")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoDateTime(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-chrono")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-chrono")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-chrono")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-                    sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-time")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-                    sea_orm::sea_query::Value::TimeDate(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-time")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-                    sea_orm::sea_query::Value::TimeTime(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-time")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-                    sea_orm::sea_query::Value::TimeDateTime(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-time")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-                    sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
-                        FieldFuture::new(async move {
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-uuid")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]
-                    sea_orm::sea_query::Value::Uuid(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-decimal")]
-                    sea_orm::sea_query::Value::Decimal(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-bigdecimal")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
-                    sea_orm::sea_query::Value::BigDecimal(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "postgres-array")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "postgres-array")))]
-                    sea_orm::sea_query::Value::Array(array_type, value) => {
-                        FieldFuture::new(async move {
-                            // FIXME: test array type
-                            match value {
-                                Some(value) => Ok(Some(Value::from(value.to_string()))),
-                                None => Ok(None),
-                            }
-                        })
-                    }
-
-                    #[cfg(feature = "with-ipnetwork")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
-                    sea_orm::sea_query::Value::IpNetwork(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-
-                    #[cfg(feature = "with-mac_address")]
-                    #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
-                    sea_orm::sea_query::Value::MacAddress(value) => FieldFuture::new(async move {
-                        match value {
-                            Some(value) => Ok(Some(Value::from(value.to_string()))),
-                            None => Ok(None),
-                        }
-                    }),
-                    #[allow(unreachable_patterns)]
-                    _ => panic!("Cannot convert SeaORM value"),
-                }
+                FieldFuture::new(async move {
+                    Ok(sea_query_value_to_graphql_value(
+                        object.get(column),
+                        is_enum,
+                    ))
+                })
             });
 
             object.field(field)
         })
+    }
+}
+
+fn sea_query_value_to_graphql_value(
+    sea_query_value: sea_orm::sea_query::Value,
+    is_enum: bool,
+) -> Option<Value> {
+    match sea_query_value {
+        sea_orm::Value::Bool(value) => value.map(Value::from),
+        sea_orm::Value::TinyInt(value) => value.map(Value::from),
+        sea_orm::Value::SmallInt(value) => value.map(Value::from),
+        sea_orm::Value::Int(value) => value.map(Value::from),
+        sea_orm::Value::BigInt(value) => value.map(Value::from),
+        sea_orm::Value::TinyUnsigned(value) => value.map(Value::from),
+        sea_orm::Value::SmallUnsigned(value) => value.map(Value::from),
+        sea_orm::Value::Unsigned(value) => value.map(Value::from),
+        sea_orm::Value::BigUnsigned(value) => value.map(Value::from),
+        sea_orm::Value::Float(value) => value.map(Value::from),
+        sea_orm::Value::Double(value) => value.map(Value::from),
+        sea_orm::Value::String(value) if is_enum => {
+            value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase()))
+        }
+        sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
+        sea_orm::Value::Char(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[allow(clippy::box_collection)]
+        sea_orm::Value::Bytes(value) => value.map(|it| Value::from(String::from_utf8_lossy(&it))),
+
+        #[cfg(feature = "with-postgres-array")]
+        sea_orm::Value::Array(_array_value, value) => value.map(|it| {
+            Value::List(
+                it.into_iter()
+                    .map(|item| {
+                        sea_query_value_to_graphql_value(item, is_enum).unwrap_or(Value::Null)
+                    })
+                    .collect(),
+            )
+        }),
+
+        #[cfg(feature = "with-json")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
+        sea_orm::sea_query::Value::Json(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-chrono")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+        sea_orm::sea_query::Value::ChronoDate(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-chrono")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+        sea_orm::sea_query::Value::ChronoTime(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-chrono")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+        sea_orm::sea_query::Value::ChronoDateTime(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
+
+        #[cfg(feature = "with-chrono")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
+
+        #[cfg(feature = "with-chrono")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
+
+        #[cfg(feature = "with-chrono")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
+        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
+
+        #[cfg(feature = "with-time")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+        sea_orm::sea_query::Value::TimeDate(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-time")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+        sea_orm::sea_query::Value::TimeTime(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-time")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+        sea_orm::sea_query::Value::TimeDateTime(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
+
+        #[cfg(feature = "with-time")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
+        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
+            value.map(|it| Value::from(it.to_string()))
+        }
+
+        #[cfg(feature = "with-uuid")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]
+        sea_orm::sea_query::Value::Uuid(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-decimal")]
+        sea_orm::sea_query::Value::Decimal(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-bigdecimal")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
+        sea_orm::sea_query::Value::BigDecimal(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-ipnetwork")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
+        sea_orm::sea_query::Value::IpNetwork(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[cfg(feature = "with-mac_address")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
+        sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
+
+        #[allow(unreachable_patterns)]
+        _ => panic!("Cannot convert SeaORM value"),
     }
 }

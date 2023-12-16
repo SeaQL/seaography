@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
+use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor};
 use sea_orm::{ColumnTrait, EntityTrait, Iterable};
 
 use crate::{BuilderContext, EntityObjectBuilder, SeaResult, TypesMapHelper};
@@ -96,18 +96,12 @@ impl EntityInputBuilder {
 
             let column_def = column.def();
 
-            let type_name =
-                types_map_helper.sea_orm_column_type_to_graphql_type(column_def.get_column_type());
-
-            let type_name = match type_name {
+            let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                !column_def.is_null() && is_insert,
+            ) {
                 Some(type_name) => type_name,
                 None => return object,
-            };
-
-            let graphql_type = if column_def.is_null() || !is_insert {
-                TypeRef::named(type_name)
-            } else {
-                TypeRef::named_nn(type_name)
             };
 
             object.field(InputValue::new(column_name, graphql_type))
