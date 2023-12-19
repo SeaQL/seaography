@@ -5,9 +5,7 @@ pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let schema =
-        seaography_postgres_example::query_root::schema(database, None, None)
-            .unwrap();
+    let schema = seaography_postgres_example::query_root::schema(database, None, None).unwrap();
 
     schema
 }
@@ -917,5 +915,69 @@ async fn test_boolean_field() {
                     }
                 }
                 "#,
+    )
+}
+
+#[tokio::test]
+async fn test_like_filter() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+        {
+            country(filters: { country: { like: "Au%" } }) {
+                nodes {
+                    country
+                }
+            }
+        }
+        "#,
+            )
+            .await,
+        r#"
+        {
+            "country": {
+                "nodes": [
+                    {
+                        "country": "Australia"
+                    },
+                    {
+                        "country":"Austria"
+                    }
+                ]
+            }
+        }"#,
+    )
+}
+
+#[tokio::test]
+async fn test_not_like_filter() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    country(filters: { country: { not_like: "A%"}}, pagination: { page: { limit: 1, page: 0}}) {
+                        nodes {
+                            country
+                        }
+                    }
+                }
+                "#
+            ).await,
+        r#"
+        {
+            "country": {
+                "nodes": [
+                    {
+                        "country": "Bahrain"
+                    }
+                ]
+            }
+        }"#
     )
 }
