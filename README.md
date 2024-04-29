@@ -35,6 +35,13 @@
 
 (Right now there is no mutation, but it's on our plan!)
 
+## SeaORM Version Compatibility
+
+|                        Seaography                        |                         SeaORM                        |
+|----------------------------------------------------------|-------------------------------------------------------|
+| [0.12](https://crates.io/crates/seaography/0.12.0)       | [0.12](https://crates.io/crates/sea-orm/0.12.14)      |
+| [0.3](https://crates.io/crates/seaography/0.3.0)         | [0.10](https://crates.io/crates/sea-orm/0.10.7)       |
+
 ## Quick start - ready to serve in 3 minutes!
 
 ### Install
