@@ -206,7 +206,7 @@ impl FilterTypesMapHelper {
             ColumnType::TimestampWithTimeZone => Some(FilterType::Text),
             ColumnType::Time => Some(FilterType::Text),
             ColumnType::Date => Some(FilterType::Text),
-            ColumnType::Year(_) => Some(FilterType::Integer),
+            ColumnType::Year => Some(FilterType::Integer),
             ColumnType::Interval(_, _) => Some(FilterType::Text),
             ColumnType::Binary(_) => None,
             ColumnType::VarBinary(_) => None,

@@ -148,7 +148,7 @@ impl TypesMapHelper {
                 #[cfg(feature = "with-chrono")]
                 TimeLibrary::Chrono => ConvertedType::ChronoDate,
             },
-            ColumnType::Year(_) => ConvertedType::Integer,
+            ColumnType::Year => ConvertedType::Integer,
             ColumnType::Interval(_, _) => ConvertedType::String,
             ColumnType::Binary(_)
             | ColumnType::VarBinary(_)
@@ -264,7 +264,7 @@ impl TypesMapHelper {
             | ColumnType::TimestampWithTimeZone
             | ColumnType::Time
             | ColumnType::Date => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Year(_) => Some(TypeRef::named(TypeRef::INT)),
+            ColumnType::Year => Some(TypeRef::named(TypeRef::INT)),
             ColumnType::Interval(_, _) => Some(TypeRef::named(TypeRef::STRING)),
             ColumnType::Binary(_)
             | ColumnType::VarBinary(_)
