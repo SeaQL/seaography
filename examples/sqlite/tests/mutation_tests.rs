@@ -3,11 +3,11 @@ use sea_orm::Database;
 
 #[tokio::test]
 async fn main() {
-  test_simple_insert_one().await;
-  test_complex_insert_one().await;
-  test_create_batch_mutation().await;
-  test_update_mutation().await;
-  test_delete_mutation().await;
+    test_simple_insert_one().await;
+    test_complex_insert_one().await;
+    test_create_batch_mutation().await;
+    test_update_mutation().await;
+    test_delete_mutation().await;
 }
 
 pub async fn get_schema() -> Schema {
@@ -501,8 +501,9 @@ async fn test_update_mutation() {
 async fn test_delete_mutation() {
     let schema = get_schema().await;
 
-    schema.execute(
-        r#"
+    schema
+        .execute(
+            r#"
         mutation {
             filmTextCreateBatch(
               data: [
@@ -514,9 +515,9 @@ async fn test_delete_mutation() {
               filmId
             }
         }
-        "#
-    )
-    .await;
+        "#,
+        )
+        .await;
 
     assert_eq(
         schema
@@ -565,7 +566,7 @@ async fn test_delete_mutation() {
                 "#,
             )
             .await,
-            r#"
+        r#"
             {
                 "filmTextDelete": 2
             }

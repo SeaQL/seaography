@@ -3,20 +3,18 @@ use sea_orm::Database;
 
 #[tokio::test]
 async fn main() {
-  test_simple_insert_one().await;
-  test_complex_insert_one().await;
-  test_create_batch_mutation().await;
-  test_update_mutation().await;
-  test_delete_mutation().await;
+    test_simple_insert_one().await;
+    test_complex_insert_one().await;
+    test_create_batch_mutation().await;
+    test_update_mutation().await;
+    test_delete_mutation().await;
 }
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let schema =
-        seaography_postgres_example::query_root::schema(database, None, None)
-            .unwrap();
+    let schema = seaography_postgres_example::query_root::schema(database, None, None).unwrap();
 
     schema
 }
@@ -599,7 +597,7 @@ async fn test_delete_mutation() {
                 "#,
             )
             .await,
-            r#"
+        r#"
             {
                 "languageDelete": 2
             }

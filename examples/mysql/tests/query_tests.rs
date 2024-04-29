@@ -5,8 +5,7 @@ pub async fn get_schema() -> Schema {
     let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let schema =
-        seaography_mysql_example::query_root::schema(database, None, None).unwrap();
+    let schema = seaography_mysql_example::query_root::schema(database, None, None).unwrap();
 
     schema
 }

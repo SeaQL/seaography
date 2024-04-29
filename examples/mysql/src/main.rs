@@ -35,12 +35,9 @@ async fn main() {
     let database = Database::connect(&*DATABASE_URL)
         .await
         .expect("Fail to initialize database connection");
-    let schema = seaography_mysql_example::query_root::schema(
-        database,
-        *DEPTH_LIMIT,
-        *COMPLEXITY_LIMIT,
-    )
-    .unwrap();
+    let schema =
+        seaography_mysql_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
+            .unwrap();
     let app = Route::new().at(
         &*ENDPOINT,
         get(graphql_playground).post(GraphQL::new(schema)),
