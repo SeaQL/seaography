@@ -16,7 +16,7 @@ pub struct Model {
     pub username: String,
     pub password: Option<String>,
     pub last_update: DateTime,
-    #[sea_orm(column_type = "Binary(BlobSize::Blob(None))", nullable)]
+    #[sea_orm(column_type = "Binary(255)", nullable)]
     pub picture: Option<Vec<u8>>,
 }
 

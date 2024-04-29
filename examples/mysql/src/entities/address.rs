@@ -13,7 +13,7 @@ pub struct Model {
     pub city_id: i32,
     pub postal_code: Option<String>,
     pub phone: String,
-    #[sea_orm(column_type = "VarBinary(25)", nullable)]
+    #[sea_orm(column_type = "VarBinary(StringLen::N(25))", nullable)]
     pub location: Option<Vec<u8>>,
     pub last_update: DateTimeUtc,
 }

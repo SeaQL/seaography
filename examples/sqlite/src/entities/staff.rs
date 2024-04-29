@@ -11,7 +11,7 @@ pub struct Model {
     pub last_name: String,
     pub address_id: i32,
     pub reports_to_id: Option<i16>,
-    #[sea_orm(column_type = "Binary(BlobSize::Blob(None))", nullable)]
+    #[sea_orm(column_type = "Binary(255)", nullable)]
     pub picture: Option<Vec<u8>>,
     pub email: Option<String>,
     pub store_id: i32,
