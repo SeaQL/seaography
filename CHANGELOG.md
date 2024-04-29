@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 + `1.0.0-beta.3`: 2024-04-29
 
+### Upgrades
+
+* Upgrade `sea-orm` to 1.0.0-rc.3
+
 ## 0.12.0 - 2024-04-29
 
 Introduction the functional API of Seaography. Warning, this version has breaking changes, but it was a sacrifice in order to make the project easier to maintain. With this version we have support for field guards and field renames.
