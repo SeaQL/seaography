@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 1.0.3 - Pending
+## 0.12.0 - 2024-04-29
+
+Introduction the functional API of Seaography. Warning, this version has breaking changes, but it was a sacrifice in order to make the project easier to maintain. With this version we have support for field guards and field renames.
+
+### New Features
+
+* Functional API
+* Field renames
+* Field guards
 
 * add `update_mutation`
 
@@ -18,8 +26,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   This module enables the delete mutation for entities. The delete mutation takes an entity condition filter object,
   deletes the selected entities from database and returns the number of deleted items.
 
-## 1.0.2 - Pending
-
 * add `create_one_mutation`
 
   This module is responsible to allow the Create One mutation. The mutation takes data for a single entity and returns the created entity
@@ -27,6 +33,28 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 * add `create_batch_mutation`
 
   This module is responsible to allow the Create Batch mutation. The mutation takes and array of data for multiple entities and returns the created entities
+
+* add `entity_input`
+
+  This module is responsible to create a GraphQL input object for an SeaORM entity. Used in the create mutation
+
+### Breaking changes
+
+* Dropped the derive API in favor of a functional API
+
+  SeaORM is a dynamic ORM for rust, this means that we can inspect the Tables, Columns properties on runtime. Recently async-graphql added support for dynamic creation of GraphQL nodes. Utilizing the dynamic nature of both libraries the Derive API is no longer needed and we developed a functional approach API. Moreover, the project in order to live long it needs to be maintainable (easy to maintain) and extensible (easy to extend), but the Derive API was fairly complex compared to a functional API. In order to make the migration easier we updated the seaography generator to generate using the new API
+
+* Decoupled sea-orm-cli from seaography-cli
+
+  Because we don't have to extend the result produced by the sea-orm-cli we decoupled the dependency away fro, seaography in order to make future versions easier to maintain.
+
+* Dataloader optimizations are not introduced yet
+
+  The Dataloader optimizations are going to be added in future versions
+
+* Some renames in Connection node fields, and pagination filtering
+
+### Enhancements
 
 * refactor entity types
 
@@ -48,48 +76,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   * refactor `active_enum_filter_input` to utilize `FilterConfig` and provide `apply_condition` function
   * remove condition code from `filter_input` and utilize `apply_condition` function that uses `FilterConfig`
 
-* add `entity_input`
-
-  This module is responsible to create a GraphQL input object for an SeaORM entity. Used in the create mutation
-
 * start error handling
-
-## 1.0.1 - Pending
 
 * slim down code generation for the `query_root.rs` file of a generated project
 
 * update crates
 
 * update examples
-
-## 1.0.0 - Pending
-=======
-
-## 1.0.0 - 2023-03-25
-
-Introduction the functional API of Seaography. Warning, this version has breaking changes, but it was a sacrifice in order to make the project easier to maintain. With this version we have support for field guards and field renames.
-
-### New Features
-
-* Functional API
-* Field renames
-* Field guards
-
-### Breaking changes
-
-* Dropped the derive API in favor of a functional API
-
-  SeaORM is a dynamic ORM for rust, this means that we can inspect the Tables, Columns properties on runtime. Recently async-graphql added support for dynamic creation of GraphQL nodes. Utilizing the dynamic nature of both libraries the Derive API is no longer needed and we developed a functional approach API. Moreover, the project in order to live long it needs to be maintainable (easy to maintain) and extensible (easy to extend), but the Derive API was fairly complex compared to a functional API. In order to make the migration easier we updated the seaography generator to generate using the new API
-
-* Decoupled sea-orm-cli from seaography-cli
-
-  Because we don't have to extend the result produced by the sea-orm-cli we decoupled the dependency away fro, seaography in order to make future versions easier to maintain.
-
-* Dataloader optimizations are not introduced yet
-
-  The Dataloader optimizations are going to be added in future versions
-
-* Some renames in Connection node fields, and pagination filtering
 
 ## 0.3.0 - 2022-12-02
 
