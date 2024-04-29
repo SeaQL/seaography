@@ -563,8 +563,8 @@ impl FilterTypesMapHelper {
                             })
                             .collect::<SeaResult<Vec<_>>>()?;
 
-                        let a = value.get(0).unwrap().clone();
-                        let b = value.get(1).unwrap().clone();
+                        let a = value[0].clone();
+                        let b = value[1].clone();
 
                         condition = condition.add(column.between(a, b));
                     }
@@ -580,8 +580,8 @@ impl FilterTypesMapHelper {
                             })
                             .collect::<SeaResult<Vec<_>>>()?;
 
-                        let a = value.get(0).unwrap().clone();
-                        let b = value.get(1).unwrap().clone();
+                        let a = value[0].clone();
+                        let b = value[1].clone();
 
                         condition = condition.add(column.not_between(a, b));
                     }
