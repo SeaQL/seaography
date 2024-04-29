@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "seaography-mysql-example"
-version = "0.3.0"
+version = "0.12.0"
 
 [dependencies]
 poem = { version = "1.3.56" }
@@ -17,7 +17,7 @@ lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
 path = "../../"
-version = "1.0.0-rc.2" # seaography version
+version = "0.12.0"
 features = ["with-decimal", "with-chrono"]
 
 [dev-dependencies]
