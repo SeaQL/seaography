@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Upgrades
 
 * Upgrade `sea-orm` to 1.0.0-rc.3
+* Upgrade `async-graphql` to 7.0
+* Upgrade `poem` to 3.0
+
+### House keeping
+
+* Drop the use of `async-trait`
 
 ## 0.12.0 - 2024-04-29
 
