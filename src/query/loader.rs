@@ -182,7 +182,6 @@ where
     }
 }
 
-#[async_trait::async_trait]
 impl<T> async_graphql::dataloader::Loader<KeyComplex<T>> for OneToManyLoader<T>
 where
     T: sea_orm::EntityTrait,
@@ -303,7 +302,6 @@ where
     }
 }
 
-#[async_trait::async_trait]
 impl<T> async_graphql::dataloader::Loader<KeyComplex<T>> for OneToOneLoader<T>
 where
     T: sea_orm::EntityTrait,
