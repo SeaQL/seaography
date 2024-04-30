@@ -77,7 +77,8 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.3
+          git: https://github.com/SeaQL/sea-orm
+          branch: cli-20240430
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -117,7 +118,8 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.3
+          git: https://github.com/SeaQL/sea-orm
+          branch: cli-20240430
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -172,7 +174,8 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.3
+          git: https://github.com/SeaQL/sea-orm
+          branch: cli-20240430
       - name: Remove generated folder
         run: rm -rf ./examples/mysql/src
       - name: Create DB
@@ -236,7 +239,8 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.3
+          git: https://github.com/SeaQL/sea-orm
+          branch: cli-20240430
       - name: Remove generated folder
         run: rm -rf ./examples/postgres/src
       - name: Create DB
