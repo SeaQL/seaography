@@ -4,9 +4,9 @@ name = "seaography-postgres-example"
 version = "1.0.0-rc.3"
 
 [dependencies]
-poem = { version = "1.3.56" }
-async-graphql-poem = { version = "6.0.7" }
-async-graphql = { version = "7.0.3", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+poem = { version = "3.0" }
+async-graphql-poem = { version = "7.0" }
+async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 dotenv = "0.15.0"
 sea-orm = { version = "1.0.0-rc", features = ["sqlx-postgres", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
