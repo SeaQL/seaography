@@ -48,8 +48,8 @@
 ### Install
 
 ```sh
-cargo install sea-orm-cli@^0.12 # used to generate entities
-cargo install seaography-cli@^1.0.0-rc.2
+cargo install sea-orm-cli@^1.0.0-rc.3 # used to generate entities
+cargo install seaography-cli@^1.0.0-rc.3
 ```
 
 ### MySQL
