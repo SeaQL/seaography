@@ -64,48 +64,8 @@ jobs:
           toolchain: stable
           components: clippy
       - run: cargo clippy --all -- -D warnings
-  integration-sqlite-poem:
+  integration-sqlite:
     name: SQLite integration tests
-    runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
-        with:
-          crate: sea-orm-cli
-          version: 1.0.0-rc.4
-      - name: Remove generated folder
-        run: rm -rf ./examples/sqlite/src
-      - name: Copy sample database
-        run: cp ./examples/sqlite/sakila.db .
-      - name: Generate entities
-        run: >-
-          sea-orm-cli generate entity -o examples/sqlite/src/entities -u
-          sqlite://sakila.db --seaography
-      - name: Generate Seaography project
-        uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: >
-            --package seaography-cli -- ./examples/sqlite
-            ./examples/sqlite/src/entities sqlite://sakila.db
-            seaography-sqlite-example -f poem
-      - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/sqlite/Cargo.toml
-      - name: Build example
-        working-directory: ./examples/sqlite
-        run: cargo build
-      - name: Integration tests
-        working-directory: ./examples/sqlite
-        run: cargo test
-  integration-sqlite-actix:
-    name: SQLite integration tests actix
     runs-on: ubuntu-latest
     needs:
       - check
@@ -202,7 +162,7 @@ jobs:
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/mysql/Cargo.toml
+          ./examples/mysql/Cargo.toml -f axum
       - name: Fix Nullable not implemented for Vec<String> and tsvector
         run: 'sed -i "24,28d" ./examples/mysql/src/entities/film.rs'
       - name: Build example
@@ -265,7 +225,7 @@ jobs:
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/postgres/Cargo.toml
+          ./examples/postgres/Cargo.toml -f poem
       - name: Fix Nullable not implemented for Vec<String> and tsvector
         run: 'sed -i "26,27d" ./examples/postgres/src/entities/film.rs'
       - name: Build example
