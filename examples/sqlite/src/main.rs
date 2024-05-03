@@ -30,9 +30,7 @@ async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLRespons
 async fn graphql_playground() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body(playground_source(GraphQLPlaygroundConfig::new(
-            "http://localhost:8000",
-        ))))
+        .body(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT))))
 }
 
 #[actix_web::main]
