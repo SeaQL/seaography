@@ -212,6 +212,7 @@ impl FilterTypesMapHelper {
             ColumnType::VarBinary(_) => None,
             ColumnType::Bit(_) => None,
             ColumnType::VarBit(_) => None,
+            ColumnType::Blob => None,
             ColumnType::Boolean => Some(FilterType::Boolean),
             ColumnType::Money(_) => Some(FilterType::Text),
             ColumnType::Json => None,

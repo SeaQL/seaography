@@ -78,6 +78,7 @@ jobs:
         with:
           crate: sea-orm-cli
           git: https://github.com/SeaQL/sea-orm
+          branch: column-type-blob
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -118,6 +119,7 @@ jobs:
         with:
           crate: sea-orm-cli
           git: https://github.com/SeaQL/sea-orm
+          branch: column-type-blob
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -173,6 +175,7 @@ jobs:
         with:
           crate: sea-orm-cli
           git: https://github.com/SeaQL/sea-orm
+          branch: column-type-blob
       - name: Remove generated folder
         run: rm -rf ./examples/mysql/src
       - name: Create DB
@@ -237,6 +240,7 @@ jobs:
         with:
           crate: sea-orm-cli
           git: https://github.com/SeaQL/sea-orm
+          branch: column-type-blob
       - name: Remove generated folder
         run: rm -rf ./examples/postgres/src
       - name: Create DB
