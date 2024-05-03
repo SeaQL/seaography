@@ -153,7 +153,8 @@ impl TypesMapHelper {
             ColumnType::Binary(_)
             | ColumnType::VarBinary(_)
             | ColumnType::Bit(_)
-            | ColumnType::VarBit(_) => ConvertedType::Bytes,
+            | ColumnType::VarBit(_)
+            | ColumnType::Blob => ConvertedType::Bytes,
             ColumnType::Boolean => ConvertedType::Bool,
 
             #[cfg(not(feature = "with-json"))]
@@ -269,7 +270,8 @@ impl TypesMapHelper {
             ColumnType::Binary(_)
             | ColumnType::VarBinary(_)
             | ColumnType::Bit(_)
-            | ColumnType::VarBit(_) => Some(TypeRef::named(TypeRef::STRING)),
+            | ColumnType::VarBit(_)
+            | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
             ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
             // FIXME: support json type
             ColumnType::Json | ColumnType::JsonBinary => None,
