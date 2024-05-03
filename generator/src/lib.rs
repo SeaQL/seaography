@@ -10,6 +10,7 @@ mod util;
 pub enum WebFrameworkEnum {
     Actix,
     Poem,
+    Axum,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -33,6 +34,7 @@ pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>
     match framework {
         WebFrameworkEnum::Actix => crate::templates::actix::write_main(src_path, crate_name)?,
         WebFrameworkEnum::Poem => crate::templates::poem::write_main(src_path, crate_name)?,
+        WebFrameworkEnum::Axum => crate::templates::axum::write_main(src_path, crate_name)?,
     }
 
     writer::write_env(&root_path.as_ref(), db_url, depth_limit, complexity_limit)?;
