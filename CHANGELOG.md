@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 + `1.0.0-rc.3`: 2024-05-02
 + `1.0.0-rc.4`: 2024-05-03
 
+### New Features
+
+* [seaography-cli] option to generate Axum web framework
+
 ### Upgrades
 
 * Upgrade `sea-orm` to 1.0.0-rc.3
