@@ -158,11 +158,11 @@ jobs:
           args: >
             --package seaography-cli -- ./examples/mysql
             ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila
-            seaography-mysql-example
+            seaography-mysql-example -f axum
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/mysql/Cargo.toml -f axum
+          ./examples/mysql/Cargo.toml
       - name: Fix Nullable not implemented for Vec<String> and tsvector
         run: 'sed -i "24,28d" ./examples/mysql/src/entities/film.rs'
       - name: Build example
@@ -221,11 +221,11 @@ jobs:
             --package seaography-cli -- ./examples/postgres
             ./examples/postgres/src/entities
             postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
-            seaography-postgres-example
+            seaography-postgres-example -f poem
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/postgres/Cargo.toml -f poem
+          ./examples/postgres/Cargo.toml
       - name: Fix Nullable not implemented for Vec<String> and tsvector
         run: 'sed -i "26,27d" ./examples/postgres/src/entities/film.rs'
       - name: Build example
