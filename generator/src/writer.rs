@@ -155,6 +155,7 @@ pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
     let content = match framework {
         WebFrameworkEnum::Actix => include_str!("./templates/actix_cargo.toml"),
         WebFrameworkEnum::Poem => include_str!("./templates/poem_cargo.toml"),
+        WebFrameworkEnum::Axum => include_str!("./templates/axum_cargo.toml"),
     };
 
     let content = content
