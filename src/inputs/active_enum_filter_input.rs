@@ -72,9 +72,11 @@ impl ActiveEnumFilterInputBuilder {
 
 /// used to update the query condition with enumeration filters
 pub fn prepare_enumeration_condition<T>(
+    context: &'static BuilderContext,
     filter: &ObjectAccessor,
     column: &T::Column,
     condition: Condition,
+    type_name: &str,
 ) -> SeaResult<Condition>
 where
     T: EntityTrait,
@@ -87,12 +89,14 @@ where
     };
 
     let extract_variant = move |input: &str| -> String {
-        let variant = variants.iter().find(|variant| {
-            let variant = variant
-                .to_string()
-                .to_upper_camel_case()
-                .to_ascii_uppercase();
-            variant.eq(input)
+        let variant = variants.iter().find(|orm_variant| {
+            let orm_variant = orm_variant.to_string();
+
+            let builder = ActiveEnumBuilder { context };
+
+            let gql_variant = builder.variant_name(type_name, &orm_variant);
+
+            gql_variant.eq(input)
         });
         variant.unwrap().to_string()
     };
