@@ -5,7 +5,7 @@ use sea_orm::{
 
 use crate::{
     get_filter_conditions, BuilderContext, EntityObjectBuilder, EntityQueryFieldBuilder,
-    FilterInputBuilder,
+    FilterInputBuilder, GuardAction,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -66,11 +66,25 @@ impl EntityDeleteMutationBuilder {
 
         let context = self.context;
 
+        let guard = self.context.guards.entity_guards.get(&object_name);
+
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn(TypeRef::INT),
             move |ctx| {
                 FieldFuture::new(async move {
+                    let guard_flag = if let Some(guard) = guard {
+                        (*guard)(&ctx)
+                    } else {
+                        GuardAction::Allow
+                    };
+
+                    if let GuardAction::Block(reason) = guard_flag {
+                        return Err::<Option<_>, async_graphql::Error>(async_graphql::Error::new(
+                            reason.unwrap_or("Entity guard triggered.".into()),
+                        ));
+                    }
+
                     let db = ctx.data::<DatabaseConnection>()?;
 
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
