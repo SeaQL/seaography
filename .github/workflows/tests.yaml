@@ -77,7 +77,7 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.4
+          version: 1.0.0
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -132,7 +132,7 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.4
+          version: 1.0.0
       - name: Remove generated folder
         run: rm -rf ./examples/mysql/src
       - name: Create DB
@@ -196,7 +196,7 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: sea-orm-cli
-          version: 1.0.0-rc.4
+          version: 1.0.0
       - name: Remove generated folder
         run: rm -rf ./examples/postgres/src
       - name: Create DB
