@@ -18,5 +18,5 @@ proc-macro2 = "1.0.66"
 syn = { version = "2.0.27", features = ["full"] }
 heck = "0.4.1"
 itertools = "0.11.0"
-sea-query = { version = "0.31.0", default-features = false }
+sea-query = { version = "~0.31.0", default-features = false }
 thiserror = "1.0.44"
