@@ -39,7 +39,7 @@
 //!
 //! |                        Seaography                        |                         SeaORM                        |
 //! |----------------------------------------------------------|-------------------------------------------------------|
-//! | [1.0-rc](https://crates.io/crates/seaography/1.0.0-rc.3) | [1.0-rc](https://crates.io/crates/sea-orm/1.0.0-rc.3) |
+//! | [1.0](https://crates.io/crates/seaography/1.0.0)         | [1.0](https://crates.io/crates/sea-orm/1.0.0)         |
 //! | [0.12](https://crates.io/crates/seaography/0.12.0)       | [0.12](https://crates.io/crates/sea-orm/0.12.14)      |
 //! | [0.3](https://crates.io/crates/seaography/0.3.0)         | [0.10](https://crates.io/crates/sea-orm/0.10.7)       |
 //!
@@ -48,8 +48,8 @@
 //! ### Install
 //!
 //! ```sh
-//! cargo install sea-orm-cli@^1.0.0-rc.3 # used to generate entities
-//! cargo install seaography-cli@^1.0.0-rc.3
+//! cargo install sea-orm-cli@^1.0.0 # used to generate entities
+//! cargo install seaography-cli@^1.0.0
 //! ```
 //!
 //! ### MySQL
