@@ -186,15 +186,15 @@ impl TypesMapHelper {
                 ConvertedType::Array(Box::new(inner))
             }
 
-            #[cfg(not(feature = "with-ipnetwork"))]
+            // #[cfg(not(feature = "with-ipnetwork"))]
             ColumnType::Cidr | ColumnType::Inet => ConvertedType::String,
-            #[cfg(feature = "with-ipnetwork")]
-            ColumnType::Cidr | ColumnType::Inet => ConvertedType::IpNetwork,
+            // #[cfg(feature = "with-ipnetwork")]
+            // ColumnType::Cidr | ColumnType::Inet => ConvertedType::IpNetwork,
 
-            #[cfg(not(feature = "with-mac_address"))]
+            // #[cfg(not(feature = "with-mac_address"))]
             ColumnType::MacAddr => ConvertedType::String,
-            #[cfg(feature = "with-mac_address")]
-            ColumnType::MacAddr => ConvertedType::MacAddress,
+            // #[cfg(feature = "with-mac_address")]
+            // ColumnType::MacAddr => ConvertedType::MacAddress,
             _ => panic!(
                 "Type mapping is not implemented for '{}.{}'",
                 entity_name, column_name
@@ -410,12 +410,12 @@ pub enum ConvertedType {
     #[cfg(feature = "with-postgres-array")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-postgres-array")))]
     Array(Box<ConvertedType>),
-    #[cfg(feature = "with-ipnetwork")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
-    IpNetwork,
-    #[cfg(feature = "with-mac_address")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
-    MacAddress,
+    // #[cfg(feature = "with-ipnetwork")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
+    // IpNetwork,
+    // #[cfg(feature = "with-mac_address")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
+    // MacAddress,
     Enum(String),
     Custom(String),
 }
@@ -472,10 +472,10 @@ pub fn converted_type_to_sea_orm_array_type(
         ConvertedType::Decimal => Ok(sea_orm::sea_query::value::ArrayType::String),
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => Ok(sea_orm::sea_query::value::ArrayType::String),
-        #[cfg(feature = "with-ipnetwork")]
-        ConvertedType::IpNetwork => Ok(sea_orm::sea_query::value::ArrayType::String),
-        #[cfg(feature = "with-mac_address")]
-        ConvertedType::MacAddress => Ok(sea_orm::sea_query::value::ArrayType::String),
+        // #[cfg(feature = "with-ipnetwork")]
+        // ConvertedType::IpNetwork => Ok(sea_orm::sea_query::value::ArrayType::String),
+        // #[cfg(feature = "with-mac_address")]
+        // ConvertedType::MacAddress => Ok(sea_orm::sea_query::value::ArrayType::String),
     }
 }
 
@@ -768,17 +768,17 @@ pub fn converted_value_to_sea_orm_value(
             )
         }
         // FIXME: support ip type
-        #[cfg(feature = "with-ipnetwork")]
-        ConvertedType::IpNetwork => {
-            let value = value.string()?;
-            sea_orm::Value::String(Some(Box::new(value.to_string())))
-        }
+        // #[cfg(feature = "with-ipnetwork")]
+        // ConvertedType::IpNetwork => {
+        //     let value = value.string()?;
+        //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+        // }
         // FIXME: support mac type
-        #[cfg(feature = "with-mac_address")]
-        ConvertedType::MacAddress => {
-            let value = value.string()?;
-            sea_orm::Value::String(Some(Box::new(value.to_string())))
-        }
+        // #[cfg(feature = "with-mac_address")]
+        // ConvertedType::MacAddress => {
+        //     let value = value.string()?;
+        //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+        // }
     })
 }
 

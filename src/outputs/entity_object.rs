@@ -295,13 +295,13 @@ fn sea_query_value_to_graphql_value(
         #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
         sea_orm::sea_query::Value::BigDecimal(value) => value.map(|it| Value::from(it.to_string())),
 
-        #[cfg(feature = "with-ipnetwork")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
-        sea_orm::sea_query::Value::IpNetwork(value) => value.map(|it| Value::from(it.to_string())),
+        // #[cfg(feature = "with-ipnetwork")]
+        // #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
+        // sea_orm::sea_query::Value::IpNetwork(value) => value.map(|it| Value::from(it.to_string())),
 
-        #[cfg(feature = "with-mac_address")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
-        sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
+        // #[cfg(feature = "with-mac_address")]
+        // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
+        // sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
 
         #[allow(unreachable_patterns)]
         _ => panic!("Cannot convert SeaORM value"),

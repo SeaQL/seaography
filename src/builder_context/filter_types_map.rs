@@ -522,35 +522,35 @@ impl FilterTypesMapHelper {
                     if let Some(value) = filter.get("contains") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        condition = condition.add(column.contains(&value.to_string()));
+                        condition = condition.add(column.contains(value.to_string()));
                     }
                 }
                 FilterOperation::StartsWith => {
                     if let Some(value) = filter.get("starts_with") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        condition = condition.add(column.starts_with(&value.to_string()));
+                        condition = condition.add(column.starts_with(value.to_string()));
                     }
                 }
                 FilterOperation::EndsWith => {
                     if let Some(value) = filter.get("ends_with") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        condition = condition.add(column.ends_with(&value.to_string()));
+                        condition = condition.add(column.ends_with(value.to_string()));
                     }
                 }
                 FilterOperation::Like => {
                     if let Some(value) = filter.get("like") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        condition = condition.add(column.like(&value.to_string()));
+                        condition = condition.add(column.like(value.to_string()));
                     }
                 }
                 FilterOperation::NotLike => {
                     if let Some(value) = filter.get("not_like") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        condition = condition.add(column.not_like(&value.to_string()));
+                        condition = condition.add(column.not_like(value.to_string()));
                     }
                 }
                 FilterOperation::Between => {
