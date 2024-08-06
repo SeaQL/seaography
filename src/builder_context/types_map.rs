@@ -766,19 +766,18 @@ pub fn converted_value_to_sea_orm_value(
                 converted_type_to_sea_orm_array_type(&ty)?,
                 Some(Box::new(list_value)),
             )
-        }
-        // FIXME: support ip type
-        // #[cfg(feature = "with-ipnetwork")]
-        // ConvertedType::IpNetwork => {
-        //     let value = value.string()?;
-        //     sea_orm::Value::String(Some(Box::new(value.to_string())))
-        // }
-        // FIXME: support mac type
-        // #[cfg(feature = "with-mac_address")]
-        // ConvertedType::MacAddress => {
-        //     let value = value.string()?;
-        //     sea_orm::Value::String(Some(Box::new(value.to_string())))
-        // }
+        } // FIXME: support ip type
+          // #[cfg(feature = "with-ipnetwork")]
+          // ConvertedType::IpNetwork => {
+          //     let value = value.string()?;
+          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          // }
+          // FIXME: support mac type
+          // #[cfg(feature = "with-mac_address")]
+          // ConvertedType::MacAddress => {
+          //     let value = value.string()?;
+          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          // }
     })
 }
 
