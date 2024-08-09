@@ -139,7 +139,7 @@ impl EntityObjectBuilder {
                 .context
                 .types
                 .output_conversions
-                .get(&format!("{}.{}", entity_name, column_name));
+                .get(&format!("{entity_name}.{column_name}"));
 
             let field = Field::new(column_name, graphql_type, move |ctx| {
                 let guard_flag = if let Some(guard) = guard {

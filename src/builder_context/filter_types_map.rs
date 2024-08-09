@@ -180,7 +180,7 @@ impl FilterTypesMapHelper {
             .context
             .filter_types
             .overwrites
-            .get(&format!("{}.{}", entity_name, column_name))
+            .get(&format!("{entity_name}.{column_name}"))
         {
             return ty.clone();
         }
@@ -426,7 +426,7 @@ impl FilterTypesMapHelper {
                         .context
                         .filter_types
                         .condition_functions
-                        .get(&format!("{}.{}", entity_name, column_name))
+                        .get(&format!("{entity_name}.{column_name}"))
                     {
                         return filter_condition_fn(condition, filter);
                     } else {

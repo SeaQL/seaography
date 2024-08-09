@@ -40,7 +40,7 @@ impl std::default::Default for ConnectionObjectConfig {
     fn default() -> Self {
         ConnectionObjectConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                format!("{}Connection", object_name)
+                format!("{object_name}Connection")
             }),
             page_info: "pageInfo".into(),
             pagination_info: "paginationInfo".into(),
