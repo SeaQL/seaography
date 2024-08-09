@@ -195,9 +195,7 @@ impl TypesMapHelper {
             ColumnType::MacAddr => ConvertedType::String,
             // #[cfg(feature = "with-mac_address")]
             // ColumnType::MacAddr => ConvertedType::MacAddress,
-            _ => panic!(
-                "Type mapping is not implemented for '{entity_name}.{column_name}'"
-            ),
+            _ => panic!("Type mapping is not implemented for '{entity_name}.{column_name}'"),
         }
     }
 
