@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.1.0 - Pending
+
+### Versions
+
++ `1.1.0-rc.1`: 2024-08-12
+
+### Upgrades
+
+* Upgrade `sea-orm` to 1.1.0
+* Upgrade `sea-query` to 0.32.0
+
 ## 1.0.0 - 2024-08-06
 
 ### Versions
@@ -19,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Upgrades
 
 * Upgrade `sea-orm` to 1.0.0
+* Upgrade `sea-query` to 0.31.0
 * Upgrade `async-graphql` to 7.0
 * Upgrade `poem` to 3.0
 
