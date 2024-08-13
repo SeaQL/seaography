@@ -77,7 +77,7 @@ impl TypesMapHelper {
         column_type: &ColumnType,
     ) -> ConvertedType {
         let context = self.context;
-        let name = format!("{}.{}", entity_name, column_name);
+        let name = format!("{entity_name}.{column_name}");
 
         if let Some(overwrite) = context.types.overwrites.get(&name) {
             return overwrite.clone();
@@ -195,10 +195,7 @@ impl TypesMapHelper {
             ColumnType::MacAddr => ConvertedType::String,
             // #[cfg(feature = "with-mac_address")]
             // ColumnType::MacAddr => ConvertedType::MacAddress,
-            _ => panic!(
-                "Type mapping is not implemented for '{}.{}'",
-                entity_name, column_name
-            ),
+            _ => panic!("Type mapping is not implemented for '{entity_name}.{column_name}'"),
         }
     }
 
@@ -222,7 +219,7 @@ impl TypesMapHelper {
             .context
             .types
             .input_conversions
-            .get(&format!("{}.{}", entity_name, column_name))
+            .get(&format!("{entity_name}.{column_name}"))
         {
             return parser.as_ref()(value);
         }
