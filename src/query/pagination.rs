@@ -263,6 +263,29 @@ where
     }
 }
 
+pub async fn apply_offset_pagination<T>(
+    db: &DatabaseConnection,
+    stmt: Select<T>,
+    pagination: PaginationInput,
+) -> Result<Vec<<T as EntityTrait>::Model>, sea_orm::error::DbErr>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    if let Some(page_object) = pagination.page {
+        let paginator = stmt.paginate(db, page_object.limit);
+
+        Ok(paginator.fetch_page(page_object.page).await?)
+    } else if let Some(offset_object) = pagination.offset {
+        let offset = offset_object.offset;
+        let limit = offset_object.limit;
+
+        Ok(stmt.offset(offset).limit(limit).all(db).await?)
+    } else {
+        Ok(stmt.all(db).await?)
+    }
+}
+
 pub fn apply_memory_pagination<T>(
     values: Option<Vec<T::Model>>,
     pagination: PaginationInput,
@@ -409,5 +432,30 @@ where
                 total,
             }),
         }
+    }
+}
+
+pub fn apply_memory_offset_pagination<T>(
+    values: Option<Vec<T::Model>>,
+    pagination: PaginationInput,
+) -> Vec<T::Model>
+where
+    T: EntityTrait,
+    T::Model: Sync,
+{
+    let data: Vec<<T as EntityTrait>::Model> = values.unwrap_or_default();
+
+    if let Some(page_object) = pagination.page {
+        data.into_iter()
+            .skip((page_object.page * page_object.limit).try_into().unwrap())
+            .take(page_object.limit.try_into().unwrap())
+            .collect()
+    } else if let Some(offset_object) = pagination.offset {
+        data.into_iter()
+            .skip((offset_object.offset).try_into().unwrap())
+            .take(offset_object.limit.try_into().unwrap())
+            .collect()
+    } else {
+        data
     }
 }

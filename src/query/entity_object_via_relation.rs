@@ -9,10 +9,10 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, BuilderContext,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder,
+    apply_memory_offset_pagination, apply_memory_pagination, apply_offset_pagination, apply_order,
+    apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex,
+    OneToManyLoader, OneToOneLoader, OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
@@ -122,83 +122,168 @@ impl EntityObjectViaRelationBuilder {
                     }
                 })
             }),
-            true => Field::new(
-                name,
-                TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
-                move |ctx| {
-                    let context: &'static BuilderContext = context;
-                    FieldFuture::new(async move {
-                        let guard_flag = if let Some(guard) = guard {
-                            (*guard)(&ctx)
-                        } else {
-                            GuardAction::Allow
-                        };
-
-                        if let GuardAction::Block(reason) = guard_flag {
-                            return match reason {
-                                Some(reason) => {
-                                    Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                                }
-                                None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                    "Entity guard triggered.",
-                                )),
-                            };
-                        }
-
-                        // FIXME: optimize union queries
-                        // NOTE: each has unique query in order to apply pagination...
-                        let parent: &T::Model = ctx
-                            .parent_value
-                            .try_downcast_ref::<T::Model>()
-                            .expect("Parent should exist");
-
-                        let stmt = if <T as Related<R>>::via().is_some() {
-                            <T as Related<R>>::find_related()
-                        } else {
-                            R::find()
-                        };
-
-                        let filters = ctx.args.get(&context.entity_query_field.filters);
-                        let filters = get_filter_conditions::<R>(context, filters);
-
-                        let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                        let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
-
-                        let pagination = ctx.args.get(&context.entity_query_field.pagination);
-                        let pagination =
-                            PaginationInputBuilder { context }.parse_object(pagination);
-
-                        let db = ctx.data::<DatabaseConnection>()?;
-
-                        let connection = if is_via_relation {
-                            // TODO optimize query
-                            let condition = Condition::all().add(from_col.eq(parent.get(from_col)));
-
-                            let stmt = stmt.filter(condition.add(filters));
-                            let stmt = apply_order(stmt, order_by);
-                            apply_pagination::<R>(db, stmt, pagination).await?
-                        } else {
-                            let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
-
-                            let key = KeyComplex::<R> {
-                                key: vec![parent.get(from_col)],
-                                meta: HashableGroupKey::<R> {
-                                    stmt,
-                                    columns: vec![to_col],
-                                    filters: Some(filters),
-                                    order_by,
-                                },
+            true => {
+                if cfg!(feature = "offset-pagination") {
+                    Field::new(name, TypeRef::named_list(&object_name), move |ctx| {
+                        let context: &'static BuilderContext = context;
+                        FieldFuture::new(async move {
+                            let guard_flag = if let Some(guard) = guard {
+                                (*guard)(&ctx)
+                            } else {
+                                GuardAction::Allow
                             };
 
-                            let values = loader.load_one(key).await?;
+                            if let GuardAction::Block(reason) = guard_flag {
+                                return match reason {
+                                    Some(reason) => {
+                                        Err::<Option<_>, async_graphql::Error>(Error::new(reason))
+                                    }
+                                    None => Err::<Option<_>, async_graphql::Error>(Error::new(
+                                        "Entity guard triggered.",
+                                    )),
+                                };
+                            }
 
-                            apply_memory_pagination(values, pagination)
-                        };
+                            // FIXME: optimize union queries
+                            // NOTE: each has unique query in order to apply pagination...
+                            let parent: &T::Model = ctx
+                                .parent_value
+                                .try_downcast_ref::<T::Model>()
+                                .expect("Parent should exist");
 
-                        Ok(Some(FieldValue::owned_any(connection)))
+                            let stmt = if <T as Related<R>>::via().is_some() {
+                                <T as Related<R>>::find_related()
+                            } else {
+                                R::find()
+                            };
+
+                            let filters = ctx.args.get(&context.entity_query_field.filters);
+                            let filters = get_filter_conditions::<R>(context, filters);
+
+                            let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                            let order_by =
+                                OrderInputBuilder { context }.parse_object::<R>(order_by);
+
+                            let pagination = ctx.args.get(&context.entity_query_field.pagination);
+                            let pagination =
+                                PaginationInputBuilder { context }.parse_object(pagination);
+
+                            let db = ctx.data::<DatabaseConnection>()?;
+
+                            let connection = if is_via_relation {
+                                // TODO optimize query
+                                let condition =
+                                    Condition::all().add(from_col.eq(parent.get(from_col)));
+
+                                let stmt = stmt.filter(condition.add(filters));
+                                let stmt = apply_order(stmt, order_by);
+                                apply_offset_pagination::<R>(db, stmt, pagination).await?
+                            } else {
+                                let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
+
+                                let key = KeyComplex::<R> {
+                                    key: vec![parent.get(from_col)],
+                                    meta: HashableGroupKey::<R> {
+                                        stmt,
+                                        columns: vec![to_col],
+                                        filters: Some(filters),
+                                        order_by,
+                                    },
+                                };
+
+                                let values = loader.load_one(key).await?;
+                                apply_memory_offset_pagination::<R>(values, pagination)
+                            };
+
+                            Ok(Some(FieldValue::list(
+                                connection.into_iter().map(FieldValue::owned_any),
+                            )))
+                        })
                     })
-                },
-            ),
+                } else {
+                    Field::new(
+                        name,
+                        TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
+                        move |ctx| {
+                            let context: &'static BuilderContext = context;
+                            FieldFuture::new(async move {
+                                let guard_flag = if let Some(guard) = guard {
+                                    (*guard)(&ctx)
+                                } else {
+                                    GuardAction::Allow
+                                };
+
+                                if let GuardAction::Block(reason) = guard_flag {
+                                    return match reason {
+                                        Some(reason) => Err::<Option<_>, async_graphql::Error>(
+                                            Error::new(reason),
+                                        ),
+                                        None => Err::<Option<_>, async_graphql::Error>(Error::new(
+                                            "Entity guard triggered.",
+                                        )),
+                                    };
+                                }
+
+                                // FIXME: optimize union queries
+                                // NOTE: each has unique query in order to apply pagination...
+                                let parent: &T::Model = ctx
+                                    .parent_value
+                                    .try_downcast_ref::<T::Model>()
+                                    .expect("Parent should exist");
+
+                                let stmt = if <T as Related<R>>::via().is_some() {
+                                    <T as Related<R>>::find_related()
+                                } else {
+                                    R::find()
+                                };
+
+                                let filters = ctx.args.get(&context.entity_query_field.filters);
+                                let filters = get_filter_conditions::<R>(context, filters);
+
+                                let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                                let order_by =
+                                    OrderInputBuilder { context }.parse_object::<R>(order_by);
+
+                                let pagination =
+                                    ctx.args.get(&context.entity_query_field.pagination);
+                                let pagination =
+                                    PaginationInputBuilder { context }.parse_object(pagination);
+
+                                let db = ctx.data::<DatabaseConnection>()?;
+
+                                let connection = if is_via_relation {
+                                    // TODO optimize query
+                                    let condition =
+                                        Condition::all().add(from_col.eq(parent.get(from_col)));
+
+                                    let stmt = stmt.filter(condition.add(filters));
+                                    let stmt = apply_order(stmt, order_by);
+                                    apply_pagination::<R>(db, stmt, pagination).await?
+                                } else {
+                                    let loader =
+                                        ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
+
+                                    let key = KeyComplex::<R> {
+                                        key: vec![parent.get(from_col)],
+                                        meta: HashableGroupKey::<R> {
+                                            stmt,
+                                            columns: vec![to_col],
+                                            filters: Some(filters),
+                                            order_by,
+                                        },
+                                    };
+
+                                    let values = loader.load_one(key).await?;
+
+                                    apply_memory_pagination(values, pagination)
+                                };
+
+                                Ok(Some(FieldValue::owned_any(connection)))
+                            })
+                        },
+                    )
+                }
+            }
         };
 
         match via_relation_definition.is_owner {

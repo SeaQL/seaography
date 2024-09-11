@@ -83,17 +83,23 @@ impl Builder {
             |entity_object, field| entity_object.field(field),
         );
 
-        let edge_object_builder = EdgeObjectBuilder {
-            context: self.context,
-        };
-        let edge = edge_object_builder.to_object::<T>();
+        if cfg!(feature = "offset-pagination") {
+            self.outputs.extend(vec![entity_object]);
+        } else {
+            let edge_object_builder = EdgeObjectBuilder {
+                context: self.context,
+            };
 
-        let connection_object_builder = ConnectionObjectBuilder {
-            context: self.context,
-        };
-        let connection = connection_object_builder.to_object::<T>();
+            let edge = edge_object_builder.to_object::<T>();
 
-        self.outputs.extend(vec![entity_object, edge, connection]);
+            let connection_object_builder = ConnectionObjectBuilder {
+                context: self.context,
+            };
+
+            let connection = connection_object_builder.to_object::<T>();
+
+            self.outputs.extend(vec![entity_object, edge, connection]);
+        }
 
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
@@ -271,12 +277,8 @@ impl Builder {
                 }
                 .enumeration(),
             )
-            .register(
-                CursorInputBuilder {
-                    context: self.context,
-                }
-                .input_object(),
-            )
+            .register(query)
+            .register(mutation)
             .register(
                 CursorInputBuilder {
                     context: self.context,
@@ -313,8 +315,6 @@ impl Builder {
                 }
                 .to_object(),
             )
-            .register(query)
-            .register(mutation)
     }
 }
 
