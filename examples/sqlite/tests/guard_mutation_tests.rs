@@ -80,7 +80,7 @@ pub fn assert_eq(a: Response, b: &str) {
         serde_json::from_str::<serde_json::Value>(b).unwrap()
     )
 }
-
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn entity_guard_mutation() {
     let schema = get_schema().await;
@@ -130,6 +130,7 @@ async fn entity_guard_mutation() {
     assert_eq!(response.errors[0].message, "Entity guard triggered.");
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn field_guard_mutation() {
     let schema = get_schema().await;
@@ -141,7 +142,7 @@ async fn field_guard_mutation() {
                 languageUpdate(data: { name: "Cantonese" }, filter: { languageId: { eq: 6 } }) {
                     languageId
                 }
-            }      
+            }
     "#,
         )
         .await;

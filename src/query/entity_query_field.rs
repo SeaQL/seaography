@@ -5,10 +5,11 @@ use async_graphql::{
 use heck::ToLowerCamelCase;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
+#[cfg(not(feature = "offset-pagination"))]
+use crate::ConnectionObjectBuilder;
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
-    EntityObjectBuilder, FilterInputBuilder, GuardAction, OrderInputBuilder,
-    PaginationInputBuilder,
+    apply_order, apply_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder,
+    FilterInputBuilder, GuardAction, OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -61,6 +62,7 @@ impl EntityQueryFieldBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
+        #[cfg(not(feature = "offset-pagination"))]
         let connection_object_builder = ConnectionObjectBuilder {
             context: self.context,
         };
@@ -78,53 +80,55 @@ impl EntityQueryFieldBuilder {
         };
 
         let object_name = entity_object.type_name::<T>();
-        let type_name = connection_object_builder.type_name(&object_name);
-
+        #[cfg(feature = "offset-pagination")]
+        let type_ref = TypeRef::named_list(&object_name);
+        #[cfg(not(feature = "offset-pagination"))]
+        let type_ref = TypeRef::named_nn(connection_object_builder.type_name(&object_name));
+        #[cfg(feature = "offset-pagination")]
+        let resolver_fn =
+            |object: Vec<T::Model>| FieldValue::list(object.into_iter().map(FieldValue::owned_any));
+        #[cfg(not(feature = "offset-pagination"))]
+        let resolver_fn = |object: crate::Connection<T>| FieldValue::owned_any(object);
         let guard = self.context.guards.entity_guards.get(&object_name);
 
         let context: &'static BuilderContext = self.context;
-        Field::new(
-            self.type_name::<T>(),
-            TypeRef::named_nn(type_name),
-            move |ctx| {
-                let context: &'static BuilderContext = context;
-                FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
+
+        Field::new(self.type_name::<T>(), type_ref, move |ctx| {
+            let context: &'static BuilderContext = context;
+            FieldFuture::new(async move {
+                let guard_flag = if let Some(guard) = guard {
+                    (*guard)(&ctx)
+                } else {
+                    GuardAction::Allow
+                };
+
+                if let GuardAction::Block(reason) = guard_flag {
+                    return match reason {
+                        Some(reason) => Err::<Option<_>, async_graphql::Error>(Error::new(reason)),
+                        None => Err::<Option<_>, async_graphql::Error>(Error::new(
+                            "Entity guard triggered.",
+                        )),
                     };
+                }
 
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => {
-                                Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                "Entity guard triggered.",
-                            )),
-                        };
-                    }
+                let filters = ctx.args.get(&context.entity_query_field.filters);
+                let filters = get_filter_conditions::<T>(context, filters);
+                let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
+                let pagination = ctx.args.get(&context.entity_query_field.pagination);
+                let pagination = PaginationInputBuilder { context }.parse_object(pagination);
 
-                    let filters = ctx.args.get(&context.entity_query_field.filters);
-                    let filters = get_filter_conditions::<T>(context, filters);
-                    let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                    let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
-                    let pagination = ctx.args.get(&context.entity_query_field.pagination);
-                    let pagination = PaginationInputBuilder { context }.parse_object(pagination);
+                let stmt = T::find();
+                let stmt = stmt.filter(filters);
+                let stmt = apply_order(stmt, order_by);
 
-                    let stmt = T::find();
-                    let stmt = stmt.filter(filters);
-                    let stmt = apply_order(stmt, order_by);
+                let db = ctx.data::<DatabaseConnection>()?;
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                let object = apply_pagination::<T>(db, stmt, pagination).await?;
 
-                    let connection = apply_pagination::<T>(db, stmt, pagination).await?;
-
-                    Ok(Some(FieldValue::owned_any(connection)))
-                })
-            },
-        )
+                Ok(Some(resolver_fn(object)))
+            })
+        })
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
             TypeRef::named(filter_input_builder.type_name(&object_name)),
