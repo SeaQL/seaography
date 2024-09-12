@@ -1,6 +1,7 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn main() {
     test_simple_insert_one().await;

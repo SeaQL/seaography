@@ -15,6 +15,7 @@ pub fn assert_eq(a: Response, b: &str) {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_simple_query() {
     let schema = get_schema().await;
@@ -62,6 +63,7 @@ async fn test_simple_query() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_simple_query_with_filter() {
     let schema = get_schema().await;
@@ -102,6 +104,7 @@ async fn test_simple_query_with_filter() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_filter_with_pagination() {
     let schema = get_schema().await;
@@ -151,6 +154,7 @@ async fn test_filter_with_pagination() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_complex_filter_with_pagination() {
     let schema = get_schema().await;
@@ -200,6 +204,7 @@ async fn test_complex_filter_with_pagination() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_cursor_pagination() {
     let schema = get_schema().await;
@@ -295,6 +300,7 @@ async fn test_cursor_pagination() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_cursor_pagination_prev() {
     let schema = get_schema().await;
@@ -372,6 +378,7 @@ async fn test_cursor_pagination_prev() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_cursor_pagination_no_next() {
     let schema = get_schema().await;
@@ -440,6 +447,7 @@ async fn test_cursor_pagination_no_next() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn test_self_ref() {
     let schema = get_schema().await;
@@ -504,6 +512,7 @@ async fn test_self_ref() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn related_queries_filters() {
     let schema = get_schema().await;
@@ -706,6 +715,7 @@ async fn related_queries_filters() {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn related_queries_pagination() {
     let schema = get_schema().await;

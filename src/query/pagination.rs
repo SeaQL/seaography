@@ -1,17 +1,20 @@
+#[allow(unused_imports)]
+use crate::{
+    decode_cursor, encode_cursor, map_cursor_values, Connection, Edge, PageInfo, PaginationInfo,
+    PaginationInput,
+};
+#[cfg(not(feature = "offset-pagination"))]
 use itertools::Itertools;
 #[allow(unused_imports)]
 use sea_orm::CursorTrait;
+#[allow(unused_imports)]
 use sea_orm::{
     ConnectionTrait, DatabaseConnection, EntityTrait, Iterable, ModelTrait, PaginatorTrait,
     PrimaryKeyToColumn, QuerySelect, QueryTrait, Select,
 };
 
-use crate::{
-    decode_cursor, encode_cursor, map_cursor_values, Connection, Edge, PageInfo, PaginationInfo,
-    PaginationInput,
-};
-
 /// used to parse pagination input object and apply it to statement
+#[cfg(not(feature = "offset-pagination"))]
 pub async fn apply_pagination<T>(
     db: &DatabaseConnection,
     stmt: Select<T>,
@@ -263,7 +266,8 @@ where
     }
 }
 
-pub async fn apply_offset_pagination<T>(
+#[cfg(feature = "offset-pagination")]
+pub async fn apply_pagination<T>(
     db: &DatabaseConnection,
     stmt: Select<T>,
     pagination: PaginationInput,
@@ -286,6 +290,7 @@ where
     }
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 pub fn apply_memory_pagination<T>(
     values: Option<Vec<T::Model>>,
     pagination: PaginationInput,
@@ -435,7 +440,8 @@ where
     }
 }
 
-pub fn apply_memory_offset_pagination<T>(
+#[cfg(feature = "offset-pagination")]
+pub fn apply_memory_pagination<T>(
     values: Option<Vec<T::Model>>,
     pagination: PaginationInput,
 ) -> Vec<T::Model>

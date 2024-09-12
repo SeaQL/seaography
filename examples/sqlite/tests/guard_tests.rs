@@ -285,6 +285,7 @@ pub fn assert_eq(a: Response, b: &str) {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn entity_guard() {
     let schema = get_schema().await;
@@ -357,6 +358,7 @@ async fn entity_guard() {
     assert_eq!(response.errors[0].message, "Entity guard triggered.");
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn field_guard() {
     let schema = get_schema().await;

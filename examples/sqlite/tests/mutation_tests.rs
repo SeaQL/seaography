@@ -1,6 +1,7 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 
+#[cfg(not(feature = "offset-pagination"))]
 #[tokio::test]
 async fn main() {
     test_simple_insert_one().await;
@@ -24,6 +25,7 @@ pub fn assert_eq(a: Response, b: &str) {
     )
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 async fn test_simple_insert_one() {
     let schema = get_schema().await;
 
@@ -106,6 +108,7 @@ async fn test_simple_insert_one() {
     );
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 async fn test_complex_insert_one() {
     let schema = get_schema().await;
 
@@ -218,6 +221,7 @@ async fn test_complex_insert_one() {
     );
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 async fn test_create_batch_mutation() {
     let schema = get_schema().await;
 
@@ -320,6 +324,7 @@ async fn test_create_batch_mutation() {
     );
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 async fn test_update_mutation() {
     let schema = get_schema().await;
 
@@ -498,6 +503,7 @@ async fn test_update_mutation() {
     );
 }
 
+#[cfg(not(feature = "offset-pagination"))]
 async fn test_delete_mutation() {
     let schema = get_schema().await;
 
