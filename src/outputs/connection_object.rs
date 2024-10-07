@@ -96,7 +96,7 @@ impl ConnectionObjectBuilder {
                         if let Some(value) = connection
                             .pagination_info
                             .as_ref()
-                            .map(|v| FieldValue::borrowed_any(v))
+                            .map(FieldValue::borrowed_any)
                         {
                             Ok(Some(value))
                         } else {
