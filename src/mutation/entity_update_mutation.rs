@@ -24,7 +24,14 @@ pub struct EntityUpdateMutationConfig {
 impl std::default::Default for EntityUpdateMutationConfig {
     fn default() -> Self {
         Self {
-            mutation_suffix: "Update".into(),
+            mutation_suffix: {
+                if cfg!(feature = "snake-case-field") {
+                    "_update"
+                } else {
+                    "Update"
+                }
+                .into()
+            },
             data_field: "data".into(),
             filter_field: "filter".into(),
         }

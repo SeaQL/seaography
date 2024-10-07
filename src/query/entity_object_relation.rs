@@ -3,7 +3,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
     Error,
 };
-use heck::ToSnakeCase;
+use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{EntityTrait, Iden, ModelTrait, RelationDef};
 
 use crate::{
@@ -30,6 +30,11 @@ impl EntityObjectRelationBuilder {
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
+        let name = if cfg!(feature = "snake-case-field") {
+            name.to_snake_case()
+        } else {
+            name.to_lower_camel_case()
+        };
         let context: &'static BuilderContext = self.context;
         let entity_object_builder = EntityObjectBuilder { context };
         let connection_object_builder = ConnectionObjectBuilder { context };

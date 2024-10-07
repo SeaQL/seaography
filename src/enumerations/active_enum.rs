@@ -1,5 +1,5 @@
 use async_graphql::dynamic::Enum;
-use heck::ToUpperCamelCase;
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ActiveEnum, DynIden, Value};
 
 use crate::BuilderContext;
@@ -19,7 +19,11 @@ impl std::default::Default for ActiveEnumConfig {
                 format!("{}Enum", name.to_upper_camel_case())
             }),
             variant_name: Box::new(|_enum_name: &str, variant: &str| -> String {
-                variant.to_upper_camel_case().to_ascii_uppercase()
+                if cfg!(feature = "snake-case-field") {
+                    variant.to_snake_case()
+                } else {
+                    variant.to_upper_camel_case().to_ascii_uppercase()
+                }
             }),
         }
     }

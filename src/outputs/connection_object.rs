@@ -42,8 +42,22 @@ impl std::default::Default for ConnectionObjectConfig {
             type_name: Box::new(|object_name: &str| -> String {
                 format!("{}Connection", object_name)
             }),
-            page_info: "pageInfo".into(),
-            pagination_info: "paginationInfo".into(),
+            page_info: {
+                if cfg!(feature = "snake-case-field") {
+                    "page_info"
+                } else {
+                    "pageInfo"
+                }
+                .into()
+            },
+            pagination_info: {
+                if cfg!(feature = "snake-case-field") {
+                    "pagination_info"
+                } else {
+                    "paginationInfo"
+                }
+                .into()
+            },
             edges: "edges".into(),
             nodes: "nodes".into(),
         }

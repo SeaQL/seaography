@@ -24,7 +24,7 @@ thiserror = { version = "1.0.44" }
 fnv = { version = "1.0.7" }
 
 [features]
-default = []
+default = ["camel-case-field"]
 with-json = ["sea-orm/with-json"]
 with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
 with-time = ["sea-orm/with-time", "async-graphql/time"]
@@ -34,3 +34,5 @@ with-bigdecimal = ["sea-orm/with-bigdecimal", "async-graphql/bigdecimal"]
 with-postgres-array = ["sea-orm/postgres-array"]
 # with-ipnetwork = ["sea-orm/with-ipnetwork"]
 # with-mac_address = ["sea-orm/with-mac_address"]
+snake-case-field = []
+camel-case-field = []
