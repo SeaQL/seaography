@@ -841,7 +841,7 @@ async fn enumeration_filter() {
                 r#"
                 {
                   film(
-                    filters: { rating: { eq: NC17 } }
+                    filters: { rating: { eq: nc_17 } }
                     pagination: { page: { page: 1, limit: 5 } }
                   ) {
                     nodes {
@@ -859,23 +859,23 @@ async fn enumeration_filter() {
             "nodes": [
               {
                 "filmId": 27,
-                "rating": "NC17"
+                "rating": "nc_17"
               },
               {
                 "filmId": 29,
-                "rating": "NC17"
+                "rating": "nc_17"
               },
               {
                 "filmId": 31,
-                "rating": "NC17"
+                "rating": "nc_17"
               },
               {
                 "filmId": 34,
-                "rating": "NC17"
+                "rating": "nc_17"
               },
               {
                 "filmId": 38,
-                "rating": "NC17"
+                "rating": "nc_17"
               }
             ]
           }

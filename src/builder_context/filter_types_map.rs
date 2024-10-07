@@ -411,8 +411,14 @@ impl FilterTypesMapHelper {
                 FilterType::Float => &self.context.filter_types.float_filter_info,
                 FilterType::Boolean => &self.context.filter_types.boolean_filter_info,
                 FilterType::Id => &self.context.filter_types.id_filter_info,
-                FilterType::Enumeration(_) => {
-                    return prepare_enumeration_condition::<T>(filter, column, condition)
+                FilterType::Enumeration(name) => {
+                    return prepare_enumeration_condition::<T>(
+                        self.context,
+                        filter,
+                        column,
+                        condition,
+                        &name,
+                    );
                 }
                 FilterType::Custom(_) => {
                     let entity_object_builder = EntityObjectBuilder {
