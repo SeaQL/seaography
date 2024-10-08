@@ -30,7 +30,7 @@ impl EntityObjectRelationBuilder {
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
-        let name = if cfg!(feature = "snake-case-field") {
+        let name = if cfg!(feature = "field-snake-case") {
             name.to_snake_case()
         } else {
             name.to_lower_camel_case()

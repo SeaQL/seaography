@@ -89,7 +89,7 @@ where
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
             let variant = variant.to_string();
-            let variant = if cfg!(feature = "snake-case-field") {
+            let variant = if cfg!(feature = "field-snake-case") {
                 variant.to_snake_case()
             } else {
                 variant.to_upper_camel_case().to_ascii_uppercase()

@@ -20,7 +20,7 @@ impl std::default::Default for EntityObjectConfig {
                 entity_name.to_upper_camel_case()
             }),
             column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     column_name.to_snake_case()
                 } else {
                     column_name.to_lower_camel_case()

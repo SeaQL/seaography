@@ -31,7 +31,7 @@ impl std::default::Default for PageInfoObjectConfig {
         PageInfoObjectConfig {
             type_name: "PageInfo".into(),
             has_previous_page: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "has_previous_page"
                 } else {
                     "hasPreviousPage"
@@ -39,7 +39,7 @@ impl std::default::Default for PageInfoObjectConfig {
                 .into()
             },
             has_next_page: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "has_next_page"
                 } else {
                     "hasNextPage"
@@ -47,7 +47,7 @@ impl std::default::Default for PageInfoObjectConfig {
                 .into()
             },
             start_cursor: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "start_cursor"
                 } else {
                     "startCursor"
@@ -55,7 +55,7 @@ impl std::default::Default for PageInfoObjectConfig {
                 .into()
             },
             end_cursor: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "end_cursor"
                 } else {
                     "endCursor"

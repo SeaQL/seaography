@@ -20,7 +20,7 @@ impl std::default::Default for EntityCreateBatchMutationConfig {
     fn default() -> Self {
         EntityCreateBatchMutationConfig {
             mutation_suffix: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "_create_batch"
                 } else {
                     "CreateBatch"

@@ -20,7 +20,7 @@ impl std::default::Default for EntityCreateOneMutationConfig {
     fn default() -> Self {
         EntityCreateOneMutationConfig {
             mutation_suffix: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "_create_one"
                 } else {
                     "CreateOne"

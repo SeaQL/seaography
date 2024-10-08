@@ -27,7 +27,7 @@ impl std::default::Default for EntityQueryFieldConfig {
     fn default() -> Self {
         EntityQueryFieldConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     object_name.to_snake_case()
                 } else {
                     object_name.to_lower_camel_case()
@@ -35,7 +35,7 @@ impl std::default::Default for EntityQueryFieldConfig {
             }),
             filters: "filters".into(),
             order_by: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "order_by"
                 } else {
                     "orderBy"

@@ -19,7 +19,7 @@ impl std::default::Default for ActiveEnumConfig {
                 format!("{}Enum", name.to_upper_camel_case())
             }),
             variant_name: Box::new(|_enum_name: &str, variant: &str| -> String {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     variant.to_snake_case()
                 } else {
                     variant.to_upper_camel_case().to_ascii_uppercase()

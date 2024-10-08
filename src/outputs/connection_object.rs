@@ -43,7 +43,7 @@ impl std::default::Default for ConnectionObjectConfig {
                 format!("{object_name}Connection")
             }),
             page_info: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "page_info"
                 } else {
                     "pageInfo"
@@ -51,7 +51,7 @@ impl std::default::Default for ConnectionObjectConfig {
                 .into()
             },
             pagination_info: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "pagination_info"
                 } else {
                     "paginationInfo"

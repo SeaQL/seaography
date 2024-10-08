@@ -25,7 +25,7 @@ impl std::default::Default for EntityUpdateMutationConfig {
     fn default() -> Self {
         Self {
             mutation_suffix: {
-                if cfg!(feature = "snake-case-field") {
+                if cfg!(feature = "field-snake-case") {
                     "_update"
                 } else {
                     "Update"
