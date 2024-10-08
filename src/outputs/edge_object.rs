@@ -30,7 +30,7 @@ pub struct EdgeObjectConfig {
 impl std::default::Default for EdgeObjectConfig {
     fn default() -> EdgeObjectConfig {
         EdgeObjectConfig {
-            type_name: Box::new(|object_name: &str| -> String { format!("{}Edge", object_name) }),
+            type_name: Box::new(|object_name: &str| -> String { format!("{object_name}Edge") }),
             cursor: "cursor".into(),
             node: "node".into(),
         }

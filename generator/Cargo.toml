@@ -1,6 +1,6 @@
 [package]
 name = "seaography-generator"
-version = "1.0.0"
+version = "1.1.0-rc.1"
 edition = "2021"
 rust-version = "1.70"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
@@ -18,5 +18,5 @@ proc-macro2 = "1.0.66"
 syn = { version = "2.0.27", features = ["full"] }
 heck = "0.4.1"
 itertools = "0.11.0"
-sea-query = { version = "~0.31.0", default-features = false }
+sea-query = { version = "~0.32.0-rc.1", default-features = false }
 thiserror = "1.0.44"

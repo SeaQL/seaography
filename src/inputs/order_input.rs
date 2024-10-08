@@ -13,7 +13,7 @@ impl std::default::Default for OrderInputConfig {
     fn default() -> Self {
         OrderInputConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                format!("{}OrderInput", object_name)
+                format!("{object_name}OrderInput")
             }),
         }
     }
