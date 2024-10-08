@@ -30,10 +30,38 @@ impl std::default::Default for PageInfoObjectConfig {
     fn default() -> Self {
         PageInfoObjectConfig {
             type_name: "PageInfo".into(),
-            has_previous_page: "hasPreviousPage".into(),
-            has_next_page: "hasNextPage".into(),
-            start_cursor: "startCursor".into(),
-            end_cursor: "endCursor".into(),
+            has_previous_page: {
+                if cfg!(feature = "snake-case-field") {
+                    "has_previous_page"
+                } else {
+                    "hasPreviousPage"
+                }
+                .into()
+            },
+            has_next_page: {
+                if cfg!(feature = "snake-case-field") {
+                    "has_next_page"
+                } else {
+                    "hasNextPage"
+                }
+                .into()
+            },
+            start_cursor: {
+                if cfg!(feature = "snake-case-field") {
+                    "start_cursor"
+                } else {
+                    "startCursor"
+                }
+                .into()
+            },
+            end_cursor: {
+                if cfg!(feature = "snake-case-field") {
+                    "end_cursor"
+                } else {
+                    "endCursor"
+                }
+                .into()
+            },
         }
     }
 }

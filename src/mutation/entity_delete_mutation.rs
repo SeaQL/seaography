@@ -20,7 +20,14 @@ pub struct EntityDeleteMutationConfig {
 impl std::default::Default for EntityDeleteMutationConfig {
     fn default() -> Self {
         Self {
-            mutation_suffix: "Delete".into(),
+            mutation_suffix: {
+                if cfg!(feature = "snake-case-field") {
+                    "_delete"
+                } else {
+                    "Delete"
+                }
+                .into()
+            },
             filter_field: "filter".into(),
         }
     }
