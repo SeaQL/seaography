@@ -3,7 +3,9 @@ use async_graphql::{
     Error,
 };
 use heck::ToLowerCamelCase;
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
+use sea_orm::{
+    DatabaseConnection, EntityTrait, Iterable, JoinType, QueryFilter, QuerySelect, RelationTrait,
+};
 
 #[cfg(not(feature = "offset-pagination"))]
 use crate::ConnectionObjectBuilder;
@@ -11,6 +13,8 @@ use crate::{
     apply_order, apply_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder,
     FilterInputBuilder, GuardAction, OrderInputBuilder, PaginationInputBuilder,
 };
+
+use super::get_cascade_conditions;
 
 /// The configuration structure for EntityQueryFieldBuilder
 pub struct EntityQueryFieldConfig {
@@ -93,42 +97,68 @@ impl EntityQueryFieldBuilder {
 
         let context: &'static BuilderContext = self.context;
 
-        Field::new(self.type_name::<T>(), type_ref, move |ctx| {
-            let context: &'static BuilderContext = context;
-            FieldFuture::new(async move {
-                let guard_flag = if let Some(guard) = guard {
-                    (*guard)(&ctx)
-                } else {
-                    GuardAction::Allow
-                };
+        Field::new(self.type_name::<T>(), type_ref, {
+            move |ctx| {
+                let context: &'static BuilderContext = context;
+                FieldFuture::new({
+                    async move {
+                        let guard_flag = if let Some(guard) = guard {
+                            (*guard)(&ctx)
+                        } else {
+                            GuardAction::Allow
+                        };
 
-                if let GuardAction::Block(reason) = guard_flag {
-                    return match reason {
-                        Some(reason) => Err::<Option<_>, async_graphql::Error>(Error::new(reason)),
-                        None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                            "Entity guard triggered.",
-                        )),
-                    };
-                }
+                        if let GuardAction::Block(reason) = guard_flag {
+                            return match reason {
+                                Some(reason) => {
+                                    Err::<Option<_>, async_graphql::Error>(Error::new(reason))
+                                }
+                                None => Err::<Option<_>, async_graphql::Error>(Error::new(
+                                    "Entity guard triggered.",
+                                )),
+                            };
+                        }
 
-                let filters = ctx.args.get(&context.entity_query_field.filters);
-                let filters = get_filter_conditions::<T>(context, filters);
-                let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
-                let pagination = ctx.args.get(&context.entity_query_field.pagination);
-                let pagination = PaginationInputBuilder { context }.parse_object(pagination);
+                        let filters = ctx.args.get(&context.entity_query_field.filters);
+                        let filters = get_filter_conditions::<T>(context, filters);
+                        let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                        let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
+                        let pagination = ctx.args.get(&context.entity_query_field.pagination);
+                        let pagination =
+                            PaginationInputBuilder { context }.parse_object(pagination);
+                        let cascades = ctx.args.get("cascade");
+                        let cascades = get_cascade_conditions(cascades);
+                        let stmt = T::Relation::iter().fold(T::find(), |stmt, related_table| {
+                            let related_table_name = related_table.def().to_tbl;
+                            let related_table_name = match related_table_name {
+                                sea_orm::sea_query::TableRef::Table(iden) => {
+                                    if cascades.contains(&iden.to_string()) {
+                                        stmt.join(JoinType::InnerJoin, related_table.def())
+                                            .distinct()
+                                    } else {
+                                        stmt
+                                    }
+                                }
+                                _ => stmt,
+                            };
+                            related_table_name
+                        });
+                        let stmt = stmt.filter(filters);
+                        let stmt = apply_order(stmt, order_by);
 
-                let stmt = T::find();
-                let stmt = stmt.filter(filters);
-                let stmt = apply_order(stmt, order_by);
+                        let db = ctx.data::<DatabaseConnection>()?;
 
-                let db = ctx.data::<DatabaseConnection>()?;
+                        let object = apply_pagination::<T>(db, stmt, pagination).await?;
 
-                let object = apply_pagination::<T>(db, stmt, pagination).await?;
-
-                Ok(Some(resolver_fn(object)))
-            })
+                        Ok(Some(resolver_fn(object)))
+                    }
+                })
+            }
         })
+        .argument(InputValue::new(
+            "cascade",
+            TypeRef::named_list(TypeRef::STRING),
+        ))
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
             TypeRef::named(filter_input_builder.type_name(&object_name)),
