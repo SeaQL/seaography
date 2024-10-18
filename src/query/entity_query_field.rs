@@ -34,7 +34,7 @@ impl std::default::Default for EntityQueryFieldConfig {
             type_name: Box::new(|object_name: &str| -> String {
                 object_name.to_lower_camel_case()
             }),
-            filters: "filters".into(),
+            filters: "filter".into(),
             order_by: "orderBy".into(),
             pagination: "pagination".into(),
         }
@@ -130,7 +130,7 @@ impl EntityQueryFieldBuilder {
                         let cascades = get_cascade_conditions(cascades);
                         let stmt = T::Relation::iter().fold(T::find(), |stmt, related_table| {
                             let related_table_name = related_table.def().to_tbl;
-                            let related_table_name = match related_table_name {
+                            match related_table_name {
                                 sea_orm::sea_query::TableRef::Table(iden) => {
                                     if cascades.contains(&iden.to_string()) {
                                         stmt.join(JoinType::InnerJoin, related_table.def())
@@ -139,9 +139,24 @@ impl EntityQueryFieldBuilder {
                                         stmt
                                     }
                                 }
+                                sea_orm::sea_query::TableRef::SchemaTable(_, iden) => {
+                                    if cascades.contains(&iden.to_string()) {
+                                        stmt.join(JoinType::InnerJoin, related_table.def())
+                                            .distinct()
+                                    } else {
+                                        stmt
+                                    }
+                                }
+                                sea_orm::sea_query::TableRef::DatabaseSchemaTable(_, _, iden) => {
+                                    if cascades.contains(&iden.to_string()) {
+                                        stmt.join(JoinType::InnerJoin, related_table.def())
+                                            .distinct()
+                                    } else {
+                                        stmt
+                                    }
+                                }
                                 _ => stmt,
-                            };
-                            related_table_name
+                            }
                         });
                         let stmt = stmt.filter(filters);
                         let stmt = apply_order(stmt, order_by);
