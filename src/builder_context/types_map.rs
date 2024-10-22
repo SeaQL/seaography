@@ -483,52 +483,68 @@ pub fn converted_value_to_sea_orm_value(
     entity_name: &str,
     column_name: &str,
 ) -> SeaResult<sea_orm::Value> {
+    let is_null = value.is_null();
     Ok(match column_type {
+        ConvertedType::Bool if is_null => sea_orm::Value::Bool(None),
         ConvertedType::Bool => value.boolean().map(|v| v.into())?,
+        ConvertedType::TinyInteger if is_null => sea_orm::Value::TinyInt(None),
         ConvertedType::TinyInteger => {
             let value: i8 = value.i64()?.try_into()?;
             sea_orm::Value::TinyInt(Some(value))
         }
+        ConvertedType::SmallInteger if is_null => sea_orm::Value::SmallInt(None),
         ConvertedType::SmallInteger => {
             let value: i16 = value.i64()?.try_into()?;
             sea_orm::Value::SmallInt(Some(value))
         }
+        ConvertedType::Integer if is_null => sea_orm::Value::Int(None),
         ConvertedType::Integer => {
             let value: i32 = value.i64()?.try_into()?;
             sea_orm::Value::Int(Some(value))
         }
+        ConvertedType::BigInteger if is_null => sea_orm::Value::BigInt(None),
         ConvertedType::BigInteger => {
             let value = value.i64()?;
             sea_orm::Value::BigInt(Some(value))
         }
+        ConvertedType::TinyUnsigned if is_null => sea_orm::Value::TinyUnsigned(None),
         ConvertedType::TinyUnsigned => {
             let value: u8 = value.u64()?.try_into()?;
             sea_orm::Value::TinyUnsigned(Some(value))
         }
+        ConvertedType::SmallUnsigned if is_null => sea_orm::Value::SmallUnsigned(None),
         ConvertedType::SmallUnsigned => {
             let value: u16 = value.u64()?.try_into()?;
             sea_orm::Value::SmallUnsigned(Some(value))
         }
+        ConvertedType::Unsigned if is_null => sea_orm::Value::Unsigned(None),
         ConvertedType::Unsigned => {
             let value: u32 = value.u64()?.try_into()?;
             sea_orm::Value::Unsigned(Some(value))
         }
+        ConvertedType::BigUnsigned if is_null => sea_orm::Value::BigUnsigned(None),
         ConvertedType::BigUnsigned => {
             let value = value.u64()?;
             sea_orm::Value::BigUnsigned(Some(value))
         }
+        ConvertedType::Float if is_null => sea_orm::Value::Float(None),
         ConvertedType::Float => {
             let value = value.f32()?;
             sea_orm::Value::Float(Some(value))
         }
+        ConvertedType::Double if is_null => sea_orm::Value::Double(None),
         ConvertedType::Double => {
             let value = value.f64()?;
             sea_orm::Value::Double(Some(value))
+        }
+        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) if is_null => {
+            sea_orm::Value::String(None)
         }
         ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
             let value = value.string()?;
             sea_orm::Value::String(Some(Box::new(value.to_string())))
         }
+        ConvertedType::Char if is_null => sea_orm::Value::Char(None),
         ConvertedType::Char => {
             let value = value.string()?;
             let value: char = match value.chars().next() {
@@ -537,10 +553,13 @@ pub fn converted_value_to_sea_orm_value(
             };
             sea_orm::Value::Char(Some(value))
         }
+        ConvertedType::Bytes if is_null => sea_orm::Value::Bytes(None),
         ConvertedType::Bytes => {
             let value = decode_hex(value.string()?)?;
             sea_orm::Value::Bytes(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-json")]
+        ConvertedType::Json if is_null => sea_orm::Value::Json(None),
         #[cfg(feature = "with-json")]
         ConvertedType::Json => {
             use std::str::FromStr;
@@ -555,6 +574,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::Json(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDate if is_null => sea_orm::Value::ChronoDate(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate => {
             let value =
                 sea_orm::entity::prelude::ChronoDate::parse_from_str(value.string()?, "%Y-%m-%d")
@@ -568,6 +589,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDate(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoTime if is_null => sea_orm::Value::ChronoTime(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoTime => {
             let value =
                 sea_orm::entity::prelude::ChronoTime::parse_from_str(value.string()?, "%H:%M:%S")
@@ -580,6 +603,8 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::ChronoTime(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTime if is_null => sea_orm::Value::ChronoDateTime(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTime => {
             let value = sea_orm::entity::prelude::ChronoDateTime::parse_from_str(
@@ -596,6 +621,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDateTime(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeUtc if is_null => sea_orm::Value::ChronoDateTimeUtc(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeUtc => {
             use std::str::FromStr;
 
@@ -610,6 +637,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDateTimeUtc(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeLocal if is_null => sea_orm::Value::ChronoDateTimeLocal(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeLocal => {
             use std::str::FromStr;
 
@@ -622,6 +651,10 @@ pub fn converted_value_to_sea_orm_value(
                 })?;
 
             sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
+        }
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeWithTimeZone if is_null => {
+            sea_orm::Value::ChronoDateTimeWithTimeZone(None)
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeWithTimeZone => {
@@ -642,6 +675,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDateTimeWithTimeZone(Some(Box::new(value)))
         }
         #[cfg(feature = "with-time")]
+        ConvertedType::TimeDate if is_null => sea_orm::Value::TimeDate(None),
+        #[cfg(feature = "with-time")]
         ConvertedType::TimeDate => {
             use std::str::FromStr;
 
@@ -658,6 +693,8 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::TimeDate(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeTime if is_null => sea_orm::Value::TimeTime(None),
         #[cfg(feature = "with-time")]
         ConvertedType::TimeTime => {
             use std::str::FromStr;
@@ -676,6 +713,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::TimeTime(Some(Box::new(value)))
         }
         #[cfg(feature = "with-time")]
+        ConvertedType::TimeDateTime if is_null => sea_orm::Value::TimeDateTime(None),
+        #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTime => {
             use std::str::FromStr;
 
@@ -691,6 +730,10 @@ pub fn converted_value_to_sea_orm_value(
             })?;
 
             sea_orm::Value::TimeDateTime(Some(Box::new(value)))
+        }
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeDateTimeWithTimeZone if is_null => {
+            sea_orm::Value::TimeDateTimeWithTimeZone(None)
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTimeWithTimeZone => {
@@ -709,6 +752,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::TimeDateTimeWithTimeZone(Some(Box::new(value)))
         }
         #[cfg(feature = "with-uuid")]
+        ConvertedType::Uuid if is_null => sea_orm::Value::Uuid(None),
+        #[cfg(feature = "with-uuid")]
         ConvertedType::Uuid => {
             use std::str::FromStr;
 
@@ -721,6 +766,8 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::Uuid(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-decimal")]
+        ConvertedType::Decimal if is_null => sea_orm::Value::Decimal(None),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => {
             use std::str::FromStr;
@@ -736,6 +783,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::Decimal(Some(Box::new(value)))
         }
         #[cfg(feature = "with-bigdecimal")]
+        ConvertedType::BigDecimal if is_null => sea_orm::Value::BigDecimal(None),
+        #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => {
             use std::str::FromStr;
 
@@ -748,6 +797,10 @@ pub fn converted_value_to_sea_orm_value(
                 })?;
 
             sea_orm::Value::BigDecimal(Some(Box::new(value)))
+        }
+        #[cfg(feature = "with-postgres-array")]
+        ConvertedType::Array(ty) if is_null => {
+            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(&ty)?, None)
         }
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
