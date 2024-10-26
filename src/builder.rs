@@ -82,6 +82,7 @@ impl Builder {
             entity_object_builder.to_object::<T>(),
             |entity_object, field| entity_object.field(field),
         );
+        println!("test webhook");
 
         if cfg!(feature = "offset-pagination") {
             self.outputs.extend(vec![entity_object]);
