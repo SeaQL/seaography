@@ -7,11 +7,11 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
     CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
-    EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
-    FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
-    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
-    PaginationInputBuilder,
+    EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityGetFieldBuilder,
+    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
+    FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
+    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -117,6 +117,12 @@ impl Builder {
         };
         let query = entity_query_field_builder.to_field::<T>();
         self.queries.push(query);
+
+        let entity_get_field_builder = EntityGetFieldBuilder {
+            context: self.context,
+        };
+        let get_query = entity_get_field_builder.to_field::<T>();
+        self.queries.push(get_query);
     }
 
     pub fn register_entity_mutations<T, A>(&mut self)

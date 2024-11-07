@@ -3,15 +3,18 @@ use async_graphql::{
     Error,
 };
 use heck::ToLowerCamelCase;
+use itertools::Itertools;
 use sea_orm::{
-    DatabaseConnection, EntityTrait, Iterable, JoinType, QueryFilter, QuerySelect, RelationTrait,
+    ColumnTrait, DatabaseConnection, EntityTrait, Iterable, JoinType, PrimaryKeyToColumn,
+    QueryFilter, QuerySelect, RelationTrait,
 };
 
 #[cfg(not(feature = "offset-pagination"))]
 use crate::ConnectionObjectBuilder;
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder,
-    FilterInputBuilder, GuardAction, OrderInputBuilder, PaginationInputBuilder,
+    apply_order, apply_pagination, filter_types_map, get_filter_conditions, BuilderContext,
+    EntityObjectBuilder, FilterInputBuilder, FilterTypesMapHelper, GuardAction, OrderInputBuilder,
+    PaginationInputBuilder, TypesMapHelper,
 };
 
 use super::get_cascade_conditions;
@@ -159,11 +162,28 @@ impl EntityQueryFieldBuilder {
                             }
                         });
                         let stmt = stmt.filter(filters);
+
                         let stmt = apply_order(stmt, order_by);
 
                         let db = ctx.data::<DatabaseConnection>()?;
 
-                        let object = apply_pagination::<T>(db, stmt, pagination).await?;
+                        #[cfg(feature = "offset-pagination")]
+                        let first = ctx.args.get("first");
+                        #[cfg(feature = "offset-pagination")]
+                        let object = match first {
+                            Some(first_value) => match first_value.u64() {
+                                Ok(first_num) => {
+                                    apply_stmt_cursor_by::<T>(stmt)
+                                        .first(first_num)
+                                        .all(db)
+                                        .await?
+                                }
+                                _error => apply_pagination(db, stmt, pagination).await?,
+                            },
+                            None => apply_pagination::<T>(db, stmt, pagination).await?,
+                        };
+                        #[cfg(not(feature = "offset-pagination"))]
+                        let object = apply_pagination(db, stmt, pagination).await?;
 
                         Ok(Some(resolver_fn(object)))
                     }
@@ -186,5 +206,36 @@ impl EntityQueryFieldBuilder {
             &self.context.entity_query_field.pagination,
             TypeRef::named(pagination_input_builder.type_name()),
         ))
+        .argument(InputValue::new("first", TypeRef::named(TypeRef::INT)))
+    }
+}
+#[cfg(feature = "offset-pagination")]
+fn apply_stmt_cursor_by<T>(
+    stmt: sea_orm::entity::prelude::Select<T>,
+) -> sea_orm::Cursor<sea_orm::SelectModel<T::Model>>
+where
+    T: EntityTrait,
+    <T as EntityTrait>::Model: Sync,
+{
+    let size = T::PrimaryKey::iter().fold(0, |acc, _| acc + 1);
+    if size == 1 {
+        let column = T::PrimaryKey::iter()
+            .map(|variant| variant.into_column())
+            .collect::<Vec<T::Column>>()[0];
+        stmt.cursor_by(column)
+    } else if size == 2 {
+        let columns = T::PrimaryKey::iter()
+            .map(|variant| variant.into_column())
+            .collect_tuple::<(T::Column, T::Column)>()
+            .unwrap();
+        stmt.cursor_by(columns)
+    } else if size == 3 {
+        let columns = T::PrimaryKey::iter()
+            .map(|variant| variant.into_column())
+            .collect_tuple::<(T::Column, T::Column, T::Column)>()
+            .unwrap();
+        stmt.cursor_by(columns)
+    } else {
+        panic!("seaography does not support cursors with size greater than 3")
     }
 }

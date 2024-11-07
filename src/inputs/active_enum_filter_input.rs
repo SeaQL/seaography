@@ -139,7 +139,7 @@ where
         condition
     };
 
-    let condition = match filter.get("is_in") {
+    let condition = match filter.get("in") {
         Some(data) => {
             let data: Vec<_> = data
                 .list()

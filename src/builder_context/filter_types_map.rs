@@ -343,10 +343,9 @@ impl FilterTypesMapHelper {
                     FilterOperation::LessThanEquals => {
                         InputValue::new("lte", TypeRef::named(filter_info.base_type.clone()))
                     }
-                    FilterOperation::IsIn => InputValue::new(
-                        "is_in",
-                        TypeRef::named_nn_list(filter_info.base_type.clone()),
-                    ),
+                    FilterOperation::IsIn => {
+                        InputValue::new("in", TypeRef::named_nn_list(filter_info.base_type.clone()))
+                    }
                     FilterOperation::IsNotIn => InputValue::new(
                         "is_not_in",
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
@@ -483,7 +482,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::IsIn => {
-                    if let Some(value) = filter.get("is_in") {
+                    if let Some(value) = filter.get("in") {
                         let value = value
                             .list()?
                             .iter()
