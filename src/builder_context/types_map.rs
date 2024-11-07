@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, num::ParseIntError};
 
+use heck::ToUpperCamelCase;
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
 use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
@@ -238,87 +239,91 @@ impl TypesMapHelper {
         &self,
         ty: &ColumnType,
         not_null: bool,
+        enum_type_name: Option<String>,
     ) -> Option<TypeRef> {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
         };
 
-        match ty {
-            ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                Some(TypeRef::named(TypeRef::STRING))
+        match enum_type_name {
+            Some(enum_type_name) => Some(TypeRef::named(format!("{}Enum", enum_type_name.to_upper_camel_case()))),
+            None => match ty {
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
+                    Some(TypeRef::named(TypeRef::STRING))
+                }
+                ColumnType::TinyInteger
+                | ColumnType::SmallInteger
+                | ColumnType::Integer
+                | ColumnType::BigInteger
+                | ColumnType::TinyUnsigned
+                | ColumnType::SmallUnsigned
+                | ColumnType::Unsigned
+                | ColumnType::BigUnsigned => Some(TypeRef::named(TypeRef::INT)),
+                ColumnType::Float | ColumnType::Double => Some(TypeRef::named(TypeRef::FLOAT)),
+                ColumnType::Decimal(_) | ColumnType::Money(_) => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::DateTime
+                | ColumnType::Timestamp
+                | ColumnType::TimestampWithTimeZone
+                | ColumnType::Time
+                | ColumnType::Date => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Year => Some(TypeRef::named(TypeRef::INT)),
+                ColumnType::Interval(_, _) => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Binary(_)
+                | ColumnType::VarBinary(_)
+                | ColumnType::Bit(_)
+                | ColumnType::VarBit(_)
+                | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
+                // FIXME: support json type
+                ColumnType::Json | ColumnType::JsonBinary => None,
+                ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Enum {
+                    name: enum_name,
+                    variants: _,
+                } => Some(TypeRef::named(
+                    active_enum_builder.type_name_from_iden(enum_name),
+                )),
+                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
+                    Some(TypeRef::named(TypeRef::STRING))
+                }
+                #[cfg(not(feature = "with-postgres-array"))]
+                ColumnType::Array(_) => None,
+                #[cfg(feature = "with-postgres-array")]
+                ColumnType::Array(iden) => {
+                    // FIXME: Propagating the not_null flag here is probably incorrect. The following
+                    // types are all logically valid:
+                    // - [T]
+                    // - [T!]
+                    // - [T]!
+                    // - [T!]!
+                    // - [[T]]
+                    // - [[T!]]
+                    // - [[T]!]
+                    // - [[T!]!]
+                    // - [[T!]!]!
+                    // - [[T!]]! (etc, recursively)
+                    //
+                    // This is true for both GraphQL itself but also for the equivalent types in some
+                    // backends, like Postgres.
+                    //
+                    // However, the not_null flag lives on the column definition in sea_query, not on
+                    // the type itself. That means we lose the ability to represent nullability
+                    // reliably on any inner type. We have three options:
+                    // - pass down the flag (what we're doing here):
+                    //   pros: likely the most common intent from those who care about nullability
+                    //   cons: can be incorrect in both inserts and queries
+                    // - always pass true:
+                    //   pros: none? maybe inserts are easier to reason about?
+                    //   cons: just as likely to be wrong as flag passing
+                    // - always pass false:
+                    //   pros: always technically workable for queries (annoying for non-null data)
+                    //   conts: bad for inserts
+                    let iden_type = self.sea_orm_column_type_to_graphql_type(iden.as_ref(), true, enum_type_name);
+                    iden_type.map(|it| TypeRef::List(Box::new(it)))
+                }
+                ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
+                _ => None,
             }
-            ColumnType::TinyInteger
-            | ColumnType::SmallInteger
-            | ColumnType::Integer
-            | ColumnType::BigInteger
-            | ColumnType::TinyUnsigned
-            | ColumnType::SmallUnsigned
-            | ColumnType::Unsigned
-            | ColumnType::BigUnsigned => Some(TypeRef::named(TypeRef::INT)),
-            ColumnType::Float | ColumnType::Double => Some(TypeRef::named(TypeRef::FLOAT)),
-            ColumnType::Decimal(_) | ColumnType::Money(_) => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::DateTime
-            | ColumnType::Timestamp
-            | ColumnType::TimestampWithTimeZone
-            | ColumnType::Time
-            | ColumnType::Date => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Year => Some(TypeRef::named(TypeRef::INT)),
-            ColumnType::Interval(_, _) => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Binary(_)
-            | ColumnType::VarBinary(_)
-            | ColumnType::Bit(_)
-            | ColumnType::VarBit(_)
-            | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
-            // FIXME: support json type
-            ColumnType::Json | ColumnType::JsonBinary => None,
-            ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Enum {
-                name: enum_name,
-                variants: _,
-            } => Some(TypeRef::named(
-                active_enum_builder.type_name_from_iden(enum_name),
-            )),
-            ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
-                Some(TypeRef::named(TypeRef::STRING))
-            }
-            #[cfg(not(feature = "with-postgres-array"))]
-            ColumnType::Array(_) => None,
-            #[cfg(feature = "with-postgres-array")]
-            ColumnType::Array(iden) => {
-                // FIXME: Propagating the not_null flag here is probably incorrect. The following
-                // types are all logically valid:
-                // - [T]
-                // - [T!]
-                // - [T]!
-                // - [T!]!
-                // - [[T]]
-                // - [[T!]]
-                // - [[T]!]
-                // - [[T!]!]
-                // - [[T!]!]!
-                // - [[T!]]! (etc, recursively)
-                //
-                // This is true for both GraphQL itself but also for the equivalent types in some
-                // backends, like Postgres.
-                //
-                // However, the not_null flag lives on the column definition in sea_query, not on
-                // the type itself. That means we lose the ability to represent nullability
-                // reliably on any inner type. We have three options:
-                // - pass down the flag (what we're doing here):
-                //   pros: likely the most common intent from those who care about nullability
-                //   cons: can be incorrect in both inserts and queries
-                // - always pass true:
-                //   pros: none? maybe inserts are easier to reason about?
-                //   cons: just as likely to be wrong as flag passing
-                // - always pass false:
-                //   pros: always technically workable for queries (annoying for non-null data)
-                //   conts: bad for inserts
-                let iden_type = self.sea_orm_column_type_to_graphql_type(iden.as_ref(), true);
-                iden_type.map(|it| TypeRef::List(Box::new(it)))
-            }
-            ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
-            _ => None,
         }
         .map(|ty| {
             if not_null {
