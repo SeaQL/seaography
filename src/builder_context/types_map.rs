@@ -239,7 +239,7 @@ impl TypesMapHelper {
         &self,
         ty: &ColumnType,
         not_null: bool,
-        enum_type_name: Option<String>,
+        enum_type_name: Option<&'static str>,
     ) -> Option<TypeRef> {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
