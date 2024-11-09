@@ -88,7 +88,7 @@ where
 
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
-            let variant = variant.to_string().to_upper_camel_case();
+            let variant = variant.to_string().replace("'", "");
             variant.eq(input)
         });
         variant.unwrap().to_string()

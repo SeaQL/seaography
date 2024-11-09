@@ -19,7 +19,7 @@ impl std::default::Default for ActiveEnumConfig {
                 format!("{}Enum", name.to_upper_camel_case())
             }),
             variant_name: Box::new(|_enum_name: &str, variant: &str| -> String {
-                variant.to_upper_camel_case()
+                variant.to_owned().replace("'", "")
             }),
         }
     }
