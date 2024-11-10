@@ -71,7 +71,6 @@ impl NewOrderInputBuilder {
                 };
                 for col in T::Column::iter() {
                     let column_name = entity_object.column_name::<T>(&col);
-                    dbg!(&column_name);
                     if let Some(order) = order.get("asc") {
                         if column_name == order.enum_name().unwrap() {
                             data.push((col, sea_orm::Order::Asc));
