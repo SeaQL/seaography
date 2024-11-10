@@ -10,8 +10,9 @@ use sea_orm::{EntityTrait, Iden, ModelTrait, RelationDef};
 use crate::ConnectionObjectBuilder;
 use crate::{
     apply_memory_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder,
-    FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader,
-    OrderInputBuilder, PaginationInputBuilder,
+    FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, NewOrderInputBuilder,
+    OffsetInput, OneToManyLoader, OneToOneLoader, OrderInputBuilder, PageInput, PaginationInput,
+    PaginationInputBuilder,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -37,6 +38,7 @@ impl EntityObjectRelationBuilder {
         let connection_object_builder = ConnectionObjectBuilder { context };
         let filter_input_builder = FilterInputBuilder { context };
         let order_input_builder = OrderInputBuilder { context };
+        let new_order_input_builder = NewOrderInputBuilder { context };
 
         let object_name: String = entity_object_builder.type_name::<R>();
         #[cfg(feature = "offset-pagination")]
@@ -100,7 +102,11 @@ impl EntityObjectRelationBuilder {
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters);
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                    let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                    let mut order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                    let order = ctx.args.get(&context.entity_query_field.order);
+                    let order = NewOrderInputBuilder { context }.parse_object::<R>(order);
+                    order_by.extend(order);
+
                     let key = KeyComplex::<R> {
                         key: vec![parent.get(from_col)],
                         meta: HashableGroupKey::<R> {
@@ -151,7 +157,10 @@ impl EntityObjectRelationBuilder {
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters);
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                    let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                    let mut order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                    let order = ctx.args.get(&context.entity_query_field.order);
+                    let order = NewOrderInputBuilder { context }.parse_object::<R>(order);
+                    order_by.extend(order);
                     let key = KeyComplex::<R> {
                         key: vec![parent.get(from_col)],
                         meta: HashableGroupKey::<R> {
@@ -165,6 +174,43 @@ impl EntityObjectRelationBuilder {
                     let values = loader.load_one(key).await?;
                     let pagination = ctx.args.get(&context.entity_query_field.pagination);
                     let pagination = PaginationInputBuilder { context }.parse_object(pagination);
+                    let first = ctx.args.get("first");
+                    let pagination = match first {
+                        Some(first_value) => match first_value.u64() {
+                            Ok(first_num) => {
+                                if let Some(offset) = pagination.offset {
+                                    PaginationInput {
+                                        offset: Some(OffsetInput {
+                                            offset: offset.offset,
+                                            limit: first_num,
+                                        }),
+                                        page: None,
+                                        cursor: None,
+                                    }
+                                } else if let Some(page) = pagination.page {
+                                    PaginationInput {
+                                        offset: None,
+                                        page: Some(PageInput {
+                                            page: page.page,
+                                            limit: first_num,
+                                        }),
+                                        cursor: None,
+                                    }
+                                } else {
+                                    PaginationInput {
+                                        offset: Some(OffsetInput {
+                                            offset: 0,
+                                            limit: first_num,
+                                        }),
+                                        page: None,
+                                        cursor: None,
+                                    }
+                                }
+                            }
+                            _error => pagination,
+                        },
+                        None => pagination,
+                    };
 
                     let object = apply_memory_pagination::<R>(values, pagination);
 
@@ -173,21 +219,23 @@ impl EntityObjectRelationBuilder {
             }),
         };
 
-        match relation_definition.is_owner {
-            false => field,
-            true => field
-                .argument(InputValue::new(
-                    &context.entity_query_field.filters,
-                    TypeRef::named(filter_input_builder.type_name(&object_name)),
-                ))
-                .argument(InputValue::new(
-                    &context.entity_query_field.order_by,
-                    TypeRef::named(order_input_builder.type_name(&object_name)),
-                ))
-                .argument(InputValue::new(
-                    &context.entity_query_field.pagination,
-                    TypeRef::named(&context.pagination_input.type_name),
-                )),
-        }
+        field
+            .argument(InputValue::new(
+                &context.entity_query_field.filters,
+                TypeRef::named(filter_input_builder.type_name(&object_name)),
+            ))
+            .argument(InputValue::new(
+                &context.entity_query_field.order_by,
+                TypeRef::named(order_input_builder.type_name(&object_name)),
+            ))
+            .argument(InputValue::new(
+                &self.context.entity_query_field.order,
+                TypeRef::named(new_order_input_builder.type_name(&object_name)),
+            ))
+            .argument(InputValue::new(
+                &context.entity_query_field.pagination,
+                TypeRef::named(&context.pagination_input.type_name),
+            ))
+            .argument(InputValue::new("first", TypeRef::named(TypeRef::INT)))
     }
 }

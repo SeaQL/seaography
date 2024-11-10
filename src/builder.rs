@@ -5,13 +5,14 @@ use async_graphql::{
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
-    ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
-    EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityGetFieldBuilder,
-    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
-    FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
-    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder,
+    order_enum, ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext,
+    ConnectionObjectBuilder, CursorInputBuilder, EdgeObjectBuilder,
+    EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
+    EntityGetFieldBuilder, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
+    EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper, NewOrderInputBuilder,
+    OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder, OrderEnumBuilder,
+    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
+    PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -110,7 +111,18 @@ impl Builder {
             context: self.context,
         };
         let order = order_input_builder.to_object::<T>();
-        self.inputs.extend(vec![filter, order]);
+
+        let new_order_input_builder = NewOrderInputBuilder {
+            context: self.context,
+        };
+        let new_order = new_order_input_builder.to_object::<T>();
+        self.inputs.extend(vec![filter, order, new_order]);
+
+        let order_enum_builder = OrderEnumBuilder {
+            context: self.context,
+        };
+        let order_enum = order_enum_builder.enumeration::<T>();
+        self.enumerations.push(order_enum);
 
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,

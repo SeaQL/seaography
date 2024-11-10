@@ -22,3 +22,6 @@ pub use entity_input::*;
 
 pub mod active_enum_filter_input;
 pub use active_enum_filter_input::*;
+
+pub mod new_order_input;
+pub use new_order_input::*;

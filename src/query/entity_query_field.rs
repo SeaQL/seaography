@@ -13,7 +13,8 @@ use sea_orm::{
 use crate::ConnectionObjectBuilder;
 use crate::{
     apply_order, apply_pagination, filter_types_map, get_filter_conditions, BuilderContext,
-    EntityObjectBuilder, FilterInputBuilder, FilterTypesMapHelper, GuardAction, OrderInputBuilder,
+    EntityObjectBuilder, FilterInputBuilder, FilterTypesMapHelper, GuardAction,
+    NewOrderInputBuilder, OffsetInput, OrderInputBuilder, PageInput, PaginationInput,
     PaginationInputBuilder, TypesMapHelper,
 };
 
@@ -29,6 +30,7 @@ pub struct EntityQueryFieldConfig {
     pub order_by: String,
     /// name for 'pagination' field
     pub pagination: String,
+    pub order: String,
 }
 
 impl std::default::Default for EntityQueryFieldConfig {
@@ -40,6 +42,7 @@ impl std::default::Default for EntityQueryFieldConfig {
             filters: "filter".into(),
             order_by: "orderBy".into(),
             pagination: "pagination".into(),
+            order: "order".into(),
         }
     }
 }
@@ -80,6 +83,9 @@ impl EntityQueryFieldBuilder {
             context: self.context,
         };
         let pagination_input_builder = PaginationInputBuilder {
+            context: self.context,
+        };
+        let new_order_input_builder = NewOrderInputBuilder {
             context: self.context,
         };
         let entity_object = EntityObjectBuilder {
@@ -125,7 +131,11 @@ impl EntityQueryFieldBuilder {
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let filters = get_filter_conditions::<T>(context, filters);
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                        let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
+                        let mut order_by =
+                            OrderInputBuilder { context }.parse_object::<T>(order_by);
+                        let order = ctx.args.get(&context.entity_query_field.order);
+                        let order = NewOrderInputBuilder { context }.parse_object::<T>(order);
+                        order_by.extend(order);
                         let pagination = ctx.args.get(&context.entity_query_field.pagination);
                         let pagination =
                             PaginationInputBuilder { context }.parse_object(pagination);
@@ -167,22 +177,43 @@ impl EntityQueryFieldBuilder {
 
                         let db = ctx.data::<DatabaseConnection>()?;
 
-                        #[cfg(feature = "offset-pagination")]
                         let first = ctx.args.get("first");
-                        #[cfg(feature = "offset-pagination")]
-                        let object = match first {
+                        let pagination = match first {
                             Some(first_value) => match first_value.u64() {
                                 Ok(first_num) => {
-                                    apply_stmt_cursor_by::<T>(stmt)
-                                        .first(first_num)
-                                        .all(db)
-                                        .await?
+                                    if let Some(offset) = pagination.offset {
+                                        PaginationInput {
+                                            offset: Some(OffsetInput {
+                                                offset: offset.offset,
+                                                limit: first_num,
+                                            }),
+                                            page: None,
+                                            cursor: None,
+                                        }
+                                    } else if let Some(page) = pagination.page {
+                                        PaginationInput {
+                                            offset: None,
+                                            page: Some(PageInput {
+                                                page: page.page,
+                                                limit: first_num,
+                                            }),
+                                            cursor: None,
+                                        }
+                                    } else {
+                                        PaginationInput {
+                                            offset: Some(OffsetInput {
+                                                offset: 0,
+                                                limit: first_num,
+                                            }),
+                                            page: None,
+                                            cursor: None,
+                                        }
+                                    }
                                 }
-                                _error => apply_pagination(db, stmt, pagination).await?,
+                                _error => pagination,
                             },
-                            None => apply_pagination::<T>(db, stmt, pagination).await?,
+                            None => pagination,
                         };
-                        #[cfg(not(feature = "offset-pagination"))]
                         let object = apply_pagination(db, stmt, pagination).await?;
 
                         Ok(Some(resolver_fn(object)))
@@ -201,6 +232,10 @@ impl EntityQueryFieldBuilder {
         .argument(InputValue::new(
             &self.context.entity_query_field.order_by,
             TypeRef::named(order_input_builder.type_name(&object_name)),
+        ))
+        .argument(InputValue::new(
+            &self.context.entity_query_field.order,
+            TypeRef::named(new_order_input_builder.type_name(&object_name)),
         ))
         .argument(InputValue::new(
             &self.context.entity_query_field.pagination,
