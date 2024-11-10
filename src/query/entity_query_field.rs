@@ -141,37 +141,38 @@ impl EntityQueryFieldBuilder {
                             PaginationInputBuilder { context }.parse_object(pagination);
                         let cascades = ctx.args.get("cascade");
                         let cascades = get_cascade_conditions(cascades);
-                        let stmt = T::Relation::iter().fold(T::find(), |stmt, related_table| {
-                            let related_table_name = related_table.def().to_tbl;
-                            match related_table_name {
-                                sea_orm::sea_query::TableRef::Table(iden) => {
-                                    if cascades.contains(&iden.to_string()) {
-                                        stmt.join(JoinType::InnerJoin, related_table.def())
-                                            .distinct()
-                                    } else {
-                                        stmt
-                                    }
-                                }
-                                sea_orm::sea_query::TableRef::SchemaTable(_, iden) => {
-                                    if cascades.contains(&iden.to_string()) {
-                                        stmt.join(JoinType::InnerJoin, related_table.def())
-                                            .distinct()
-                                    } else {
-                                        stmt
-                                    }
-                                }
-                                sea_orm::sea_query::TableRef::DatabaseSchemaTable(_, _, iden) => {
-                                    if cascades.contains(&iden.to_string()) {
-                                        stmt.join(JoinType::InnerJoin, related_table.def())
-                                            .distinct()
-                                    } else {
-                                        stmt
-                                    }
-                                }
-                                _ => stmt,
-                            }
-                        });
-                        let stmt = stmt.filter(filters);
+                        let stmt = T::find();
+                        //                        let stmt = T::Relation::iter().fold(T::find(), |stmt, related_table| {
+                        //                            let related_table_name = related_table.def().to_tbl;
+                        //                            match related_table_name {
+                        //                                sea_orm::sea_query::TableRef::Table(iden) => {
+                        //                                    if cascades.contains(&iden.to_string()) {
+                        //                                        stmt.join(JoinType::InnerJoin, related_table.def())
+                        //                                            .distinct()
+                        //                                    } else {
+                        //                                        stmt
+                        //                                    }
+                        //                                }
+                        //                                sea_orm::sea_query::TableRef::SchemaTable(_, iden) => {
+                        //                                    if cascades.contains(&iden.to_string()) {
+                        //                                        stmt.join(JoinType::InnerJoin, related_table.def())
+                        //                                            .distinct()
+                        //                                    } else {
+                        //                                        stmt
+                        //                                    }
+                        //                                }
+                        //                                sea_orm::sea_query::TableRef::DatabaseSchemaTable(_, _, iden) => {
+                        //                                    if cascades.contains(&iden.to_string()) {
+                        //                                        stmt.join(JoinType::InnerJoin, related_table.def())
+                        //                                            .distinct()
+                        //                                    } else {
+                        //                                        stmt
+                        //                                    }
+                        //                                }
+                        //                                _ => stmt,
+                        //                            }
+                        //                        });
+                        //                        let stmt = stmt.filter(filters);
 
                         let stmt = apply_order(stmt, order_by);
 
@@ -242,35 +243,5 @@ impl EntityQueryFieldBuilder {
             TypeRef::named(pagination_input_builder.type_name()),
         ))
         .argument(InputValue::new("first", TypeRef::named(TypeRef::INT)))
-    }
-}
-#[cfg(feature = "offset-pagination")]
-fn apply_stmt_cursor_by<T>(
-    stmt: sea_orm::entity::prelude::Select<T>,
-) -> sea_orm::Cursor<sea_orm::SelectModel<T::Model>>
-where
-    T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
-{
-    let size = T::PrimaryKey::iter().fold(0, |acc, _| acc + 1);
-    if size == 1 {
-        let column = T::PrimaryKey::iter()
-            .map(|variant| variant.into_column())
-            .collect::<Vec<T::Column>>()[0];
-        stmt.cursor_by(column)
-    } else if size == 2 {
-        let columns = T::PrimaryKey::iter()
-            .map(|variant| variant.into_column())
-            .collect_tuple::<(T::Column, T::Column)>()
-            .unwrap();
-        stmt.cursor_by(columns)
-    } else if size == 3 {
-        let columns = T::PrimaryKey::iter()
-            .map(|variant| variant.into_column())
-            .collect_tuple::<(T::Column, T::Column, T::Column)>()
-            .unwrap();
-        stmt.cursor_by(columns)
-    } else {
-        panic!("seaography does not support cursors with size greater than 3")
     }
 }
