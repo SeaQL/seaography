@@ -88,7 +88,11 @@ where
 
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
-            let variant = variant.to_string().replace("'", "");
+            let variant = variant
+                .to_string()
+                .chars()
+                .filter(|c| c.is_alphanumeric())
+                .collect::<String>();
             variant.eq(input)
         });
         variant.unwrap().to_string()

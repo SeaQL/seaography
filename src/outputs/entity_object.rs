@@ -208,9 +208,14 @@ fn sea_query_value_to_graphql_value(
         sea_orm::Value::BigUnsigned(value) => value.map(Value::from),
         sea_orm::Value::Float(value) => value.map(Value::from),
         sea_orm::Value::Double(value) => value.map(Value::from),
-        sea_orm::Value::String(value) if is_enum => {
-            value.map(|it| Value::from(it.replace("'", "").as_str()))
-        }
+        sea_orm::Value::String(value) if is_enum => value.map(|it| {
+            Value::from(
+                it.chars()
+                    .filter(|c| c.is_alphanumeric())
+                    .collect::<String>()
+                    .as_str(),
+            )
+        }),
         sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
         sea_orm::Value::Char(value) => value.map(|it| Value::from(it.to_string())),
 
