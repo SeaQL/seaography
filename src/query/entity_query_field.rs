@@ -172,7 +172,7 @@ impl EntityQueryFieldBuilder {
                         //                                _ => stmt,
                         //                            }
                         //                        });
-                        //                        let stmt = stmt.filter(filters);
+                        let stmt = stmt.filter(filters);
 
                         let stmt = apply_order(stmt, order_by);
 
