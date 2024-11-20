@@ -3,7 +3,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
     Error,
 };
-use heck::ToSnakeCase;
+use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
 };
@@ -35,6 +35,11 @@ impl EntityObjectViaRelationBuilder {
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
+        let name = if cfg!(feature = "field-snake-case") {
+            name.to_snake_case()
+        } else {
+            name.to_lower_camel_case()
+        };
         let context: &'static BuilderContext = self.context;
         let to_relation_definition = <T as Related<R>>::to();
         let (via_relation_definition, is_via_relation) = match <T as Related<R>>::via() {

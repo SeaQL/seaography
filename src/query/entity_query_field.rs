@@ -2,11 +2,16 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
     Error,
 };
-use heck::ToLowerCamelCase;
 use itertools::Itertools;
 use sea_orm::{
     ColumnTrait, DatabaseConnection, EntityTrait, Iterable, JoinType, PrimaryKeyToColumn,
     QueryFilter, QuerySelect, RelationTrait,
+use heck::{ToLowerCamelCase, ToSnakeCase};
+
+use crate::{
+    apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, OrderInputBuilder,
+    PaginationInputBuilder,
 };
 
 #[cfg(not(feature = "offset-pagination"))]
@@ -37,10 +42,21 @@ impl std::default::Default for EntityQueryFieldConfig {
     fn default() -> Self {
         EntityQueryFieldConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                object_name.to_lower_camel_case()
+                if cfg!(feature = "field-snake-case") {
+                    object_name.to_snake_case()
+                } else {
+                    object_name.to_lower_camel_case()
+                }
             }),
             filters: "filter".into(),
-            order_by: "orderBy".into(),
+            order_by: {
+                if cfg!(feature = "field-snake-case") {
+                    "order_by"
+                } else {
+                    "orderBy"
+                }
+                .into()
+            },
             pagination: "pagination".into(),
             order: "order".into(),
         }

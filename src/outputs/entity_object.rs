@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, Object};
 use async_graphql::{Error, Value};
-use heck::{ToLowerCamelCase, ToUpperCamelCase};
+use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
 /// The configuration structure for EntityObjectBuilder
@@ -20,7 +20,11 @@ impl std::default::Default for EntityObjectConfig {
                 entity_name.to_upper_camel_case()
             }),
             column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
-                column_name.to_lower_camel_case()
+                if cfg!(feature = "field-snake-case") {
+                    column_name.to_snake_case()
+                } else {
+                    column_name.to_lower_camel_case()
+                }
             }),
             basic_type_suffix: "Basic".into(),
         }
