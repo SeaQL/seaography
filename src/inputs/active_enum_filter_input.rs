@@ -88,11 +88,18 @@ where
 
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
-            let variant = variant
-                .to_string()
-                .chars()
-                .filter(|c| c.is_alphanumeric())
-                .collect::<String>();
+            let variant = variant.to_string();
+            let variant = if cfg!(feature = "field-snake-case") {
+                variant.to_snake_case()
+            } else if cfg!(feature = "offset-pagination") {
+                variant
+                    .chars()
+                    .filter(|c| c.is_alphanumeric())
+                    .collect::<String>()
+            } else {
+                variant.to_upper_camel_case().to_ascii_uppercase()
+            };
+
             variant.eq(input)
         });
         variant.unwrap().to_string()

@@ -34,10 +34,6 @@ with-bigdecimal = ["sea-orm/with-bigdecimal", "async-graphql/bigdecimal"]
 with-postgres-array = ["sea-orm/postgres-array"]
 offset-pagination = []
 # with-ipnetwork = ["sea-orm/with-ipnetwork"]
-<<<<<<< HEAD
-# with-mac_address = ["sea-orm/with-mac_address"]
-=======
 # with-mac_address = ["sea-orm/with-mac_address"]
 field-snake-case = []
 field-camel-case = []
->>>>>>> main
