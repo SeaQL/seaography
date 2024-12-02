@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.1.1 - 2024-12-02
+
+## New Features
+
+- Added `register_active_enums!()` macros to register active enums https://github.com/SeaQL/seaography/pull/181
+
+## Bug Fixes
+
+- Handle String based active enum https://github.com/SeaQL/seaography/pull/181
+
 ## 1.1.0 - 2024-10-17
 
 ### Versions
