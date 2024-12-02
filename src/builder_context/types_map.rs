@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, num::ParseIntError};
 
-use heck::ToUpperCamelCase;
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
+use heck::ToUpperCamelCase;
 use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
 use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
@@ -246,7 +246,10 @@ impl TypesMapHelper {
         };
 
         match enum_type_name {
-            Some(enum_type_name) => Some(TypeRef::named(format!("{}Enum", enum_type_name.to_upper_camel_case()))),
+            Some(enum_type_name) => Some(TypeRef::named(format!(
+                "{}Enum",
+                enum_type_name.to_upper_camel_case()
+            ))),
             None => match ty {
                 ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
                     Some(TypeRef::named(TypeRef::STRING))
@@ -260,7 +263,9 @@ impl TypesMapHelper {
                 | ColumnType::Unsigned
                 | ColumnType::BigUnsigned => Some(TypeRef::named(TypeRef::INT)),
                 ColumnType::Float | ColumnType::Double => Some(TypeRef::named(TypeRef::FLOAT)),
-                ColumnType::Decimal(_) | ColumnType::Money(_) => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Decimal(_) | ColumnType::Money(_) => {
+                    Some(TypeRef::named(TypeRef::STRING))
+                }
                 ColumnType::DateTime
                 | ColumnType::Timestamp
                 | ColumnType::TimestampWithTimeZone
@@ -318,12 +323,16 @@ impl TypesMapHelper {
                     // - always pass false:
                     //   pros: always technically workable for queries (annoying for non-null data)
                     //   conts: bad for inserts
-                    let iden_type = self.sea_orm_column_type_to_graphql_type(iden.as_ref(), true, enum_type_name);
+                    let iden_type = self.sea_orm_column_type_to_graphql_type(
+                        iden.as_ref(),
+                        true,
+                        enum_type_name,
+                    );
                     iden_type.map(|it| TypeRef::List(Box::new(it)))
                 }
                 ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
                 _ => None,
-            }
+            },
         }
         .map(|ty| {
             if not_null {
