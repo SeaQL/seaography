@@ -39,7 +39,7 @@
 
 |                        Seaography                        |                         SeaORM                        |
 |----------------------------------------------------------|-------------------------------------------------------|
-| [1.1-rc](https://crates.io/crates/seaography/1.1.0-rc.1) | [1.1-rc](https://crates.io/crates/sea-orm/1.1.0-rc.1) |
+| [1.1](https://crates.io/crates/seaography/1.1.1)         | [1.1](https://crates.io/crates/sea-orm/1.1.2)         |
 | [1.0](https://crates.io/crates/seaography/1.0.0)         | [1.0](https://crates.io/crates/sea-orm/1.0.0)         |
 | [0.12](https://crates.io/crates/seaography/0.12.0)       | [0.12](https://crates.io/crates/sea-orm/0.12.14)      |
 | [0.3](https://crates.io/crates/seaography/0.3.0)         | [0.10](https://crates.io/crates/sea-orm/0.10.7)       |
