@@ -4,7 +4,9 @@ use async_graphql::dynamic::ObjectAccessor;
 use heck::ToUpperCamelCase;
 use sea_orm::{ActiveEnum, ColumnTrait, ColumnType, Condition, DynIden, EntityTrait};
 
-use crate::{ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult};
+use crate::{
+    format_variant, ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult,
+};
 
 /// The configuration structure for ActiveEnumFilterInputConfig
 pub struct ActiveEnumFilterInputConfig {
@@ -88,7 +90,7 @@ where
 
     let extract_variant = move |input: &str| -> String {
         let variant = variants.iter().find(|variant| {
-            let variant = variant.to_string();
+            let variant = format_variant(&variant.to_string());
             variant.eq(input)
         });
         variant.unwrap().to_string()
