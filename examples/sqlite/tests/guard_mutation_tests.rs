@@ -128,6 +128,20 @@ async fn entity_guard_mutation() {
     assert_eq!(response.errors.len(), 1);
 
     assert_eq!(response.errors[0].message, "Entity guard triggered.");
+
+    let response = schema
+        .execute(
+            r#"
+        mutation FilmCategoryDelete {
+            filmCategoryDelete(filter: { filmId: { eq: 2 } })
+        }
+"#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(response.errors[0].message, "Entity guard triggered.");
 }
 
 #[tokio::test]
