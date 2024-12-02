@@ -376,3 +376,13 @@ macro_rules! register_entity_modules {
         }
     };
 }
+
+#[macro_export]
+macro_rules! register_active_enums {
+    ([$($enum_paths:path),+ $(,)?]) => {
+        pub fn register_active_enums(mut builder: seaography::builder::Builder) -> seaography::builder::Builder {
+            $(builder.register_enumeration::<$enum_paths>();)*
+            builder
+        }
+    };
+}

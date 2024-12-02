@@ -31,7 +31,7 @@ impl std::default::Default for EntityObjectConfig {
     }
 }
 
-use crate::{BuilderContext, GuardAction, TypesMapHelper};
+use crate::{format_variant, BuilderContext, GuardAction, TypesMapHelper};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {
@@ -112,10 +112,12 @@ impl EntityObjectBuilder {
             let column_name = self.column_name::<T>(&column);
 
             let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
 
             let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
                 column_def.get_column_type(),
                 !column_def.is_null(),
+                enum_type_name,
             ) {
                 Some(type_name) => type_name,
                 None => return object,
@@ -213,7 +215,7 @@ fn sea_query_value_to_graphql_value(
         sea_orm::Value::Float(value) => value.map(Value::from),
         sea_orm::Value::Double(value) => value.map(Value::from),
         sea_orm::Value::String(value) if is_enum => {
-            value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase()))
+            value.map(|it| Value::from(format_variant(it.as_str())))
         }
         sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
         sea_orm::Value::Char(value) => value.map(|it| Value::from(it.to_string())),
