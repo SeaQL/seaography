@@ -44,7 +44,6 @@ pub fn schema(
             film,
             film_actor,
             film_category,
-            film_text,
             inventory,
             language,
             payment,
@@ -53,6 +52,7 @@ pub fn schema(
             store,
         ]
     );
+    builder.register_enumeration::<sea_orm_active_enums::MpaaRating>();
     let schema = builder.schema_builder();
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
@@ -91,7 +91,7 @@ async fn entity_guard_mutation() {
                 r#"
                 mutation LanguageUpdate {
                     languageUpdate(
-                        data: { lastUpdate: "2030-01-01 11:11:11 UTC" }
+                        data: { lastUpdate: "2030-01-01 11:11:11" }
                         filter: { languageId: { eq: 6 } }
                     ) {
                         languageId
@@ -116,7 +116,7 @@ async fn entity_guard_mutation() {
             r#"
             mutation FilmCategoryUpdate {
                 filmCategoryUpdate(
-                    data: { filmId: 1, categoryId: 1, lastUpdate: "2030-01-01 11:11:11 UTC" }
+                    data: { filmId: 1, categoryId: 1, lastUpdate: "2030-01-01 11:11:11" }
                 ) {
                     filmId
                 }

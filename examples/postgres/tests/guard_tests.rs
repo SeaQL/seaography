@@ -93,16 +93,6 @@ pub fn schema(
                 seaography_postgres_example::entities::staff::Relation::Rental.def(),
             ),
         entity_object_relation_builder
-            .get_relation::<seaography_postgres_example::entities::staff::Entity, seaography_postgres_example::entities::staff::Entity>(
-                "selfRef",
-                seaography_postgres_example::entities::staff::Relation::SelfRef.def(),
-            ),
-        entity_object_relation_builder
-            .get_relation::<seaography_postgres_example::entities::staff::Entity, seaography_postgres_example::entities::staff::Entity>(
-                "selfRefReverse",
-                seaography_postgres_example::entities::staff::Relation::SelfRef.def().rev(),
-            ),
-        entity_object_relation_builder
             .get_relation::<seaography_postgres_example::entities::staff::Entity, seaography_postgres_example::entities::store::Entity>(
                 "store",
                 seaography_postgres_example::entities::staff::Relation::Store.def(),
@@ -172,7 +162,6 @@ pub fn schema(
                 seaography_postgres_example::entities::inventory::Relation::Store.def(),
             ),
     ]);
-    builder.register_entity::<seaography_postgres_example::entities::film_text::Entity>(vec![]);
     builder . register_entity :: < seaography_postgres_example:: entities :: film_category :: Entity > (vec ! [entity_object_relation_builder . get_relation :: < seaography_postgres_example:: entities :: film_category :: Entity , seaography_postgres_example:: entities :: category :: Entity > ("category" , seaography_postgres_example:: entities :: film_category :: Relation :: Category . def ()) , entity_object_relation_builder . get_relation :: < seaography_postgres_example:: entities :: film_category :: Entity , seaography_postgres_example:: entities :: film :: Entity > ("film" , seaography_postgres_example:: entities :: film_category :: Relation :: Film . def ())]) ;
     builder.register_entity::<seaography_postgres_example::entities::customer::Entity>(vec![
         entity_object_relation_builder
@@ -257,6 +246,7 @@ pub fn schema(
                 seaography_postgres_example::entities::address::Relation::Store.def(),
             ),
     ]);
+    builder.register_enumeration::<seaography_postgres_example::entities::sea_orm_active_enums::MpaaRating>();
     let schema = builder.schema_builder();
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
@@ -272,7 +262,9 @@ pub fn schema(
 }
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila").await.unwrap();
+    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
+        .await
+        .unwrap();
     let schema = schema(database, None, None).unwrap();
 
     schema
