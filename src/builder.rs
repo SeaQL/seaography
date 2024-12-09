@@ -361,3 +361,28 @@ macro_rules! register_entities_without_relation {
         $(seaography::register_entity_without_relation!($builder, $module_paths);)*
     };
 }
+
+#[macro_export]
+macro_rules! register_entity_modules {
+    ([$($module_paths:ident),+ $(,)?]) => {
+        pub fn register_entity_modules(mut builder: seaography::builder::Builder) -> seaography::builder::Builder {
+            seaography::register_entities!(
+                builder,
+                [
+                    $($module_paths,)*
+                ]
+            );
+            builder
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! register_active_enums {
+    ([$($enum_paths:path),+ $(,)?]) => {
+        pub fn register_active_enums(mut builder: seaography::builder::Builder) -> seaography::builder::Builder {
+            $(builder.register_enumeration::<$enum_paths>();)*
+            builder
+        }
+    };
+}

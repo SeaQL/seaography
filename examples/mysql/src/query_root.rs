@@ -10,7 +10,7 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT);
+    let mut builder = Builder::new(&CONTEXT, database.clone());
     seaography::register_entities!(
         builder,
         [

@@ -115,6 +115,7 @@ async fn main() {
 pub enum WebFrameworkEnum {
     Actix,
     Poem,
+    Axum,
 }
 
 impl From<WebFrameworkEnum> for seaography_generator::WebFrameworkEnum {
@@ -122,6 +123,7 @@ impl From<WebFrameworkEnum> for seaography_generator::WebFrameworkEnum {
         match framework {
             WebFrameworkEnum::Actix => seaography_generator::WebFrameworkEnum::Actix,
             WebFrameworkEnum::Poem => seaography_generator::WebFrameworkEnum::Poem,
+            WebFrameworkEnum::Axum => seaography_generator::WebFrameworkEnum::Axum,
         }
     }
 }

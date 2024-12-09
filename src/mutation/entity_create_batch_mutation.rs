@@ -19,7 +19,14 @@ pub struct EntityCreateBatchMutationConfig {
 impl std::default::Default for EntityCreateBatchMutationConfig {
     fn default() -> Self {
         EntityCreateBatchMutationConfig {
-            mutation_suffix: "CreateBatch".into(),
+            mutation_suffix: {
+                if cfg!(feature = "field-snake-case") {
+                    "_create_batch"
+                } else {
+                    "CreateBatch"
+                }
+                .into()
+            },
             data_field: "data".into(),
         }
     }

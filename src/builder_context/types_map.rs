@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, num::ParseIntError};
 
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
+use heck::ToUpperCamelCase;
 use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
 use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
@@ -77,7 +78,7 @@ impl TypesMapHelper {
         column_type: &ColumnType,
     ) -> ConvertedType {
         let context = self.context;
-        let name = format!("{}.{}", entity_name, column_name);
+        let name = format!("{entity_name}.{column_name}");
 
         if let Some(overwrite) = context.types.overwrites.get(&name) {
             return overwrite.clone();
@@ -148,12 +149,13 @@ impl TypesMapHelper {
                 #[cfg(feature = "with-chrono")]
                 TimeLibrary::Chrono => ConvertedType::ChronoDate,
             },
-            ColumnType::Year(_) => ConvertedType::Integer,
+            ColumnType::Year => ConvertedType::Integer,
             ColumnType::Interval(_, _) => ConvertedType::String,
             ColumnType::Binary(_)
             | ColumnType::VarBinary(_)
             | ColumnType::Bit(_)
-            | ColumnType::VarBit(_) => ConvertedType::Bytes,
+            | ColumnType::VarBit(_)
+            | ColumnType::Blob => ConvertedType::Bytes,
             ColumnType::Boolean => ConvertedType::Bool,
 
             #[cfg(not(feature = "with-json"))]
@@ -185,19 +187,16 @@ impl TypesMapHelper {
                 ConvertedType::Array(Box::new(inner))
             }
 
-            #[cfg(not(feature = "with-ipnetwork"))]
+            // #[cfg(not(feature = "with-ipnetwork"))]
             ColumnType::Cidr | ColumnType::Inet => ConvertedType::String,
-            #[cfg(feature = "with-ipnetwork")]
-            ColumnType::Cidr | ColumnType::Inet => ConvertedType::IpNetwork,
+            // #[cfg(feature = "with-ipnetwork")]
+            // ColumnType::Cidr | ColumnType::Inet => ConvertedType::IpNetwork,
 
-            #[cfg(not(feature = "with-mac_address"))]
+            // #[cfg(not(feature = "with-mac_address"))]
             ColumnType::MacAddr => ConvertedType::String,
-            #[cfg(feature = "with-mac_address")]
-            ColumnType::MacAddr => ConvertedType::MacAddress,
-            _ => panic!(
-                "Type mapping is not implemented for '{}.{}'",
-                entity_name, column_name
-            ),
+            // #[cfg(feature = "with-mac_address")]
+            // ColumnType::MacAddr => ConvertedType::MacAddress,
+            _ => panic!("Type mapping is not implemented for '{entity_name}.{column_name}'"),
         }
     }
 
@@ -221,7 +220,7 @@ impl TypesMapHelper {
             .context
             .types
             .input_conversions
-            .get(&format!("{}.{}", entity_name, column_name))
+            .get(&format!("{entity_name}.{column_name}"))
         {
             return parser.as_ref()(value);
         }
@@ -240,86 +239,100 @@ impl TypesMapHelper {
         &self,
         ty: &ColumnType,
         not_null: bool,
+        enum_type_name: Option<&'static str>,
     ) -> Option<TypeRef> {
         let active_enum_builder = ActiveEnumBuilder {
             context: self.context,
         };
 
-        match ty {
-            ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
-                Some(TypeRef::named(TypeRef::STRING))
-            }
-            ColumnType::TinyInteger
-            | ColumnType::SmallInteger
-            | ColumnType::Integer
-            | ColumnType::BigInteger
-            | ColumnType::TinyUnsigned
-            | ColumnType::SmallUnsigned
-            | ColumnType::Unsigned
-            | ColumnType::BigUnsigned => Some(TypeRef::named(TypeRef::INT)),
-            ColumnType::Float | ColumnType::Double => Some(TypeRef::named(TypeRef::FLOAT)),
-            ColumnType::Decimal(_) | ColumnType::Money(_) => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::DateTime
-            | ColumnType::Timestamp
-            | ColumnType::TimestampWithTimeZone
-            | ColumnType::Time
-            | ColumnType::Date => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Year(_) => Some(TypeRef::named(TypeRef::INT)),
-            ColumnType::Interval(_, _) => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Binary(_)
-            | ColumnType::VarBinary(_)
-            | ColumnType::Bit(_)
-            | ColumnType::VarBit(_) => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
-            // FIXME: support json type
-            ColumnType::Json | ColumnType::JsonBinary => None,
-            ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
-            ColumnType::Enum {
-                name: enum_name,
-                variants: _,
-            } => Some(TypeRef::named(
-                active_enum_builder.type_name_from_iden(enum_name),
-            )),
-            ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
-                Some(TypeRef::named(TypeRef::STRING))
-            }
-            #[cfg(not(feature = "with-postgres-array"))]
-            ColumnType::Array(_) => None,
-            #[cfg(feature = "with-postgres-array")]
-            ColumnType::Array(iden) => {
-                // FIXME: Propagating the not_null flag here is probably incorrect. The following
-                // types are all logically valid:
-                // - [T]
-                // - [T!]
-                // - [T]!
-                // - [T!]!
-                // - [[T]]
-                // - [[T!]]
-                // - [[T]!]
-                // - [[T!]!]
-                // - [[T!]!]!
-                // - [[T!]]! (etc, recursively)
-                //
-                // This is true for both GraphQL itself but also for the equivalent types in some
-                // backends, like Postgres.
-                //
-                // However, the not_null flag lives on the column definition in sea_query, not on
-                // the type itself. That means we lose the ability to represent nullability
-                // reliably on any inner type. We have three options:
-                // - pass down the flag (what we're doing here):
-                //   pros: likely the most common intent from those who care about nullability
-                //   cons: can be incorrect in both inserts and queries
-                // - always pass true:
-                //   pros: none? maybe inserts are easier to reason about?
-                //   cons: just as likely to be wrong as flag passing
-                // - always pass false:
-                //   pros: always technically workable for queries (annoying for non-null data)
-                //   conts: bad for inserts
-                let iden_type = self.sea_orm_column_type_to_graphql_type(iden.as_ref(), true);
-                iden_type.map(|it| TypeRef::List(Box::new(it)))
-            }
-            ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
-            _ => None,
+        match enum_type_name {
+            Some(enum_type_name) => Some(TypeRef::named(format!(
+                "{}Enum",
+                enum_type_name.to_upper_camel_case()
+            ))),
+            None => match ty {
+                ColumnType::Char(_) | ColumnType::String(_) | ColumnType::Text => {
+                    Some(TypeRef::named(TypeRef::STRING))
+                }
+                ColumnType::TinyInteger
+                | ColumnType::SmallInteger
+                | ColumnType::Integer
+                | ColumnType::BigInteger
+                | ColumnType::TinyUnsigned
+                | ColumnType::SmallUnsigned
+                | ColumnType::Unsigned
+                | ColumnType::BigUnsigned => Some(TypeRef::named(TypeRef::INT)),
+                ColumnType::Float | ColumnType::Double => Some(TypeRef::named(TypeRef::FLOAT)),
+                ColumnType::Decimal(_) | ColumnType::Money(_) => {
+                    Some(TypeRef::named(TypeRef::STRING))
+                }
+                ColumnType::DateTime
+                | ColumnType::Timestamp
+                | ColumnType::TimestampWithTimeZone
+                | ColumnType::Time
+                | ColumnType::Date => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Year => Some(TypeRef::named(TypeRef::INT)),
+                ColumnType::Interval(_, _) => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Binary(_)
+                | ColumnType::VarBinary(_)
+                | ColumnType::Bit(_)
+                | ColumnType::VarBit(_)
+                | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
+                // FIXME: support json type
+                ColumnType::Json | ColumnType::JsonBinary => None,
+                ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Enum {
+                    name: enum_name,
+                    variants: _,
+                } => Some(TypeRef::named(
+                    active_enum_builder.type_name_from_iden(enum_name),
+                )),
+                ColumnType::Cidr | ColumnType::Inet | ColumnType::MacAddr => {
+                    Some(TypeRef::named(TypeRef::STRING))
+                }
+                #[cfg(not(feature = "with-postgres-array"))]
+                ColumnType::Array(_) => None,
+                #[cfg(feature = "with-postgres-array")]
+                ColumnType::Array(iden) => {
+                    // FIXME: Propagating the not_null flag here is probably incorrect. The following
+                    // types are all logically valid:
+                    // - [T]
+                    // - [T!]
+                    // - [T]!
+                    // - [T!]!
+                    // - [[T]]
+                    // - [[T!]]
+                    // - [[T]!]
+                    // - [[T!]!]
+                    // - [[T!]!]!
+                    // - [[T!]]! (etc, recursively)
+                    //
+                    // This is true for both GraphQL itself but also for the equivalent types in some
+                    // backends, like Postgres.
+                    //
+                    // However, the not_null flag lives on the column definition in sea_query, not on
+                    // the type itself. That means we lose the ability to represent nullability
+                    // reliably on any inner type. We have three options:
+                    // - pass down the flag (what we're doing here):
+                    //   pros: likely the most common intent from those who care about nullability
+                    //   cons: can be incorrect in both inserts and queries
+                    // - always pass true:
+                    //   pros: none? maybe inserts are easier to reason about?
+                    //   cons: just as likely to be wrong as flag passing
+                    // - always pass false:
+                    //   pros: always technically workable for queries (annoying for non-null data)
+                    //   conts: bad for inserts
+                    let iden_type = self.sea_orm_column_type_to_graphql_type(
+                        iden.as_ref(),
+                        true,
+                        enum_type_name,
+                    );
+                    iden_type.map(|it| TypeRef::List(Box::new(it)))
+                }
+                ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
+                _ => None,
+            },
         }
         .map(|ty| {
             if not_null {
@@ -408,12 +421,12 @@ pub enum ConvertedType {
     #[cfg(feature = "with-postgres-array")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-postgres-array")))]
     Array(Box<ConvertedType>),
-    #[cfg(feature = "with-ipnetwork")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
-    IpNetwork,
-    #[cfg(feature = "with-mac_address")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
-    MacAddress,
+    // #[cfg(feature = "with-ipnetwork")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
+    // IpNetwork,
+    // #[cfg(feature = "with-mac_address")]
+    // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
+    // MacAddress,
     Enum(String),
     Custom(String),
 }
@@ -470,10 +483,10 @@ pub fn converted_type_to_sea_orm_array_type(
         ConvertedType::Decimal => Ok(sea_orm::sea_query::value::ArrayType::String),
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => Ok(sea_orm::sea_query::value::ArrayType::String),
-        #[cfg(feature = "with-ipnetwork")]
-        ConvertedType::IpNetwork => Ok(sea_orm::sea_query::value::ArrayType::String),
-        #[cfg(feature = "with-mac_address")]
-        ConvertedType::MacAddress => Ok(sea_orm::sea_query::value::ArrayType::String),
+        // #[cfg(feature = "with-ipnetwork")]
+        // ConvertedType::IpNetwork => Ok(sea_orm::sea_query::value::ArrayType::String),
+        // #[cfg(feature = "with-mac_address")]
+        // ConvertedType::MacAddress => Ok(sea_orm::sea_query::value::ArrayType::String),
     }
 }
 
@@ -484,52 +497,68 @@ pub fn converted_value_to_sea_orm_value(
     entity_name: &str,
     column_name: &str,
 ) -> SeaResult<sea_orm::Value> {
+    let is_null = value.is_null();
     Ok(match column_type {
+        ConvertedType::Bool if is_null => sea_orm::Value::Bool(None),
         ConvertedType::Bool => value.boolean().map(|v| v.into())?,
+        ConvertedType::TinyInteger if is_null => sea_orm::Value::TinyInt(None),
         ConvertedType::TinyInteger => {
             let value: i8 = value.i64()?.try_into()?;
             sea_orm::Value::TinyInt(Some(value))
         }
+        ConvertedType::SmallInteger if is_null => sea_orm::Value::SmallInt(None),
         ConvertedType::SmallInteger => {
             let value: i16 = value.i64()?.try_into()?;
             sea_orm::Value::SmallInt(Some(value))
         }
+        ConvertedType::Integer if is_null => sea_orm::Value::Int(None),
         ConvertedType::Integer => {
             let value: i32 = value.i64()?.try_into()?;
             sea_orm::Value::Int(Some(value))
         }
+        ConvertedType::BigInteger if is_null => sea_orm::Value::BigInt(None),
         ConvertedType::BigInteger => {
             let value = value.i64()?;
             sea_orm::Value::BigInt(Some(value))
         }
+        ConvertedType::TinyUnsigned if is_null => sea_orm::Value::TinyUnsigned(None),
         ConvertedType::TinyUnsigned => {
             let value: u8 = value.u64()?.try_into()?;
             sea_orm::Value::TinyUnsigned(Some(value))
         }
+        ConvertedType::SmallUnsigned if is_null => sea_orm::Value::SmallUnsigned(None),
         ConvertedType::SmallUnsigned => {
             let value: u16 = value.u64()?.try_into()?;
             sea_orm::Value::SmallUnsigned(Some(value))
         }
+        ConvertedType::Unsigned if is_null => sea_orm::Value::Unsigned(None),
         ConvertedType::Unsigned => {
             let value: u32 = value.u64()?.try_into()?;
             sea_orm::Value::Unsigned(Some(value))
         }
+        ConvertedType::BigUnsigned if is_null => sea_orm::Value::BigUnsigned(None),
         ConvertedType::BigUnsigned => {
             let value = value.u64()?;
             sea_orm::Value::BigUnsigned(Some(value))
         }
+        ConvertedType::Float if is_null => sea_orm::Value::Float(None),
         ConvertedType::Float => {
             let value = value.f32()?;
             sea_orm::Value::Float(Some(value))
         }
+        ConvertedType::Double if is_null => sea_orm::Value::Double(None),
         ConvertedType::Double => {
             let value = value.f64()?;
             sea_orm::Value::Double(Some(value))
+        }
+        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) if is_null => {
+            sea_orm::Value::String(None)
         }
         ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
             let value = value.string()?;
             sea_orm::Value::String(Some(Box::new(value.to_string())))
         }
+        ConvertedType::Char if is_null => sea_orm::Value::Char(None),
         ConvertedType::Char => {
             let value = value.string()?;
             let value: char = match value.chars().next() {
@@ -538,10 +567,13 @@ pub fn converted_value_to_sea_orm_value(
             };
             sea_orm::Value::Char(Some(value))
         }
+        ConvertedType::Bytes if is_null => sea_orm::Value::Bytes(None),
         ConvertedType::Bytes => {
             let value = decode_hex(value.string()?)?;
             sea_orm::Value::Bytes(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-json")]
+        ConvertedType::Json if is_null => sea_orm::Value::Json(None),
         #[cfg(feature = "with-json")]
         ConvertedType::Json => {
             use std::str::FromStr;
@@ -556,6 +588,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::Json(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDate if is_null => sea_orm::Value::ChronoDate(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate => {
             let value =
                 sea_orm::entity::prelude::ChronoDate::parse_from_str(value.string()?, "%Y-%m-%d")
@@ -569,6 +603,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDate(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoTime if is_null => sea_orm::Value::ChronoTime(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoTime => {
             let value =
                 sea_orm::entity::prelude::ChronoTime::parse_from_str(value.string()?, "%H:%M:%S")
@@ -581,6 +617,8 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::ChronoTime(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTime if is_null => sea_orm::Value::ChronoDateTime(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTime => {
             let value = sea_orm::entity::prelude::ChronoDateTime::parse_from_str(
@@ -597,6 +635,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDateTime(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeUtc if is_null => sea_orm::Value::ChronoDateTimeUtc(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeUtc => {
             use std::str::FromStr;
 
@@ -611,6 +651,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDateTimeUtc(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeLocal if is_null => sea_orm::Value::ChronoDateTimeLocal(None),
+        #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeLocal => {
             use std::str::FromStr;
 
@@ -623,6 +665,10 @@ pub fn converted_value_to_sea_orm_value(
                 })?;
 
             sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
+        }
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeWithTimeZone if is_null => {
+            sea_orm::Value::ChronoDateTimeWithTimeZone(None)
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeWithTimeZone => {
@@ -643,6 +689,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::ChronoDateTimeWithTimeZone(Some(Box::new(value)))
         }
         #[cfg(feature = "with-time")]
+        ConvertedType::TimeDate if is_null => sea_orm::Value::TimeDate(None),
+        #[cfg(feature = "with-time")]
         ConvertedType::TimeDate => {
             use std::str::FromStr;
 
@@ -659,6 +707,8 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::TimeDate(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeTime if is_null => sea_orm::Value::TimeTime(None),
         #[cfg(feature = "with-time")]
         ConvertedType::TimeTime => {
             use std::str::FromStr;
@@ -677,6 +727,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::TimeTime(Some(Box::new(value)))
         }
         #[cfg(feature = "with-time")]
+        ConvertedType::TimeDateTime if is_null => sea_orm::Value::TimeDateTime(None),
+        #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTime => {
             use std::str::FromStr;
 
@@ -692,6 +744,10 @@ pub fn converted_value_to_sea_orm_value(
             })?;
 
             sea_orm::Value::TimeDateTime(Some(Box::new(value)))
+        }
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeDateTimeWithTimeZone if is_null => {
+            sea_orm::Value::TimeDateTimeWithTimeZone(None)
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTimeWithTimeZone => {
@@ -710,6 +766,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::TimeDateTimeWithTimeZone(Some(Box::new(value)))
         }
         #[cfg(feature = "with-uuid")]
+        ConvertedType::Uuid if is_null => sea_orm::Value::Uuid(None),
+        #[cfg(feature = "with-uuid")]
         ConvertedType::Uuid => {
             use std::str::FromStr;
 
@@ -722,6 +780,8 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::Uuid(Some(Box::new(value)))
         }
+        #[cfg(feature = "with-decimal")]
+        ConvertedType::Decimal if is_null => sea_orm::Value::Decimal(None),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => {
             use std::str::FromStr;
@@ -737,6 +797,8 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::Decimal(Some(Box::new(value)))
         }
         #[cfg(feature = "with-bigdecimal")]
+        ConvertedType::BigDecimal if is_null => sea_orm::Value::BigDecimal(None),
+        #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => {
             use std::str::FromStr;
 
@@ -749,6 +811,10 @@ pub fn converted_value_to_sea_orm_value(
                 })?;
 
             sea_orm::Value::BigDecimal(Some(Box::new(value)))
+        }
+        #[cfg(feature = "with-postgres-array")]
+        ConvertedType::Array(ty) if is_null => {
+            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(&ty)?, None)
         }
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
@@ -764,19 +830,18 @@ pub fn converted_value_to_sea_orm_value(
                 converted_type_to_sea_orm_array_type(&ty)?,
                 Some(Box::new(list_value)),
             )
-        }
-        // FIXME: support ip type
-        #[cfg(feature = "with-ipnetwork")]
-        ConvertedType::IpNetwork => {
-            let value = value.string()?;
-            sea_orm::Value::String(Some(Box::new(value.to_string())))
-        }
-        // FIXME: support mac type
-        #[cfg(feature = "with-mac_address")]
-        ConvertedType::MacAddress => {
-            let value = value.string()?;
-            sea_orm::Value::String(Some(Box::new(value.to_string())))
-        }
+        } // FIXME: support ip type
+          // #[cfg(feature = "with-ipnetwork")]
+          // ConvertedType::IpNetwork => {
+          //     let value = value.string()?;
+          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          // }
+          // FIXME: support mac type
+          // #[cfg(feature = "with-mac_address")]
+          // ConvertedType::MacAddress => {
+          //     let value = value.string()?;
+          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          // }
     })
 }
 

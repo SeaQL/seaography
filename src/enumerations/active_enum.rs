@@ -19,7 +19,7 @@ impl std::default::Default for ActiveEnumConfig {
                 format!("{}Enum", name.to_upper_camel_case())
             }),
             variant_name: Box::new(|_enum_name: &str, variant: &str| -> String {
-                variant.to_upper_camel_case().to_ascii_uppercase()
+                format_variant(variant)
             }),
         }
     }
@@ -60,4 +60,11 @@ impl ActiveEnumBuilder {
                 enumeration.item(self.variant_name(&enum_name, &variant))
             })
     }
+}
+
+pub(crate) fn format_variant(variant: &str) -> String {
+    variant
+        .chars()
+        .filter(|&c| c.is_ascii_alphanumeric() || c == '_')
+        .collect()
 }

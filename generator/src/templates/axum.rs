@@ -10,16 +10,18 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.replace('-', "_").parse().unwrap();
 
     quote! {
-        use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
-        use async_graphql::{
-            dynamic::*,
-            http::{playground_source, GraphQLPlaygroundConfig},
+        use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+        use async_graphql_axum::GraphQL;
+        use axum::{
+            response::{self, IntoResponse},
+            routing::get,
+            Router,
         };
-        use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
         use dotenv::dotenv;
         use lazy_static::lazy_static;
         use sea_orm::Database;
         use std::env;
+        use tokio::net::TcpListener;
 
         lazy_static! {
             static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
@@ -35,18 +37,12 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 });
         }
 
-        async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
-            schema.execute(req.into_inner()).await.into()
+        async fn graphiql() -> impl IntoResponse {
+            response::Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
         }
 
-        async fn graphql_playground() -> Result<HttpResponse> {
-            Ok(HttpResponse::Ok()
-                .content_type("text/html; charset=utf-8")
-                .body(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT))))
-        }
-
-        #[actix_web::main]
-        async fn main() -> std::io::Result<()> {
+        #[tokio::main]
+        async fn main() {
             dotenv().ok();
             tracing_subscriber::fmt()
                 .with_max_level(tracing::Level::INFO)
@@ -56,16 +52,11 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .await
                 .expect("Fail to initialize database connection");
             let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
+            let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
             println!("Visit GraphQL Playground at http://{}", *URL);
-            HttpServer::new(move || {
-                App::new()
-                    .app_data(Data::new(schema.clone()))
-                    .service(web::resource("/").guard(guard::Post()).to(index))
-                    .service(web::resource("/").guard(guard::Get()).to(graphql_playground))
-            })
-            .bind("127.0.0.1:8000")?
-            .run()
-            .await
+            axum::serve(TcpListener::bind(&*URL).await.unwrap(), app)
+                .await
+                .unwrap();
         }
     }
 }

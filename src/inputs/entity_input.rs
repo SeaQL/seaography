@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor};
-use sea_orm::{ColumnTrait, EntityTrait, Iterable};
+use sea_orm::{ColumnTrait, EntityTrait, Iterable, PrimaryKeyToColumn, PrimaryKeyTrait};
 
 use crate::{BuilderContext, EntityObjectBuilder, SeaResult, TypesMapHelper};
 
@@ -95,10 +95,20 @@ impl EntityInputBuilder {
             }
 
             let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
+
+            let auto_increment = match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
+                Some(_) => T::PrimaryKey::auto_increment(),
+                None => false,
+            };
+            let has_default_expr = column_def.get_column_default().is_some();
+            let is_insert_not_nullable =
+                is_insert && !(column_def.is_null() || auto_increment || has_default_expr);
 
             let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
                 column_def.get_column_type(),
-                !column_def.is_null() && is_insert,
+                is_insert_not_nullable,
+                enum_type_name,
             ) {
                 Some(type_name) => type_name,
                 None => return object,

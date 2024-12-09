@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, Object};
 use async_graphql::{Error, Value};
-use heck::{ToLowerCamelCase, ToUpperCamelCase};
+use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
 /// The configuration structure for EntityObjectBuilder
@@ -20,14 +20,18 @@ impl std::default::Default for EntityObjectConfig {
                 entity_name.to_upper_camel_case()
             }),
             column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
-                column_name.to_lower_camel_case()
+                if cfg!(feature = "field-snake-case") {
+                    column_name.to_snake_case()
+                } else {
+                    column_name.to_lower_camel_case()
+                }
             }),
             basic_type_suffix: "Basic".into(),
         }
     }
 }
 
-use crate::{BuilderContext, GuardAction, TypesMapHelper};
+use crate::{format_variant, BuilderContext, GuardAction, TypesMapHelper};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {
@@ -108,10 +112,12 @@ impl EntityObjectBuilder {
             let column_name = self.column_name::<T>(&column);
 
             let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
 
             let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
                 column_def.get_column_type(),
                 !column_def.is_null(),
+                enum_type_name,
             ) {
                 Some(type_name) => type_name,
                 None => return object,
@@ -139,7 +145,7 @@ impl EntityObjectBuilder {
                 .context
                 .types
                 .output_conversions
-                .get(&format!("{}.{}", entity_name, column_name));
+                .get(&format!("{entity_name}.{column_name}"));
 
             let field = Field::new(column_name, graphql_type, move |ctx| {
                 let guard_flag = if let Some(guard) = guard {
@@ -209,7 +215,7 @@ fn sea_query_value_to_graphql_value(
         sea_orm::Value::Float(value) => value.map(Value::from),
         sea_orm::Value::Double(value) => value.map(Value::from),
         sea_orm::Value::String(value) if is_enum => {
-            value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase()))
+            value.map(|it| Value::from(format_variant(it.as_str())))
         }
         sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
         sea_orm::Value::Char(value) => value.map(|it| Value::from(it.to_string())),
@@ -295,14 +301,13 @@ fn sea_query_value_to_graphql_value(
         #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
         sea_orm::sea_query::Value::BigDecimal(value) => value.map(|it| Value::from(it.to_string())),
 
-        #[cfg(feature = "with-ipnetwork")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
-        sea_orm::sea_query::Value::IpNetwork(value) => value.map(|it| Value::from(it.to_string())),
+        // #[cfg(feature = "with-ipnetwork")]
+        // #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
+        // sea_orm::sea_query::Value::IpNetwork(value) => value.map(|it| Value::from(it.to_string())),
 
-        #[cfg(feature = "with-mac_address")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
-        sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
-
+        // #[cfg(feature = "with-mac_address")]
+        // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
+        // sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
         #[allow(unreachable_patterns)]
         _ => panic!("Cannot convert SeaORM value"),
     }

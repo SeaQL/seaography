@@ -2,7 +2,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
     Error,
 };
-use heck::ToLowerCamelCase;
+use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
@@ -27,10 +27,21 @@ impl std::default::Default for EntityQueryFieldConfig {
     fn default() -> Self {
         EntityQueryFieldConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                object_name.to_lower_camel_case()
+                if cfg!(feature = "field-snake-case") {
+                    object_name.to_snake_case()
+                } else {
+                    object_name.to_lower_camel_case()
+                }
             }),
             filters: "filters".into(),
-            order_by: "orderBy".into(),
+            order_by: {
+                if cfg!(feature = "field-snake-case") {
+                    "order_by"
+                } else {
+                    "orderBy"
+                }
+                .into()
+            },
             pagination: "pagination".into(),
         }
     }

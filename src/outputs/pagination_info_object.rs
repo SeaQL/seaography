@@ -83,7 +83,7 @@ impl PaginationInfoObjectBuilder {
                     FieldFuture::new(async move {
                         let pagination_page_info =
                             ctx.parent_value.try_downcast_ref::<PaginationInfo>()?;
-                        Ok(Some(Value::from(pagination_page_info.current)))
+                        Ok(Some(Value::from(pagination_page_info.offset)))
                     })
                 },
             ))
@@ -94,7 +94,7 @@ impl PaginationInfoObjectBuilder {
                     FieldFuture::new(async move {
                         let pagination_page_info =
                             ctx.parent_value.try_downcast_ref::<PaginationInfo>()?;
-                        Ok(Some(Value::from(pagination_page_info.current)))
+                        Ok(Some(Value::from(pagination_page_info.total)))
                     })
                 },
             ))

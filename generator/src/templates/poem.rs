@@ -19,7 +19,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
         use std::env;
 
         lazy_static! {
-            static ref URL: String = env::var("URL").unwrap_or("0.0.0.0:8000".into());
+            static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
             static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
             static ref DATABASE_URL: String =
                 env::var("DATABASE_URL").expect("DATABASE_URL environment variable not set");
@@ -47,9 +47,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             let database = Database::connect(&*DATABASE_URL)
                 .await
                 .expect("Fail to initialize database connection");
-
             let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
-
             let app = Route::new().at(
                 &*ENDPOINT,
                 get(graphql_playground).post(GraphQL::new(schema)),

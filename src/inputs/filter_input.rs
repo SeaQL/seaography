@@ -13,7 +13,7 @@ impl std::default::Default for FilterInputConfig {
     fn default() -> Self {
         FilterInputConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                format!("{}FilterInput", object_name)
+                format!("{object_name}FilterInput")
             }),
         }
     }
