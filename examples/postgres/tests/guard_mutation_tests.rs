@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
 use seaography::{Builder, BuilderContext, FnGuard, GuardsConfig};
-use seaography_sqlite_example::entities::*;
+use seaography_postgres_example::entities::*;
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {
@@ -44,7 +44,6 @@ pub fn schema(
             film,
             film_actor,
             film_category,
-            film_text,
             inventory,
             language,
             payment,
@@ -53,6 +52,7 @@ pub fn schema(
             store,
         ]
     );
+    builder.register_enumeration::<sea_orm_active_enums::MpaaRating>();
     let schema = builder.schema_builder();
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
@@ -68,7 +68,9 @@ pub fn schema(
 }
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("sqlite://sakila.db").await.unwrap();
+    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
+        .await
+        .unwrap();
     let schema = schema(database, None, None).unwrap();
 
     schema
@@ -91,7 +93,7 @@ async fn entity_guard_mutation() {
                 r#"
                 mutation LanguageUpdate {
                     languageUpdate(
-                        data: { lastUpdate: "2030-01-01 11:11:11 UTC" }
+                        data: { lastUpdate: "2030-01-01 11:11:11" }
                         filter: { languageId: { eq: 6 } }
                     ) {
                         languageId
@@ -116,7 +118,7 @@ async fn entity_guard_mutation() {
             r#"
             mutation FilmCategoryUpdate {
                 filmCategoryUpdate(
-                    data: { filmId: 1, categoryId: 1, lastUpdate: "2030-01-01 11:11:11 UTC" }
+                    data: { filmId: 1, categoryId: 1, lastUpdate: "2030-01-01 11:11:11" }
                 ) {
                     filmId
                 }

@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
 use seaography::{Builder, BuilderContext, FnGuard, GuardsConfig};
-use seaography_sqlite_example::entities::*;
+use seaography_mysql_example::entities::*;
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {
@@ -53,6 +53,7 @@ pub fn schema(
             store,
         ]
     );
+    builder.register_enumeration::<sea_orm_active_enums::Rating>();
     let schema = builder.schema_builder();
     let schema = if let Some(depth) = depth {
         schema.limit_depth(depth)
@@ -68,7 +69,9 @@ pub fn schema(
 }
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("sqlite://sakila.db").await.unwrap();
+    let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
+        .await
+        .unwrap();
     let schema = schema(database, None, None).unwrap();
 
     schema
