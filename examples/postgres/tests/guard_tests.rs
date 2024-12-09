@@ -323,14 +323,6 @@ async fn entity_guard() {
                 {
                   "languageId": 6,
                   "name": "German              "
-                },
-                {
-                  "languageId": 7,
-                  "name": "Swedish             "
-                },
-                {
-                  "languageId": 8,
-                  "name": "Danish              "
                 }
               ]
             }
