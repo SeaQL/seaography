@@ -68,7 +68,9 @@ pub fn schema(
 }
 
 pub async fn get_schema() -> Schema {
-    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila").await.unwrap();
+    let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
+        .await
+        .unwrap();
     let schema = schema(database, None, None).unwrap();
 
     schema
