@@ -236,7 +236,13 @@ fn sea_query_value_to_graphql_value(
 
         #[cfg(feature = "with-json")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
-        sea_orm::sea_query::Value::Json(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::Json(value) => value.map(|it| {
+            if cfg!(feature = "with-json-as-scalar") {
+                Value::from_json((*it).clone()).expect("Unable to serialize")
+            } else {
+                Value::from(it.to_string())
+            }
+        }),
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
