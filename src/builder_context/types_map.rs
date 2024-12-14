@@ -23,6 +23,10 @@ pub struct TypesMapConfig {
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
     pub decimal_library: DecimalLibrary,
+
+    #[cfg(feature = "with-json-as-scalar")]
+    /// used to expose Json as a Scalar
+    pub json_name: String,
 }
 
 impl std::default::Default for TypesMapConfig {
@@ -45,6 +49,9 @@ impl std::default::Default for TypesMapConfig {
             decimal_library: DecimalLibrary::Decimal,
             #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
             decimal_library: DecimalLibrary::BigDecimal,
+
+            #[cfg(feature = "with-json-as-scalar")]
+            json_name: "Json".to_owned(),
         }
     }
 }
@@ -159,14 +166,9 @@ impl TypesMapHelper {
             ColumnType::Boolean => ConvertedType::Bool,
 
             #[cfg(not(feature = "with-json"))]
-            ColumnType::Json => ConvertedType::String,
+            ColumnType::Json | ColumnType::JsonBinary => ConvertedType::String,
             #[cfg(feature = "with-json")]
-            ColumnType::Json => ConvertedType::Json,
-
-            // FIXME: how should we map them JsonBinary type ?
-            // #[cfg(feature = "with-json")]
-            // ColumnType::JsonBinary => ConvertedType::Json,
-            ColumnType::JsonBinary => ConvertedType::String,
+            ColumnType::Json | ColumnType::JsonBinary => ConvertedType::Json,
 
             #[cfg(not(feature = "with-uuid"))]
             ColumnType::Uuid => ConvertedType::String,
@@ -280,7 +282,10 @@ impl TypesMapHelper {
                 | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
                 // FIXME: support json type
+                #[cfg(not(feature = "with-json-as-scalar"))]
                 ColumnType::Json | ColumnType::JsonBinary => None,
+                #[cfg(feature = "with-json-as-scalar")]
+                ColumnType::Json | ColumnType::JsonBinary => Some(TypeRef::named(&self.context.types.json_name)),
                 ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Enum {
                     name: enum_name,
