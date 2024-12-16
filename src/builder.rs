@@ -1,12 +1,16 @@
 use async_graphql::{
+    context,
     dataloader::DataLoader,
-    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+    dynamic::{
+        Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef,
+        ValueAccessor,
+    },
 };
-use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
+use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel, RelationDef};
 
 use crate::{
     order_enum, ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext,
-    ConnectionObjectBuilder, CursorInputBuilder, EdgeObjectBuilder,
+    CascadeInputBuilder, ConnectionObjectBuilder, CursorInputBuilder, EdgeObjectBuilder,
     EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
     EntityGetFieldBuilder, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
     EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper, NewOrderInputBuilder,
@@ -75,6 +79,7 @@ impl Builder {
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
+        <T as EntityTrait>::Relation: CascadeBuilder,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -107,6 +112,11 @@ impl Builder {
         };
         let filter = filter_input_builder.to_object::<T>();
 
+        let cascade_input_builder = CascadeInputBuilder {
+            context: self.context,
+        };
+        let cascade = cascade_input_builder.to_object::<T>();
+
         let order_input_builder = OrderInputBuilder {
             context: self.context,
         };
@@ -116,7 +126,7 @@ impl Builder {
             context: self.context,
         };
         let new_order = new_order_input_builder.to_object::<T>();
-        self.inputs.extend(vec![filter, order, new_order]);
+        self.inputs.extend(vec![filter, order, new_order, cascade]);
 
         let order_enum_builder = OrderEnumBuilder {
             context: self.context,
@@ -343,6 +353,14 @@ pub trait RelationBuilder {
     ) -> async_graphql::dynamic::Field;
 }
 
+pub trait CascadeBuilder {
+    fn get_join(
+        &self,
+        context: &'static crate::BuilderContext,
+        filters: Option<ValueAccessor>,
+    ) -> RelationDef;
+}
+
 #[macro_export]
 macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
@@ -379,7 +397,6 @@ macro_rules! register_entities_without_relation {
         $(seaography::register_entity_without_relation!($builder, $module_paths);)*
     };
 }
-
 
 #[macro_export]
 macro_rules! register_entity_modules {

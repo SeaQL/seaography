@@ -1,14 +1,9 @@
-use async_graphql::dynamic::ValueAccessor;
+use async_graphql::dynamic::{ObjectAccessor, ValueAccessor};
 
-pub fn get_cascade_conditions(cascades: Option<ValueAccessor>) -> Vec<String> {
+pub fn get_cascade_conditions(cascades: Option<ValueAccessor>) -> Option<ObjectAccessor> {
     if let Some(cascades) = cascades {
-        cascades
-            .list()
-            .unwrap()
-            .iter()
-            .map(|field| field.string().unwrap().to_string())
-            .collect::<Vec<String>>()
+        Some(cascades.object().unwrap())
     } else {
-        Vec::new()
+        None
     }
 }

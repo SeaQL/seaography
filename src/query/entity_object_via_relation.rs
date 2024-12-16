@@ -1,11 +1,12 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
+    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef, ValueAccessor},
     Error,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
+    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter,
+    Related, RelationDef,
 };
 
 #[cfg(not(feature = "offset-pagination"))]
@@ -274,5 +275,22 @@ impl EntityObjectViaRelationBuilder {
                 TypeRef::named(&context.pagination_input.type_name),
             ))
             .argument(InputValue::new("first", TypeRef::named(TypeRef::INT)))
+    }
+
+    pub fn joiin<T, R>(
+        &self,
+        relation_definition: RelationDef,
+        filter: Option<ValueAccessor>,
+    ) -> RelationDef
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+        <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+        R: EntityTrait,
+        <R as sea_orm::EntityTrait>::Model: Sync,
+        <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+    {
+        let filters = get_filter_conditions::<R>(self.context, filter);
+        relation_definition.on_condition(move |_left, _right| filters.to_owned())
     }
 }
