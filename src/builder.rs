@@ -42,6 +42,12 @@ pub struct Builder {
 
     /// configuration for builder
     pub context: &'static BuilderContext,
+
+    /// Set the maximum depth a query can have
+    pub depth: Option<usize>,
+
+    /// Set the maximum complexity a query can have
+    pub complexity: Option<usize>,
 }
 
 impl Builder {
@@ -66,6 +72,8 @@ impl Builder {
             mutations: Vec::new(),
             connection,
             context,
+            depth: None,
+            complexity: None,
         }
     }
 
@@ -219,6 +227,16 @@ impl Builder {
             .push(filter_types_map_helper.generate_filter_input(&filter_info));
     }
 
+    pub fn set_depth_limit(mut self, depth: Option<usize>) -> Self {
+        self.depth = depth;
+        self
+    }
+
+    pub fn set_complexity_limit(mut self, complexity: Option<usize>) -> Self {
+        self.complexity = complexity;
+        self
+    }
+
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
     pub fn schema_builder(self) -> SchemaBuilder {
         let query = self.query;
@@ -264,7 +282,7 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, cur| schema.register(cur));
 
-        schema
+        let schema = schema
             .register(
                 OrderByEnumBuilder {
                     context: self.context,
@@ -314,7 +332,18 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
-            .register(mutation)
+            .register(mutation);
+
+        let schema = if let Some(depth) = self.depth {
+            schema.limit_depth(depth)
+        } else {
+            schema
+        };
+        if let Some(complexity) = self.complexity {
+            schema.limit_complexity(complexity)
+        } else {
+            schema
+        }
     }
 }
 

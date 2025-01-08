@@ -247,18 +247,12 @@ pub fn schema(
             ),
     ]);
     builder.register_enumeration::<seaography_postgres_example::entities::sea_orm_active_enums::MpaaRating>();
-    let schema = builder.schema_builder();
-    let schema = if let Some(depth) = depth {
-        schema.limit_depth(depth)
-    } else {
-        schema
-    };
-    let schema = if let Some(complexity) = complexity {
-        schema.limit_complexity(complexity)
-    } else {
-        schema
-    };
-    schema.data(database).finish()
+    builder
+        .set_depth_limit(depth)
+        .set_complexity_limit(complexity)
+        .schema_builder()
+        .data(database)
+        .finish()
 }
 
 pub async fn get_schema() -> Schema {
