@@ -10,6 +10,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.replace('-', "_").parse().unwrap();
 
     quote! {
+        use seaography::async_graphql;
         use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
         use async_graphql_axum::GraphQL;
         use axum::{
@@ -18,12 +19,12 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             Router,
         };
         use dotenv::dotenv;
-        use lazy_static::lazy_static;
+        use seaography::lazy_static;
         use sea_orm::Database;
         use std::env;
         use tokio::net::TcpListener;
 
-        lazy_static! {
+        lazy_static::lazy_static! {
             static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
             static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
             static ref DATABASE_URL: String =

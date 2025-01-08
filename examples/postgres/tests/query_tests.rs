@@ -1,3 +1,4 @@
+use seaography::async_graphql;
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 

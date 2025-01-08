@@ -6,13 +6,11 @@ version = "0.1.0"
 [dependencies]
 poem = { version = "3.0" }
 async-graphql-poem = { version = "7.0" }
-async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 dotenv = "0.15.0"
 sea-orm = { version = "~1.1.2", features = ["<seaography-sql-library>", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
-lazy_static = { version = "1.4.0" }
 
 [dependencies.seaography]
 version = "~<seaography-version>" # seaography version
