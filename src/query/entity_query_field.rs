@@ -80,7 +80,6 @@ impl EntityQueryFieldBuilder {
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
-        <T as EntityTrait>::Relation: crate::CascadeBuilder,
     {
         #[cfg(not(feature = "offset-pagination"))]
         let connection_object_builder = ConnectionObjectBuilder {
@@ -157,8 +156,9 @@ impl EntityQueryFieldBuilder {
                         let cascades = ctx.args.get("cascade");
                         let cascades = get_cascade_conditions(cascades);
 
-                        let stmt =
-                            CascadeInputBuilder { context }.parse_object::<T>(context, cascades);
+                        //let stmt =
+                        // CascadeInputBuilder { context }.parse_object::<T>(context, cascades);
+                        let stmt = T::find();
                         let stmt = stmt.filter(filters);
                         let stmt = apply_order(stmt, order_by);
 
