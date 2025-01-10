@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
-use seaography::{Builder, BuilderContext, FnGuard, GuardsConfig};
+use seaography::{async_graphql, lazy_static, Builder, BuilderContext, FnGuard, GuardsConfig};
 use seaography_mysql_example::entities::*;
 
 lazy_static::lazy_static! {

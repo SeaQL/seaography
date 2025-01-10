@@ -5,11 +5,11 @@ use async_graphql::{
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;
-use lazy_static::lazy_static;
 use sea_orm::Database;
+use seaography::{async_graphql, lazy_static};
 use std::env;
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
     static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
     static ref DATABASE_URL: String =

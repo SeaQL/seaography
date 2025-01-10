@@ -1,12 +1,12 @@
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
-use lazy_static::lazy_static;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
+use seaography::{async_graphql, lazy_static};
 use std::env;
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
     static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
     static ref DATABASE_URL: String =
