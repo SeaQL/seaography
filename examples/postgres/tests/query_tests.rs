@@ -1,6 +1,6 @@
-use seaography::async_graphql;
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
+use seaography::async_graphql;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")

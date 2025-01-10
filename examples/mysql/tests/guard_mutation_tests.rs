@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use seaography::async_graphql;
-use seaography::lazy_static;
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
+use seaography::async_graphql;
+use seaography::lazy_static;
 use seaography::{Builder, BuilderContext, FnGuard, GuardsConfig};
 use seaography_mysql_example::entities::*;
 

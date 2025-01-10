@@ -1,13 +1,13 @@
 use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
-use seaography::async_graphql;
 use async_graphql::{
     dynamic::*,
     http::{playground_source, GraphQLPlaygroundConfig},
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;
-use seaography::lazy_static;
 use sea_orm::Database;
+use seaography::async_graphql;
+use seaography::lazy_static;
 use std::env;
 
 lazy_static::lazy_static! {
