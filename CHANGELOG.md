@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 1.1.2 - 2024-12-10
 
-## Bug Fixes
+### Bug Fixes
 
 - Added entity guard for delete mutation https://github.com/SeaQL/seaography/pull/163
 
