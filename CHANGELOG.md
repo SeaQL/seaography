@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.1.3 - 2025-01-10
+
+### New Features
+
+- Re-export `async_graphql` and `lazy_static` https://github.com/SeaQL/seaography/pull/183
+- Set schema query depth and complexity https://github.com/SeaQL/seaography/pull/184
+
 ## 1.1.2 - 2024-12-10
 
 ## Bug Fixes
@@ -13,11 +20,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 1.1.1 - 2024-12-02
 
-## New Features
+### New Features
 
 - Added `register_active_enums!()` macros to register active enums https://github.com/SeaQL/seaography/pull/181
 
-## Bug Fixes
+### Bug Fixes
 
 - Handle String based active enum https://github.com/SeaQL/seaography/pull/181
 
