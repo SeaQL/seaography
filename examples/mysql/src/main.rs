@@ -7,8 +7,7 @@ use axum::{
 };
 use dotenv::dotenv;
 use sea_orm::Database;
-use seaography::async_graphql;
-use seaography::lazy_static;
+use seaography::{async_graphql, lazy_static};
 use std::env;
 use tokio::net::TcpListener;
 

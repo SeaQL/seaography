@@ -10,13 +10,12 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.replace('-', "_").parse().unwrap();
 
     quote! {
-        use seaography::async_graphql;
         use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
         use async_graphql_poem::GraphQL;
         use dotenv::dotenv;
-        use seaography::lazy_static;
         use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
         use sea_orm::Database;
+        use seaography::{async_graphql, lazy_static};
         use std::env;
 
         lazy_static::lazy_static! {

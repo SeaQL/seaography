@@ -3,8 +3,7 @@ use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
-use seaography::async_graphql;
-use seaography::lazy_static;
+use seaography::{async_graphql, lazy_static};
 use std::env;
 
 lazy_static::lazy_static! {

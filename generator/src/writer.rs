@@ -83,11 +83,9 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
 
     quote! {
         use crate::entities::*;
-        use seaography::async_graphql;
-        use seaography::lazy_static;
         use async_graphql::dynamic::*;
         use sea_orm::DatabaseConnection;
-        use seaography::{Builder, BuilderContext};
+        use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
         lazy_static::lazy_static! {
             static ref CONTEXT: BuilderContext = BuilderContext::default();
