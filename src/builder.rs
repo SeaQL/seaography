@@ -1,5 +1,4 @@
 use async_graphql::{
-    context,
     dataloader::DataLoader,
     dynamic::{
         Enum, Field, FieldFuture, InputObject, Interface, Object, Schema, SchemaBuilder, TypeRef,
@@ -9,8 +8,8 @@ use async_graphql::{
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel, RelationDef};
 
 use crate::{
-    entity_object, order_enum, ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext,
-    CascadeInputBuilder, ConnectionObjectBuilder, CursorInputBuilder, EdgeObjectBuilder,
+    ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, CascadeInputBuilder,
+    ConnectionObjectBuilder, CursorInputBuilder, EdgeObjectBuilder,
     EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
     EntityGetFieldBuilder, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
     EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper, NewOrderInputBuilder,

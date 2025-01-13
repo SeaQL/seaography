@@ -100,9 +100,8 @@ impl EntityInputBuilder {
                 Some(_) => T::PrimaryKey::auto_increment(),
                 None => false,
             };
-            let has_default_expr = column_def.get_column_default().is_some();
-            let is_insert_not_nullable =
-                is_insert && !(column_def.is_null() || auto_increment || has_default_expr);
+            //let has_default_expr = column_def.get_column_default().is_some();
+            let is_insert_not_nullable = is_insert && !(column_def.is_null() || auto_increment);
 
             let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
                 column_def.get_column_type(),

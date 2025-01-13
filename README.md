@@ -6,9 +6,9 @@
     <strong>🧭 A GraphQL framework and code generator for SeaORM</strong>
   </p>
 
-  [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
-  [![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
-  [![build status](https://github.com/SeaQL/seaography/actions/workflows/tests.yaml/badge.svg)](https://github.com/SeaQL/seaography/actions/workflows/tests.yaml)
+[![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
+[![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
+[![build status](https://github.com/SeaQL/seaography/actions/workflows/tests.yaml/badge.svg)](https://github.com/SeaQL/seaography/actions/workflows/tests.yaml)
 
 </div>
 
@@ -18,27 +18,27 @@
 
 ## Benefits
 
-* Quick and easy to get started
-* Generates readable code
-* Extensible project structure
-* Based on popular async libraries: [async-graphql](https://github.com/async-graphql/async-graphql) and [SeaORM](https://github.com/SeaQL/sea-orm)
+- Quick and easy to get started
+- Generates readable code
+- Extensible project structure
+- Based on popular async libraries: [async-graphql](https://github.com/async-graphql/async-graphql) and [SeaORM](https://github.com/SeaQL/sea-orm)
 
 ## Features
 
-* Relational query (1-to-1, 1-to-N)
-* Pagination for queries and relations (1-N)
-* Filtering with operators (e.g. gt, lt, eq)
-* Order by any column
-* Guard fields, queries or relations
-* Rename fields
-* Mutations (create, update, delete)
+- Relational query (1-to-1, 1-to-N)
+- Pagination for queries and relations (1-N)
+- Filtering with operators (e.g. gt, lt, eq)
+- Order by any column
+- Guard fields, queries or relations
+- Rename fields
+- Mutations (create, update, delete)
 
 (Right now there is no mutation, but it's on our plan!)
 
 ## SeaORM Version Compatibility
 
-|                        Seaography                        |                         SeaORM                        |
-|----------------------------------------------------------|-------------------------------------------------------|
+| Seaography                                               | SeaORM                                                |
+| -------------------------------------------------------- | ----------------------------------------------------- |
 | [1.1-rc](https://crates.io/crates/seaography/1.1.0-rc.1) | [1.1-rc](https://crates.io/crates/sea-orm/1.1.0-rc.1) |
 | [1.0](https://crates.io/crates/seaography/1.0.0)         | [1.0](https://crates.io/crates/sea-orm/1.0.0)         |
 | [0.12](https://crates.io/crates/seaography/0.12.0)       | [0.12](https://crates.io/crates/sea-orm/0.12.14)      |
@@ -70,19 +70,22 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  film(pagination: { page: { limit: 10, page: 0 } }, orderBy: { title: ASC }) {
-    nodes {
-      title
-      description
-      releaseYear
-      actor {
+    film(
+        pagination: { page: { limit: 10, page: 0 } }
+        orderBy: { title: ASC }
+    ) {
         nodes {
-          firstName
-          lastName
+            title
+            description
+            releaseYear
+            actor {
+                nodes {
+                    firstName
+                    lastName
+                }
+            }
         }
-      }
     }
-  }
 }
 ```
 
@@ -90,19 +93,19 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  store(filters: { storeId: { eq: 1 } }) {
-    nodes {
-      storeId
-      address {
-        address
-        address2
-      }
-      staff {
-        firstName
-        lastName
-      }
+    store(filters: { storeId: { eq: 1 } }) {
+        nodes {
+            storeId
+            address {
+                address
+                address2
+            }
+            staff {
+                firstName
+                lastName
+            }
+        }
     }
-  }
 }
 ```
 
@@ -110,20 +113,20 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  customer(
-    filters: { active: { eq: 0 } }
-    pagination: { page: { page: 2, limit: 3 } }
-  ) {
-    nodes {
-      customerId
-      lastName
-      email
+    customer(
+        filters: { active: { eq: 0 } }
+        pagination: { page: { page: 2, limit: 3 } }
+    ) {
+        nodes {
+            customerId
+            lastName
+            email
+        }
+        paginationInfo {
+            pages
+            current
+        }
     }
-    paginationInfo {
-      pages
-      current
-    }
-  }
 }
 ```
 
@@ -131,21 +134,21 @@ Go to http://localhost:8000/ and try out the following queries:
 
 ```graphql
 {
-  customer(
-    filters: { active: { eq: 0 } }
-    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
-  ) {
-    nodes {
-      customerId
-      lastName
-      email
+    customer(
+        filters: { active: { eq: 0 } }
+        pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+    ) {
+        nodes {
+            customerId
+            lastName
+            email
+        }
+        pageInfo {
+            hasPreviousPage
+            hasNextPage
+            endCursor
+        }
     }
-    pageInfo {
-      hasPreviousPage
-      hasNextPage
-      endCursor
-    }
-  }
 }
 ```
 
@@ -155,57 +158,58 @@ Find all inactive customers, include their address, and their payments with amou
 
 ```graphql
 {
-  customer(
-    filters: { active: { eq: 0 } }
-    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
-  ) {
-    nodes {
-      customerId
-      lastName
-      email
-      address {
-        address
-      }
-      payment(
-        filters: { amount: { gt: "7" } }
-        orderBy: { amount: ASC }
-        pagination: { page: { limit: 1, page: 1 } }
-      ) {
+    customer(
+        filters: { active: { eq: 0 } }
+        pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+    ) {
         nodes {
-          paymentId
-          amount
-        }
-        paginationInfo {
-          pages
-          current
+            customerId
+            lastName
+            email
+            address {
+                address
+            }
+            payment(
+                filters: { amount: { gt: "7" } }
+                orderBy: { amount: ASC }
+                pagination: { page: { limit: 1, page: 1 } }
+            ) {
+                nodes {
+                    paymentId
+                    amount
+                }
+                paginationInfo {
+                    pages
+                    current
+                }
+                pageInfo {
+                    hasPreviousPage
+                    hasNextPage
+                }
+            }
         }
         pageInfo {
-          hasPreviousPage
-          hasNextPage
+            hasPreviousPage
+            hasNextPage
+            endCursor
         }
-      }
     }
-    pageInfo {
-      hasPreviousPage
-      hasNextPage
-      endCursor
-    }
-  }
 }
 ```
 
 ### Filter using enumeration
+
 ```graphql
 {
-  film(
-    filters: { rating: { eq: NC17 } }
-    pagination: { page: { page: 1, limit: 5 } }
-  ) {
-    nodes {
-      filmId
-      rating
+    film(
+        filters: { rating: { eq: NC17 } }
+        pagination: { page: { page: 1, limit: 5 } }
+    ) {
+        nodes {
+            filmId
+            rating
+        }
     }
-  }
 }
 ```
 
