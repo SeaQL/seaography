@@ -2,16 +2,17 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
     Error,
 };
-use heck::ToLowerCamelCase;
+use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    DatabaseConnection, EntityTrait, Iterable, JoinType, QueryFilter, QuerySelect, RelationTrait,
+    DatabaseConnection, EntityTrait,  QueryFilter
 };
 
 #[cfg(not(feature = "offset-pagination"))]
 use crate::ConnectionObjectBuilder;
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, BuilderContext, EntityObjectBuilder,
-    FilterInputBuilder, GuardAction, OrderInputBuilder, PaginationInputBuilder,
+    apply_order, apply_pagination, get_filter_conditions, get_first, BuilderContext,
+     CascadeInputBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
+    NewOrderInputBuilder, OrderInputBuilder, PaginationInputBuilder,
 };
 
 use super::get_cascade_conditions;
@@ -26,17 +27,30 @@ pub struct EntityQueryFieldConfig {
     pub order_by: String,
     /// name for 'pagination' field
     pub pagination: String,
+    pub order: String,
 }
 
 impl std::default::Default for EntityQueryFieldConfig {
     fn default() -> Self {
         EntityQueryFieldConfig {
             type_name: Box::new(|object_name: &str| -> String {
-                object_name.to_lower_camel_case()
+                if cfg!(feature = "field-snake-case") {
+                    object_name.to_snake_case()
+                } else {
+                    object_name.to_lower_camel_case()
+                }
             }),
             filters: "filter".into(),
-            order_by: "orderBy".into(),
+            order_by: {
+                if cfg!(feature = "field-snake-case") {
+                    "order_by"
+                } else {
+                    "orderBy"
+                }
+                .into()
+            },
             pagination: "pagination".into(),
+            order: "order".into(),
         }
     }
 }
@@ -73,10 +87,16 @@ impl EntityQueryFieldBuilder {
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
         };
+        let cascade_input_builder = CascadeInputBuilder {
+            context: self.context,
+        };
         let order_input_builder = OrderInputBuilder {
             context: self.context,
         };
         let pagination_input_builder = PaginationInputBuilder {
+            context: self.context,
+        };
+        let new_order_input_builder = NewOrderInputBuilder {
             context: self.context,
         };
         let entity_object = EntityObjectBuilder {
@@ -122,48 +142,28 @@ impl EntityQueryFieldBuilder {
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let filters = get_filter_conditions::<T>(context, filters);
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                        let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
+                        let mut order_by =
+                            OrderInputBuilder { context }.parse_object::<T>(order_by);
+                        let order = ctx.args.get(&context.entity_query_field.order);
+                        let order = NewOrderInputBuilder { context }.parse_object::<T>(order);
+                        order_by.extend(order);
                         let pagination = ctx.args.get(&context.entity_query_field.pagination);
+                        let first = ctx.args.get("first");
                         let pagination =
                             PaginationInputBuilder { context }.parse_object(pagination);
-                        let cascades = ctx.args.get("cascade");
-                        let cascades = get_cascade_conditions(cascades);
-                        let stmt = T::Relation::iter().fold(T::find(), |stmt, related_table| {
-                            let related_table_name = related_table.def().to_tbl;
-                            match related_table_name {
-                                sea_orm::sea_query::TableRef::Table(iden) => {
-                                    if cascades.contains(&iden.to_string()) {
-                                        stmt.join(JoinType::InnerJoin, related_table.def())
-                                            .distinct()
-                                    } else {
-                                        stmt
-                                    }
-                                }
-                                sea_orm::sea_query::TableRef::SchemaTable(_, iden) => {
-                                    if cascades.contains(&iden.to_string()) {
-                                        stmt.join(JoinType::InnerJoin, related_table.def())
-                                            .distinct()
-                                    } else {
-                                        stmt
-                                    }
-                                }
-                                sea_orm::sea_query::TableRef::DatabaseSchemaTable(_, _, iden) => {
-                                    if cascades.contains(&iden.to_string()) {
-                                        stmt.join(JoinType::InnerJoin, related_table.def())
-                                            .distinct()
-                                    } else {
-                                        stmt
-                                    }
-                                }
-                                _ => stmt,
-                            }
-                        });
+                        let pagination = get_first(first, pagination);
+                        let _cascades = ctx.args.get("cascade");
+                        let _cascades = get_cascade_conditions(_cascades);
+
+                        //let stmt =
+                        // CascadeInputBuilder { context }.parse_object::<T>(context, cascades);
+                        let stmt = T::find();
                         let stmt = stmt.filter(filters);
                         let stmt = apply_order(stmt, order_by);
 
                         let db = ctx.data::<DatabaseConnection>()?;
 
-                        let object = apply_pagination::<T>(db, stmt, pagination).await?;
+                        let object = apply_pagination(db, stmt, pagination).await?;
 
                         Ok(Some(resolver_fn(object)))
                     }
@@ -172,7 +172,7 @@ impl EntityQueryFieldBuilder {
         })
         .argument(InputValue::new(
             "cascade",
-            TypeRef::named_list(TypeRef::STRING),
+            TypeRef::named(cascade_input_builder.type_name(&object_name)),
         ))
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
@@ -183,8 +183,13 @@ impl EntityQueryFieldBuilder {
             TypeRef::named(order_input_builder.type_name(&object_name)),
         ))
         .argument(InputValue::new(
+            &self.context.entity_query_field.order,
+            TypeRef::named(new_order_input_builder.type_name(&object_name)),
+        ))
+        .argument(InputValue::new(
             &self.context.entity_query_field.pagination,
             TypeRef::named(pagination_input_builder.type_name()),
         ))
+        .argument(InputValue::new("first", TypeRef::named(TypeRef::INT)))
     }
 }

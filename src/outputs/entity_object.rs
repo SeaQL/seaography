@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, Object};
 use async_graphql::{Error, Value};
-use heck::{ToLowerCamelCase, ToUpperCamelCase};
+use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
 /// The configuration structure for EntityObjectBuilder
@@ -20,7 +20,11 @@ impl std::default::Default for EntityObjectConfig {
                 entity_name.to_upper_camel_case()
             }),
             column_name: Box::new(|_entity_name: &str, column_name: &str| -> String {
-                column_name.to_lower_camel_case()
+                if cfg!(feature = "field-snake-case") {
+                    column_name.to_snake_case()
+                } else {
+                    column_name.to_lower_camel_case()
+                }
             }),
             basic_type_suffix: "Basic".into(),
         }
@@ -208,9 +212,20 @@ fn sea_query_value_to_graphql_value(
         sea_orm::Value::BigUnsigned(value) => value.map(Value::from),
         sea_orm::Value::Float(value) => value.map(Value::from),
         sea_orm::Value::Double(value) => value.map(Value::from),
-        sea_orm::Value::String(value) if is_enum => {
-            value.map(|it| Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase()))
-        }
+        sea_orm::Value::String(value) if is_enum => value.map(|it| {
+            if cfg!(feature = "field-snake-case") {
+                Value::from(it.as_str().to_snake_case())
+            } else if cfg!(feature = "offset-pagination") {
+                Value::from(
+                    it.chars()
+                        .filter(|c| c.is_alphanumeric())
+                        .collect::<String>()
+                        .as_str(),
+                )
+            } else {
+                Value::from(it.as_str().to_upper_camel_case().to_ascii_uppercase())
+            }
+        }),
         sea_orm::Value::String(value) => value.map(|it| Value::from(it.as_str())),
         sea_orm::Value::Char(value) => value.map(|it| Value::from(it.to_string())),
 

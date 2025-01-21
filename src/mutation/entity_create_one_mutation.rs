@@ -19,7 +19,14 @@ pub struct EntityCreateOneMutationConfig {
 impl std::default::Default for EntityCreateOneMutationConfig {
     fn default() -> Self {
         EntityCreateOneMutationConfig {
-            mutation_suffix: "CreateOne".into(),
+            mutation_suffix: {
+                if cfg!(feature = "field-snake-case") {
+                    "_create_one"
+                } else {
+                    "CreateOne"
+                }
+                .into()
+            },
             data_field: "data".into(),
         }
     }

@@ -5,11 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 1.1.0 - Pending
+## 1.1.0 - 2024-10-17
 
 ### Versions
 
 + `1.1.0-rc.1`: 2024-08-12
+
+### New Features
+
+* Feature flag `field-snake-case` and `field-camel-case` https://github.com/SeaQL/seaography/pull/176
+* Insert object allow nullable primary key and column with default value https://github.com/SeaQL/seaography/pull/177
 
 ### Upgrades
 

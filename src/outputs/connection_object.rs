@@ -42,8 +42,22 @@ impl std::default::Default for ConnectionObjectConfig {
             type_name: Box::new(|object_name: &str| -> String {
                 format!("{object_name}Connection")
             }),
-            page_info: "pageInfo".into(),
-            pagination_info: "paginationInfo".into(),
+            page_info: {
+                if cfg!(feature = "field-snake-case") {
+                    "page_info"
+                } else {
+                    "pageInfo"
+                }
+                .into()
+            },
+            pagination_info: {
+                if cfg!(feature = "field-snake-case") {
+                    "pagination_info"
+                } else {
+                    "paginationInfo"
+                }
+                .into()
+            },
             edges: "edges".into(),
             nodes: "nodes".into(),
         }
@@ -96,7 +110,7 @@ impl ConnectionObjectBuilder {
                         if let Some(value) = connection
                             .pagination_info
                             .as_ref()
-                            .map(|v| FieldValue::borrowed_any(v))
+                            .map(|info| FieldValue::borrowed_any(info))
                         {
                             Ok(Some(value))
                         } else {
