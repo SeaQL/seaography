@@ -60,12 +60,24 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
 pub enum RelatedEntity {
-    #[sea_orm(entity = "super::city::Entity")]
+    #[sea_orm(
+        entity = "super::city::Entity",
+        active_model = "super::city::ActiveModel"
+    )]
     City,
-    #[sea_orm(entity = "super::customer::Entity")]
+    #[sea_orm(
+        entity = "super::customer::Entity",
+        active_model = "super::customer::ActiveModel"
+    )]
     Customer,
-    #[sea_orm(entity = "super::staff::Entity")]
+    #[sea_orm(
+        entity = "super::staff::Entity",
+        active_model = "super::staff::ActiveModel"
+    )]
     Staff,
-    #[sea_orm(entity = "super::store::Entity")]
+    #[sea_orm(
+        entity = "super::store::Entity",
+        active_model = "super::store::ActiveModel"
+    )]
     Store,
 }

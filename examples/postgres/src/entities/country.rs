@@ -25,6 +25,9 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
 pub enum RelatedEntity {
-    #[sea_orm(entity = "super::city::Entity")]
+    #[sea_orm(
+        entity = "super::city::Entity",
+        active_model = "super::city::ActiveModel"
+    )]
     City,
 }

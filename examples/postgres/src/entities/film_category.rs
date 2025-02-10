@@ -46,8 +46,14 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
 pub enum RelatedEntity {
-    #[sea_orm(entity = "super::category::Entity")]
+    #[sea_orm(
+        entity = "super::category::Entity",
+        active_model = "super::category::ActiveModel"
+    )]
     Category,
-    #[sea_orm(entity = "super::film::Entity")]
+    #[sea_orm(
+        entity = "super::film::Entity",
+        active_model = "super::film::ActiveModel"
+    )]
     Film,
 }

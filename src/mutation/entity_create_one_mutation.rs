@@ -151,7 +151,7 @@ impl EntityCreateOneMutationBuilder {
                             .insert_related(context, input_object, &transaction, false)
                             .await?;
                     }
-
+                    transaction.commit().await?;
                     Ok(Some(FieldValue::owned_any(result)))
                 })
             },

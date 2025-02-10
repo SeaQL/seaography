@@ -189,7 +189,7 @@ impl EntityObjectRelationBuilder {
                 )),
         }
     }
-    pub fn get_mutation_relation<T, R>(
+    pub fn get_relation_input<T, R>(
         &self,
         name: &str,
         relation_definition: RelationDef,
