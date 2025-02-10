@@ -1,11 +1,12 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Iterable,
-    PrimaryKeyToColumn, PrimaryKeyTrait,
+    PrimaryKeyToColumn, PrimaryKeyTrait, TransactionTrait,
 };
 
 use crate::{
     BuilderContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction,
+    RelationBuilder,
 };
 
 /// The configuration structure of EntityCreateOneMutationBuilder
@@ -55,12 +56,15 @@ impl EntityCreateOneMutationBuilder {
     }
 
     /// used to get the create mutation field for a SeaORM entity
-    pub fn to_field<T, A>(&self) -> Field
+    pub fn to_field<T, A, I>(&self, related_entities_iter: I) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
         A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        I: IntoIterator + Clone + Send + Sync + 'static,
+        <I as IntoIterator>::Item: RelationBuilder + Send,
+        <I as IntoIterator>::IntoIter: Send,
     {
         let entity_input_builder = EntityInputBuilder {
             context: self.context,
@@ -77,8 +81,9 @@ impl EntityCreateOneMutationBuilder {
 
         Field::new(
             self.type_name::<T>(),
-            TypeRef::named_nn(entity_object_builder.basic_type_name::<T>()),
+            TypeRef::named_nn(entity_object_builder.type_name::<T>()),
             move |ctx| {
+                let related_entities_iter = related_entities_iter.clone();
                 FieldFuture::new(async move {
                     let guard_flag = if let Some(guard) = guard {
                         (*guard)(&ctx)
@@ -100,6 +105,7 @@ impl EntityCreateOneMutationBuilder {
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
                     let db = ctx.data::<DatabaseConnection>()?;
+                    let transaction = db.begin().await?;
                     let value_accessor = ctx
                         .args
                         .get(&context.entity_create_one_mutation.data_field)
@@ -128,14 +134,23 @@ impl EntityCreateOneMutationBuilder {
                             };
                         }
                     }
-
+                    for related_entity in related_entities_iter.clone() {
+                        related_entity
+                            .insert_related(context, input_object, &transaction, true)
+                            .await?;
+                    }
                     let active_model = prepare_active_model::<T, A>(
                         &entity_input_builder,
                         &entity_object_builder,
                         input_object,
                     )?;
 
-                    let result = active_model.insert(db).await?;
+                    let result = active_model.insert(&transaction).await?;
+                    for related_entity in related_entities_iter {
+                        related_entity
+                            .insert_related(context, input_object, &transaction, false)
+                            .await?;
+                    }
 
                     Ok(Some(FieldValue::owned_any(result)))
                 })

@@ -1,8 +1,11 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+    dynamic::{
+        Enum, Field, FieldFuture, InputObject, InputValue, Object, ObjectAccessor, Schema,
+        SchemaBuilder, TypeRef,
+    },
 };
-use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
+use sea_orm::{ActiveEnum, ActiveModelTrait, DatabaseTransaction, EntityTrait, IntoActiveModel};
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
@@ -121,12 +124,18 @@ impl Builder {
         self.queries.push(query);
     }
 
-    pub fn register_entity_mutations<T, A>(&mut self)
-    where
+    pub fn register_entity_mutations<T, A, I>(
+        &mut self,
+        related_entities_input: Vec<InputValue>,
+        related_entities_iter: I,
+    ) where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
         A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        I: IntoIterator + Clone + Send + Sync + 'static,
+        <I as IntoIterator>::Item: RelationBuilder + Send,
+        <I as IntoIterator>::IntoIter: Send,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -138,7 +147,10 @@ impl Builder {
             context: self.context,
         };
 
-        let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
+        let entity_insert_input_object = related_entities_input.into_iter().fold(
+            entity_input_builder.insert_input_object::<T>(),
+            |insert_input_object, input_value| insert_input_object.field(input_value),
+        );
         let entity_update_input_object = entity_input_builder.update_input_object::<T>();
         self.inputs
             .extend(vec![entity_insert_input_object, entity_update_input_object]);
@@ -147,7 +159,8 @@ impl Builder {
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
             context: self.context,
         };
-        let create_one_mutation = entity_create_one_mutation_builder.to_field::<T, A>();
+        let create_one_mutation =
+            entity_create_one_mutation_builder.to_field::<T, A, I>(related_entities_iter.clone());
         self.mutations.push(create_one_mutation);
 
         // create batch mutation
@@ -155,7 +168,8 @@ impl Builder {
             EntityCreateBatchMutationBuilder {
                 context: self.context,
             };
-        let create_batch_mutation = entity_create_batch_mutation_builder.to_field::<T, A>();
+        let create_batch_mutation =
+            entity_create_batch_mutation_builder.to_field::<T, A, I>(related_entities_iter);
         self.mutations.push(create_batch_mutation);
 
         // update mutation
@@ -352,6 +366,17 @@ pub trait RelationBuilder {
         &self,
         context: &'static crate::BuilderContext,
     ) -> async_graphql::dynamic::Field;
+    fn get_relation_input(
+        &self,
+        context: &'static crate::BuilderContext,
+    ) -> async_graphql::dynamic::InputValue;
+    fn insert_related(
+        &self,
+        context: &'static crate::BuilderContext,
+        input_object: &ObjectAccessor<'_>,
+        transaction: &DatabaseTransaction,
+        owner: bool,
+    ) -> impl std::future::Future<Output = async_graphql::Result<()>> + Send;
 }
 
 #[macro_export]
@@ -366,7 +391,11 @@ macro_rules! register_entity {
             $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
         $builder =
             $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
-        $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
+        $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel, $module_path::RelatedEntityIter>(
+            <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
+                .map(|rel| seaography::RelationBuilder::get_relation_input(&rel, $builder.context)).collect(),
+            <$module_path::RelatedEntity as sea_orm::Iterable>::iter(),
+        );
     };
 }
 
