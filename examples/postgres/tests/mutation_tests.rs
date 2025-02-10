@@ -5,6 +5,7 @@ use seaography::async_graphql;
 #[tokio::test]
 async fn main() {
     test_simple_insert_one().await;
+    test_nested_insert_one().await;
     test_complex_insert_one().await;
     test_create_batch_mutation().await;
     test_update_mutation().await;
@@ -73,7 +74,7 @@ async fn test_simple_insert_one() {
                 "filmActorCreateOne": {
                     "actorId": 1,
                     "filmId": 2,
-                    "__typename": "FilmActorBasic"
+                    "__typename": "FilmActor"
                 }
             }
             "#,
@@ -101,6 +102,109 @@ async fn test_simple_insert_one() {
                             {
                                 "actorId": 1,
                                 "filmId": 2
+                            }
+                        ]
+                    }
+                }
+            "#,
+    );
+}
+
+async fn test_nested_insert_one() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmActor(filters: { lastUpdate: { gt: "2030-01-01 11:11:12" } }) {
+                      nodes {
+                        actorId
+                        filmId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmActor": {
+              "nodes": []
+            }
+          }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    filmActorCreateOne(
+                        data: {
+                            actorId: 201,
+                            filmId: 1001,
+                            lastUpdate: "2030-01-01 11:11:13",
+                            actor: {
+                               actorId: 201,
+                               firstName: "",
+                               lastName: "",
+                               lastUpdate:  "2030-01-01 11:11:13"
+                            },
+                            film: {
+                               filmId: 1001,
+                               title: "",
+                               languageId: 1,
+                               rentalDuration: 3,
+                               rentalRate: "4.99",
+                               replacementCost: "18.99",
+                               lastUpdate: "2023-01-01 11:11:13"
+                            }
+                        }
+                    ) {
+                      actorId
+                      filmId
+                      __typename
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+            {
+                "filmActorCreateOne": {
+                    "actorId": 201,
+                    "filmId": 1001,
+                    "__typename": "FilmActor"
+                }
+            }
+            "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    filmActor(filters: { lastUpdate: { gt: "2030-01-01 11:11:12" } }) {
+                      nodes {
+                        actorId
+                        filmId
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+                {
+                    "filmActor": {
+                        "nodes": [
+                            {
+                                "actorId": 201,
+                                "filmId": 1001
                             }
                         ]
                     }

@@ -5,12 +5,12 @@ use sea_orm::entity::prelude::*;
 pub enum MpaaRating {
     #[sea_orm(string_value = "G")]
     G,
-    #[sea_orm(string_value = "NC-17")]
-    Nc17,
     #[sea_orm(string_value = "PG")]
     Pg,
     #[sea_orm(string_value = "PG-13")]
     Pg13,
     #[sea_orm(string_value = "R")]
     R,
+    #[sea_orm(string_value = "NC-17")]
+    Nc17,
 }

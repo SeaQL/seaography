@@ -40,8 +40,14 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
 pub enum RelatedEntity {
-    #[sea_orm(entity = "super::address::Entity")]
+    #[sea_orm(
+        entity = "super::address::Entity",
+        active_model = "super::address::ActiveModel"
+    )]
     Address,
-    #[sea_orm(entity = "super::country::Entity")]
+    #[sea_orm(
+        entity = "super::country::Entity",
+        active_model = "super::country::ActiveModel"
+    )]
     Country,
 }

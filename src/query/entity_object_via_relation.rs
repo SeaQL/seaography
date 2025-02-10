@@ -1,18 +1,19 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
+    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef, ValueAccessor},
     Error,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden,
+    IntoActiveModel, ModelTrait, QueryFilter, Related,
 };
 
 use crate::{
-    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, BuilderContext,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder,
+    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions,
+    prepare_active_model, BuilderContext, ConnectionObjectBuilder, EntityInputBuilder,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex,
+    OneToManyLoader, OneToOneLoader, OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
@@ -221,6 +222,108 @@ impl EntityObjectViaRelationBuilder {
                     &context.entity_query_field.pagination,
                     TypeRef::named(&context.pagination_input.type_name),
                 )),
+        }
+    }
+    pub fn get_relation_input<T, R>(&self, name: &str) -> InputValue
+    where
+        T: Related<R>,
+        T: EntityTrait,
+        R: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+        <R as sea_orm::EntityTrait>::Model: Sync,
+        <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+        <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+    {
+        let name = if cfg!(feature = "field-snake-case") {
+            name.to_snake_case()
+        } else {
+            name.to_lower_camel_case()
+        };
+        let context: &'static BuilderContext = self.context;
+
+        let entity_object_builder = EntityObjectBuilder { context };
+        let via_relation_definition = match <T as Related<R>>::via() {
+            Some(def) => def,
+            None => <T as Related<R>>::to(),
+        };
+
+        let insert_ty = format!("{}InsertInput", entity_object_builder.type_name::<R>());
+        match (
+            via_relation_definition.is_owner,
+            via_relation_definition.rel_type,
+        ) {
+            (true, sea_orm::RelationType::HasMany) => {
+                InputValue::new(name.clone(), TypeRef::named_nn_list(insert_ty))
+            }
+            _ => InputValue::new(name.clone(), TypeRef::named(insert_ty)),
+        }
+    }
+    pub fn insert_related<T, A, R, B>(
+        &self,
+        input_object: &ValueAccessor<'_>,
+        owner: bool,
+    ) -> async_graphql::Result<Option<Vec<B>>>
+    where
+        T: Related<R>,
+        T: EntityTrait,
+        R: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+        <R as sea_orm::EntityTrait>::Model: Sync,
+        <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+        <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
+        <T as EntityTrait>::Model: IntoActiveModel<A>,
+        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        <R as EntityTrait>::Model: IntoActiveModel<B>,
+        B: ActiveModelTrait<Entity = R> + sea_orm::ActiveModelBehavior + std::marker::Send,
+    {
+        let context = self.context;
+        let entity_object_builder = EntityObjectBuilder { context };
+        let entity_input_builder = EntityInputBuilder { context };
+
+        let via_relation_definition = match <T as Related<R>>::via() {
+            Some(def) => def,
+            None => <T as Related<R>>::to(),
+        };
+        if owner == via_relation_definition.is_owner {
+            Ok(None)
+        } else {
+            match (
+                via_relation_definition.is_owner,
+                via_relation_definition.rel_type,
+            ) {
+                (true, sea_orm::RelationType::HasMany) => {
+                    if let Ok(objs) = input_object.list() {
+                        objs.iter()
+                            .map(|val| {
+                                if let Ok(obj) = val.object() {
+                                    let active_model = prepare_active_model::<R, B>(
+                                        &entity_input_builder,
+                                        &entity_object_builder,
+                                        &obj,
+                                    )?;
+                                    Ok(Some(active_model))
+                                } else {
+                                    Err(async_graphql::Error::new("Invalid Input"))
+                                }
+                            })
+                            .collect()
+                    } else {
+                        Err(async_graphql::Error::new("Invalid Input"))
+                    }
+                }
+                _ => {
+                    if let Ok(obj) = input_object.object() {
+                        let active_model = prepare_active_model::<R, B>(
+                            &entity_input_builder,
+                            &entity_object_builder,
+                            &obj,
+                        )?;
+                        Ok(Some(vec![active_model]))
+                    } else {
+                        Err(async_graphql::Error::new("Invalid Input"))
+                    }
+                }
+            }
         }
     }
 }

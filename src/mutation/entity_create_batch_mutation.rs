@@ -5,7 +5,7 @@ use sea_orm::{
 
 use crate::{
     prepare_active_model, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, GuardAction,
+    EntityQueryFieldBuilder, GuardAction, RelationBuilder,
 };
 
 /// The configuration structure of EntityCreateBatchMutationBuilder
@@ -55,12 +55,15 @@ impl EntityCreateBatchMutationBuilder {
     }
 
     /// used to get the create mutation field for a SeaORM entity
-    pub fn to_field<T, A>(&self) -> Field
+    pub fn to_field<T, A, I>(&self, related_entities_iter: I) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
         A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        I: IntoIterator + Clone + Send + Sync + 'static,
+        <I as IntoIterator>::Item: RelationBuilder + Send,
+        <I as IntoIterator>::IntoIter: Send,
     {
         let entity_input_builder = EntityInputBuilder {
             context: self.context,
@@ -77,8 +80,9 @@ impl EntityCreateBatchMutationBuilder {
 
         Field::new(
             self.type_name::<T>(),
-            TypeRef::named_nn_list_nn(entity_object_builder.basic_type_name::<T>()),
+            TypeRef::named_nn_list_nn(entity_object_builder.type_name::<T>()),
             move |ctx| {
+                let related_entities_iter = related_entities_iter.clone();
                 FieldFuture::new(async move {
                     let guard_flag = if let Some(guard) = guard {
                         (*guard)(&ctx)
@@ -135,12 +139,22 @@ impl EntityCreateBatchMutationBuilder {
                             }
                         }
 
+                        for related_entity in related_entities_iter.clone() {
+                            related_entity
+                                .insert_related(context, input_object, &transaction, true)
+                                .await?;
+                        }
                         let active_model = prepare_active_model::<T, A>(
                             &entity_input_builder,
                             &entity_object_builder,
                             input_object,
                         )?;
                         let result = active_model.insert(&transaction).await?;
+                        for related_entity in related_entities_iter.clone() {
+                            related_entity
+                                .insert_related(context, input_object, &transaction, false)
+                                .await?;
+                        }
                         results.push(result);
                     }
 

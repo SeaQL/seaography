@@ -89,18 +89,41 @@ impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
 pub enum RelatedEntity {
-    #[sea_orm(entity = "super::film_actor::Entity")]
+    #[sea_orm(
+        entity = "super::film_actor::Entity",
+        active_model = "super::film_actor::ActiveModel"
+    )]
     FilmActor,
-    #[sea_orm(entity = "super::film_category::Entity")]
+    #[sea_orm(
+        entity = "super::film_category::Entity",
+        active_model = "super::film_category::ActiveModel"
+    )]
     FilmCategory,
-    #[sea_orm(entity = "super::inventory::Entity")]
+    #[sea_orm(
+        entity = "super::inventory::Entity",
+        active_model = "super::inventory::ActiveModel"
+    )]
     Inventory,
-    #[sea_orm(entity = "super::language::Entity", def = "Relation::Language2.def()")]
+    #[sea_orm(
+        entity = "super::language::Entity",
+        active_model = "super::language::ActiveModel",
+        def = "Relation::Language2.def()"
+    )]
     Language2,
-    #[sea_orm(entity = "super::language::Entity", def = "Relation::Language1.def()")]
+    #[sea_orm(
+        entity = "super::language::Entity",
+        active_model = "super::language::ActiveModel",
+        def = "Relation::Language1.def()"
+    )]
     Language1,
-    #[sea_orm(entity = "super::actor::Entity")]
+    #[sea_orm(
+        entity = "super::actor::Entity",
+        active_model = "super::actor::ActiveModel"
+    )]
     Actor,
-    #[sea_orm(entity = "super::category::Entity")]
+    #[sea_orm(
+        entity = "super::category::Entity",
+        active_model = "super::category::ActiveModel"
+    )]
     Category,
 }
