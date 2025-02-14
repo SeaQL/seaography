@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.1.4 - 2025-02-14
+
+### New Features
+
+- Added a new GraphQL query, `_sea_orm_entity_metadata`, to query SeaORM schema metadata https://github.com/SeaQL/seaography/pull/185
+
 ## 1.1.3 - 2025-01-10
 
 ### New Features
