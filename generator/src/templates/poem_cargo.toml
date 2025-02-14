@@ -7,7 +7,7 @@ version = "0.1.0"
 poem = { version = "3.0" }
 async-graphql-poem = { version = "7.0" }
 dotenv = "0.15.0"
-sea-orm = { version = "~1.1.4", features = ["<seaography-sql-library>", "runtime-async-std-native-tls", "seaography"] }
+sea-orm = { version = "~1.1.5", features = ["<seaography-sql-library>", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }

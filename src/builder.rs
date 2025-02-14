@@ -2,7 +2,7 @@ use async_graphql::{
     dataloader::DataLoader,
     dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
 };
-use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
+use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
@@ -37,6 +37,9 @@ pub struct Builder {
     /// holds all entities mutations
     pub mutations: Vec<Field>,
 
+    /// holds all entities metadata
+    pub metadata: std::collections::HashMap<String, serde_json::Value>,
+
     /// holds a copy to the database connection
     pub connection: sea_orm::DatabaseConnection,
 
@@ -70,6 +73,7 @@ impl Builder {
             enumerations: Vec::new(),
             queries: Vec::new(),
             mutations: Vec::new(),
+            metadata: Default::default(),
             connection,
             context,
             depth: None,
@@ -119,6 +123,10 @@ impl Builder {
         };
         let query = entity_query_field_builder.to_field::<T>();
         self.queries.push(query);
+
+        let schema = sea_orm::Schema::new(self.connection.get_database_backend());
+        let metadata = schema.json_schema_from_entity(T::default());
+        self.metadata.insert(T::default().to_string(), metadata);
     }
 
     pub fn register_entity_mutations<T, A>(&mut self)
@@ -248,6 +256,32 @@ impl Builder {
             .queries
             .into_iter()
             .fold(query, |query, field| query.field(field));
+
+        const TABLE_NAME: &str = "table_name";
+        let field = Field::new(
+            "_sea_orm_entity_metadata",
+            TypeRef::named("String"),
+            move |ctx| {
+                let metadata_hashmap = self.metadata.clone();
+                FieldFuture::new(async move {
+                    let table_name = ctx
+                        .args
+                        .get(TABLE_NAME)
+                        .expect("table_name is required")
+                        .string()?;
+                    if let Some(metadata) = metadata_hashmap.get(table_name) {
+                        Ok(Some(async_graphql::Value::from_json(metadata.to_owned())?))
+                    } else {
+                        Ok(None)
+                    }
+                })
+            },
+        )
+        .argument(async_graphql::dynamic::InputValue::new(
+            TABLE_NAME,
+            TypeRef::named_nn(TypeRef::STRING),
+        ));
+        let query = query.field(field);
 
         // register mutations
         let mutation = self
