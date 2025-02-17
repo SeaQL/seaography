@@ -1,20 +1,20 @@
 [package]
 edition = "2021"
 name = "seaography-mysql-example"
-version = "1.1.3"
+version = "1.1.4"
 
 [dependencies]
 axum = { version = "0.7" }
 async-graphql-axum = { version = "7.0" }
 dotenv = "0.15.0"
-sea-orm = { version = "~1.1.4", features = ["sqlx-mysql", "runtime-async-std-native-tls", "seaography"] }
+sea-orm = { version = "~1.1.5", features = ["sqlx-mysql", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
 
 [dependencies.seaography]
 path = "../../"
-version = "~1.1.3" # seaography version
+version = "~1.1.4" # seaography version
 features = ["with-decimal", "with-chrono"]
 
 [dev-dependencies]
