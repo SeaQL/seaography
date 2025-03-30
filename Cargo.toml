@@ -28,6 +28,7 @@ serde_json = { version = "1.0" }
 [features]
 default = ["field-camel-case"]
 with-json = ["sea-orm/with-json"]
+with-json-as-scalar = ["with-json"]
 with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
 with-time = ["sea-orm/with-time", "async-graphql/time"]
 with-uuid = ["sea-orm/with-uuid"]

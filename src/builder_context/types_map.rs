@@ -23,6 +23,10 @@ pub struct TypesMapConfig {
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
     pub decimal_library: DecimalLibrary,
+
+    #[cfg(feature = "with-json-as-scalar")]
+    /// used to expose Json as a Scalar
+    pub json_name: String,
 }
 
 impl std::default::Default for TypesMapConfig {
@@ -45,6 +49,9 @@ impl std::default::Default for TypesMapConfig {
             decimal_library: DecimalLibrary::Decimal,
             #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
             decimal_library: DecimalLibrary::BigDecimal,
+
+            #[cfg(feature = "with-json-as-scalar")]
+            json_name: "Json".to_owned(),
         }
     }
 }
@@ -159,14 +166,9 @@ impl TypesMapHelper {
             ColumnType::Boolean => ConvertedType::Bool,
 
             #[cfg(not(feature = "with-json"))]
-            ColumnType::Json => ConvertedType::String,
+            ColumnType::Json | ColumnType::JsonBinary => ConvertedType::String,
             #[cfg(feature = "with-json")]
-            ColumnType::Json => ConvertedType::Json,
-
-            // FIXME: how should we map them JsonBinary type ?
-            // #[cfg(feature = "with-json")]
-            // ColumnType::JsonBinary => ConvertedType::Json,
-            ColumnType::JsonBinary => ConvertedType::String,
+            ColumnType::Json | ColumnType::JsonBinary => ConvertedType::Json,
 
             #[cfg(not(feature = "with-uuid"))]
             ColumnType::Uuid => ConvertedType::String,
@@ -280,7 +282,12 @@ impl TypesMapHelper {
                 | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
                 // FIXME: support json type
+                #[cfg(not(feature = "with-json-as-scalar"))]
                 ColumnType::Json | ColumnType::JsonBinary => None,
+                #[cfg(feature = "with-json-as-scalar")]
+                ColumnType::Json | ColumnType::JsonBinary => {
+                    Some(TypeRef::named(&self.context.types.json_name))
+                }
                 ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Enum {
                     name: enum_name,
@@ -576,16 +583,18 @@ pub fn converted_value_to_sea_orm_value(
         ConvertedType::Json if is_null => sea_orm::Value::Json(None),
         #[cfg(feature = "with-json")]
         ConvertedType::Json => {
-            use std::str::FromStr;
+            #[cfg(not(feature = "with-json-as-scalar"))]
+            let value = sea_orm::entity::prelude::Json::from_str(value.string()?);
 
-            let value = sea_orm::entity::prelude::Json::from_str(value.string()?).map_err(|e| {
+            #[cfg(feature = "with-json-as-scalar")]
+            let value = value.deserialize();
+
+            sea_orm::Value::Json(Some(Box::new(value.map_err(|err| {
                 crate::SeaographyError::TypeConversionError(
-                    e.to_string(),
+                    format!("{err:?}"),
                     format!("Json - {}.{}", entity_name, column_name),
                 )
-            })?;
-
-            sea_orm::Value::Json(Some(Box::new(value)))
+            })?)))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate if is_null => sea_orm::Value::ChronoDate(None),
