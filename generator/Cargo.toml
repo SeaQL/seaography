@@ -1,8 +1,8 @@
 [package]
 name = "seaography-generator"
 version = "1.1.4"
-edition = "2021"
-rust-version = "1.70"
+edition = "2024"
+rust-version = "1.85.0"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
 description = "🧭 A GraphQL framework and code generator for SeaORM"
 license = "MIT OR Apache-2.0"

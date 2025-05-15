@@ -1,5 +1,6 @@
 [package]
-edition = "2021"
+edition = "2024"
+rust-version = "1.85.0"
 name = "seaography-postgres-example"
 version = "1.1.4"
 
