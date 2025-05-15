@@ -1,7 +1,7 @@
 use async_graphql::{
+    Error,
     dataloader::DataLoader,
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
-    Error,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
@@ -9,10 +9,10 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, BuilderContext,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
+    BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
     HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder,
+    PaginationInputBuilder, apply_memory_pagination, apply_order, apply_pagination,
+    get_filter_conditions,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait

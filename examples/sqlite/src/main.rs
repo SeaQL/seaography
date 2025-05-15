@@ -1,7 +1,7 @@
-use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
+use actix_web::{App, HttpResponse, HttpServer, Result, guard, web, web::Data};
 use async_graphql::{
     dynamic::*,
-    http::{playground_source, GraphQLPlaygroundConfig},
+    http::{GraphQLPlaygroundConfig, playground_source},
 };
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;

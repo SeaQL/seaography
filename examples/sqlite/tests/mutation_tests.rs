@@ -1,4 +1,4 @@
-use async_graphql::{dynamic::*, Response};
+use async_graphql::{Response, dynamic::*};
 use sea_orm::Database;
 use seaography::async_graphql;
 

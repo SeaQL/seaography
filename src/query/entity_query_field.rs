@@ -1,14 +1,14 @@
 use async_graphql::{
-    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
     Error,
+    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
-    EntityObjectBuilder, FilterInputBuilder, GuardAction, OrderInputBuilder,
-    PaginationInputBuilder,
+    BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
+    OrderInputBuilder, PaginationInputBuilder, apply_order, apply_pagination,
+    get_filter_conditions,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
