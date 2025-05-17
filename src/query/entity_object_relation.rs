@@ -1,16 +1,15 @@
 use async_graphql::{
+    Error,
     dataloader::DataLoader,
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
-    Error,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{EntityTrait, Iden, ModelTrait, RelationDef};
 
 use crate::{
-    apply_memory_pagination, get_filter_conditions, BuilderContext, Connection,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder,
+    BuilderContext, Connection, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder,
+    GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
+    PaginationInputBuilder, apply_memory_pagination, get_filter_conditions,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship

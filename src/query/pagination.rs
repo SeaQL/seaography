@@ -7,8 +7,8 @@ use sea_orm::{
 };
 
 use crate::{
-    decode_cursor, encode_cursor, map_cursor_values, Connection, Edge, PageInfo, PaginationInfo,
-    PaginationInput,
+    Connection, Edge, PageInfo, PaginationInfo, PaginationInput, decode_cursor, encode_cursor,
+    map_cursor_values,
 };
 
 /// used to parse pagination input object and apply it to statement

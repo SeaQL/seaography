@@ -31,7 +31,7 @@ impl std::default::Default for EntityObjectConfig {
     }
 }
 
-use crate::{format_variant, BuilderContext, GuardAction, TypesMapHelper};
+use crate::{BuilderContext, GuardAction, TypesMapHelper, format_variant};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 pub struct EntityObjectBuilder {

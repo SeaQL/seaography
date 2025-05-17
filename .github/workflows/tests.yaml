@@ -10,12 +10,17 @@ name: tests
       - .github/ISSUE_TEMPLATE/**
     branches:
       - main
+      - 1.*.x
+      - 0.*.x
       - pr/**/ci
+      - ci-*
+
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}'
   cancel-in-progress: true
 env:
   CARGO_TERM_COLOR: always
+
 jobs:
   check:
     name: Check

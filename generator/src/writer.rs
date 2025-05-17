@@ -4,9 +4,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::{
-    parser::{parse_entity, parse_enumerations, EntityDefinition},
-    util::add_line_break,
     WebFrameworkEnum,
+    parser::{EntityDefinition, parse_entity, parse_enumerations},
+    util::add_line_break,
 };
 
 pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {

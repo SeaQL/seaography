@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
-use async_graphql::{dynamic::*, Response};
+use async_graphql::{Response, dynamic::*};
 use sea_orm::{Database, DatabaseConnection};
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext, FnGuard, GuardsConfig};
+use seaography::{Builder, BuilderContext, FnGuard, GuardsConfig, async_graphql, lazy_static};
 use seaography_sqlite_example::entities::*;
 
 lazy_static::lazy_static! {

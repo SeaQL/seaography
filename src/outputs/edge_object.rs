@@ -1,5 +1,5 @@
-use async_graphql::dynamic::{Field, FieldFuture, FieldValue, Object, TypeRef};
 use async_graphql::Value;
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, Object, TypeRef};
 use sea_orm::EntityTrait;
 
 use crate::{BuilderContext, EntityObjectBuilder};

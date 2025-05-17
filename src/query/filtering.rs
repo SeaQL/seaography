@@ -65,7 +65,7 @@ where
         condition
     };
 
-    let condition = if let Some(or) = filters.get("or") {
+    if let Some(or) = filters.get("or") {
         let filters = or.list().unwrap();
 
         condition.add(
@@ -78,7 +78,5 @@ where
         )
     } else {
         condition
-    };
-
-    condition
+    }
 }
