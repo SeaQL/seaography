@@ -549,7 +549,7 @@ pub fn converted_value_to_sea_orm_value(
         }
         ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
             let value = value.string()?;
-            sea_orm::Value::String(Some(Box::new(value.to_string())))
+            sea_orm::Value::String(Some(value.to_string()))
         }
         ConvertedType::Char => {
             let value = value.string()?;
@@ -561,7 +561,7 @@ pub fn converted_value_to_sea_orm_value(
         }
         ConvertedType::Bytes => {
             let value = decode_hex(value.string()?)?;
-            sea_orm::Value::Bytes(Some(Box::new(value)))
+            sea_orm::Value::Bytes(Some(value))
         }
         #[cfg(feature = "with-json")]
         ConvertedType::Json => {
@@ -575,7 +575,7 @@ pub fn converted_value_to_sea_orm_value(
                 })?,
                 Err(_) => value.deserialize()?,
             };
-            sea_orm::Value::Json(Some(Box::new(value)))
+            sea_orm::Value::Json(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate => {
@@ -588,7 +588,7 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoDate(Some(Box::new(value)))
+            sea_orm::Value::ChronoDate(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoTime => {
@@ -601,7 +601,7 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoTime(Some(Box::new(value)))
+            sea_orm::Value::ChronoTime(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTime => {
@@ -616,7 +616,7 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::ChronoDateTime(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTime(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeUtc => {
@@ -630,7 +630,7 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoDateTimeUtc(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTimeUtc(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeLocal => {
@@ -644,7 +644,7 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTimeLocal(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeWithTimeZone => {
@@ -662,12 +662,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::ChronoDateTimeWithTimeZone(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTimeWithTimeZone(Some(value))
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDate => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeDate::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATE,
@@ -679,12 +677,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeDate(Some(Box::new(value)))
+            sea_orm::Value::TimeDate(Some(value))
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeTime => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeTime::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_TIME,
@@ -696,12 +692,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeTime(Some(Box::new(value)))
+            sea_orm::Value::TimeTime(Some(value))
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTime => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeDateTime::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATETIME,
@@ -713,11 +707,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeDateTime(Some(Box::new(value)))
+            sea_orm::Value::TimeDateTime(Some(value))
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTimeWithTimeZone => {
-            use std::str::FromStr;
             let value = sea_orm::entity::prelude::TimeDateTimeWithTimeZone::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATETIME_TZ,
@@ -729,7 +722,7 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeDateTimeWithTimeZone(Some(Box::new(value)))
+            sea_orm::Value::TimeDateTimeWithTimeZone(Some(value))
         }
         #[cfg(feature = "with-uuid")]
         ConvertedType::Uuid => {
@@ -742,7 +735,7 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::Uuid(Some(Box::new(value)))
+            sea_orm::Value::Uuid(Some(value))
         }
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => {
@@ -756,7 +749,7 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::Decimal(Some(Box::new(value)))
+            sea_orm::Value::Decimal(Some(value))
         }
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => {
@@ -790,13 +783,13 @@ pub fn converted_value_to_sea_orm_value(
           // #[cfg(feature = "with-ipnetwork")]
           // ConvertedType::IpNetwork => {
           //     let value = value.string()?;
-          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          //     sea_orm::Value::String(Some(value.to_string()))
           // }
           // FIXME: support mac type
           // #[cfg(feature = "with-mac_address")]
           // ConvertedType::MacAddress => {
           //     let value = value.string()?;
-          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          //     sea_orm::Value::String(Some(value.to_string()))
           // }
     })
 }
