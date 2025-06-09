@@ -1,4 +1,4 @@
-use sea_orm::{sea_query::ValueTuple, Condition, ModelTrait, QueryFilter};
+use sea_orm::{sea_query::ValueTuple, Condition, ExprTrait, ModelTrait, QueryFilter};
 use std::{collections::HashMap, hash::Hash, marker::PhantomData, sync::Arc};
 
 use crate::apply_order;
@@ -118,8 +118,14 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         self.filters.eq(&other.filters)
-            && format!("{:?}", self.columns).eq(&format!("{:?}", other.columns))
-            && format!("{:?}", self.order_by).eq(&format!("{:?}", other.order_by))
+            && std::cmp::PartialEq::eq(
+                &format!("{:?}", self.columns),
+                &format!("{:?}", other.columns),
+            )
+            && std::cmp::PartialEq::eq(
+                &format!("{:?}", self.order_by),
+                &format!("{:?}", other.order_by),
+            )
     }
 }
 
@@ -146,7 +152,7 @@ where
     T: sea_orm::EntityTrait,
 {
     fn eq(&self, other: &Self) -> bool {
-        format!("{:?}", self.0).eq(&format!("{:?}", other.0))
+        std::cmp::PartialEq::eq(&format!("{:?}", self.0), &format!("{:?}", other.0))
     }
 }
 
