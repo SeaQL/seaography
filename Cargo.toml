@@ -39,6 +39,6 @@ with-postgres-array = ["sea-orm/postgres-array"]
 field-snake-case = []
 field-camel-case = []
 
-# [patch.crates-io]
-# sea-orm = { git = "https://github.com/SeaQL/sea-orm" }
-# sea-orm-migration = { git = "https://github.com/SeaQL/sea-orm" }
+[patch.crates-io]
+sea-orm = { git = "https://github.com/SeaQL/sea-orm", branch = "master" }
+sea-orm-migration = { git = "https://github.com/SeaQL/sea-orm", branch = "master" }
