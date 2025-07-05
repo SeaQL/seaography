@@ -37,6 +37,7 @@
 //!
 //! |                        Seaography                        |                         SeaORM                        |
 //! |----------------------------------------------------------|-------------------------------------------------------|
+//! | [2.0](https://crates.io/crates/seaography/2.0.0-rc)      | [2.0](https://crates.io/crates/sea-orm/2.0.0-rc)      |
 //! | [1.1](https://crates.io/crates/seaography/1.1.4)         | [1.1](https://crates.io/crates/sea-orm/1.1.13)        |
 //!
 //! ## Quick start - ready to serve in 3 minutes!
