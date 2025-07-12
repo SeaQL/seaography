@@ -316,6 +316,15 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, cur| schema.register(cur));
 
+        #[cfg(feature = "with-json-as-scalar")]
+        let schema = schema.register(
+            async_graphql::dynamic::Scalar::new(&self.context.types.json_name)
+                .description("The `JSON` scalar type represents raw JSON values")
+                .specified_by_url(
+                    "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf",
+                ),
+        );
+
         let schema = schema
             .register(
                 OrderByEnumBuilder {
