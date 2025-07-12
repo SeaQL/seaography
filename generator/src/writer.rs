@@ -3,11 +3,7 @@ use std::path::Path;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::{
-    parser::{parse_entity, parse_enumerations, EntityDefinition},
-    util::add_line_break,
-    WebFrameworkEnum,
-};
+use crate::{util::add_line_break, WebFrameworkEnum};
 
 pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
     let mut entities_paths: Vec<_> = std::fs::read_dir(entities_path)
@@ -29,58 +25,6 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         .collect();
     entities_paths.sort();
 
-    let entities: Vec<EntityDefinition> = entities_paths
-        .into_iter()
-        .map(|path| {
-            let file_name = path.file_name().unwrap().to_str().unwrap();
-            parse_entity(file_name.into())
-        })
-        .collect();
-
-    let entities: Vec<TokenStream> = entities
-        .iter()
-        .map(|entity| {
-            let entity_path = &entity.name;
-
-            quote! {
-                #entity_path
-            }
-        })
-        .collect();
-
-    let enumerations = std::fs::read_dir(entities_path)
-        .unwrap()
-        .filter(|r| r.is_ok())
-        .map(|r| r.unwrap().path())
-        .find(|r| {
-            let name = r.file_stem();
-
-            if let Some(v) = name {
-                v.eq(std::ffi::OsStr::new("sea_orm_active_enums"))
-            } else {
-                false
-            }
-        });
-
-    let enumerations = match enumerations {
-        Some(_) => {
-            let file_content =
-                std::fs::read_to_string(entities_path.as_ref().join("sea_orm_active_enums.rs"))
-                    .unwrap();
-
-            parse_enumerations(file_content)
-        }
-        None => vec![],
-    };
-
-    let enumerations = enumerations.iter().map(|definition| {
-        let name = &definition.name;
-
-        quote! {
-            builder.register_enumeration::<crate::entities::sea_orm_active_enums::#name>();
-        }
-    });
-
     quote! {
         use crate::entities::*;
         use async_graphql::dynamic::*;
@@ -96,16 +40,10 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             depth: Option<usize>,
             complexity: Option<usize>,
         ) -> Result<Schema, SchemaError> {
-            let mut builder = Builder::new(&CONTEXT, database.clone());
+            let  builder = Builder::new(&CONTEXT, database.clone());
+            let  builder = register_entity_modules(builder);
+            let  builder = register_active_enums(builder);
 
-            seaography::register_entities!(
-                builder,
-                [
-                    #(#entities,)*
-                ]
-            );
-
-            #(#enumerations)*
 
             builder
                 .set_depth_limit(depth)
