@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "cli", "generator"]
+members = [".", "cli", "generator", "gql_macro"]
 
 [package]
 name = "seaography"
@@ -24,6 +24,7 @@ thiserror = { version = "1.0.44" }
 fnv = { version = "1.0.7" }
 lazy_static = { version = "1.5" }
 serde_json = { version = "1.0" }
+serde = { version = "1.0" }
 
 [features]
 default = ["field-camel-case"]

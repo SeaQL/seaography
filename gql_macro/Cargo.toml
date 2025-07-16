@@ -1,0 +1,18 @@
+[package]
+name = "gql-macro"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = { version = "1" }
+quote = { version = "1" }
+syn = { version = "2", features = ["full"] }
+
+[dev-dependencies]
+async-graphql = { version = "7", features = ["dynamic-schema"] }
+sea-orm = { version = "1" }
+seaography = { path = "../."}
+tokio = { version = "1", features = ["macros", "rt"] }

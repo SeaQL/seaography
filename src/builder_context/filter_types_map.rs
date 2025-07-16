@@ -30,6 +30,8 @@ pub struct FilterTypesMapConfig {
     pub boolean_filter_info: FilterInfo,
     // basic id filter
     pub id_filter_info: FilterInfo,
+    // basic id filter
+    pub json_filter_info: FilterInfo,
 }
 
 impl std::default::Default for FilterTypesMapConfig {
@@ -148,6 +150,24 @@ impl std::default::Default for FilterTypesMapConfig {
                     FilterOperation::NotBetween,
                 ]),
             },
+            json_filter_info: FilterInfo {
+                type_name: "JsonFilterInput".into(),
+                base_type: "JSON".into(),
+                supported_operations: BTreeSet::from([
+                    FilterOperation::Equals,
+                    FilterOperation::NotEquals,
+                    FilterOperation::GreaterThan,
+                    FilterOperation::GreaterThanEquals,
+                    FilterOperation::LessThan,
+                    FilterOperation::LessThanEquals,
+                    FilterOperation::IsIn,
+                    FilterOperation::IsNotIn,
+                    FilterOperation::IsNull,
+                    FilterOperation::IsNotNull,
+                    FilterOperation::Between,
+                    FilterOperation::NotBetween,
+                ]),
+            },
         }
     }
 }
@@ -215,7 +235,7 @@ impl FilterTypesMapHelper {
             ColumnType::Blob => None,
             ColumnType::Boolean => Some(FilterType::Boolean),
             ColumnType::Money(_) => Some(FilterType::Text),
-            ColumnType::Json => None,
+            ColumnType::Json => Some(FilterType::Json),
             ColumnType::JsonBinary => None,
             ColumnType::Uuid => Some(FilterType::Text),
             ColumnType::Custom(name) => Some(FilterType::Custom(name.to_string())),
@@ -282,6 +302,13 @@ impl FilterTypesMapHelper {
                 }
                 FilterType::Id => {
                     let info = &self.context.filter_types.id_filter_info;
+                    Some(InputValue::new(
+                        column_name,
+                        TypeRef::named(info.type_name.clone()),
+                    ))
+                }
+                FilterType::Json => {
+                    let info = &self.context.filter_types.json_filter_info;
                     Some(InputValue::new(
                         column_name,
                         TypeRef::named(info.type_name.clone()),
@@ -411,6 +438,7 @@ impl FilterTypesMapHelper {
                 FilterType::Float => &self.context.filter_types.float_filter_info,
                 FilterType::Boolean => &self.context.filter_types.boolean_filter_info,
                 FilterType::Id => &self.context.filter_types.id_filter_info,
+                FilterType::Json => &self.context.filter_types.json_filter_info,
                 FilterType::Enumeration(_) => {
                     return prepare_enumeration_condition::<T>(filter, column, condition)
                 }
@@ -618,6 +646,7 @@ pub enum FilterType {
     Float,
     Boolean,
     Id,
+    Json,
     Enumeration(String),
     Custom(String),
 }

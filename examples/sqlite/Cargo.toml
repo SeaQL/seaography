@@ -12,6 +12,9 @@ tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
 
+[dependencies.gql-macro]
+path = "../../gql_macro"
+
 [dependencies.seaography]
 path = "../../"
 version = "~1.1.4" # seaography version

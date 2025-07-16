@@ -1,4 +1,5 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
+use serde::{Deserialize, Serialize};
 
 use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBuilder};
 
@@ -6,7 +7,7 @@ use super::{CursorInput, OffsetInput, PageInput};
 
 /// used to hold information about which pagination
 /// strategy will be applied on the query
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct PaginationInput {
     pub cursor: Option<CursorInput>,
     pub page: Option<PageInput>,
