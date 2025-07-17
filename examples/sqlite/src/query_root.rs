@@ -48,10 +48,12 @@ use async_graphql::dynamic as gql_dyn;
 fn foo() -> gql_dyn::Field {
     gql_dyn::Field::new(
         "foo",
-        gql_dyn::TypeRef::named_nn(gql_dyn::TypeRef::STRING),
+        <String as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
         move |ctx| {
             FieldFuture::new(async move {
-                let username = ctx.args.try_get("username")?.string()?;
+                let username = <String as seaography::AsyncGqlValueType>::try_get_arg(
+                    &CONTEXT, &ctx, "username",
+                )?;
 
                 let result = format!("Hello, {}!", username);
                 Ok(Some(gql_dyn::FieldValue::value(result)))
@@ -60,18 +62,18 @@ fn foo() -> gql_dyn::Field {
     )
     .argument(gql_dyn::InputValue::new(
         "username",
-        gql_dyn::TypeRef::named_nn(gql_dyn::TypeRef::STRING),
+        <String as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
     ))
 }
 
 fn bar() -> gql_dyn::Field {
     gql_dyn::Field::new(
         "bar",
-        gql_dyn::TypeRef::named_nn(gql_dyn::TypeRef::INT),
+        <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
         move |ctx| {
             FieldFuture::new(async move {
-                let x = ctx.args.try_get("x")?.i64()?;
-                let y = ctx.args.try_get("y")?.i64()?;
+                let x = <i32 as seaography::AsyncGqlValueType>::try_get_arg(&CONTEXT, &ctx, "x")?;
+                let y = <i32 as seaography::AsyncGqlValueType>::try_get_arg(&CONTEXT, &ctx, "y")?;
 
                 let result = x + y;
                 Ok(Some(gql_dyn::FieldValue::value(result)))
@@ -80,18 +82,20 @@ fn bar() -> gql_dyn::Field {
     )
     .argument(gql_dyn::InputValue::new(
         "x",
-        gql_dyn::TypeRef::named_nn(gql_dyn::TypeRef::INT),
+        <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
     ))
     .argument(gql_dyn::InputValue::new(
         "y",
-        gql_dyn::TypeRef::named_nn(gql_dyn::TypeRef::INT),
+        <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
     ))
 }
 
 fn login() -> gql_dyn::Field {
     gql_dyn::Field::new(
         "login",
-        gql_dyn::TypeRef::named_nn("Customer"),
+        <seaography::SeaOrmModel<customer::Model> as seaography::AsyncGqlValueType>::gql_type_ref(
+            &CONTEXT,
+        ),
         move |ctx| {
             FieldFuture::new(async move {
                 use sea_orm::EntityTrait;
