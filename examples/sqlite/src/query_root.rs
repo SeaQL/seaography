@@ -44,7 +44,9 @@ pub fn schema(
 }
 
 use async_graphql::dynamic as gql_dyn;
+use seaography_macros::custom_mutation;
 
+/*
 fn foo() -> gql_dyn::Field {
     gql_dyn::Field::new(
         "foo",
@@ -65,7 +67,13 @@ fn foo() -> gql_dyn::Field {
         <String as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
     ))
 }
+*/
+#[custom_mutation]
+fn foo(username: String) -> String {
+    format!("Hello, {}!", username)
+}
 
+/*
 fn bar() -> gql_dyn::Field {
     gql_dyn::Field::new(
         "bar",
@@ -89,7 +97,13 @@ fn bar() -> gql_dyn::Field {
         <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
     ))
 }
+*/
+#[custom_mutation]
+fn bar(x: i32, y: i32) -> i32 {
+    x + y
+}
 
+/*
 fn login() -> gql_dyn::Field {
     gql_dyn::Field::new(
         "login",
@@ -107,4 +121,12 @@ fn login() -> gql_dyn::Field {
             })
         },
     )
+}
+*/
+#[custom_mutation]
+fn login() -> seaography::SeaOrmModel<customer::Model> {
+    use sea_orm::EntityTrait;
+
+    let repo = ctx.data::<DatabaseConnection>().unwrap();
+    customer::Entity::find().one(repo).await?.unwrap()
 }

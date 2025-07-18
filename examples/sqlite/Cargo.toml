@@ -11,6 +11,7 @@ sea-orm = { version = "~1.1.5", features = ["sqlx-sqlite", "runtime-async-std-ru
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
+seaography-macros = { path = "../../macros" }
 
 [dependencies.seaography]
 path = "../../"
