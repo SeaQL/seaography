@@ -268,3 +268,6 @@ pub type ComplexNamingFn = Box<dyn Fn(&str, &str) -> String + Sync + Send>;
 
 pub use async_graphql;
 pub use lazy_static;
+
+#[cfg(feature = "macros")]
+pub use seaography_macros as macros;
