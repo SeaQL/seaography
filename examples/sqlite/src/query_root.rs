@@ -33,7 +33,7 @@ pub fn schema(
         ]
     );
 
-    builder.mutations.extend([foo(), bar(), login()]);
+    builder.mutations.extend([Foo::gql(), Bar::gql()]);
 
     builder
         .set_depth_limit(depth)
@@ -43,8 +43,8 @@ pub fn schema(
         .finish()
 }
 
-use async_graphql::dynamic as gql_dyn;
-use seaography_macros::custom_mutation;
+use async_graphql::Result as GqlResult;
+use seaography::macros::CustomMutation;
 
 /*
 fn foo() -> gql_dyn::Field {
@@ -68,9 +68,15 @@ fn foo() -> gql_dyn::Field {
     ))
 }
 */
-#[custom_mutation]
-fn foo(username: String) -> String {
-    format!("Hello, {}!", username)
+#[derive(CustomMutation)]
+struct Foo {
+    foo: fn(username: String) -> String,
+}
+
+impl Foo {
+    async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
+        Ok(format!("Hello, {}!", username))
+    }
 }
 
 /*
@@ -98,9 +104,15 @@ fn bar() -> gql_dyn::Field {
     ))
 }
 */
-#[custom_mutation]
-fn bar(x: i32, y: i32) -> i32 {
-    x + y
+#[derive(CustomMutation)]
+struct Bar {
+    bar: fn(x: i32, y: i32) -> i32,
+}
+
+impl Bar {
+    async fn bar(_ctx: &ResolverContext<'_>, x: i32, y: i32) -> GqlResult<i32> {
+        Ok(x + y)
+    }
 }
 
 /*
@@ -123,10 +135,15 @@ fn login() -> gql_dyn::Field {
     )
 }
 */
-#[custom_mutation]
-fn login() -> seaography::SeaOrmModel<customer::Model> {
-    use sea_orm::EntityTrait;
+// #[derive(CustomMutation)]
+struct Login {
+    login: fn() -> customer::Model,
+}
+impl Login {
+    async fn login(ctx: &ResolverContext<'_>) -> GqlResult<customer::Model> {
+        use sea_orm::EntityTrait;
 
-    let repo = ctx.data::<DatabaseConnection>().unwrap();
-    customer::Entity::find().one(repo).await?.unwrap()
+        let repo = ctx.data::<DatabaseConnection>().unwrap();
+        Ok(customer::Entity::find().one(repo).await?.unwrap())
+    }
 }
