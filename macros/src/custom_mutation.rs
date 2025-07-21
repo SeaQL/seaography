@@ -1,8 +1,7 @@
 use proc_macro2::{self, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    DataStruct, DeriveInput, Fields, FieldsNamed, Ident,  ReturnType, Type,
-     spanned::Spanned,
+    DataStruct, DeriveInput, Fields, FieldsNamed, Ident, ReturnType, Type, spanned::Spanned,
 };
 
 fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::TokenStream {
@@ -19,6 +18,23 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
             ReturnType::Type(_, ty) => {
                 if let Type::Path(type_path) = ty.as_ref() {
                     quote! { #type_path::gql_type_ref(&CONTEXT) }
+                } else {
+                    return quote_spanned! {
+                        func.span() => compile_error!("Unknown return type");
+                    };
+                }
+            }
+            _ => {
+                return quote_spanned! {
+                    func.span() => compile_error!("Please specify return type");
+                };
+            }
+        };
+
+        let new_field_return_value = match &func.output {
+            ReturnType::Type(_, ty) => {
+                if let Type::Path(type_path) = ty.as_ref() {
+                    quote! { Ok(Some(#type_path::gql_field_value(result))) }
                 } else {
                     return quote_spanned! {
                         func.span() => compile_error!("Unknown return type");
@@ -80,7 +96,7 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
 
                                 let result = #the_struct::#fn_name(&ctx, #(#call_args),*).await?;
 
-                                Ok(Some(seaography::async_graphql::dynamic::FieldValue::value(result)))
+                                #new_field_return_value
                             })
                         },
                     )

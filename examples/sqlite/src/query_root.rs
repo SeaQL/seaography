@@ -33,7 +33,9 @@ pub fn schema(
         ]
     );
 
-    builder.mutations.extend([Foo::gql(), Bar::gql()]);
+    builder
+        .mutations
+        .extend([Foo::gql(), Bar::gql(), Login::gql()]);
 
     builder
         .set_depth_limit(depth)
@@ -135,7 +137,7 @@ fn login() -> gql_dyn::Field {
     )
 }
 */
-// #[derive(CustomMutation)]
+#[derive(CustomMutation)]
 struct Login {
     login: fn() -> customer::Model,
 }

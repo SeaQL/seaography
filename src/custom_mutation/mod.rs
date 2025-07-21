@@ -12,6 +12,13 @@ pub trait AsyncGqlScalerValueType: Sized {
         ctx: &async_graphql::dynamic::ResolverContext<'_>,
         name: &str,
     ) -> SeaResult<Self>;
+
+    fn gql_field_value(value: Self) -> async_graphql::dynamic::FieldValue<'static>
+    where
+        async_graphql::Value: From<Self>,
+    {
+        async_graphql::dynamic::FieldValue::value(value)
+    }
 }
 
 pub trait AsyncGqlModelType: Sized {
@@ -22,6 +29,13 @@ pub trait AsyncGqlModelType: Sized {
         ctx: &async_graphql::dynamic::ResolverContext<'_>,
         name: &str,
     ) -> SeaResult<Self>;
+
+    fn gql_field_value(value: Self) -> async_graphql::dynamic::FieldValue<'static>
+    where
+        Self: Send + Sync + 'static,
+    {
+        async_graphql::dynamic::FieldValue::owned_any(value)
+    }
 }
 
 impl<T> AsyncGqlScalerValueType for T
