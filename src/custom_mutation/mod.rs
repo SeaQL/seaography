@@ -93,9 +93,9 @@ where
     }
 
     fn try_get_arg(
-        context: &'static BuilderContext,
-        ctx: &async_graphql::dynamic::ResolverContext<'_>,
-        name: &str,
+        _context: &'static BuilderContext,
+        _ctx: &async_graphql::dynamic::ResolverContext<'_>,
+        _name: &str,
     ) -> SeaResult<Self> {
         todo!()
     }

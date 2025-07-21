@@ -84,7 +84,7 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
 
         let expanded = quote! {
             impl #the_struct {
-                fn gql() -> seaography::async_graphql::dynamic::Field {
+                pub fn gql() -> seaography::async_graphql::dynamic::Field {
                     use seaography::{AsyncGqlScalerValueType, AsyncGqlModelType};
 
                     seaography::async_graphql::dynamic::Field::new(
@@ -120,7 +120,7 @@ pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
             ..
         }) => Ok(impl_mutation(ident, fields)),
         _ => Ok(quote_spanned! {
-            ident.span() => compile_error!("you can only derive DeriveIden on data struct");
+            ident.span() => compile_error!("you can only derive CustomMutation on data struct");
         }),
     }
 }

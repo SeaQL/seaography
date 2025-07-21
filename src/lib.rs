@@ -251,7 +251,7 @@ pub use query::*;
 pub mod mutation;
 pub use mutation::*;
 
-pub mod custom_mutation;
+mod custom_mutation;
 pub use custom_mutation::*;
 
 pub mod builder_context;
