@@ -35,7 +35,7 @@ pub fn schema(
         ]
     );
 
-    builder.mutations.extend(mutations::def());
+    builder.mutations.extend(mutations::Endpoints::gql());
 
     builder
         .set_depth_limit(depth)
