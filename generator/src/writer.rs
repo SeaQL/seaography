@@ -188,9 +188,9 @@ pub fn write_env<P: AsRef<std::path::Path>>(
     let complexity_limit = complexity_limit.map_or("".into(), |value| value.to_string());
 
     let tokens = [
-        format!(r#"DATABASE_URL="{}""#, db_url),
-        format!(r#"# COMPLEXITY_LIMIT={}"#, depth_limit),
-        format!(r#"# DEPTH_LIMIT={}"#, complexity_limit),
+        format!(r#"DATABASE_URL="{db_url}""#),
+        format!(r#"# COMPLEXITY_LIMIT={complexity_limit}"#),
+        format!(r#"# DEPTH_LIMIT={depth_limit}"#),
     ]
     .join("\n");
 
