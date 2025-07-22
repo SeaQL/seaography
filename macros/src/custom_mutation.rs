@@ -124,7 +124,7 @@ pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
             ..
         }) => Ok(impl_mutation(ident, fields)),
         _ => Ok(quote_spanned! {
-            ident.span() => compile_error!("you can only derive CustomMutation on data struct");
+            ident.span() => compile_error!("you can only derive CustomOperation on data struct");
         }),
     }
 }

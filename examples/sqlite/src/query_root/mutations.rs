@@ -1,7 +1,7 @@
 use super::*;
 use async_graphql::Result as GqlResult;
 use sea_orm::DbErr;
-use seaography::macros::CustomMutation;
+use seaography::macros::CustomOperation;
 
 /*
 
@@ -24,21 +24,21 @@ pub fn def() -> Vec<Field> {
 }
 
 #[allow(dead_code)]
-#[derive(CustomMutation)]
+#[derive(CustomOperation)]
 struct Foo {
     foo: fn(username: String) -> String,
     foo_hi: fn(username: String) -> String,
 }
 
 #[allow(dead_code)]
-#[derive(CustomMutation)]
+#[derive(CustomOperation)]
 struct Bar {
     bar: fn(x: i32, y: i32) -> i32,
     bar_sub: fn(x: i32, y: i32) -> i32,
 }
 
 #[allow(dead_code)]
-#[derive(CustomMutation)]
+#[derive(CustomOperation)]
 struct Login {
     login: fn() -> customer::Model,
     logout: fn(username: String) -> String,

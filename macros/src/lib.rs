@@ -6,7 +6,7 @@ use syn::{DeriveInput, parse_macro_input};
 
 mod custom_mutation;
 
-#[proc_macro_derive(CustomMutation, attributes(seaography))]
+#[proc_macro_derive(CustomOperation, attributes(seaography))]
 pub fn custom_mutation(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
 
