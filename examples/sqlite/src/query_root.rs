@@ -3,6 +3,8 @@ use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
 use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
+mod mutations;
+
 lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
 
 pub fn schema(
@@ -32,6 +34,9 @@ pub fn schema(
             store,
         ]
     );
+
+    builder.mutations.extend(mutations::Endpoints::gql());
+
     builder
         .set_depth_limit(depth)
         .set_complexity_limit(complexity)

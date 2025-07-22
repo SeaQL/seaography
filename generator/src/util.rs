@@ -11,7 +11,7 @@ pub(crate) fn add_line_break(content: proc_macro2::TokenStream) -> String {
                 let mut s = item.into_token_stream().to_string();
                 if !acc.is_empty() && no_line_break_in_between(&file_parsed.items[i - 1], item) {
                     let last = acc.swap_remove(acc.len() - 1);
-                    s = format!("{}{}", last, s);
+                    s = format!("{last}{s}");
                 }
                 acc.push(s);
                 acc

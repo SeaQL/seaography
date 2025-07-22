@@ -251,6 +251,9 @@ pub use query::*;
 pub mod mutation;
 pub use mutation::*;
 
+mod custom_operation;
+pub use custom_operation::*;
+
 pub mod builder_context;
 pub use builder_context::*;
 
@@ -265,3 +268,6 @@ pub type ComplexNamingFn = Box<dyn Fn(&str, &str) -> String + Sync + Send>;
 
 pub use async_graphql;
 pub use lazy_static;
+
+#[cfg(feature = "macros")]
+pub use seaography_macros as macros;
