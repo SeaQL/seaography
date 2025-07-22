@@ -16,37 +16,51 @@ mutation {
 }
 
 */
-pub fn def() -> [Field; 3] {
+pub fn def() -> Vec<Field> {
     [Foo::gql(), Bar::gql(), Login::gql()]
+        .into_iter()
+        .flatten()
+        .collect()
 }
 
+#[allow(dead_code)]
 #[derive(CustomMutation)]
 struct Foo {
-    #[allow(dead_code)]
     foo: fn(username: String) -> String,
+    foo_hi: fn(username: String) -> String,
 }
 
+#[allow(dead_code)]
 #[derive(CustomMutation)]
 struct Bar {
-    #[allow(dead_code)]
     bar: fn(x: i32, y: i32) -> i32,
+    bar_sub: fn(x: i32, y: i32) -> i32,
 }
 
+#[allow(dead_code)]
 #[derive(CustomMutation)]
 struct Login {
-    #[allow(dead_code)]
     login: fn() -> customer::Model,
+    logout: fn(username: String) -> String,
 }
 
 impl Foo {
     async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
         Ok(format!("Hello, {}!", username))
     }
+
+    async fn foo_hi(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
+        Ok(format!("Hi, {}!", username))
+    }
 }
 
 impl Bar {
     async fn bar(_ctx: &ResolverContext<'_>, x: i32, y: i32) -> GqlResult<i32> {
         Ok(x + y)
+    }
+
+    async fn bar_sub(_ctx: &ResolverContext<'_>, x: i32, y: i32) -> GqlResult<i32> {
+        Ok(x - y)
     }
 }
 
@@ -59,6 +73,10 @@ impl Login {
             .one(repo)
             .await?
             .ok_or_else(|| DbErr::RecordNotFound("Customer not found".to_owned()))?)
+    }
+
+    async fn logout(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
+        Ok(format!("Bye, {}!", username))
     }
 }
 

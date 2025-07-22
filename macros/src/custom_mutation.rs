@@ -5,6 +5,8 @@ use syn::{
 };
 
 fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::TokenStream {
+    let mut gql_fields = Vec::new();
+
     for field in fields.named {
         let fn_name = field.ident.as_ref().unwrap();
         let fn_name_str = fn_name.to_string();
@@ -82,33 +84,35 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
             }
         }
 
-        let expanded = quote! {
-            impl #the_struct {
-                pub fn gql() -> seaography::async_graphql::dynamic::Field {
-                    use seaography::{AsyncGqlScalerValueType, AsyncGqlModelType};
+        gql_fields.push(quote! {
+            seaography::async_graphql::dynamic::Field::new(
+                #fn_name_str,
+                #new_field_return_ty,
+                move |ctx| {
+                    seaography::async_graphql::dynamic::FieldFuture::new(async move {
+                        #(#resolve_args)*
 
-                    seaography::async_graphql::dynamic::Field::new(
-                        #fn_name_str,
-                        #new_field_return_ty,
-                        move |ctx| {
-                            seaography::async_graphql::dynamic::FieldFuture::new(async move {
-                                #(#resolve_args)*
+                        let result = #the_struct::#fn_name(&ctx, #(#call_args),*).await?;
 
-                                let result = #the_struct::#fn_name(&ctx, #(#call_args),*).await?;
-
-                                #new_field_return_value
-                            })
-                        },
-                    )
-                    #(#new_field_args)*
-                }
-            }
-        };
-        // println!("{expanded}");
-        return expanded;
+                        #new_field_return_value
+                    })
+                },
+            )
+            #(#new_field_args)*
+        });
     }
 
-    quote! {}
+    quote! {
+        impl #the_struct {
+            pub fn gql() -> std::vec::Vec<seaography::async_graphql::dynamic::Field> {
+                use seaography::{AsyncGqlScalerValueType, AsyncGqlModelType};
+
+                vec![
+                    #(#gql_fields),*
+                ]
+            }
+        }
+    }
 }
 
 pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
