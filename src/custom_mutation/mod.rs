@@ -4,7 +4,7 @@ use crate::{
 };
 use sea_orm::ModelTrait;
 
-pub trait AsyncGqlScalerValueType: Sized {
+pub trait AsyncGqlScalarValueType: Sized {
     fn gql_type_ref(ctx: &'static BuilderContext) -> async_graphql::dynamic::TypeRef;
 
     fn try_get_arg(
@@ -38,7 +38,7 @@ pub trait AsyncGqlModelType: Sized {
     }
 }
 
-impl<T> AsyncGqlScalerValueType for T
+impl<T> AsyncGqlScalarValueType for T
 where
     T: sea_orm::sea_query::ValueType,
 {
