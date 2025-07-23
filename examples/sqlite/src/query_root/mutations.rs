@@ -18,13 +18,13 @@ mutation {
 */
 #[allow(dead_code)]
 #[derive(CustomOperation)]
-pub struct Endpoints {
+pub struct Operations {
     foo: fn(username: String) -> String,
     bar: fn(x: i32, y: i32) -> i32,
     login: fn() -> customer::Model,
 }
 
-impl Endpoints {
+impl Operations {
     async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
         Ok(format!("Hello, {}!", username))
     }
