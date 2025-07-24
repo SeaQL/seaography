@@ -1,9 +1,9 @@
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+use async_graphql::http::{GraphQLPlaygroundConfig, playground_source};
 use async_graphql_axum::GraphQL;
 use axum::{
+    Router,
     response::{self, IntoResponse},
     routing::get,
-    Router,
 };
 use dotenv::dotenv;
 use sea_orm::Database;

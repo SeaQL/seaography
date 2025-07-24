@@ -4,8 +4,8 @@ use sea_orm::{
 };
 
 use crate::{
-    prepare_active_model, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, GuardAction,
+    BuilderContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction,
+    prepare_active_model,
 };
 
 /// The configuration structure of EntityCreateBatchMutationBuilder
