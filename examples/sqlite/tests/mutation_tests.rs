@@ -603,3 +603,26 @@ async fn test_delete_mutation() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn crud_guard() {
+    let schema = get_schema().await;
+
+    let response = schema
+        .execute(
+            r#"
+            mutation cl {
+                languageCreateOne(data: { languageId: 1000, name: "some", lastUpdate: "2030-01-01 11:11:11 UTC" }) {
+                    languageId
+                    name
+                    lastUpdate
+                }
+            }
+        "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(response.errors[0].message, "Entity guard triggered.");
+}

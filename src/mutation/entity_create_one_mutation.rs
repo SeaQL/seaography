@@ -1,3 +1,4 @@
+
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{
     ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Iterable,
@@ -73,6 +74,7 @@ impl EntityCreateOneMutationBuilder {
 
         let object_name: String = entity_object_builder.type_name::<T>();
         let guard = self.context.guards.entity_guards.get(&object_name);
+        let create_guard = self.context.guards.entity_guards.get(&format!("{}:create", object_name));
         let field_guards = &self.context.guards.field_guards;
 
         Field::new(
@@ -96,10 +98,27 @@ impl EntityCreateOneMutationBuilder {
                             ),
                         };
                     }
+                    let create_guard_flag = if let Some(guard) = create_guard {
+                        (*guard)(&ctx)
+                    } else {
+                        GuardAction::Allow
+                    };
+
+                    if let GuardAction::Block(reason) = create_guard_flag {
+                        return match reason {
+                            Some(reason) => Err::<Option<_>, async_graphql::Error>(
+                                async_graphql::Error::new(reason),
+                            ),
+                            None => Err::<Option<_>, async_graphql::Error>(
+                                async_graphql::Error::new("Entity guard triggered."),
+                            ),
+                        };
+                    }
 
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
                     let db = ctx.data::<DatabaseConnection>()?;
+
                     let value_accessor = ctx
                         .args
                         .get(&context.entity_create_one_mutation.data_field)

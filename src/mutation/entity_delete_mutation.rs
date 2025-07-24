@@ -74,6 +74,7 @@ impl EntityDeleteMutationBuilder {
         let context = self.context;
 
         let guard = self.context.guards.entity_guards.get(&object_name);
+        let delete_guard = self.context.guards.entity_guards.get(&format!("{}:delete", object_name));
 
         Field::new(
             self.type_name::<T>(),
@@ -81,6 +82,18 @@ impl EntityDeleteMutationBuilder {
             move |ctx| {
                 FieldFuture::new(async move {
                     let guard_flag = if let Some(guard) = guard {
+                        (*guard)(&ctx)
+                    } else {
+                        GuardAction::Allow
+                    };
+
+                    if let GuardAction::Block(reason) = guard_flag {
+                        return Err::<Option<_>, async_graphql::Error>(async_graphql::Error::new(
+                            reason.unwrap_or("Entity guard triggered.".into()),
+                        ));
+                    }
+
+                    let guard_flag = if let Some(guard) = delete_guard {
                         (*guard)(&ctx)
                     } else {
                         GuardAction::Allow
