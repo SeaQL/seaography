@@ -104,8 +104,8 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
 
     quote! {
         impl #the_struct {
-            pub fn gql() -> std::vec::Vec<seaography::async_graphql::dynamic::Field> {
-                use seaography::{AsyncGqlScalarValueType, AsyncGqlModelType};
+            pub fn to_fields() -> std::vec::Vec<seaography::async_graphql::dynamic::Field> {
+                use seaography::{GqlScalarValueType, GqlModelType};
 
                 vec![
                     #(#gql_fields),*

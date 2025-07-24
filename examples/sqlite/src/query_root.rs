@@ -4,6 +4,7 @@ use sea_orm::DatabaseConnection;
 use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
 mod mutations;
+mod queries;
 
 lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
 
@@ -35,7 +36,9 @@ pub fn schema(
         ]
     );
 
-    builder.mutations.extend(mutations::Endpoints::gql());
+    builder.queries.extend(queries::Operations::to_fields());
+
+    builder.mutations.extend(mutations::Operations::to_fields());
 
     builder
         .set_depth_limit(depth)

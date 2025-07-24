@@ -1,52 +1,50 @@
 use crate::{
-    converted_value_to_sea_orm_value, BuilderContext, EntityObjectBuilder, SeaResult,
-    TypesMapHelper,
+    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityObjectBuilder,
+    PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
-use sea_orm::ModelTrait;
+use async_graphql::dynamic::{FieldValue, ResolverContext, TypeRef};
+use sea_orm::{EntityTrait, ModelTrait};
 
-pub trait AsyncGqlScalarValueType: Sized {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> async_graphql::dynamic::TypeRef;
+pub trait GqlScalarValueType: Sized {
+    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 
     fn try_get_arg(
         context: &'static BuilderContext,
-        ctx: &async_graphql::dynamic::ResolverContext<'_>,
+        ctx: &ResolverContext<'_>,
         name: &str,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> async_graphql::dynamic::FieldValue<'static>
+    fn gql_field_value(value: Self) -> FieldValue<'static>
     where
         async_graphql::Value: From<Self>,
     {
-        async_graphql::dynamic::FieldValue::value(value)
+        FieldValue::value(value)
     }
 }
 
-pub trait AsyncGqlModelType: Sized {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> async_graphql::dynamic::TypeRef;
+pub trait GqlModelType: Sized + Send + Sync + 'static {
+    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 
     fn try_get_arg(
         context: &'static BuilderContext,
-        ctx: &async_graphql::dynamic::ResolverContext<'_>,
+        ctx: &ResolverContext<'_>,
         name: &str,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> async_graphql::dynamic::FieldValue<'static>
-    where
-        Self: Send + Sync + 'static,
-    {
-        async_graphql::dynamic::FieldValue::owned_any(value)
+    fn gql_field_value(value: Self) -> FieldValue<'static> {
+        FieldValue::owned_any(value)
     }
 }
 
-impl<T> AsyncGqlScalarValueType for T
+impl<T> GqlScalarValueType for T
 where
     T: sea_orm::sea_query::ValueType,
 {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> async_graphql::dynamic::TypeRef {
+    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
         let ty = T::column_type();
         let not_null = true;
         let enum_type_name = T::enum_type_name();
-        let types_map_helper = TypesMapHelper { context: ctx };
+        let types_map_helper = TypesMapHelper { context };
         match types_map_helper.sea_orm_column_type_to_graphql_type(&ty, not_null, enum_type_name) {
             Some(type_ref) => type_ref,
             None => unreachable!("{} is not handled", T::type_name()),
@@ -55,7 +53,7 @@ where
 
     fn try_get_arg(
         context: &'static BuilderContext,
-        ctx: &async_graphql::dynamic::ResolverContext<'_>,
+        ctx: &ResolverContext<'_>,
         name: &str,
     ) -> SeaResult<T> {
         let ty = T::column_type();
@@ -67,36 +65,62 @@ where
     }
 }
 
-/*
-impl<M> AsyncGqlValueType for M
+impl<M> GqlModelType for M
 where
-    M: sea_orm::ModelTrait,
-    <<M as ModelTrait>::Entity as sea_orm::EntityTrait>::Model: Sync,
+    M: ModelTrait + Sync + 'static,
+    <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
 {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> async_graphql::dynamic::TypeRef {
-        let entity_object_builder = EntityObjectBuilder { context: ctx };
+    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_object_builder = EntityObjectBuilder { context };
         let type_name = entity_object_builder.type_name::<M::Entity>();
-        async_graphql::dynamic::TypeRef::named_nn(type_name)
-    }
-}
-*/
-
-impl<M> AsyncGqlModelType for M
-where
-    M: sea_orm::ModelTrait,
-    <<M as ModelTrait>::Entity as sea_orm::EntityTrait>::Model: Sync,
-{
-    fn gql_type_ref(ctx: &'static BuilderContext) -> async_graphql::dynamic::TypeRef {
-        let entity_object_builder = EntityObjectBuilder { context: ctx };
-        let type_name = entity_object_builder.type_name::<M::Entity>();
-        async_graphql::dynamic::TypeRef::named_nn(type_name)
+        TypeRef::named_nn(type_name)
     }
 
     fn try_get_arg(
-        _context: &'static BuilderContext,
-        _ctx: &async_graphql::dynamic::ResolverContext<'_>,
+        context: &'static BuilderContext,
+        _ctx: &ResolverContext<'_>,
         _name: &str,
     ) -> SeaResult<Self> {
-        todo!()
+        let entity_object_builder = EntityObjectBuilder { context };
+        let object_name = entity_object_builder.type_name::<M::Entity>();
+        todo!("Not supporting complex type {object_name}")
+    }
+}
+
+impl<E> GqlModelType for Connection<E>
+where
+    E: EntityTrait,
+    E::Model: Send + Sync,
+{
+    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_object_builder = EntityObjectBuilder { context };
+        let entity_name = entity_object_builder.type_name::<E>();
+        let type_name = context.connection_object.type_name.as_ref()(&entity_name);
+        TypeRef::named_nn(type_name)
+    }
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        _ctx: &ResolverContext<'_>,
+        _name: &str,
+    ) -> SeaResult<Self> {
+        let entity_object_builder = EntityObjectBuilder { context };
+        let object_name = entity_object_builder.type_name::<E>();
+        todo!("Not supporting complex type {object_name}")
+    }
+}
+
+impl GqlModelType for PaginationInput {
+    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+        TypeRef::named(ctx.pagination_input.type_name.to_owned())
+    }
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        let pagination = ctx.args.get(name);
+        Ok(PaginationInputBuilder { context }.parse_object(pagination))
     }
 }
