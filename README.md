@@ -33,24 +33,20 @@
 * Rename fields
 * Mutations (create, update, delete)
 
-(Right now there is no mutation, but it's on our plan!)
-
 ## SeaORM Version Compatibility
 
 |                        Seaography                        |                         SeaORM                        |
 |----------------------------------------------------------|-------------------------------------------------------|
-| [1.1](https://crates.io/crates/seaography/1.1.1)         | [1.1](https://crates.io/crates/sea-orm/1.1.2)         |
-| [1.0](https://crates.io/crates/seaography/1.0.0)         | [1.0](https://crates.io/crates/sea-orm/1.0.0)         |
-| [0.12](https://crates.io/crates/seaography/0.12.0)       | [0.12](https://crates.io/crates/sea-orm/0.12.14)      |
-| [0.3](https://crates.io/crates/seaography/0.3.0)         | [0.10](https://crates.io/crates/sea-orm/0.10.7)       |
+| [2.0](https://crates.io/crates/seaography/2.0.0-rc)      | [2.0](https://crates.io/crates/sea-orm/2.0.0-rc)      |
+| [1.1](https://crates.io/crates/seaography/1.1.4)         | [1.1](https://crates.io/crates/sea-orm/1.1.13)        |
 
 ## Quick start - ready to serve in 3 minutes!
 
 ### Install
 
 ```sh
-cargo install sea-orm-cli@^1.0.0 # used to generate entities
-cargo install seaography-cli@^1.0.0
+cargo install sea-orm-cli@^1.1 # used to generate entities
+cargo install seaography-cli@^1.1
 ```
 
 ### MySQL

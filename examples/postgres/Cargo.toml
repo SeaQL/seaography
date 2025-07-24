@@ -2,20 +2,20 @@
 edition = "2024"
 rust-version = "1.85.0"
 name = "seaography-postgres-example"
-version = "1.1.4"
+version = "2.0.0-rc.1"
 
 [dependencies]
 poem = { version = "3.0" }
 async-graphql-poem = { version = "7.0" }
 dotenv = "0.15.0"
-sea-orm = { version = "~1.1.5", features = ["sqlx-postgres", "runtime-async-std-native-tls", "seaography"] }
+sea-orm = { version = "~2.0.0-rc", features = ["sqlx-postgres", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
 
 [dependencies.seaography]
 path = "../../"
-version = "~1.1.4" # seaography version
+version = "~2.0.0-rc.1" # seaography version
 features = ["with-decimal", "with-chrono", "with-postgres-array"]
 
 [dev-dependencies]
