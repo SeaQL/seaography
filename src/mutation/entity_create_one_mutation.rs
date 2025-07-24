@@ -5,7 +5,8 @@ use sea_orm::{
 };
 
 use crate::{
-    BuilderContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction,
+    apply_guard, guard_error, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
+    EntityQueryFieldBuilder, GuardAction,
 };
 
 /// The configuration structure of EntityCreateOneMutationBuilder
@@ -80,21 +81,8 @@ impl EntityCreateOneMutationBuilder {
             TypeRef::named_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => Err::<Option<_>, async_graphql::Error>(
-                                async_graphql::Error::new(reason),
-                            ),
-                            None => Err::<Option<_>, async_graphql::Error>(
-                                async_graphql::Error::new("Entity guard triggered."),
-                            ),
-                        };
+                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let entity_input_builder = EntityInputBuilder { context };
@@ -112,20 +100,8 @@ impl EntityCreateOneMutationBuilder {
                             entity_object_builder.type_name::<T>(),
                             column
                         ));
-                        let field_guard_flag = if let Some(field_guard) = field_guard {
-                            (*field_guard)(&ctx)
-                        } else {
-                            GuardAction::Allow
-                        };
-                        if let GuardAction::Block(reason) = field_guard_flag {
-                            return match reason {
-                                Some(reason) => Err::<Option<_>, async_graphql::Error>(
-                                    async_graphql::Error::new(reason),
-                                ),
-                                None => Err::<Option<_>, async_graphql::Error>(
-                                    async_graphql::Error::new("Field guard triggered."),
-                                ),
-                            };
+                        if let GuardAction::Block(reason) = apply_guard(field_guard, &ctx) {
+                            return Err(guard_error(reason, "Field guard triggered."));
                         }
                     }
 

@@ -1,7 +1,6 @@
 use async_graphql::{
     dataloader::DataLoader,
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
-    Error,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
@@ -9,9 +8,9 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, BuilderContext,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
+    apply_guard, apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions,
+    guard_error, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder,
+    GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
     PaginationInputBuilder,
 };
 
@@ -74,21 +73,8 @@ impl EntityObjectViaRelationBuilder {
         let field = match via_relation_definition.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => {
-                                Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                "Entity guard triggered.",
-                            )),
-                        };
+                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let parent: &T::Model = ctx
@@ -133,21 +119,8 @@ impl EntityObjectViaRelationBuilder {
                 move |ctx| {
                     let context: &'static BuilderContext = context;
                     FieldFuture::new(async move {
-                        let guard_flag = if let Some(guard) = guard {
-                            (*guard)(&ctx)
-                        } else {
-                            GuardAction::Allow
-                        };
-
-                        if let GuardAction::Block(reason) = guard_flag {
-                            return match reason {
-                                Some(reason) => {
-                                    Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                                }
-                                None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                    "Entity guard triggered.",
-                                )),
-                            };
+                        if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                            return Err(guard_error(reason, "Entity guard triggered."));
                         }
 
                         // FIXME: optimize union queries

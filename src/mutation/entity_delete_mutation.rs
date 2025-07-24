@@ -4,8 +4,8 @@ use sea_orm::{
 };
 
 use crate::{
-    get_filter_conditions, BuilderContext, EntityObjectBuilder, EntityQueryFieldBuilder,
-    FilterInputBuilder, GuardAction,
+    apply_guard, get_filter_conditions, BuilderContext, EntityObjectBuilder,
+    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -80,13 +80,7 @@ impl EntityDeleteMutationBuilder {
             TypeRef::named_nn(TypeRef::INT),
             move |ctx| {
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
+                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
                         return Err::<Option<_>, async_graphql::Error>(async_graphql::Error::new(
                             reason.unwrap_or("Entity guard triggered.".into()),
                         ));

@@ -1,14 +1,11 @@
-use async_graphql::{
-    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
-    Error,
-};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
-    EntityObjectBuilder, FilterInputBuilder, GuardAction, OrderInputBuilder,
-    PaginationInputBuilder,
+    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error, BuilderContext,
+    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
+    OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -100,21 +97,8 @@ impl EntityQueryFieldBuilder {
             move |ctx| {
                 let context: &'static BuilderContext = context;
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => {
-                                Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                "Entity guard triggered.",
-                            )),
-                        };
+                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);

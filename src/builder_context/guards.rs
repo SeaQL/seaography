@@ -20,3 +20,18 @@ pub enum GuardAction {
     Block(Option<String>),
     Allow,
 }
+
+pub fn apply_guard(guard: Option<&FnGuard>, ctx: &ResolverContext) -> GuardAction {
+    if let Some(guard) = guard {
+        (*guard)(ctx)
+    } else {
+        GuardAction::Allow
+    }
+}
+
+pub fn guard_error(reason: Option<String>, fallback: &str) -> async_graphql::Error {
+    match reason {
+        Some(reason) => async_graphql::Error::new(reason),
+        None => async_graphql::Error::new(fallback),
+    }
+}

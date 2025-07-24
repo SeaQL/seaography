@@ -1,7 +1,11 @@
-use async_graphql::dynamic::{Field, FieldFuture, Object};
-use async_graphql::{Error, Value};
+use async_graphql::{
+    dynamic::{Field, FieldFuture, Object},
+    Value,
+};
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
+
+use crate::{apply_guard, guard_error};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -135,7 +139,7 @@ impl EntityObjectBuilder {
                 _ => false,
             };
 
-            let guard = self
+            let field_guard = self
                 .context
                 .guards
                 .field_guards
@@ -148,22 +152,9 @@ impl EntityObjectBuilder {
                 .get(&format!("{entity_name}.{column_name}"));
 
             let field = Field::new(column_name, graphql_type, move |ctx| {
-                let guard_flag = if let Some(guard) = guard {
-                    (*guard)(&ctx)
-                } else {
-                    GuardAction::Allow
-                };
-
-                if let GuardAction::Block(reason) = guard_flag {
+                if let GuardAction::Block(reason) = apply_guard(field_guard, &ctx) {
                     return FieldFuture::new(async move {
-                        match reason {
-                            Some(reason) => {
-                                Err::<Option<()>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<()>, async_graphql::Error>(Error::new(
-                                "Field guard triggered.",
-                            )),
-                        }
+                        Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
                     });
                 }
 
