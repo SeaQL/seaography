@@ -21,7 +21,7 @@ pub enum GuardAction {
     Allow,
 }
 
-pub fn apply_guard(guard: Option<&FnGuard>, ctx: &ResolverContext) -> GuardAction {
+pub fn apply_guard(ctx: &ResolverContext, guard: Option<&FnGuard>) -> GuardAction {
     if let Some(guard) = guard {
         (*guard)(ctx)
     } else {

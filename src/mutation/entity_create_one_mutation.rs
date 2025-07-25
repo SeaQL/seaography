@@ -6,7 +6,7 @@ use sea_orm::{
 
 use crate::{
     apply_guard, guard_error, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, GuardAction,
+    EntityQueryFieldBuilder, GuardAction, QueryOperation,
 };
 
 /// The configuration structure of EntityCreateOneMutationBuilder
@@ -75,13 +75,20 @@ impl EntityCreateOneMutationBuilder {
         let object_name: String = entity_object_builder.type_name::<T>();
         let guard = self.context.guards.entity_guards.get(&object_name);
         let field_guards = &self.context.guards.field_guards;
+        let hooks = &self.context.hooks;
 
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Create)
+                    {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
@@ -100,7 +107,7 @@ impl EntityCreateOneMutationBuilder {
                             entity_object_builder.type_name::<T>(),
                             column
                         ));
-                        if let GuardAction::Block(reason) = apply_guard(field_guard, &ctx) {
+                        if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
                             return Err(guard_error(reason, "Field guard triggered."));
                         }
                     }

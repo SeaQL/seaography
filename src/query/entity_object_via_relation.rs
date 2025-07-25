@@ -11,7 +11,7 @@ use crate::{
     apply_guard, apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions,
     guard_error, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder,
     GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder,
+    PaginationInputBuilder, QueryOperation,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
@@ -50,7 +50,9 @@ impl EntityObjectViaRelationBuilder {
         let order_input_builder = OrderInputBuilder { context };
 
         let object_name: String = entity_object_builder.type_name::<R>();
+        let object_name_ = object_name.clone();
         let guard = self.context.guards.entity_guards.get(&object_name);
+        let hooks = &self.context.hooks;
 
         let from_col = <T::Column as std::str::FromStr>::from_str(
             via_relation_definition
@@ -72,8 +74,14 @@ impl EntityObjectViaRelationBuilder {
 
         let field = match via_relation_definition.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Read)
+                    {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
@@ -117,9 +125,14 @@ impl EntityObjectViaRelationBuilder {
                 name,
                 TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
                 move |ctx| {
-                    let context: &'static BuilderContext = context;
+                    let object_name = object_name.clone();
                     FieldFuture::new(async move {
-                        if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                        if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                            return Err(guard_error(reason, "Entity guard triggered."));
+                        }
+                        if let GuardAction::Block(reason) =
+                            hooks.entity_guard(&ctx, &object_name, QueryOperation::Read)
+                        {
                             return Err(guard_error(reason, "Entity guard triggered."));
                         }
 
@@ -184,11 +197,11 @@ impl EntityObjectViaRelationBuilder {
             true => field
                 .argument(InputValue::new(
                     &context.entity_query_field.filters,
-                    TypeRef::named(filter_input_builder.type_name(&object_name)),
+                    TypeRef::named(filter_input_builder.type_name(&object_name_)),
                 ))
                 .argument(InputValue::new(
                     &context.entity_query_field.order_by,
-                    TypeRef::named(order_input_builder.type_name(&object_name)),
+                    TypeRef::named(order_input_builder.type_name(&object_name_)),
                 ))
                 .argument(InputValue::new(
                     &context.entity_query_field.pagination,

@@ -152,7 +152,7 @@ impl EntityObjectBuilder {
                 .get(&format!("{entity_name}.{column_name}"));
 
             let field = Field::new(column_name, graphql_type, move |ctx| {
-                if let GuardAction::Block(reason) = apply_guard(field_guard, &ctx) {
+                if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
                     return FieldFuture::new(async move {
                         Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
                     });

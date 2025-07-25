@@ -7,7 +7,7 @@ use sea_orm::{
 use crate::{
     apply_guard, get_filter_conditions, guard_error, prepare_active_model, BuilderContext,
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder,
-    GuardAction,
+    GuardAction, QueryOperation,
 };
 
 /// The configuration structure of EntityUpdateMutationBuilder
@@ -79,18 +79,26 @@ impl EntityUpdateMutationBuilder {
             context: self.context,
         };
         let object_name: String = entity_object_builder.type_name::<T>();
+        let object_name_ = object_name.clone();
 
         let context = self.context;
 
         let guard = self.context.guards.entity_guards.get(&object_name);
         let field_guards = &self.context.guards.field_guards;
+        let hooks = &self.context.hooks;
 
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn_list_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(guard, &ctx) {
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Update)
+                    {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
@@ -115,7 +123,7 @@ impl EntityUpdateMutationBuilder {
                             entity_object_builder.type_name::<T>(),
                             column
                         ));
-                        if let GuardAction::Block(reason) = apply_guard(field_guard, &ctx) {
+                        if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
                             return Err(guard_error(reason, "Field guard triggered."));
                         }
                     }
@@ -149,7 +157,7 @@ impl EntityUpdateMutationBuilder {
         ))
         .argument(InputValue::new(
             &context.entity_update_mutation.filter_field,
-            TypeRef::named(entity_filter_input_builder.type_name(&object_name)),
+            TypeRef::named(entity_filter_input_builder.type_name(&object_name_)),
         ))
     }
 }
