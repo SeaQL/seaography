@@ -80,8 +80,8 @@ jobs:
           version: 1.0.0
       - name: Integration tests
         working-directory: ./examples/sqlite
-        run: >-
-          cargo test --tests
+        run: |
+          cargo test --tests custom_
           rm tests/custom_*_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
