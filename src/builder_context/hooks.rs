@@ -26,6 +26,12 @@ pub enum QueryOperation {
     Delete,
 }
 
+impl LifecycleHooks {
+    pub fn new<T: LifecycleHooksInterface + 'static>(t: T) -> Self {
+        Self(Box::new(t))
+    }
+}
+
 pub trait LifecycleHooksInterface: Send + Sync {
     fn entity_guard(
         &self,
