@@ -78,6 +78,11 @@ jobs:
         with:
           crate: sea-orm-cli
           version: 1.0.0
+      - name: Integration tests
+        working-directory: ./examples/sqlite
+        run: >-
+          cargo test --tests
+          rm tests/custom_*_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
