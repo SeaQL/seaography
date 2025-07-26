@@ -271,3 +271,8 @@ pub use lazy_static;
 
 #[cfg(feature = "macros")]
 pub use seaography_macros as macros;
+
+#[derive(Debug)]
+pub struct UserContext {
+    pub user_id: i32,
+}

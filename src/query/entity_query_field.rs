@@ -124,6 +124,9 @@ impl EntityQueryFieldBuilder {
                     let pagination = ctx.args.get(&context.entity_query_field.pagination);
                     let pagination = PaginationInputBuilder { context }.parse_object(pagination);
 
+                    let user_context = ctx.data::<crate::UserContext>()?;
+                    dbg!(&user_context);
+
                     let stmt = T::find();
                     let stmt = stmt.filter(filters);
                     let stmt = apply_order(stmt, order_by);
