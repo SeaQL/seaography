@@ -113,90 +113,93 @@ impl EntityObjectBuilder {
             context: self.context,
         };
 
-        T::Column::iter().fold(Object::new(&object_name), move |object, column: T::Column| {
-            let object_name = object_name.clone();
-            let column_name = self.column_name::<T>(&column);
+        T::Column::iter().fold(
+            Object::new(&object_name),
+            move |object, column: T::Column| {
+                let object_name = object_name.clone();
+                let column_name = self.column_name::<T>(&column);
 
-            let column_def = column.def();
-            let enum_type_name = column.enum_type_name();
+                let column_def = column.def();
+                let enum_type_name = column.enum_type_name();
 
-            let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
-                column_def.get_column_type(),
-                !column_def.is_null(),
-                enum_type_name,
-            ) {
-                Some(type_name) => type_name,
-                None => return object,
-            };
+                let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
+                    column_def.get_column_type(),
+                    !column_def.is_null(),
+                    enum_type_name,
+                ) {
+                    Some(type_name) => type_name,
+                    None => return object,
+                };
 
-            // This isn't the most beautiful flag: it's indicating whether the leaf type is an
-            // enum, rather than the type itself. Ideally we'd only calculate this for the leaf
-            // type itself. Could be a good candidate for refactor as this code evolves to support
-            // more container types. For example, this at the very least should be recursive on
-            // Array types such that arrays of arrays of enums would be resolved correctly.
-            let is_enum: bool = match column_def.get_column_type() {
-                ColumnType::Enum { .. } => true,
-                #[cfg(feature = "with-postgres-array")]
-                ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
-                _ => false,
-            };
+                // This isn't the most beautiful flag: it's indicating whether the leaf type is an
+                // enum, rather than the type itself. Ideally we'd only calculate this for the leaf
+                // type itself. Could be a good candidate for refactor as this code evolves to support
+                // more container types. For example, this at the very least should be recursive on
+                // Array types such that arrays of arrays of enums would be resolved correctly.
+                let is_enum: bool = match column_def.get_column_type() {
+                    ColumnType::Enum { .. } => true,
+                    #[cfg(feature = "with-postgres-array")]
+                    ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
+                    _ => false,
+                };
 
-            let field_guard = self
-                .context
-                .guards
-                .field_guards
-                .get(&format!("{}.{}", &object_name, &column_name));
+                let field_guard = self
+                    .context
+                    .guards
+                    .field_guards
+                    .get(&format!("{}.{}", &object_name, &column_name));
 
-            let conversion_fn = self
-                .context
-                .types
-                .output_conversions
-                .get(&format!("{entity_name}.{column_name}"));
+                let conversion_fn = self
+                    .context
+                    .types
+                    .output_conversions
+                    .get(&format!("{entity_name}.{column_name}"));
 
-            let hooks = &self.context.hooks;
+                let hooks = &self.context.hooks;
 
-            let field = Field::new(column_name.clone(), graphql_type, move |ctx| {
-                if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
-                    return FieldFuture::new(async move {
-                        Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
-                    });
-                }
-                if let GuardAction::Block(reason) =
-                    hooks.field_guard(&ctx, &object_name, &column_name, QueryOperation::Read)
-                {
-                    return FieldFuture::new(async move {
-                        Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
-                    });
-                }
+                let field = Field::new(column_name.clone(), graphql_type, move |ctx| {
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
+                        return FieldFuture::new(async move {
+                            Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
+                        });
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.field_guard(&ctx, &object_name, &column_name, QueryOperation::Read)
+                    {
+                        return FieldFuture::new(async move {
+                            Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
+                        });
+                    }
 
-                // convert SeaQL value to GraphQL value
-                // FIXME: move to types_map file
-                let object = ctx
-                    .parent_value
-                    .try_downcast_ref::<T::Model>()
-                    .expect("Something went wrong when trying to downcast entity object.");
+                    // convert SeaQL value to GraphQL value
+                    // FIXME: move to types_map file
+                    let object = ctx
+                        .parent_value
+                        .try_downcast_ref::<T::Model>()
+                        .expect("Something went wrong when trying to downcast entity object.");
 
-                if let Some(conversion_fn) = conversion_fn {
-                    let result = conversion_fn(&object.get(column));
-                    return FieldFuture::new(async move {
-                        match result {
-                            Ok(value) => Ok(Some(value)),
-                            // FIXME: proper error reporting
-                            Err(_) => Ok(None),
-                        }
-                    });
-                }
+                    if let Some(conversion_fn) = conversion_fn {
+                        let result = conversion_fn(&object.get(column));
+                        return FieldFuture::new(async move {
+                            match result {
+                                Ok(value) => Ok(Some(value)),
+                                // FIXME: proper error reporting
+                                Err(_) => Ok(None),
+                            }
+                        });
+                    }
 
-                FieldFuture::new(async move {
-                    Ok(sea_query_value_to_graphql_value(
-                        object.get(column),
-                        is_enum,
-                    ))
-                })
-            });
+                    FieldFuture::new(async move {
+                        Ok(sea_query_value_to_graphql_value(
+                            object.get(column),
+                            is_enum,
+                        ))
+                    })
+                });
 
-            object.field(field)
-        })
+                object.field(field)
+            },
+        )
     }
 }
 
