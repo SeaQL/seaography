@@ -4,8 +4,8 @@ use sea_orm::{
 };
 
 use crate::{
-    get_filter_conditions, BuilderContext, EntityObjectBuilder, EntityQueryFieldBuilder,
-    FilterInputBuilder, GuardAction,
+    apply_guard, get_filter_conditions, guard_error, BuilderContext, EntityObjectBuilder,
+    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -70,26 +70,26 @@ impl EntityDeleteMutationBuilder {
             context: self.context,
         };
         let object_name: String = entity_object_builder.type_name::<T>();
+        let object_name_ = object_name.clone();
 
         let context = self.context;
 
         let guard = self.context.guards.entity_guards.get(&object_name);
+        let hooks = &self.context.hooks;
 
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn(TypeRef::INT),
             move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return Err::<Option<_>, async_graphql::Error>(async_graphql::Error::new(
-                            reason.unwrap_or("Entity guard triggered.".into()),
-                        ));
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Delete)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let db = ctx.data::<DatabaseConnection>()?;
@@ -106,7 +106,7 @@ impl EntityDeleteMutationBuilder {
         )
         .argument(InputValue::new(
             &context.entity_delete_mutation.filter_field,
-            TypeRef::named(entity_filter_input_builder.type_name(&object_name)),
+            TypeRef::named(entity_filter_input_builder.type_name(&object_name_)),
         ))
     }
 }

@@ -4,8 +4,8 @@ use sea_orm::{
 };
 
 use crate::{
-    prepare_active_model, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, GuardAction,
+    apply_guard, guard_error, prepare_active_model, BuilderContext, EntityInputBuilder,
+    EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction, OperationType,
 };
 
 /// The configuration structure of EntityCreateBatchMutationBuilder
@@ -74,27 +74,21 @@ impl EntityCreateBatchMutationBuilder {
         let object_name: String = entity_object_builder.type_name::<T>();
         let guard = self.context.guards.entity_guards.get(&object_name);
         let field_guards = &self.context.guards.field_guards;
+        let hooks = &self.context.hooks;
 
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn_list_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => Err::<Option<_>, async_graphql::Error>(
-                                async_graphql::Error::new(reason),
-                            ),
-                            None => Err::<Option<_>, async_graphql::Error>(
-                                async_graphql::Error::new("Entity guard triggered."),
-                            ),
-                        };
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Create)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let db = ctx.data::<DatabaseConnection>()?;
@@ -118,20 +112,13 @@ impl EntityCreateBatchMutationBuilder {
                                 entity_object_builder.type_name::<T>(),
                                 column
                             ));
-                            let field_guard_flag = if let Some(field_guard) = field_guard {
-                                (*field_guard)(&ctx)
-                            } else {
-                                GuardAction::Allow
-                            };
-                            if let GuardAction::Block(reason) = field_guard_flag {
-                                return match reason {
-                                    Some(reason) => Err::<Option<_>, async_graphql::Error>(
-                                        async_graphql::Error::new(reason),
-                                    ),
-                                    None => Err::<Option<_>, async_graphql::Error>(
-                                        async_graphql::Error::new("Field guard triggered."),
-                                    ),
-                                };
+                            if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
+                                return Err(guard_error(reason, "Field guard triggered."));
+                            }
+                            if let GuardAction::Block(reason) =
+                                hooks.field_guard(&ctx, &object_name, column, OperationType::Create)
+                            {
+                                return Err(guard_error(reason, "Field guard triggered."));
                             }
                         }
 

@@ -10,6 +10,9 @@ use crate::{
 pub mod guards;
 pub use guards::*;
 
+pub mod hooks;
+pub use hooks::*;
+
 pub mod types_map;
 pub use types_map::*;
 
@@ -50,8 +53,7 @@ pub struct BuilderContext {
     pub entity_input: EntityInputConfig,
 
     pub guards: GuardsConfig,
+    pub hooks: LifecycleHooks,
     pub types: TypesMapConfig,
     pub filter_types: FilterTypesMapConfig,
-    // is_skipped function
-    // naming function
 }

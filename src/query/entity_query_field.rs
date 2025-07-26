@@ -1,14 +1,11 @@
-use async_graphql::{
-    dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
-    Error,
-};
+use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, BuilderContext, ConnectionObjectBuilder,
-    EntityObjectBuilder, FilterInputBuilder, GuardAction, OrderInputBuilder,
-    PaginationInputBuilder,
+    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error, BuilderContext,
+    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType,
+    OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -89,32 +86,26 @@ impl EntityQueryFieldBuilder {
         };
 
         let object_name = entity_object.type_name::<T>();
+        let object_name_ = object_name.clone();
         let type_name = connection_object_builder.type_name(&object_name);
 
         let guard = self.context.guards.entity_guards.get(&object_name);
-
+        let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
+
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn(type_name),
             move |ctx| {
-                let context: &'static BuilderContext = context;
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => {
-                                Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                "Entity guard triggered.",
-                            )),
-                        };
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Read)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);
@@ -138,11 +129,11 @@ impl EntityQueryFieldBuilder {
         )
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
-            TypeRef::named(filter_input_builder.type_name(&object_name)),
+            TypeRef::named(filter_input_builder.type_name(&object_name_)),
         ))
         .argument(InputValue::new(
             &self.context.entity_query_field.order_by,
-            TypeRef::named(order_input_builder.type_name(&object_name)),
+            TypeRef::named(order_input_builder.type_name(&object_name_)),
         ))
         .argument(InputValue::new(
             &self.context.entity_query_field.pagination,

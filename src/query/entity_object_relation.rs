@@ -1,16 +1,15 @@
 use async_graphql::{
     dataloader::DataLoader,
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
-    Error,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{EntityTrait, Iden, ModelTrait, RelationDef};
 
 use crate::{
-    apply_memory_pagination, get_filter_conditions, BuilderContext, Connection,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder,
+    apply_guard, apply_memory_pagination, get_filter_conditions, guard_error, BuilderContext,
+    Connection, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
+    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType,
+    OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -42,7 +41,9 @@ impl EntityObjectRelationBuilder {
         let order_input_builder = OrderInputBuilder { context };
 
         let object_name: String = entity_object_builder.type_name::<R>();
+        let object_name_ = object_name.clone();
         let guard = self.context.guards.entity_guards.get(&object_name);
+        let hooks = &self.context.hooks;
 
         let from_col = <T::Column as std::str::FromStr>::from_str(
             relation_definition
@@ -64,22 +65,15 @@ impl EntityObjectRelationBuilder {
 
         let field = match relation_definition.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => {
-                                Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                "Entity guard triggered.",
-                            )),
-                        };
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Read)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
                     let parent: &T::Model = ctx
@@ -117,23 +111,16 @@ impl EntityObjectRelationBuilder {
                 name,
                 TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
                 move |ctx| {
+                    let object_name = object_name.clone();
                     let context: &'static BuilderContext = context;
                     FieldFuture::new(async move {
-                        let guard_flag = if let Some(guard) = guard {
-                            (*guard)(&ctx)
-                        } else {
-                            GuardAction::Allow
-                        };
-
-                        if let GuardAction::Block(reason) = guard_flag {
-                            return match reason {
-                                Some(reason) => {
-                                    Err::<Option<_>, async_graphql::Error>(Error::new(reason))
-                                }
-                                None => Err::<Option<_>, async_graphql::Error>(Error::new(
-                                    "Entity guard triggered.",
-                                )),
-                            };
+                        if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                            return Err(guard_error(reason, "Entity guard triggered."));
+                        }
+                        if let GuardAction::Block(reason) =
+                            hooks.entity_guard(&ctx, &object_name, OperationType::Read)
+                        {
+                            return Err(guard_error(reason, "Entity guard triggered."));
                         }
 
                         let parent: &T::Model = ctx
@@ -177,11 +164,11 @@ impl EntityObjectRelationBuilder {
             true => field
                 .argument(InputValue::new(
                     &context.entity_query_field.filters,
-                    TypeRef::named(filter_input_builder.type_name(&object_name)),
+                    TypeRef::named(filter_input_builder.type_name(&object_name_)),
                 ))
                 .argument(InputValue::new(
                     &context.entity_query_field.order_by,
-                    TypeRef::named(order_input_builder.type_name(&object_name)),
+                    TypeRef::named(order_input_builder.type_name(&object_name_)),
                 ))
                 .argument(InputValue::new(
                     &context.entity_query_field.pagination,

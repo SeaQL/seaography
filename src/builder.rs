@@ -139,7 +139,7 @@ impl Builder {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
-        let basic_entity_object = entity_object_builder.basic_to_object::<T>();
+        let basic_entity_object = entity_object_builder.to_basic_object::<T>();
         self.outputs.push(basic_entity_object);
 
         let entity_input_builder = EntityInputBuilder {

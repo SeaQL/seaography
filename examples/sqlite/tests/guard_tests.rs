@@ -4,7 +4,7 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection, RelationTrait};
 use seaography::{
     async_graphql, lazy_static, Builder, BuilderContext, EntityObjectRelationBuilder,
-    EntityObjectViaRelationBuilder, FnGuard, GuardsConfig,
+    EntityObjectViaRelationBuilder, FnGuard, GuardAction, GuardsConfig,
 };
 
 lazy_static::lazy_static! {
@@ -12,11 +12,11 @@ lazy_static::lazy_static! {
         let context = BuilderContext::default();
         let mut entity_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
         entity_guards.insert("FilmCategory".into(), Box::new(|_ctx| {
-            seaography::GuardAction::Block(None)
+            GuardAction::Block(None)
         }));
         let mut field_guards: BTreeMap<String, FnGuard> = BTreeMap::new();
         field_guards.insert("Language.lastUpdate".into(), Box::new(|_ctx| {
-            seaography::GuardAction::Block(None)
+            GuardAction::Block(None)
         }));
         BuilderContext {
             guards: GuardsConfig {

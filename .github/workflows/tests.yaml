@@ -74,10 +74,15 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
           version: 1.0.0
+      - name: Integration tests
+        working-directory: ./examples/sqlite
+        run: |
+          cargo test --tests custom_
+          rm tests/custom_*_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -129,7 +134,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
           version: 1.0.0
@@ -193,7 +198,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
           version: 1.0.0
