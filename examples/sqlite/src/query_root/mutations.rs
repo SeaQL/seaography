@@ -27,6 +27,7 @@ pub struct Operations {
     rental_request: fn(rental_request: RentalRequest) -> String,
     upload: fn(upload: Upload) -> String,
     maybe_rental_request: fn(rental_request: Option<RentalRequest>) -> Option<rental::Model>,
+    login_staff: fn(username: String, password: String) -> String,
 }
 
 impl Operations {
@@ -84,6 +85,42 @@ impl Operations {
             Some(_) => rental::Entity::find().one(db).await?,
             None => None,
         })
+    }
+
+    async fn login_staff(
+        ctx: &ResolverContext<'_>,
+        username: String,
+        password: String,
+    ) -> GqlResult<String> {
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+        let repo = ctx.data::<DatabaseConnection>().unwrap();
+        let staff = staff::Entity::find()
+            .filter(staff::Column::Username.eq(username))
+            .filter(staff::Column::Password.is_not_null())
+            .one(repo)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound("Staff not found".into()))?;
+        let password_hash = staff.password.unwrap();
+
+        use sha1::{Digest, Sha1};
+        let mut hasher = Sha1::new();
+        hasher.update(password);
+        let sha1_hash = hasher.finalize();
+        if *hex::decode(password_hash)? != *sha1_hash {
+            return Err(DbErr::Custom("Incorrect Password".into()).into());
+        }
+
+        use hmac::{Hmac, Mac};
+        use jwt::SignWithKey;
+        use sha2::Sha256;
+        use std::collections::BTreeMap;
+        let key: Hmac<Sha256> = Hmac::new_from_slice(b"some-secret")?;
+        let mut claims = BTreeMap::new();
+        claims.insert("user_id", staff.staff_id);
+        let token_str = claims.sign_with_key(&key)?;
+
+        Ok(token_str)
     }
 }
 
