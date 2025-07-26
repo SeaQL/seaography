@@ -1,4 +1,4 @@
-use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
+use actix_web::{guard, web, web::Data, App, HttpRequest, HttpResponse, HttpServer, Result};
 use async_graphql::{
     dynamic::*,
     http::{playground_source, GraphQLPlaygroundConfig},
@@ -23,8 +23,32 @@ lazy_static::lazy_static! {
         });
 }
 
-async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
+async fn index(
+    schema: web::Data<Schema>,
+    http_req: HttpRequest,
+    gql_req: GraphQLRequest,
+) -> GraphQLResponse {
+    let mut gql_req = gql_req.into_inner();
+
+    if let Some(auth_header) = http_req.headers().get("Authorization") {
+        if let Ok(auth_value) = auth_header.to_str() {
+            println!("Authorization header: {}", auth_value);
+
+            use hmac::{Hmac, Mac};
+            use jwt::VerifyWithKey;
+            use sha2::Sha256;
+            use std::collections::BTreeMap;
+
+            let key: Hmac<Sha256> = Hmac::new_from_slice(b"some-secret").unwrap();
+            let claims: BTreeMap<String, i32> = auth_value.verify_with_key(&key).unwrap();
+
+            gql_req = gql_req.data(seaography::UserContext {
+                user_id: claims["user_id"],
+            });
+        }
+    }
+
+    schema.execute(gql_req).await.into()
 }
 
 async fn graphql_playground() -> Result<HttpResponse> {
