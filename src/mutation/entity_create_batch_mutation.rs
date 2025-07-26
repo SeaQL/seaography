@@ -115,6 +115,11 @@ impl EntityCreateBatchMutationBuilder {
                             if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
                                 return Err(guard_error(reason, "Field guard triggered."));
                             }
+                            if let GuardAction::Block(reason) =
+                                hooks.field_guard(&ctx, &object_name, column, QueryOperation::Create)
+                            {
+                                return Err(guard_error(reason, "Field guard triggered."));
+                            }
                         }
 
                         let active_model = prepare_active_model::<T, A>(

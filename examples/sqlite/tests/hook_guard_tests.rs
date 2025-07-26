@@ -29,6 +29,20 @@ impl LifecycleHooksInterface for MyHooks {
             _ => GuardAction::Allow,
         }
     }
+
+    fn field_guard(
+        &self,
+        _ctx: &ResolverContext,
+        entity: &str,
+        field: &str,
+        action: QueryOperation,
+    ) -> GuardAction {
+        match (entity, field, action) {
+            ("Language", "lastUpdate", _) => GuardAction::Block(None),
+            ("Language", "name", QueryOperation::Update) => GuardAction::Block(None),
+            _ => GuardAction::Allow,
+        }
+    }
 }
 
 pub fn schema(
@@ -152,27 +166,48 @@ async fn entity_guard() {
     assert_eq!(response.errors[0].message, "Entity guard triggered.");
 }
 
-// #[tokio::test]
-// async fn field_guard() {
-//     let schema = get_schema().await;
+#[tokio::test]
+async fn field_guard() {
+    let schema = get_schema().await;
 
-//     let response = schema
-//         .execute(
-//             r#"
-//             {
-//                 language {
-//                 nodes {
-//                     languageId
-//                     name
-//                     lastUpdate
-//                 }
-//                 }
-//             }
-//         "#,
-//         )
-//         .await;
+    let response = schema
+        .execute(
+            r#"
+            {
+                language {
+                  nodes {
+                    languageId
+                    name
+                    lastUpdate
+                  }
+                }
+            }
+        "#,
+        )
+        .await;
 
-//     assert_eq!(response.errors.len(), 1);
+    assert_eq!(response.errors.len(), 1);
 
-//     assert_eq!(response.errors[0].message, "Field guard triggered.");
-// }
+    assert_eq!(response.errors[0].message, "Field guard triggered.");
+}
+
+#[tokio::test]
+async fn field_guard_mutation() {
+    let schema = get_schema().await;
+
+    let response = schema
+        .execute(
+            r#"
+            mutation LanguageUpdate {
+                languageUpdate(data: { name: "Cantonese" }, filter: { languageId: { eq: 6 } }) {
+                    languageId
+                }
+            }      
+    "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(response.errors[0].message, "Field guard triggered.");
+}

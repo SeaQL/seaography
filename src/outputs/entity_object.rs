@@ -5,7 +5,7 @@ use async_graphql::{
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
-use crate::{apply_guard, guard_error};
+use crate::{apply_guard, guard_error, QueryOperation};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -90,7 +90,7 @@ impl EntityObjectBuilder {
     }
 
     /// used to get the GraphQL basic object of a SeaORM entity
-    pub fn basic_to_object<T>(&self) -> Object
+    pub fn to_basic_object<T>(&self) -> Object
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -106,13 +106,15 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
+        let object_name = object_name.to_owned();
         let entity_name = self.type_name::<T>();
 
         let types_map_helper = TypesMapHelper {
             context: self.context,
         };
 
-        T::Column::iter().fold(Object::new(object_name), |object, column: T::Column| {
+        T::Column::iter().fold(Object::new(&object_name), move |object, column: T::Column| {
+            let object_name = object_name.clone();
             let column_name = self.column_name::<T>(&column);
 
             let column_def = column.def();
@@ -151,8 +153,17 @@ impl EntityObjectBuilder {
                 .output_conversions
                 .get(&format!("{entity_name}.{column_name}"));
 
-            let field = Field::new(column_name, graphql_type, move |ctx| {
+            let hooks = &self.context.hooks;
+
+            let field = Field::new(column_name.clone(), graphql_type, move |ctx| {
                 if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
+                    return FieldFuture::new(async move {
+                        Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
+                    });
+                }
+                if let GuardAction::Block(reason) =
+                    hooks.field_guard(&ctx, &object_name, &column_name, QueryOperation::Read)
+                {
                     return FieldFuture::new(async move {
                         Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
                     });
