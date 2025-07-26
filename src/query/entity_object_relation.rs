@@ -8,8 +8,8 @@ use sea_orm::{EntityTrait, Iden, ModelTrait, RelationDef};
 use crate::{
     apply_guard, apply_memory_pagination, get_filter_conditions, guard_error, BuilderContext,
     Connection, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OrderInputBuilder,
-    PaginationInputBuilder, QueryOperation,
+    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType,
+    OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -71,7 +71,7 @@ impl EntityObjectRelationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
                     if let GuardAction::Block(reason) =
-                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Read)
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                     {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
@@ -118,7 +118,7 @@ impl EntityObjectRelationBuilder {
                             return Err(guard_error(reason, "Entity guard triggered."));
                         }
                         if let GuardAction::Block(reason) =
-                            hooks.entity_guard(&ctx, &object_name, QueryOperation::Read)
+                            hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                         {
                             return Err(guard_error(reason, "Entity guard triggered."));
                         }

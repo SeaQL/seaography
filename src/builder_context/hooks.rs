@@ -19,7 +19,7 @@ impl Default for LifecycleHooks {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum QueryOperation {
+pub enum OperationType {
     Read,
     Create,
     Update,
@@ -37,7 +37,7 @@ pub trait LifecycleHooksInterface: Send + Sync {
         &self,
         _ctx: &ResolverContext,
         _entity: &str,
-        _action: QueryOperation,
+        _action: OperationType,
     ) -> GuardAction {
         GuardAction::Allow
     }
@@ -47,7 +47,7 @@ pub trait LifecycleHooksInterface: Send + Sync {
         _ctx: &ResolverContext,
         _entity: &str,
         _field: &str,
-        _action: QueryOperation,
+        _action: OperationType,
     ) -> GuardAction {
         GuardAction::Allow
     }

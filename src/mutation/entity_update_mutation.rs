@@ -7,7 +7,7 @@ use sea_orm::{
 use crate::{
     apply_guard, get_filter_conditions, guard_error, prepare_active_model, BuilderContext,
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder,
-    GuardAction, QueryOperation,
+    GuardAction, OperationType,
 };
 
 /// The configuration structure of EntityUpdateMutationBuilder
@@ -97,7 +97,7 @@ impl EntityUpdateMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
                     if let GuardAction::Block(reason) =
-                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Update)
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Update)
                     {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
@@ -127,7 +127,7 @@ impl EntityUpdateMutationBuilder {
                             return Err(guard_error(reason, "Field guard triggered."));
                         }
                         if let GuardAction::Block(reason) =
-                            hooks.field_guard(&ctx, &object_name, column, QueryOperation::Update)
+                            hooks.field_guard(&ctx, &object_name, column, OperationType::Update)
                         {
                             return Err(guard_error(reason, "Field guard triggered."));
                         }

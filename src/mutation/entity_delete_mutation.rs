@@ -5,7 +5,7 @@ use sea_orm::{
 
 use crate::{
     apply_guard, get_filter_conditions, guard_error, BuilderContext, EntityObjectBuilder,
-    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, QueryOperation,
+    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -87,7 +87,7 @@ impl EntityDeleteMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
                     if let GuardAction::Block(reason) =
-                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Delete)
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Delete)
                     {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }

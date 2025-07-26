@@ -4,8 +4,8 @@ use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
     apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error, BuilderContext,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    OrderInputBuilder, PaginationInputBuilder, QueryOperation,
+    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType,
+    OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -103,7 +103,7 @@ impl EntityQueryFieldBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
                     if let GuardAction::Block(reason) =
-                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Read)
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                     {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }

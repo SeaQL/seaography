@@ -5,7 +5,7 @@ use async_graphql::{
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
 
-use crate::{apply_guard, guard_error, QueryOperation};
+use crate::{apply_guard, guard_error, OperationType};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -164,7 +164,7 @@ impl EntityObjectBuilder {
                         });
                     }
                     if let GuardAction::Block(reason) =
-                        hooks.field_guard(&ctx, &object_name, &column_name, QueryOperation::Read)
+                        hooks.field_guard(&ctx, &object_name, &column_name, OperationType::Read)
                     {
                         return FieldFuture::new(async move {
                             Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))

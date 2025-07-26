@@ -2,7 +2,7 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
 use seaography::{
     async_graphql, lazy_static, Builder, BuilderContext, GuardAction, LifecycleHooks,
-    LifecycleHooksInterface, QueryOperation,
+    LifecycleHooksInterface, OperationType,
 };
 use seaography_sqlite_example::entities::*;
 
@@ -22,7 +22,7 @@ impl LifecycleHooksInterface for MyHooks {
         &self,
         _ctx: &ResolverContext,
         entity: &str,
-        _action: QueryOperation,
+        _action: OperationType,
     ) -> GuardAction {
         match entity {
             "FilmCategory" => GuardAction::Block(None),
@@ -35,11 +35,11 @@ impl LifecycleHooksInterface for MyHooks {
         _ctx: &ResolverContext,
         entity: &str,
         field: &str,
-        action: QueryOperation,
+        action: OperationType,
     ) -> GuardAction {
         match (entity, field, action) {
             ("Language", "lastUpdate", _) => GuardAction::Block(None),
-            ("Language", "name", QueryOperation::Update) => GuardAction::Block(None),
+            ("Language", "name", OperationType::Update) => GuardAction::Block(None),
             _ => GuardAction::Allow,
         }
     }

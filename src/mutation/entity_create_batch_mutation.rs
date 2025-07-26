@@ -5,7 +5,7 @@ use sea_orm::{
 
 use crate::{
     apply_guard, guard_error, prepare_active_model, BuilderContext, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction, QueryOperation,
+    EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction, OperationType,
 };
 
 /// The configuration structure of EntityCreateBatchMutationBuilder
@@ -86,7 +86,7 @@ impl EntityCreateBatchMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
                     if let GuardAction::Block(reason) =
-                        hooks.entity_guard(&ctx, &object_name, QueryOperation::Create)
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Create)
                     {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
@@ -115,12 +115,9 @@ impl EntityCreateBatchMutationBuilder {
                             if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
                                 return Err(guard_error(reason, "Field guard triggered."));
                             }
-                            if let GuardAction::Block(reason) = hooks.field_guard(
-                                &ctx,
-                                &object_name,
-                                column,
-                                QueryOperation::Create,
-                            ) {
+                            if let GuardAction::Block(reason) =
+                                hooks.field_guard(&ctx, &object_name, column, OperationType::Create)
+                            {
                                 return Err(guard_error(reason, "Field guard triggered."));
                             }
                         }
