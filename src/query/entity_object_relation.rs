@@ -3,7 +3,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
-use sea_orm::{EntityTrait, Iden, ModelTrait, RelationDef};
+use sea_orm::{EntityTrait, Iden, ModelTrait, QueryFilter, RelationDef};
 
 use crate::{
     apply_guard, apply_memory_pagination, get_filter_conditions, guard_error, BuilderContext,
@@ -83,7 +83,13 @@ impl EntityObjectRelationBuilder {
 
                     let loader = ctx.data_unchecked::<DataLoader<OneToOneLoader<R>>>();
 
-                    let stmt = R::find();
+                    let mut stmt = R::find();
+                    if let Some(filter) =
+                        hooks.entity_filter(&ctx, &object_name, OperationType::Read)
+                    {
+                        stmt = stmt.filter(filter);
+                    }
+
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters);
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
@@ -130,7 +136,13 @@ impl EntityObjectRelationBuilder {
 
                         let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 
-                        let stmt = R::find();
+                        let mut stmt = R::find();
+                        if let Some(filter) =
+                            hooks.entity_filter(&ctx, &object_name, OperationType::Read)
+                        {
+                            stmt = stmt.filter(filter);
+                        }
+
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let filters = get_filter_conditions::<R>(context, filters);
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);

@@ -139,9 +139,13 @@ impl EntityUpdateMutationBuilder {
                         input_object,
                     )?;
 
-                    T::update_many()
-                        .set(active_model)
-                        .filter(filter_condition.clone())
+                    let mut stmt = T::update_many().set(active_model);
+                    if let Some(filter) =
+                        hooks.entity_filter(&ctx, &object_name, OperationType::Update)
+                    {
+                        stmt = stmt.filter(filter);
+                    }
+                    stmt.filter(filter_condition.clone())
                         .exec(&transaction)
                         .await?;
 
