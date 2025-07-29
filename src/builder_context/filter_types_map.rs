@@ -30,6 +30,8 @@ pub struct FilterTypesMapConfig {
     pub boolean_filter_info: FilterInfo,
     // basic id filter
     pub id_filter_info: FilterInfo,
+    // basic array filter
+    pub array_filter_info: FilterInfo,
 }
 
 impl std::default::Default for FilterTypesMapConfig {
@@ -148,6 +150,26 @@ impl std::default::Default for FilterTypesMapConfig {
                     FilterOperation::NotBetween,
                 ]),
             },
+            array_filter_info: FilterInfo {
+                type_name: "ArrayFilterInput".into(),
+                base_type: TypeRef::STRING.into(), // FIXME: Should be List(elem_type)
+                supported_operations: BTreeSet::from([
+                    FilterOperation::Equals,
+                    FilterOperation::NotEquals,
+                    FilterOperation::GreaterThan,
+                    FilterOperation::GreaterThanEquals,
+                    FilterOperation::LessThan,
+                    FilterOperation::LessThanEquals,
+                    FilterOperation::IsIn,
+                    FilterOperation::IsNotIn,
+                    FilterOperation::IsNull,
+                    FilterOperation::IsNotNull,
+                    FilterOperation::ArrayContains,
+                    FilterOperation::ArrayContained,
+                    FilterOperation::ArrayConcatenate,
+                    FilterOperation::ArrayOverlap,
+                ]),
+            },
         }
     }
 }
@@ -186,48 +208,54 @@ impl FilterTypesMapHelper {
         }
 
         // default mappings
-        match column.def().get_column_type() {
-            ColumnType::Char(_) => Some(FilterType::Text),
-            ColumnType::String(_) => Some(FilterType::String),
-            ColumnType::Text => Some(FilterType::String),
-            ColumnType::TinyInteger => Some(FilterType::Integer),
-            ColumnType::SmallInteger => Some(FilterType::Integer),
-            ColumnType::Integer => Some(FilterType::Integer),
-            ColumnType::BigInteger => Some(FilterType::Integer),
-            ColumnType::TinyUnsigned => Some(FilterType::Integer),
-            ColumnType::SmallUnsigned => Some(FilterType::Integer),
-            ColumnType::Unsigned => Some(FilterType::Integer),
-            ColumnType::BigUnsigned => Some(FilterType::Integer),
-            ColumnType::Float => Some(FilterType::Float),
-            ColumnType::Double => Some(FilterType::Float),
-            ColumnType::Decimal(_) => Some(FilterType::Text),
-            ColumnType::DateTime => Some(FilterType::Text),
-            ColumnType::Timestamp => Some(FilterType::Text),
-            ColumnType::TimestampWithTimeZone => Some(FilterType::Text),
-            ColumnType::Time => Some(FilterType::Text),
-            ColumnType::Date => Some(FilterType::Text),
-            ColumnType::Year => Some(FilterType::Integer),
-            ColumnType::Interval(_, _) => Some(FilterType::Text),
-            ColumnType::Binary(_) => None,
-            ColumnType::VarBinary(_) => None,
-            ColumnType::Bit(_) => None,
-            ColumnType::VarBit(_) => None,
-            ColumnType::Blob => None,
-            ColumnType::Boolean => Some(FilterType::Boolean),
-            ColumnType::Money(_) => Some(FilterType::Text),
-            ColumnType::Json => None,
-            ColumnType::JsonBinary => None,
-            ColumnType::Uuid => Some(FilterType::Text),
-            ColumnType::Custom(name) => Some(FilterType::Custom(name.to_string())),
-            ColumnType::Enum { name, variants: _ } => {
-                Some(FilterType::Enumeration(name.to_string()))
+        fn filter_type_mapping(column_type: &ColumnType) -> Option<FilterType> {
+            match column_type {
+                ColumnType::Char(_) => Some(FilterType::Text),
+                ColumnType::String(_) => Some(FilterType::String),
+                ColumnType::Text => Some(FilterType::String),
+                ColumnType::TinyInteger => Some(FilterType::Integer),
+                ColumnType::SmallInteger => Some(FilterType::Integer),
+                ColumnType::Integer => Some(FilterType::Integer),
+                ColumnType::BigInteger => Some(FilterType::Integer),
+                ColumnType::TinyUnsigned => Some(FilterType::Integer),
+                ColumnType::SmallUnsigned => Some(FilterType::Integer),
+                ColumnType::Unsigned => Some(FilterType::Integer),
+                ColumnType::BigUnsigned => Some(FilterType::Integer),
+                ColumnType::Float => Some(FilterType::Float),
+                ColumnType::Double => Some(FilterType::Float),
+                ColumnType::Decimal(_) => Some(FilterType::Text),
+                ColumnType::DateTime => Some(FilterType::Text),
+                ColumnType::Timestamp => Some(FilterType::Text),
+                ColumnType::TimestampWithTimeZone => Some(FilterType::Text),
+                ColumnType::Time => Some(FilterType::Text),
+                ColumnType::Date => Some(FilterType::Text),
+                ColumnType::Year => Some(FilterType::Integer),
+                ColumnType::Interval(_, _) => Some(FilterType::Text),
+                ColumnType::Binary(_) => None,
+                ColumnType::VarBinary(_) => None,
+                ColumnType::Bit(_) => None,
+                ColumnType::VarBit(_) => None,
+                ColumnType::Blob => None,
+                ColumnType::Boolean => Some(FilterType::Boolean),
+                ColumnType::Money(_) => Some(FilterType::Text),
+                ColumnType::Json => None,
+                ColumnType::JsonBinary => None,
+                ColumnType::Uuid => Some(FilterType::Text),
+                ColumnType::Custom(name) => Some(FilterType::Custom(name.to_string())),
+                ColumnType::Enum { name, variants: _ } => {
+                    Some(FilterType::Enumeration(name.to_string()))
+                }
+                ColumnType::Array(elem_column_type) => Some(FilterType::Array(
+                    filter_type_mapping(elem_column_type).map(Box::new),
+                )),
+                ColumnType::Cidr => Some(FilterType::Text),
+                ColumnType::Inet => Some(FilterType::Text),
+                ColumnType::MacAddr => Some(FilterType::Text),
+                _ => None,
             }
-            ColumnType::Array(_) => None,
-            ColumnType::Cidr => Some(FilterType::Text),
-            ColumnType::Inet => Some(FilterType::Text),
-            ColumnType::MacAddr => Some(FilterType::Text),
-            _ => None,
         }
+
+        filter_type_mapping(column.def().get_column_type())
     }
 
     /// used to get the GraphQL input value field for a SeaORM entity column
@@ -302,6 +330,13 @@ impl FilterTypesMapHelper {
                 FilterType::Custom(type_name) => {
                     Some(InputValue::new(column_name, TypeRef::named(type_name)))
                 }
+                FilterType::Array(_) => {
+                    let info = &self.context.filter_types.array_filter_info;
+                    Some(InputValue::new(
+                        column_name,
+                        TypeRef::named(info.type_name.clone()),
+                    ))
+                }
             },
             None => None,
         }
@@ -316,6 +351,7 @@ impl FilterTypesMapHelper {
             self.generate_filter_input(&self.context.filter_types.float_filter_info),
             self.generate_filter_input(&self.context.filter_types.boolean_filter_info),
             self.generate_filter_input(&self.context.filter_types.id_filter_info),
+            self.generate_filter_input(&self.context.filter_types.array_filter_info),
         ]
     }
 
@@ -382,6 +418,22 @@ impl FilterTypesMapHelper {
                         "not_between",
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
+                    FilterOperation::ArrayContains => InputValue::new(
+                        "array_contains",
+                        TypeRef::named_nn_list(filter_info.base_type.clone()),
+                    ),
+                    FilterOperation::ArrayContained => InputValue::new(
+                        "array_contained",
+                        TypeRef::named_nn_list(filter_info.base_type.clone()),
+                    ),
+                    FilterOperation::ArrayConcatenate => InputValue::new(
+                        "array_concatenate",
+                        TypeRef::named_nn_list(filter_info.base_type.clone()),
+                    ),
+                    FilterOperation::ArrayOverlap => InputValue::new(
+                        "array_overlap",
+                        TypeRef::named_nn_list(filter_info.base_type.clone()),
+                    ),
                 };
                 object.field(field)
             },
@@ -434,6 +486,7 @@ impl FilterTypesMapHelper {
                         return Ok(condition);
                     }
                 }
+                FilterType::Array(_) => &self.context.filter_types.array_filter_info,
             },
             None => return Ok(condition),
         };
@@ -603,6 +656,70 @@ impl FilterTypesMapHelper {
                         condition = condition.add(column.not_between(a, b));
                     }
                 }
+                FilterOperation::ArrayContains => {
+                    if let Some(value) = filter.get("array_contains") {
+                        let value = types_map_helper
+                            .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
+                        let vec: Vec<String> = match value {
+                            #[cfg(feature = "with-postgres-array")]
+                            sea_orm::sea_query::Value::Array(_, Some(vec)) => {
+                                vec.iter().map(|s| s.clone().unwrap()).collect()
+                            }
+                            _ => vec![],
+                        };
+                        let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
+                        use sea_orm::sea_query::extension::postgres::PgExpr;
+                        condition = condition.add(col.contains(vec));
+                    }
+                }
+                FilterOperation::ArrayContained => {
+                    if let Some(value) = filter.get("array_contained") {
+                        let value = types_map_helper
+                            .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
+                        let vec: Vec<String> = match value {
+                            #[cfg(feature = "with-postgres-array")]
+                            sea_orm::sea_query::Value::Array(_, Some(vec)) => {
+                                vec.iter().map(|s| s.clone().unwrap()).collect()
+                            }
+                            _ => vec![],
+                        };
+                        let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
+                        use sea_orm::sea_query::extension::postgres::PgExpr;
+                        condition = condition.add(col.contained(vec));
+                    }
+                }
+                FilterOperation::ArrayConcatenate => {
+                    if let Some(value) = filter.get("array_concatenate") {
+                        let value = types_map_helper
+                            .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
+                        let vec: Vec<String> = match value {
+                            #[cfg(feature = "with-postgres-array")]
+                            sea_orm::sea_query::Value::Array(_, Some(vec)) => {
+                                vec.iter().map(|s| s.clone().unwrap()).collect()
+                            }
+                            _ => vec![],
+                        };
+                        let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
+                        use sea_orm::sea_query::extension::postgres::PgExpr;
+                        condition = condition.add(col.concatenate(vec));
+                    }
+                }
+                FilterOperation::ArrayOverlap => {
+                    if let Some(value) = filter.get("array_overlap") {
+                        let value = types_map_helper
+                            .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
+                        let vec: Vec<String> = match value {
+                            #[cfg(feature = "with-postgres-array")]
+                            sea_orm::sea_query::Value::Array(_, Some(vec)) => {
+                                vec.iter().map(|s| s.clone().unwrap()).collect()
+                            }
+                            _ => vec![],
+                        };
+                        let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
+                        use sea_orm::sea_query::extension::postgres::PgBinOper;
+                        condition = condition.add(col.binary(PgBinOper::Overlap, vec));
+                    }
+                }
             }
         }
 
@@ -620,6 +737,7 @@ pub enum FilterType {
     Id,
     Enumeration(String),
     Custom(String),
+    Array(Option<Box<FilterType>>),
 }
 
 #[derive(Clone, Debug)]
@@ -648,4 +766,8 @@ pub enum FilterOperation {
     NotLike,
     Between,
     NotBetween,
+    ArrayContains,
+    ArrayContained,
+    ArrayConcatenate,
+    ArrayOverlap,
 }
