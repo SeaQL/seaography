@@ -1,11 +1,14 @@
 use async_graphql::{
-    dynamic::{Field, FieldFuture, Object},
+    dynamic::{Field, FieldFuture, Object, ObjectAccessor},
     Value,
 };
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
-use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable,
+    ModelTrait, TryIntoModel,
+};
 
-use crate::{apply_guard, guard_error, OperationType};
+use crate::{apply_guard, guard_error, OperationType, SeaResult, SeaographyError};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -200,6 +203,46 @@ impl EntityObjectBuilder {
                 object.field(field)
             },
         )
+    }
+
+    pub fn parse_object<M>(&self, object: &ObjectAccessor) -> SeaResult<M>
+    where
+        M: ModelTrait + Sync,
+        <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
+        <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
+    {
+        let entity_object_builder = EntityObjectBuilder {
+            context: self.context,
+        };
+        let types_map_helper = TypesMapHelper {
+            context: self.context,
+        };
+
+        let mut active_model = <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel::default();
+
+        for column in <<M as ModelTrait>::Entity as EntityTrait>::Column::iter() {
+            let column_name =
+                entity_object_builder.column_name::<<M as ModelTrait>::Entity>(&column);
+
+            let value = match object.get(&column_name) {
+                Some(value) => value,
+                None => continue,
+            };
+
+            let value = types_map_helper
+                .async_graphql_value_to_sea_orm_value::<<M as ModelTrait>::Entity>(
+                    &column, &value,
+                )?;
+
+            active_model.set(column, value);
+        }
+
+        active_model.try_into_model().map_err(|e| {
+            SeaographyError::TypeConversionError(
+                self.type_name::<<M as ModelTrait>::Entity>(),
+                e.to_string(),
+            )
+        })
     }
 }
 

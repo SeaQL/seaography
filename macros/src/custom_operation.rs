@@ -19,7 +19,7 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
         let new_field_return_ty = match &func.output {
             ReturnType::Type(_, ty) => {
                 if let Type::Path(type_path) = ty.as_ref() {
-                    quote! { #type_path::gql_type_ref(&CONTEXT) }
+                    quote! { #type_path::gql_output_type_ref(&CONTEXT) }
                 } else {
                     return quote_spanned! {
                         func.span() => compile_error!("Unknown return type");
@@ -70,7 +70,7 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::To
                 new_field_args.push(quote! {
                     .argument(seaography::async_graphql::dynamic::InputValue::new(
                         #arg_name_str,
-                        #type_path::gql_type_ref(&CONTEXT),
+                        #type_path::gql_input_type_ref(&CONTEXT),
                     ))
                 });
                 resolve_args.push(quote! {

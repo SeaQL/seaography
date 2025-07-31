@@ -49,3 +49,28 @@ async fn test_custom_mutations() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn test_custom_mutation_with_custom_entities() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  rental_request(rental_request: {
+                    customer: "Alice"
+                    film: "Star Wars"
+                  })
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "rental_request": "Alice wants to rent Star Wars"
+        }
+        "#,
+    );
+}

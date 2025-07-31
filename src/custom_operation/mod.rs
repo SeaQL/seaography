@@ -1,12 +1,19 @@
 use crate::{
-    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityObjectBuilder,
-    PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
+    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityInputBuilder,
+    EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
 use async_graphql::dynamic::{FieldValue, ResolverContext, TypeRef};
-use sea_orm::{EntityTrait, ModelTrait};
+use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 
 pub trait GqlScalarValueType: Sized {
     fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+        Self::gql_type_ref(ctx)
+    }
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+        Self::gql_type_ref(ctx)
+    }
 
     fn try_get_arg(
         context: &'static BuilderContext,
@@ -23,7 +30,8 @@ pub trait GqlScalarValueType: Sized {
 }
 
 pub trait GqlModelType: Sized + Send + Sync + 'static {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 
     fn try_get_arg(
         context: &'static BuilderContext,
@@ -69,21 +77,29 @@ impl<M> GqlModelType for M
 where
     M: ModelTrait + Sync + 'static,
     <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
+    <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
 {
-    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
-        let type_name = entity_object_builder.type_name::<M::Entity>();
+        let type_name = entity_object_builder.basic_type_name::<M::Entity>();
+        TypeRef::named_nn(type_name)
+    }
+
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_input_builder = EntityInputBuilder { context };
+        let type_name = entity_input_builder.insert_type_name::<M::Entity>();
         TypeRef::named_nn(type_name)
     }
 
     fn try_get_arg(
         context: &'static BuilderContext,
-        _ctx: &ResolverContext<'_>,
-        _name: &str,
+        ctx: &ResolverContext<'_>,
+        name: &str,
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
-        let object_name = entity_object_builder.type_name::<M::Entity>();
-        todo!("Not supporting complex type {object_name}")
+
+        let input = ctx.args.get(name).unwrap();
+        entity_object_builder.parse_object::<M>(&input.object()?)
     }
 }
 
@@ -92,11 +108,15 @@ where
     E: EntityTrait,
     E::Model: Send + Sync,
 {
-    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
         let entity_name = entity_object_builder.type_name::<E>();
         let type_name = context.connection_object.type_name.as_ref()(&entity_name);
         TypeRef::named_nn(type_name)
+    }
+
+    fn gql_input_type_ref(_: &'static BuilderContext) -> TypeRef {
+        todo!()
     }
 
     fn try_get_arg(
@@ -111,7 +131,11 @@ where
 }
 
 impl GqlModelType for PaginationInput {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+    fn gql_output_type_ref(_: &'static BuilderContext) -> TypeRef {
+        todo!()
+    }
+
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
 

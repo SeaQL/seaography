@@ -129,6 +129,30 @@ impl Builder {
         self.metadata.insert(T::default().to_string(), metadata);
     }
 
+    /// register a basic entity that only has the basic model for input / ouput.
+    /// no query operation will be added. intended for use in custom operations.
+    pub fn register_basic_entity<T>(&mut self)
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let entity_object_builder = EntityObjectBuilder {
+            context: self.context,
+        };
+        let entity_object = entity_object_builder.to_object::<T>();
+        self.outputs.push(entity_object);
+
+        let entity_input_builder = EntityInputBuilder {
+            context: self.context,
+        };
+        let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
+        self.inputs.push(entity_insert_input_object);
+
+        let schema = sea_orm::Schema::new(self.connection.get_database_backend());
+        let metadata = schema.json_schema_from_entity(T::default());
+        self.metadata.insert(T::default().to_string(), metadata);
+    }
+
     pub fn register_entity_mutations<T, A>(&mut self)
     where
         T: EntityTrait,

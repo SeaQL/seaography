@@ -3,6 +3,7 @@ use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
 use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
+mod custom_entities;
 mod mutations;
 mod queries;
 
@@ -35,6 +36,8 @@ pub fn schema(
             store,
         ]
     );
+
+    builder.register_basic_entity::<custom_entities::rental_request::Entity>();
 
     builder.queries.extend(queries::Operations::to_fields());
 
