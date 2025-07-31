@@ -74,3 +74,53 @@ async fn test_custom_mutation_with_custom_entities() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn test_custom_mutation_with_optional_custom_entities() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  maybe_rental_request {
+                    rentalId
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "maybe_rental_request": {
+            "rentalId": null
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  maybe_rental_request(rental_request: {
+                    customer: "Bob"
+                    film: "Star Trek"
+                  }) {
+                    rentalId
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "maybe_rental_request": {
+            "rentalId": 1
+          }
+        }
+        "#,
+    );
+}

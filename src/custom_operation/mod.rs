@@ -44,6 +44,21 @@ pub trait GqlModelType: Sized + Send + Sync + 'static {
     }
 }
 
+pub trait GqlModelOptionType: Sized + Send + Sync + 'static {
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self>;
+
+    fn gql_field_value(value: Self) -> FieldValue<'static> {
+        FieldValue::owned_any(value)
+    }
+}
+
 impl<T> GqlScalarValueType for T
 where
     T: sea_orm::sea_query::ValueType,
@@ -100,6 +115,40 @@ where
 
         let input = ctx.args.get(name).unwrap();
         entity_object_builder.parse_object::<M>(&input.object()?)
+    }
+}
+
+impl<M> GqlModelOptionType for Option<M>
+where
+    M: ModelTrait + Sync + 'static,
+    <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
+    <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_object_builder = EntityObjectBuilder { context };
+        let type_name = entity_object_builder.basic_type_name::<M::Entity>();
+        TypeRef::named(type_name)
+    }
+
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_input_builder = EntityInputBuilder { context };
+        let type_name = entity_input_builder.insert_type_name::<M::Entity>();
+        TypeRef::named(type_name)
+    }
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        let entity_object_builder = EntityObjectBuilder { context };
+
+        match ctx.args.get(name) {
+            Some(input) => Ok(Some(
+                entity_object_builder.parse_object::<M>(&input.object()?)?,
+            )),
+            None => Ok(None),
+        }
     }
 }
 

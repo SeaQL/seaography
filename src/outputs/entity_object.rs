@@ -175,11 +175,23 @@ impl EntityObjectBuilder {
                     }
 
                     // convert SeaQL value to GraphQL value
-                    // FIXME: move to types_map file
-                    let object = ctx
-                        .parent_value
-                        .try_downcast_ref::<T::Model>()
-                        .expect("Something went wrong when trying to downcast entity object.");
+                    let object = match ctx.parent_value.try_downcast_ref::<T::Model>() {
+                        Ok(object) => object,
+                        Err(_) => {
+                            let option_object = ctx
+                                .parent_value
+                                .try_downcast_ref::<Option<T::Model>>()
+                                .expect(
+                                    "Something went wrong when trying to downcast entity object.",
+                                );
+                            match option_object {
+                                Some(object) => object,
+                                None => {
+                                    return FieldFuture::new(async move { Ok(Some(Value::Null)) })
+                                }
+                            }
+                        }
+                    };
 
                     if let Some(conversion_fn) = conversion_fn {
                         let result = conversion_fn(&object.get(column));
