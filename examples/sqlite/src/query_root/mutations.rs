@@ -1,8 +1,8 @@
 use super::*;
-use async_graphql::Result as GqlResult;
+use async_graphql::{Result as GqlResult, Upload, InputType};
 use custom_entities::rental_request;
 use sea_orm::{DbErr, EntityTrait};
-use seaography::macros::CustomOperation;
+use seaography::{GqlScalarValueType, macros::CustomOperation};
 
 /*
 
@@ -24,11 +24,32 @@ pub struct Operations {
     bar: fn(x: i32, y: i32) -> i32,
     login: fn() -> customer::Model,
     rental_request: fn(rental_request: rental_request::Model) -> String,
+    upload: fn(upload: WrappedUpload) -> String,
     #[rustfmt::skip]
     maybe_rental_request: fn(rental_request: Option::<rental_request::Model>) -> Option::<rental::Model>,
 }
 
+struct WrappedUpload (Upload);
+impl GqlScalarValueType for WrappedUpload {
+    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+      TypeRef::named("Upload")
+    }
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> seaography::SeaResult<WrappedUpload> {
+        Ok(WrappedUpload(Upload::parse(ctx.args.get(name).map(|x|x.as_value()).cloned()).unwrap()))
+    }
+
+}
+
 impl Operations {
+    async fn upload(_ctx: &ResolverContext<'_>, upload: WrappedUpload) -> GqlResult<String> {
+        Ok(format!("Hello, {}!", upload.0.0))
+    }
+
     async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
         Ok(format!("Hello, {}!", username))
     }

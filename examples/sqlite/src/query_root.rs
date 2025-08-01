@@ -47,6 +47,7 @@ pub fn schema(
         .set_depth_limit(depth)
         .set_complexity_limit(complexity)
         .schema_builder()
+        .enable_uploading()
         .data(database)
         .finish()
 }
