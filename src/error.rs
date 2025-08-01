@@ -12,11 +12,19 @@ pub enum SeaographyError {
     TypeConversionError(String, String),
     #[error("[array conversion] postgres array can not be nested type of array")]
     NestedArrayConversionError,
+    #[error("[async_graphql] {0:?}")]
+    UploadError(async_graphql::InputValueError<async_graphql::Upload>),
 }
 
 impl From<async_graphql::Error> for SeaographyError {
-    fn from(value: async_graphql::Error) -> Self {
-        SeaographyError::AsyncGraphQLError(value)
+    fn from(error: async_graphql::Error) -> Self {
+        SeaographyError::AsyncGraphQLError(error)
+    }
+}
+
+impl From<async_graphql::InputValueError<async_graphql::Upload>> for SeaographyError {
+    fn from(error: async_graphql::InputValueError<async_graphql::Upload>) -> Self {
+        SeaographyError::UploadError(error)
     }
 }
 

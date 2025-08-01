@@ -2,7 +2,10 @@ use crate::{
     converted_value_to_sea_orm_value, BuilderContext, Connection, EntityInputBuilder,
     EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
-use async_graphql::dynamic::{FieldValue, ResolverContext, TypeRef};
+use async_graphql::{
+    dynamic::{FieldValue, ResolverContext, TypeRef},
+    InputType, Upload,
+};
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 
 pub trait GqlScalarValueType: Sized {
@@ -27,6 +30,16 @@ pub trait GqlScalarValueType: Sized {
     {
         FieldValue::value(value)
     }
+}
+
+pub trait GqlInputType: Sized + Send + Sync + 'static {
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self>;
 }
 
 pub trait GqlModelType: Sized + Send + Sync + 'static {
@@ -179,11 +192,7 @@ where
     }
 }
 
-impl GqlModelType for PaginationInput {
-    fn gql_output_type_ref(_: &'static BuilderContext) -> TypeRef {
-        todo!()
-    }
-
+impl GqlInputType for PaginationInput {
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
@@ -195,5 +204,38 @@ impl GqlModelType for PaginationInput {
     ) -> SeaResult<Self> {
         let pagination = ctx.args.get(name);
         Ok(PaginationInputBuilder { context }.parse_object(pagination))
+    }
+}
+
+impl GqlInputType for Upload {
+    fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
+        TypeRef::named_nn("Upload")
+    }
+
+    fn try_get_arg(
+        _context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        Ok(Upload::parse(
+            ctx.args.get(name).map(|v| v.as_value()).cloned(),
+        )?)
+    }
+}
+
+impl GqlInputType for Option<Upload> {
+    fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
+        TypeRef::named("Upload")
+    }
+
+    fn try_get_arg(
+        _context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        match ctx.args.get(name) {
+            Some(v) => Ok(Some(Upload::parse(Some(v.as_value().to_owned()))?)),
+            None => Ok(None),
+        }
     }
 }
