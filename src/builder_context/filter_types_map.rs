@@ -4,7 +4,8 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait};
 
 use crate::{
-    filter_types_map, prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext, EntityObjectBuilder, SeaResult, TypesMapHelper
+    prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext,
+    EntityObjectBuilder, SeaResult, TypesMapHelper,
 };
 
 type FnFilterCondition =
@@ -17,27 +18,19 @@ pub struct FilterTypesMapConfig {
     /// used to map entity_name.column_name to a custom condition function
     pub condition_functions: BTreeMap<String, FnFilterCondition>,
 
-    // basic string filter
+    // basic filters
     pub string_filter_info: FilterInfo,
-    // basic text filter
     pub text_filter_info: FilterInfo,
-    // basic integer filter
     pub integer_filter_info: FilterInfo,
-    // basic float filter
     pub float_filter_info: FilterInfo,
-    // basic boolean filter
     pub boolean_filter_info: FilterInfo,
-    // basic id filter
     pub id_filter_info: FilterInfo,
-    // basic string array filter
+
+    // array filters
     pub string_array_filter_info: FilterInfo,
-    // basic text array filter
     pub text_array_filter_info: FilterInfo,
-    // basic integer array filter
     pub integer_array_filter_info: FilterInfo,
-    // basic float array filter
     pub float_array_filter_info: FilterInfo,
-    // basic boolean array filter
     pub boolean_array_filter_info: FilterInfo,
 }
 
@@ -163,7 +156,6 @@ impl std::default::Default for FilterTypesMapConfig {
                 supported_operations: BTreeSet::from([
                     FilterOperation::ArrayContains,
                     FilterOperation::ArrayContained,
-                    FilterOperation::ArrayConcatenate,
                     FilterOperation::ArrayOverlap,
                 ]),
             },
@@ -173,7 +165,6 @@ impl std::default::Default for FilterTypesMapConfig {
                 supported_operations: BTreeSet::from([
                     FilterOperation::ArrayContains,
                     FilterOperation::ArrayContained,
-                    FilterOperation::ArrayConcatenate,
                     FilterOperation::ArrayOverlap,
                 ]),
             },
@@ -183,7 +174,6 @@ impl std::default::Default for FilterTypesMapConfig {
                 supported_operations: BTreeSet::from([
                     FilterOperation::ArrayContains,
                     FilterOperation::ArrayContained,
-                    FilterOperation::ArrayConcatenate,
                     FilterOperation::ArrayOverlap,
                 ]),
             },
@@ -193,7 +183,6 @@ impl std::default::Default for FilterTypesMapConfig {
                 supported_operations: BTreeSet::from([
                     FilterOperation::ArrayContains,
                     FilterOperation::ArrayContained,
-                    FilterOperation::ArrayConcatenate,
                     FilterOperation::ArrayOverlap,
                 ]),
             },
@@ -203,7 +192,6 @@ impl std::default::Default for FilterTypesMapConfig {
                 supported_operations: BTreeSet::from([
                     FilterOperation::ArrayContains,
                     FilterOperation::ArrayContained,
-                    FilterOperation::ArrayConcatenate,
                     FilterOperation::ArrayOverlap,
                 ]),
             },
@@ -367,6 +355,7 @@ impl FilterTypesMapHelper {
                 FilterType::Custom(type_name) => {
                     Some(InputValue::new(column_name, TypeRef::named(type_name)))
                 }
+                #[cfg(feature = "with-postgres-array")]
                 FilterType::Array(Some(filter_type)) => {
                     let info = match *filter_type {
                         FilterType::Text => &self.context.filter_types.string_array_filter_info,
@@ -384,7 +373,7 @@ impl FilterTypesMapHelper {
                         TypeRef::named(info.type_name.clone()),
                     ))
                 }
-                FilterType::Array(None) => None,
+                FilterType::Array(_) => None,
             },
             None => None,
         }
@@ -392,19 +381,26 @@ impl FilterTypesMapHelper {
 
     /// used to get all basic input filter objects
     pub fn get_input_filters(&self) -> Vec<InputObject> {
-        vec![
+        let mut filters = vec![
             self.generate_filter_input(&self.context.filter_types.text_filter_info),
             self.generate_filter_input(&self.context.filter_types.string_filter_info),
             self.generate_filter_input(&self.context.filter_types.integer_filter_info),
             self.generate_filter_input(&self.context.filter_types.float_filter_info),
             self.generate_filter_input(&self.context.filter_types.boolean_filter_info),
             self.generate_filter_input(&self.context.filter_types.id_filter_info),
-            self.generate_filter_input(&self.context.filter_types.string_array_filter_info),
-            self.generate_filter_input(&self.context.filter_types.text_array_filter_info),
-            self.generate_filter_input(&self.context.filter_types.integer_array_filter_info),
-            self.generate_filter_input(&self.context.filter_types.float_array_filter_info),
-            self.generate_filter_input(&self.context.filter_types.boolean_array_filter_info),
-        ]
+        ];
+
+        if cfg!(feature = "with-postgres-array") {
+            filters.extend([
+                self.generate_filter_input(&self.context.filter_types.string_array_filter_info),
+                self.generate_filter_input(&self.context.filter_types.text_array_filter_info),
+                self.generate_filter_input(&self.context.filter_types.integer_array_filter_info),
+                self.generate_filter_input(&self.context.filter_types.float_array_filter_info),
+                self.generate_filter_input(&self.context.filter_types.boolean_array_filter_info),
+            ]);
+        }
+
+        filters
     }
 
     /// used to convert a filter input info struct into input object
@@ -478,10 +474,6 @@ impl FilterTypesMapHelper {
                         "array_contained",
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
-                    FilterOperation::ArrayConcatenate => InputValue::new(
-                        "array_concatenate",
-                        TypeRef::named_nn_list(filter_info.base_type.clone()),
-                    ),
                     FilterOperation::ArrayOverlap => InputValue::new(
                         "array_overlap",
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
@@ -538,19 +530,17 @@ impl FilterTypesMapHelper {
                         return Ok(condition);
                     }
                 }
-                FilterType::Array(Some(filter_type)) => {
-                    match *filter_type {
-                        FilterType::Text => &self.context.filter_types.string_array_filter_info,
-                        FilterType::String => &self.context.filter_types.text_array_filter_info,
-                        FilterType::Integer => &self.context.filter_types.integer_array_filter_info,
-                        FilterType::Float => &self.context.filter_types.float_array_filter_info,
-                        FilterType::Boolean => &self.context.filter_types.boolean_array_filter_info,
-                        FilterType::Id => todo!(),
-                        FilterType::Enumeration(_) => todo!(),
-                        FilterType::Custom(_) => todo!(),
-                        FilterType::Array(_) => todo!(),
-                    }
-                }
+                FilterType::Array(Some(filter_type)) => match *filter_type {
+                    FilterType::Text => &self.context.filter_types.string_array_filter_info,
+                    FilterType::String => &self.context.filter_types.text_array_filter_info,
+                    FilterType::Integer => &self.context.filter_types.integer_array_filter_info,
+                    FilterType::Float => &self.context.filter_types.float_array_filter_info,
+                    FilterType::Boolean => &self.context.filter_types.boolean_array_filter_info,
+                    FilterType::Id => todo!(),
+                    FilterType::Enumeration(_) => todo!(),
+                    FilterType::Custom(_) => todo!(),
+                    FilterType::Array(_) => todo!(),
+                },
                 FilterType::Array(None) => {
                     return Ok(condition);
                 }
@@ -727,15 +717,7 @@ impl FilterTypesMapHelper {
                     if let Some(value) = filter.get("array_contains") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        let vec: bool = false;
-                        #[cfg(feature = "with-postgres-array")]
-                        let vec: sea_orm::sea_query::SimpleExpr = match filter_info.base_type.as_str() {
-                            TypeRef::STRING => <Vec<String> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::INT => <Vec<i32> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::FLOAT => <Vec<f64> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::BOOLEAN => <Vec<bool> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            _ => unreachable!()
-                        };
+                        let vec = extract_array_input(filter_info.base_type.as_str(), value);
                         let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
                         use sea_orm::sea_query::extension::postgres::PgExpr;
                         condition = condition.add(col.contains(vec));
@@ -745,51 +727,17 @@ impl FilterTypesMapHelper {
                     if let Some(value) = filter.get("array_contained") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        let vec: bool = false;
-                        #[cfg(feature = "with-postgres-array")]
-                        let vec: sea_orm::sea_query::SimpleExpr = match filter_info.base_type.as_str() {
-                            TypeRef::STRING => <Vec<String> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::INT => <Vec<i32> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::FLOAT => <Vec<f64> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::BOOLEAN => <Vec<bool> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            _ => unreachable!()
-                        };
+                        let vec = extract_array_input(filter_info.base_type.as_str(), value);
                         let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
                         use sea_orm::sea_query::extension::postgres::PgExpr;
                         condition = condition.add(col.contained(vec));
-                    }
-                }
-                FilterOperation::ArrayConcatenate => {
-                    if let Some(value) = filter.get("array_concatenate") {
-                        let value = types_map_helper
-                            .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        let vec: bool = false;
-                        #[cfg(feature = "with-postgres-array")]
-                        let vec: sea_orm::sea_query::SimpleExpr = match filter_info.base_type.as_str() {
-                            TypeRef::STRING => <Vec<String> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::INT => <Vec<i32> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::FLOAT => <Vec<f64> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::BOOLEAN => <Vec<bool> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            _ => unreachable!()
-                        };
-                        let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
-                        use sea_orm::sea_query::extension::postgres::PgExpr;
-                        condition = condition.add(col.concatenate(vec));
                     }
                 }
                 FilterOperation::ArrayOverlap => {
                     if let Some(value) = filter.get("array_overlap") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        let vec: bool = false;
-                        #[cfg(feature = "with-postgres-array")]
-                        let vec: sea_orm::sea_query::SimpleExpr = match filter_info.base_type.as_str() {
-                            TypeRef::STRING => <Vec<String> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::INT => <Vec<i32> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::FLOAT => <Vec<f64> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            TypeRef::BOOLEAN => <Vec<bool> as sea_orm::sea_query::ValueType>::try_from(value).unwrap().into(),
-                            _ => unreachable!()
-                        };
+                        let vec = extract_array_input(filter_info.base_type.as_str(), value);
                         let col = sea_orm::sea_query::Expr::col((column.entity_name(), *column));
                         use sea_orm::sea_query::extension::postgres::PgBinOper;
                         condition = condition.add(col.binary(PgBinOper::Overlap, vec));
@@ -843,6 +791,29 @@ pub enum FilterOperation {
     NotBetween,
     ArrayContains,
     ArrayContained,
-    ArrayConcatenate,
     ArrayOverlap,
+}
+
+#[cfg(feature = "with-postgres-array")]
+fn extract_array_input(ty: &str, value: sea_orm::Value) -> sea_orm::sea_query::SimpleExpr {
+    match ty {
+        TypeRef::STRING => <Vec<String> as sea_orm::sea_query::ValueType>::try_from(value)
+            .unwrap()
+            .into(),
+        TypeRef::INT => <Vec<i32> as sea_orm::sea_query::ValueType>::try_from(value)
+            .unwrap()
+            .into(),
+        TypeRef::FLOAT => <Vec<f64> as sea_orm::sea_query::ValueType>::try_from(value)
+            .unwrap()
+            .into(),
+        TypeRef::BOOLEAN => <Vec<bool> as sea_orm::sea_query::ValueType>::try_from(value)
+            .unwrap()
+            .into(),
+        _ => unreachable!(),
+    }
+}
+
+#[cfg(not(feature = "with-postgres-array"))]
+fn extract_array_input(_: &str, _: sea_orm::Value) -> sea_orm::sea_query::SimpleExpr {
+    sea_orm::sea_query::SimpleExpr::Keyword(sea_orm::sea_query::Keyword::Null)
 }
