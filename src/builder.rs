@@ -1,6 +1,8 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, TypeRef},
+    dynamic::{
+        Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, TypeRef,
+    },
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
 

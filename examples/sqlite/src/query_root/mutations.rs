@@ -32,7 +32,10 @@ pub struct Operations {
 
 impl Operations {
     async fn upload(ctx: &ResolverContext<'_>, upload: Upload) -> GqlResult<String> {
-        Ok(format!("upload: filename={}", upload.value(ctx).unwrap().filename))
+        Ok(format!(
+            "upload: filename={}",
+            upload.value(ctx).unwrap().filename
+        ))
     }
 
     async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
