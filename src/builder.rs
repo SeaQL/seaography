@@ -1,6 +1,6 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, TypeRef},
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
 
@@ -340,7 +340,10 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, cur| schema.register(cur));
 
+        let json_scalar = Scalar::new("Json");
+
         let schema = schema
+            .register(json_scalar)
             .register(
                 OrderByEnumBuilder {
                     context: self.context,

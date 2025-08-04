@@ -280,7 +280,7 @@ impl TypesMapHelper {
                 | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
                 // FIXME: support json type
-                ColumnType::Json | ColumnType::JsonBinary => None,
+                ColumnType::Json | ColumnType::JsonBinary => Some(TypeRef::named("Json")),
                 ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Enum {
                     name: enum_name,
@@ -577,14 +577,15 @@ pub fn converted_value_to_sea_orm_value(
         #[cfg(feature = "with-json")]
         ConvertedType::Json => {
             use std::str::FromStr;
-
-            let value = sea_orm::entity::prelude::Json::from_str(value.string()?).map_err(|e| {
-                crate::SeaographyError::TypeConversionError(
-                    e.to_string(),
-                    format!("Json - {}.{}", entity_name, column_name),
-                )
-            })?;
-
+            let value = match value.string() {
+                Ok(s) => sea_orm::entity::prelude::Json::from_str(s).map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(
+                        e.to_string(),
+                        format!("Json - {}.{}", entity_name, column_name),
+                    )
+                })?,
+                Err(_) => value.deserialize()?,
+            };
             sea_orm::Value::Json(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]

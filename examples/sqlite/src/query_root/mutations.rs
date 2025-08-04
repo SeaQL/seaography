@@ -1,5 +1,5 @@
 use super::*;
-use async_graphql::Result as GqlResult;
+use async_graphql::{Result as GqlResult, Upload};
 use custom_entities::rental_request;
 use sea_orm::{DbErr, EntityTrait};
 use seaography::macros::CustomOperation;
@@ -9,6 +9,7 @@ use seaography::macros::CustomOperation;
 mutation {
   foo(username: "hi")
   bar(x: 2, y: 3)
+  upload(upload: File)
   login {
     customerId
     firstName
@@ -24,11 +25,16 @@ pub struct Operations {
     bar: fn(x: i32, y: i32) -> i32,
     login: fn() -> customer::Model,
     rental_request: fn(rental_request: rental_request::Model) -> String,
+    upload: fn(upload: Upload) -> String,
     #[rustfmt::skip]
     maybe_rental_request: fn(rental_request: Option::<rental_request::Model>) -> Option::<rental::Model>,
 }
 
 impl Operations {
+    async fn upload(ctx: &ResolverContext<'_>, upload: Upload) -> GqlResult<String> {
+        Ok(format!("upload: filename={}", upload.value(ctx).unwrap().filename))
+    }
+
     async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
         Ok(format!("Hello, {}!", username))
     }
