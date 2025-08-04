@@ -1,12 +1,22 @@
 use crate::{
-    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityObjectBuilder,
-    PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
+    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityInputBuilder,
+    EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
-use async_graphql::dynamic::{FieldValue, ResolverContext, TypeRef};
-use sea_orm::{EntityTrait, ModelTrait};
+use async_graphql::{
+    dynamic::{FieldValue, ResolverContext, TypeRef},
+    InputType, Upload,
+};
+use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 
 pub trait GqlScalarValueType: Sized {
     fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+        Self::gql_type_ref(ctx)
+    }
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+        Self::gql_type_ref(ctx)
+    }
 
     fn try_get_arg(
         context: &'static BuilderContext,
@@ -22,8 +32,34 @@ pub trait GqlScalarValueType: Sized {
     }
 }
 
+pub trait GqlInputType: Sized + Send + Sync + 'static {
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self>;
+}
+
 pub trait GqlModelType: Sized + Send + Sync + 'static {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self>;
+
+    fn gql_field_value(value: Self) -> FieldValue<'static> {
+        FieldValue::owned_any(value)
+    }
+}
+
+pub trait GqlModelOptionType: Sized + Send + Sync + 'static {
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 
     fn try_get_arg(
         context: &'static BuilderContext,
@@ -69,21 +105,63 @@ impl<M> GqlModelType for M
 where
     M: ModelTrait + Sync + 'static,
     <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
+    <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
 {
-    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
-        let type_name = entity_object_builder.type_name::<M::Entity>();
+        let type_name = entity_object_builder.basic_type_name::<M::Entity>();
+        TypeRef::named_nn(type_name)
+    }
+
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_input_builder = EntityInputBuilder { context };
+        let type_name = entity_input_builder.insert_type_name::<M::Entity>();
         TypeRef::named_nn(type_name)
     }
 
     fn try_get_arg(
         context: &'static BuilderContext,
-        _ctx: &ResolverContext<'_>,
-        _name: &str,
+        ctx: &ResolverContext<'_>,
+        name: &str,
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
-        let object_name = entity_object_builder.type_name::<M::Entity>();
-        todo!("Not supporting complex type {object_name}")
+
+        let input = ctx.args.get(name).unwrap();
+        entity_object_builder.parse_object::<M>(&input.object()?)
+    }
+}
+
+impl<M> GqlModelOptionType for Option<M>
+where
+    M: ModelTrait + Sync + 'static,
+    <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
+    <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_object_builder = EntityObjectBuilder { context };
+        let type_name = entity_object_builder.basic_type_name::<M::Entity>();
+        TypeRef::named(type_name)
+    }
+
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_input_builder = EntityInputBuilder { context };
+        let type_name = entity_input_builder.insert_type_name::<M::Entity>();
+        TypeRef::named(type_name)
+    }
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        let entity_object_builder = EntityObjectBuilder { context };
+
+        match ctx.args.get(name) {
+            Some(input) => Ok(Some(
+                entity_object_builder.parse_object::<M>(&input.object()?)?,
+            )),
+            None => Ok(None),
+        }
     }
 }
 
@@ -92,11 +170,15 @@ where
     E: EntityTrait,
     E::Model: Send + Sync,
 {
-    fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
         let entity_name = entity_object_builder.type_name::<E>();
         let type_name = context.connection_object.type_name.as_ref()(&entity_name);
         TypeRef::named_nn(type_name)
+    }
+
+    fn gql_input_type_ref(_: &'static BuilderContext) -> TypeRef {
+        todo!()
     }
 
     fn try_get_arg(
@@ -110,8 +192,8 @@ where
     }
 }
 
-impl GqlModelType for PaginationInput {
-    fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+impl GqlInputType for PaginationInput {
+    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
 
@@ -122,5 +204,38 @@ impl GqlModelType for PaginationInput {
     ) -> SeaResult<Self> {
         let pagination = ctx.args.get(name);
         Ok(PaginationInputBuilder { context }.parse_object(pagination))
+    }
+}
+
+impl GqlInputType for Upload {
+    fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
+        TypeRef::named_nn("Upload")
+    }
+
+    fn try_get_arg(
+        _context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        Ok(Upload::parse(
+            ctx.args.get(name).map(|v| v.as_value()).cloned(),
+        )?)
+    }
+}
+
+impl GqlInputType for Option<Upload> {
+    fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
+        TypeRef::named("Upload")
+    }
+
+    fn try_get_arg(
+        _context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        match ctx.args.get(name) {
+            Some(v) => Ok(Some(Upload::parse(Some(v.as_value().to_owned()))?)),
+            None => Ok(None),
+        }
     }
 }

@@ -1,6 +1,8 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+    dynamic::{
+        Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, TypeRef,
+    },
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
 
@@ -123,6 +125,30 @@ impl Builder {
         };
         let query = entity_query_field_builder.to_field::<T>();
         self.queries.push(query);
+
+        let schema = sea_orm::Schema::new(self.connection.get_database_backend());
+        let metadata = schema.json_schema_from_entity(T::default());
+        self.metadata.insert(T::default().to_string(), metadata);
+    }
+
+    /// register a basic entity that only has the basic model for input / ouput.
+    /// no query operation will be added. intended for use in custom operations.
+    pub fn register_basic_entity<T>(&mut self)
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let entity_object_builder = EntityObjectBuilder {
+            context: self.context,
+        };
+        let entity_object = entity_object_builder.to_object::<T>();
+        self.outputs.push(entity_object);
+
+        let entity_input_builder = EntityInputBuilder {
+            context: self.context,
+        };
+        let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
+        self.inputs.push(entity_insert_input_object);
 
         let schema = sea_orm::Schema::new(self.connection.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
@@ -316,7 +342,10 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, cur| schema.register(cur));
 
+        let json_scalar = Scalar::new("Json");
+
         let schema = schema
+            .register(json_scalar)
             .register(
                 OrderByEnumBuilder {
                     context: self.context,

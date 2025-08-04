@@ -1,5 +1,6 @@
 use super::GuardAction;
 use async_graphql::dynamic::ResolverContext;
+use sea_orm::Condition;
 use std::ops::Deref;
 
 pub struct LifecycleHooks(pub(crate) Box<dyn LifecycleHooksInterface>);
@@ -50,6 +51,15 @@ pub trait LifecycleHooksInterface: Send + Sync {
         _action: OperationType,
     ) -> GuardAction {
         GuardAction::Allow
+    }
+
+    fn entity_filter(
+        &self,
+        _ctx: &ResolverContext,
+        _entity: &str,
+        _action: OperationType,
+    ) -> Option<Condition> {
+        None
     }
 }
 

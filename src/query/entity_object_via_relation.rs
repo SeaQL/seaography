@@ -92,11 +92,16 @@ impl EntityObjectViaRelationBuilder {
 
                     let loader = ctx.data_unchecked::<DataLoader<OneToOneLoader<R>>>();
 
-                    let stmt = if <T as Related<R>>::via().is_some() {
+                    let mut stmt = if <T as Related<R>>::via().is_some() {
                         <T as Related<R>>::find_related()
                     } else {
                         R::find()
                     };
+                    if let Some(filter) =
+                        hooks.entity_filter(&ctx, &object_name, OperationType::Read)
+                    {
+                        stmt = stmt.filter(filter);
+                    }
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters);
@@ -143,11 +148,16 @@ impl EntityObjectViaRelationBuilder {
                             .try_downcast_ref::<T::Model>()
                             .expect("Parent should exist");
 
-                        let stmt = if <T as Related<R>>::via().is_some() {
+                        let mut stmt = if <T as Related<R>>::via().is_some() {
                             <T as Related<R>>::find_related()
                         } else {
                             R::find()
                         };
+                        if let Some(filter) =
+                            hooks.entity_filter(&ctx, &object_name, OperationType::Read)
+                        {
+                            stmt = stmt.filter(filter);
+                        }
 
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let filters = get_filter_conditions::<R>(context, filters);
