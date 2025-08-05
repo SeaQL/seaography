@@ -144,6 +144,9 @@ impl Builder {
         let entity_object = entity_object_builder.to_object::<T>();
         self.outputs.push(entity_object);
 
+        let basic_entity_object = entity_object_builder.to_basic_object::<T>();
+        self.outputs.push(basic_entity_object);
+
         let entity_input_builder = EntityInputBuilder {
             context: self.context,
         };
