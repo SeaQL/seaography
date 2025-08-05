@@ -11,7 +11,6 @@ pub fn get_filter_conditions<T>(
 ) -> Condition
 where
     T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
 {
     if let Some(filters) = filters {
         let filters = filters.object().unwrap();
@@ -29,7 +28,6 @@ pub fn recursive_prepare_condition<T>(
 ) -> Condition
 where
     T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
 {
     let entity_object_builder = EntityObjectBuilder { context };
     let filter_types_map_helper = FilterTypesMapHelper { context };

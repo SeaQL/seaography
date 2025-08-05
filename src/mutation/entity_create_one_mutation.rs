@@ -43,7 +43,6 @@ impl EntityCreateOneMutationBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
@@ -143,7 +142,6 @@ pub fn prepare_active_model<T, A>(
 ) -> async_graphql::Result<A>
 where
     T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
     <T as EntityTrait>::Model: IntoActiveModel<A>,
     A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
 {

@@ -59,7 +59,6 @@ impl TypesMapHelper {
     pub fn get_column_type<T>(&self, column: &T::Column) -> ConvertedType
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -208,7 +207,6 @@ impl TypesMapHelper {
     ) -> SeaResult<sea_orm::Value>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,

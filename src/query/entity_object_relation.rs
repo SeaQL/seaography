@@ -23,7 +23,6 @@ impl EntityObjectRelationBuilder {
     pub fn get_relation<T, R>(&self, name: &str, relation_definition: RelationDef) -> Field
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         R: EntityTrait,
         <R as sea_orm::EntityTrait>::Model: Sync,

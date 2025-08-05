@@ -54,7 +54,6 @@ impl EntityQueryFieldBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object = EntityObjectBuilder {
             context: self.context,

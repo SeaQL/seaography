@@ -43,7 +43,6 @@ impl EntityDeleteMutationBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
@@ -59,7 +58,6 @@ impl EntityDeleteMutationBuilder {
     pub fn to_field<T, A>(&self) -> Field
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
         A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
     {

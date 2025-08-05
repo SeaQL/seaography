@@ -166,7 +166,6 @@ impl FilterTypesMapHelper {
     pub fn get_column_filter_type<T>(&self, column: &T::Column) -> Option<FilterType>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -234,7 +233,6 @@ impl FilterTypesMapHelper {
     pub fn get_column_filter_input_value<T>(&self, column: &T::Column) -> Option<InputValue>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -397,7 +395,6 @@ impl FilterTypesMapHelper {
     ) -> SeaResult<Condition>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let types_map_helper = TypesMapHelper {
             context: self.context,

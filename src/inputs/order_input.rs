@@ -34,7 +34,6 @@ impl OrderInputBuilder {
     pub fn to_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -57,7 +56,6 @@ impl OrderInputBuilder {
     ) -> Vec<(T::Column, sea_orm::sea_query::Order)>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         match value {
             Some(value) => {

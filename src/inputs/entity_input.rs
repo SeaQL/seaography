@@ -38,7 +38,6 @@ impl EntityInputBuilder {
     pub fn insert_type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -51,7 +50,6 @@ impl EntityInputBuilder {
     pub fn update_type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -64,7 +62,6 @@ impl EntityInputBuilder {
     fn input_object<T>(&self, is_insert: bool) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let name = if is_insert {
             self.insert_type_name::<T>()
@@ -122,7 +119,6 @@ impl EntityInputBuilder {
     pub fn insert_input_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         self.input_object::<T>(true)
     }
@@ -131,7 +127,6 @@ impl EntityInputBuilder {
     pub fn update_input_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         self.input_object::<T>(false)
     }
@@ -142,7 +137,6 @@ impl EntityInputBuilder {
     ) -> SeaResult<BTreeMap<String, sea_orm::Value>>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,

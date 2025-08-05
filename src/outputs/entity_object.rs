@@ -50,7 +50,6 @@ impl EntityObjectBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
         self.context.entity_object.type_name.as_ref()(&name)
@@ -60,7 +59,6 @@ impl EntityObjectBuilder {
     pub fn basic_type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
         format!(
@@ -74,7 +72,6 @@ impl EntityObjectBuilder {
     pub fn column_name<T>(&self, column: &T::Column) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_name = self.type_name::<T>();
         let column_name: String = column.as_str().into();
@@ -220,7 +217,6 @@ impl EntityObjectBuilder {
     pub fn parse_object<M>(&self, object: &ObjectAccessor) -> SeaResult<M>
     where
         M: ModelTrait + Sync,
-        <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
         <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
     {
         let entity_object_builder = EntityObjectBuilder {

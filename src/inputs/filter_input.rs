@@ -35,7 +35,6 @@ impl FilterInputBuilder {
     pub fn to_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let filter_types_map_helper = FilterTypesMapHelper {
             context: self.context,

@@ -27,7 +27,6 @@ impl EntityObjectViaRelationBuilder {
         T: Related<R>,
         T: EntityTrait,
         R: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,

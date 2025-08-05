@@ -80,7 +80,6 @@ pub fn prepare_enumeration_condition<T>(
 ) -> SeaResult<Condition>
 where
     T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
 {
     let variants = if let ColumnType::Enum { name: _, variants } = column.def().get_column_type() {
         variants.clone()

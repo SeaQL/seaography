@@ -104,7 +104,6 @@ where
 impl<M> GqlModelType for M
 where
     M: ModelTrait + Sync + 'static,
-    <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
     <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
 {
     fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
@@ -134,7 +133,6 @@ where
 impl<M> GqlModelOptionType for Option<M>
 where
     M: ModelTrait + Sync + 'static,
-    <<M as ModelTrait>::Entity as EntityTrait>::Model: Sync,
     <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
 {
     fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
