@@ -109,7 +109,7 @@ where
 {
     fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
-        let type_name = entity_object_builder.basic_type_name::<M::Entity>();
+        let type_name = entity_object_builder.type_name::<M::Entity>();
         TypeRef::named_nn(type_name)
     }
 
@@ -139,7 +139,7 @@ where
 {
     fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
-        let type_name = entity_object_builder.basic_type_name::<M::Entity>();
+        let type_name = entity_object_builder.type_name::<M::Entity>();
         TypeRef::named(type_name)
     }
 
