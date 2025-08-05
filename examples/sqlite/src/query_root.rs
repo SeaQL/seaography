@@ -37,7 +37,7 @@ pub fn schema(
         ]
     );
 
-    builder.register_basic_entity::<custom_entities::rental_request::Entity>();
+    builder.register_custom_entity::<custom_entities::rental_request::Entity>();
 
     builder.queries.extend(queries::Operations::to_fields());
 

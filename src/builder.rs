@@ -131,9 +131,9 @@ impl Builder {
         self.metadata.insert(T::default().to_string(), metadata);
     }
 
-    /// register a basic entity that only has the basic model for input / ouput.
-    /// no query operation will be added. intended for use in custom operations.
-    pub fn register_basic_entity<T>(&mut self)
+    /// register a custom entity that only has the model for input / ouput.
+    /// no query / mutation will be added. intended for use in custom operations.
+    pub fn register_custom_entity<T>(&mut self)
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
