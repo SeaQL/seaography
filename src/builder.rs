@@ -8,7 +8,7 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoAc
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
+    CursorInputBuilder, CustomInput, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
     EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
     EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
     FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
@@ -153,6 +153,13 @@ impl Builder {
         let schema = sea_orm::Schema::new(self.connection.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
         self.metadata.insert(T::default().to_string(), metadata);
+    }
+
+    pub fn register_custom_input<T>(&mut self)
+    where
+        T: CustomInput,
+    {
+        self.inputs.push(T::input_object());
     }
 
     pub fn register_entity_mutations<T, A>(&mut self)

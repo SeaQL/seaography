@@ -3,7 +3,7 @@ use crate::{
     EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
 use async_graphql::{
-    dynamic::{FieldValue, ResolverContext, TypeRef},
+    dynamic::{FieldValue, ResolverContext, TypeRef, ValueAccessor},
     InputType, Upload,
 };
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
@@ -39,6 +39,13 @@ pub trait GqlInputType: Sized + Send + Sync + 'static {
         context: &'static BuilderContext,
         ctx: &ResolverContext<'_>,
         name: &str,
+    ) -> SeaResult<Self> {
+        Self::parse_input(context, ctx.args.get(name))
+    }
+
+    fn parse_input(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 }
 
@@ -195,13 +202,11 @@ impl GqlInputType for PaginationInput {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
 
-    fn try_get_arg(
+    fn parse_input(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        let pagination = ctx.args.get(name);
-        Ok(PaginationInputBuilder { context }.parse_object(pagination))
+        Ok(PaginationInputBuilder { context }.parse_object(value))
     }
 }
 
@@ -210,29 +215,28 @@ impl GqlInputType for Upload {
         TypeRef::named_nn("Upload")
     }
 
-    fn try_get_arg(
+    fn parse_input(
         _context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        Ok(Upload::parse(
-            ctx.args.get(name).map(|v| v.as_value()).cloned(),
-        )?)
+        Ok(Upload::parse(value.map(|v| v.as_value()).cloned())?)
     }
 }
 
-impl GqlInputType for Option<Upload> {
-    fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
-        TypeRef::named("Upload")
+impl<T: GqlInputType> GqlInputType for Option<T> {
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        match T::gql_input_type_ref(context) {
+            TypeRef::NonNull(ty) => ty.as_ref().to_owned(),
+            _ => unimplemented!("Cannot be used as optional input"),
+        }
     }
 
-    fn try_get_arg(
-        _context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+    fn parse_input(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        match ctx.args.get(name) {
-            Some(v) => Ok(Some(Upload::parse(Some(v.as_value().to_owned()))?)),
+        match value {
+            Some(v) => Ok(Some(T::parse_input(context, Some(v))?)),
             None => Ok(None),
         }
     }

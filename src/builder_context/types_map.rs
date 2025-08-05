@@ -70,7 +70,7 @@ impl TypesMapHelper {
     }
 
     /// helper function used to determine the conversion type of a column type
-    pub(crate) fn get_column_type_helper(
+    pub fn get_column_type_helper(
         &self,
         entity_name: &str,
         column_name: &str,
