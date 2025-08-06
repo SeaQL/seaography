@@ -32,7 +32,7 @@ fn impl_input(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
             fn input_object(ctx: &'static seaography::BuilderContext) -> seaography::async_graphql::dynamic::InputObject {
                 use seaography::{GqlInputModelType, GqlScalarValueType};
 
-                InputObject::new(format!("{}Input", stringify!(#the_struct)))
+                seaography::async_graphql::dynamic::InputObject::new(format!("{}Input", stringify!(#the_struct)))
                 #(#input_fields)*
             }
         }

@@ -1,4 +1,3 @@
-use seaography::async_graphql::dynamic::InputObject;
 use seaography::macros::CustomInput;
 
 #[derive(Clone, CustomInput)]

@@ -96,6 +96,30 @@ async fn test_custom_mutation_with_custom_entities() {
         }
         "#,
     );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  rental_request(rental_request: {
+                    customer: "Alice"
+                    film: "Star Wars"
+                    location: {
+                      city: "Riverside"
+                      county: "West"
+                    }
+                  })
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "rental_request": "Alice wants to rent Star Wars (at Riverside, West)"
+        }
+        "#,
+    );
 }
 
 #[tokio::test]
