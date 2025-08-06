@@ -40,7 +40,7 @@ pub trait GqlScalarValueType: Sized {
     }
 }
 
-pub trait GqlInputType: Sized + Send + Sync + 'static {
+pub trait GqlInputModelType: Sized + Send + Sync + 'static {
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 
     fn try_get_arg(
@@ -209,7 +209,7 @@ where
     }
 }
 
-impl GqlInputType for PaginationInput {
+impl GqlInputModelType for PaginationInput {
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
@@ -222,7 +222,7 @@ impl GqlInputType for PaginationInput {
     }
 }
 
-impl GqlInputType for Upload {
+impl GqlInputModelType for Upload {
     fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
         TypeRef::named_nn("Upload")
     }
@@ -235,7 +235,7 @@ impl GqlInputType for Upload {
     }
 }
 
-impl<T: GqlInputType> GqlInputType for Option<T> {
+impl<T: GqlInputModelType> GqlInputModelType for Option<T> {
     fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
         match T::gql_input_type_ref(context) {
             TypeRef::NonNull(ty) => ty.as_ref().to_owned(),

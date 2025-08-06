@@ -28,7 +28,7 @@ impl CustomInput for RentalRequest {
     }
 }
 
-impl GqlInputType for RentalRequest {
+impl GqlInputModelType for RentalRequest {
     fn gql_input_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named_nn("RentalRequestInput".to_owned())
     }
@@ -62,7 +62,7 @@ impl CustomInput for Location {
     }
 }
 
-impl GqlInputType for Location {
+impl GqlInputModelType for Location {
     fn gql_input_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named_nn("LocationInput".to_owned())
     }
