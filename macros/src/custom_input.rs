@@ -1,9 +1,7 @@
-use proc_macro2::{self, TokenStream, Span};
+use crate::util::qualify_type_path;
+use proc_macro2::{self, TokenStream};
 use quote::{quote, quote_spanned};
-use syn::{
-    Token,PathArguments,
-    DataStruct, DeriveInput, Fields, FieldsNamed, Type, TypePath
-};
+use syn::{DataStruct, DeriveInput, Fields, FieldsNamed, Type};
 
 fn impl_input(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
     let mut input_fields = Vec::new();
@@ -13,17 +11,10 @@ fn impl_input(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
     for field in fields.named {
         let field_name = field.ident.as_ref().unwrap();
         let field_name_str = field_name.to_string();
-        let Type::Path(TypePath {
-            path: mut type_path, ..
-        }) = field.ty else {
+        let Type::Path(mut type_path) = field.ty else {
             continue;
         };
-        // convert type path to turbo fish Option::<String>
-        for segment in type_path.segments.iter_mut() {
-            if let PathArguments::AngleBracketed(arguments) = &mut segment.arguments {
-                arguments.colon2_token = Some(Token![::](Span::call_site()));
-            }
-        }
+        qualify_type_path(&mut type_path);
         field_names.push(field_name.to_owned());
         field_getters.push(quote! {
             let #field_name = #type_path::parse_value(ctx, object.get(#field_name_str))?;

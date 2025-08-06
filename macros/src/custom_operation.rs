@@ -1,3 +1,4 @@
+use crate::util::qualify_type_path;
 use proc_macro2::{self, Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
@@ -10,11 +11,17 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
     for field in fields.named {
         let fn_name = field.ident.as_ref().unwrap();
         let fn_name_str = fn_name.to_string();
-        let Type::BareFn(func) = field.ty else {
+        let Type::BareFn(mut func) = field.ty else {
             continue;
         };
         // println!("{:#?}", func.inputs);
         // println!("{:#?}", func.output);
+
+        if let ReturnType::Type(_, ty) = &mut func.output {
+            if let Type::Path(type_path) = ty.as_mut() {
+                qualify_type_path(type_path);
+            }
+        }
 
         let new_field_return_ty = match &func.output {
             ReturnType::Type(_, ty) => {
@@ -55,7 +62,8 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
         let mut call_args = Vec::new();
 
         for (i, arg) in func.inputs.into_iter().enumerate() {
-            if let Type::Path(type_path) = arg.ty {
+            if let Type::Path(mut type_path) = arg.ty {
+                qualify_type_path(&mut type_path);
                 let (arg_name, arg_name_str) = match arg.name {
                     Some(arg_name) => {
                         let arg_name_str = arg_name.0.to_string();

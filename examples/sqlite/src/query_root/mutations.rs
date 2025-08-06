@@ -26,8 +26,7 @@ pub struct Operations {
     login: fn() -> customer::Model,
     rental_request: fn(rental_request: RentalRequest) -> String,
     upload: fn(upload: Upload) -> String,
-    #[rustfmt::skip]
-    maybe_rental_request: fn(rental_request: Option::<RentalRequest>) -> Option::<rental::Model>,
+    maybe_rental_request: fn(rental_request: Option<RentalRequest>) -> Option<rental::Model>,
 }
 
 impl Operations {
