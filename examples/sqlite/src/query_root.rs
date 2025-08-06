@@ -37,7 +37,8 @@ pub fn schema(
         ]
     );
 
-    builder.register_custom_input::<custom_inputs::rental_request::Input>();
+    builder.register_custom_input::<custom_inputs::RentalRequest>();
+    builder.register_custom_input::<custom_inputs::Location>();
 
     builder.queries.extend(queries::Operations::to_fields());
 

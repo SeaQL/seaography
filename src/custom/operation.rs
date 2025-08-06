@@ -40,10 +40,10 @@ pub trait GqlInputType: Sized + Send + Sync + 'static {
         ctx: &ResolverContext<'_>,
         name: &str,
     ) -> SeaResult<Self> {
-        Self::parse_input(context, ctx.args.get(name))
+        Self::parse_value(context, ctx.args.get(name))
     }
 
-    fn parse_input(
+    fn parse_value(
         context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
@@ -85,7 +85,7 @@ where
 {
     fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
         let ty = T::column_type();
-        let not_null = true;
+        let not_null = !T::is_option();
         let enum_type_name = T::enum_type_name();
         let types_map_helper = TypesMapHelper { context };
         match types_map_helper.sea_orm_column_type_to_graphql_type(&ty, not_null, enum_type_name) {
@@ -202,7 +202,7 @@ impl GqlInputType for PaginationInput {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
 
-    fn parse_input(
+    fn parse_value(
         context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
@@ -215,7 +215,7 @@ impl GqlInputType for Upload {
         TypeRef::named_nn("Upload")
     }
 
-    fn parse_input(
+    fn parse_value(
         _context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
@@ -231,12 +231,12 @@ impl<T: GqlInputType> GqlInputType for Option<T> {
         }
     }
 
-    fn parse_input(
+    fn parse_value(
         context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
         match value {
-            Some(v) => Ok(Some(T::parse_input(context, Some(v))?)),
+            Some(v) => Ok(Some(T::parse_value(context, Some(v))?)),
             None => Ok(None),
         }
     }

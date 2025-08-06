@@ -5,7 +5,7 @@ use crate::{
 use async_graphql::dynamic::ValueAccessor;
 
 pub trait CustomInput {
-    fn input_object() -> async_graphql::dynamic::InputObject;
+    fn input_object(context: &'static BuilderContext) -> async_graphql::dynamic::InputObject;
 }
 
 pub trait GqlInputValue: Sized {

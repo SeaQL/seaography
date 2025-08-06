@@ -82,7 +82,9 @@ async fn test_custom_mutation_with_custom_entities() {
                   rental_request(rental_request: {
                     customer: "Alice"
                     film: "Star Wars"
-                    location: "Riverside"
+                    location: {
+                      city: "Riverside"
+                    }
                   })
                 }
                 "#,

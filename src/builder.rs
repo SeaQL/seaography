@@ -159,7 +159,7 @@ impl Builder {
     where
         T: CustomInput,
     {
-        self.inputs.push(T::input_object());
+        self.inputs.push(T::input_object(self.context));
     }
 
     pub fn register_entity_mutations<T, A>(&mut self)
