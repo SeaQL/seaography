@@ -46,7 +46,7 @@ fn impl_input(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
                 ctx: &'static seaography::BuilderContext,
                 value: Option<seaography::async_graphql::dynamic::ValueAccessor<'_>>,
             ) -> seaography::SeaResult<Self> {
-                use seaography::{GqlInputType, GqlInputValue};
+                use seaography::{GqlInputType, GqlScalarValueType};
 
                 let object = value.unwrap().object()?;
 

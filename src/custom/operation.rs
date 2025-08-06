@@ -1,6 +1,7 @@
 use crate::{
-    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityInputBuilder,
-    EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
+    converted_null_to_sea_orm_value, converted_value_to_sea_orm_value, BuilderContext, Connection,
+    EntityInputBuilder, EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult,
+    TypesMapHelper,
 };
 use async_graphql::{
     dynamic::{FieldValue, ResolverContext, TypeRef, ValueAccessor},
@@ -22,6 +23,13 @@ pub trait GqlScalarValueType: Sized {
         context: &'static BuilderContext,
         ctx: &ResolverContext<'_>,
         name: &str,
+    ) -> SeaResult<Self> {
+        Self::parse_value(context, ctx.args.get(name))
+    }
+
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
     fn gql_field_value(value: Self) -> FieldValue<'static>
@@ -94,17 +102,21 @@ where
         }
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
-    ) -> SeaResult<T> {
-        let ty = T::column_type();
+        value: Option<ValueAccessor<'_>>,
+    ) -> SeaResult<Self> {
         let types_map_helper = TypesMapHelper { context };
-        let column_type = types_map_helper.sea_orm_column_type_to_converted_type("", "", &ty);
-        let value = ctx.args.try_get(name)?;
-        let val = converted_value_to_sea_orm_value(&column_type, &value, "", "")?;
-        Ok(val.unwrap())
+        let column_type = T::column_type();
+        let column_type =
+            types_map_helper.sea_orm_column_type_to_converted_type("", "", &column_type);
+
+        if value.is_none() {
+            Ok(converted_null_to_sea_orm_value(&column_type).unwrap())
+        } else {
+            let value = converted_value_to_sea_orm_value(&column_type, &value.unwrap(), "", "")?;
+            Ok(value.unwrap())
+        }
     }
 }
 
