@@ -65,7 +65,7 @@ pub fn expand(input: DeriveInput) -> syn::Result<TokenStream> {
         syn::Data::Struct(DataStruct {
             fields: Fields::Named(fields),
             ..
-        }) => Ok(impl_input(ident, fields).into()),
+        }) => Ok(impl_input(ident, fields)),
         _ => Ok(quote_spanned! {
             ident.span() => compile_error!("you can only derive CustomInput on data struct");
         }),
