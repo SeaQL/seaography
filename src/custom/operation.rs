@@ -4,10 +4,14 @@ use crate::{
     TypesMapHelper,
 };
 use async_graphql::{
-    dynamic::{FieldValue, ResolverContext, TypeRef, ValueAccessor},
+    dynamic::{Field, FieldValue, ResolverContext, TypeRef, ValueAccessor},
     InputType, Upload,
 };
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
+
+pub trait CustomOperation {
+    fn to_fields() -> Vec<Field>;
+}
 
 pub trait GqlScalarValueType: Sized {
     fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;

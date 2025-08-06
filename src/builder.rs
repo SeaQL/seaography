@@ -8,12 +8,12 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoAc
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, CustomInput, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
-    EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
-    FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
-    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
-    PaginationInputBuilder,
+    CursorInputBuilder, CustomInput, CustomOperation, EdgeObjectBuilder,
+    EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
+    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
+    FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
+    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -155,13 +155,6 @@ impl Builder {
         self.metadata.insert(T::default().to_string(), metadata);
     }
 
-    pub fn register_custom_input<T>(&mut self)
-    where
-        T: CustomInput,
-    {
-        self.inputs.push(T::input_object(self.context));
-    }
-
     pub fn register_entity_mutations<T, A>(&mut self)
     where
         T: EntityTrait,
@@ -266,6 +259,27 @@ impl Builder {
         let filter_info = active_enum_filter_input_builder.filter_info::<A>();
         self.inputs
             .push(filter_types_map_helper.generate_filter_input(&filter_info));
+    }
+
+    pub fn register_custom_input<T>(&mut self)
+    where
+        T: CustomInput,
+    {
+        self.inputs.push(T::input_object(self.context));
+    }
+
+    pub fn register_custom_query<T>(&mut self)
+    where
+        T: CustomOperation,
+    {
+        self.queries.append(&mut T::to_fields());
+    }
+
+    pub fn register_custom_mutation<T>(&mut self)
+    where
+        T: CustomOperation,
+    {
+        self.mutations.append(&mut T::to_fields());
     }
 
     pub fn set_depth_limit(mut self, depth: Option<usize>) -> Self {
@@ -490,5 +504,19 @@ macro_rules! register_active_enums {
 macro_rules! register_custom_inputs {
     ($builder:expr, [$($ty:path),+ $(,)?]) => {
         $($builder.register_custom_input::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_queries {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_query::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_mutations {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_mutation::<$ty>();)*
     };
 }

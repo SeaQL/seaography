@@ -43,9 +43,9 @@ pub fn schema(
         [custom_inputs::RentalRequest, custom_inputs::Location]
     );
 
-    builder.queries.extend(queries::Operations::to_fields());
+    seaography::register_custom_queries!(builder, [queries::Operations]);
 
-    builder.mutations.extend(mutations::Operations::to_fields());
+    seaography::register_custom_mutations!(builder, [mutations::Operations]);
 
     builder
         .set_depth_limit(depth)
