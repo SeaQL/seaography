@@ -1,13 +1,11 @@
 use seaography::async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
-use seaography::{
-    converted_value_to_sea_orm_value, BuilderContext, CustomInput, GqlInputType, SeaResult,
-    TypesMapHelper,
-};
+use seaography::{BuilderContext, CustomInput, GqlInputType, GqlInputValue, SeaResult};
 
 #[derive(Clone)]
 pub struct Input {
     pub customer: String,
     pub film: String,
+    pub location: Option<String>,
 }
 
 impl CustomInput for Input {
@@ -18,6 +16,7 @@ impl CustomInput for Input {
                 TypeRef::named_nn(TypeRef::STRING),
             ))
             .field(InputValue::new("film", TypeRef::named_nn(TypeRef::STRING)))
+            .field(InputValue::new("location", TypeRef::named(TypeRef::STRING)))
     }
 }
 
@@ -32,34 +31,14 @@ impl GqlInputType for Input {
     ) -> SeaResult<Self> {
         let object = value.unwrap().object().unwrap();
 
-        let customer = {
-            let ty = sea_orm::ColumnType::string(None);
-            let types_map_helper = TypesMapHelper { context };
-            let column_type = types_map_helper.get_column_type_helper("", "", &ty);
-
-            converted_value_to_sea_orm_value(
-                &column_type,
-                object.get("customer").as_ref().unwrap(),
-                "",
-                "",
-            )?
-        };
-        let film = {
-            let ty = sea_orm::ColumnType::string(None);
-            let types_map_helper = TypesMapHelper { context };
-            let column_type = types_map_helper.get_column_type_helper("", "", &ty);
-
-            converted_value_to_sea_orm_value(
-                &column_type,
-                object.get("film").as_ref().unwrap(),
-                "",
-                "",
-            )?
-        };
+        let customer = GqlInputValue::parse_value(context, object.get("customer"))?;
+        let film = GqlInputValue::parse_value(context, object.get("film"))?;
+        let location = GqlInputValue::parse_value(context, object.get("location"))?;
 
         Ok(Input {
-            customer: customer.unwrap(),
-            film: film.unwrap(),
+            customer,
+            film,
+            location,
         })
     }
 }

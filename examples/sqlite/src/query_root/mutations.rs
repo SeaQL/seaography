@@ -60,10 +60,15 @@ impl Operations {
         _ctx: &ResolverContext<'_>,
         rental_request: rental_request::Input,
     ) -> GqlResult<String> {
-        Ok(format!(
+        let mut s = format!(
             "{} wants to rent {}",
             rental_request.customer, rental_request.film
-        ))
+        );
+        if let Some(location) = rental_request.location {
+            use std::fmt::Write;
+            write!(&mut s, " (at {})", location);
+        }
+        Ok(s)
     }
 
     async fn maybe_rental_request(

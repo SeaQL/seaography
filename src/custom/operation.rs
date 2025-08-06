@@ -101,7 +101,7 @@ where
     ) -> SeaResult<T> {
         let ty = T::column_type();
         let types_map_helper = TypesMapHelper { context };
-        let column_type = types_map_helper.get_column_type_helper("", "", &ty);
+        let column_type = types_map_helper.sea_orm_column_type_to_converted_type("", "", &ty);
         let value = ctx.args.try_get(name)?;
         let val = converted_value_to_sea_orm_value(&column_type, &value, "", "")?;
         Ok(val.unwrap())
