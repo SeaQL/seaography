@@ -4,7 +4,7 @@ use syn::{
     DataStruct, DeriveInput, Fields, FieldsNamed, Ident, ReturnType, Type, spanned::Spanned,
 };
 
-fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> proc_macro2::TokenStream {
+fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
     let mut gql_fields = Vec::new();
 
     for field in fields.named {

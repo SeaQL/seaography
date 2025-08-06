@@ -1,20 +1,20 @@
-use seaography::async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
-use seaography::{
-    BuilderContext, CustomInput, GqlInputType, GqlInputValue, GqlScalarValueType, SeaResult,
-};
+use seaography::async_graphql::dynamic::InputObject;
+use seaography::macros::CustomInput;
 
-#[derive(Clone)]
+#[derive(Clone, CustomInput)]
 pub struct RentalRequest {
     pub customer: String,
     pub film: String,
     pub location: Option<Location>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, CustomInput)]
 pub struct Location {
     pub city: String,
     pub county: Option<String>,
 }
+
+/*
 
 impl CustomInput for RentalRequest {
     fn input_object(ctx: &'static BuilderContext) -> InputObject {
@@ -79,3 +79,5 @@ impl GqlInputType for Location {
         Ok(Location { city, county })
     }
 }
+
+*/

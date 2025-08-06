@@ -15,6 +15,7 @@ pub fn schema(
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
     let mut builder = Builder::new(&CONTEXT, database.clone());
+
     seaography::register_entities!(
         builder,
         [
@@ -37,8 +38,10 @@ pub fn schema(
         ]
     );
 
-    builder.register_custom_input::<custom_inputs::RentalRequest>();
-    builder.register_custom_input::<custom_inputs::Location>();
+    seaography::register_custom_inputs!(
+        builder,
+        [custom_inputs::RentalRequest, custom_inputs::Location]
+    );
 
     builder.queries.extend(queries::Operations::to_fields());
 

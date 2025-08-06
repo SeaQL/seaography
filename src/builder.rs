@@ -485,3 +485,10 @@ macro_rules! register_active_enums {
         }
     };
 }
+
+#[macro_export]
+macro_rules! register_custom_inputs {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_input::<$ty>();)*
+    };
+}
