@@ -251,8 +251,8 @@ pub use query::*;
 pub mod mutation;
 pub use mutation::*;
 
-mod custom_operation;
-pub use custom_operation::*;
+mod custom;
+pub use custom::*;
 
 pub mod builder_context;
 pub use builder_context::*;

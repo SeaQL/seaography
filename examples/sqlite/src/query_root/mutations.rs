@@ -1,6 +1,6 @@
 use super::*;
 use async_graphql::{Result as GqlResult, Upload};
-use custom_entities::rental_request;
+use custom_inputs::RentalRequest;
 use sea_orm::{DbErr, EntityTrait};
 use seaography::macros::CustomOperation;
 
@@ -24,10 +24,9 @@ pub struct Operations {
     foo: fn(username: String) -> String,
     bar: fn(x: i32, y: i32) -> i32,
     login: fn() -> customer::Model,
-    rental_request: fn(rental_request: rental_request::Model) -> String,
+    rental_request: fn(rental_request: RentalRequest) -> String,
     upload: fn(upload: Upload) -> String,
-    #[rustfmt::skip]
-    maybe_rental_request: fn(rental_request: Option::<rental_request::Model>) -> Option::<rental::Model>,
+    maybe_rental_request: fn(rental_request: Option<RentalRequest>) -> Option<rental::Model>,
 }
 
 impl Operations {
@@ -58,17 +57,26 @@ impl Operations {
 
     async fn rental_request(
         _ctx: &ResolverContext<'_>,
-        rental_request: rental_request::Model,
+        rental_request: RentalRequest,
     ) -> GqlResult<String> {
-        Ok(format!(
+        let mut s = format!(
             "{} wants to rent {}",
             rental_request.customer, rental_request.film
-        ))
+        );
+        if let Some(location) = rental_request.location {
+            use std::fmt::Write;
+            write!(&mut s, " (at {}", location.city).unwrap();
+            if let Some(county) = location.county {
+                write!(&mut s, ", {}", county).unwrap();
+            }
+            write!(&mut s, ")").unwrap();
+        }
+        Ok(s)
     }
 
     async fn maybe_rental_request(
         ctx: &ResolverContext<'_>,
-        rental_request: Option<rental_request::Model>,
+        rental_request: Option<RentalRequest>,
     ) -> GqlResult<Option<rental::Model>> {
         let db = ctx.data::<DatabaseConnection>().unwrap();
 

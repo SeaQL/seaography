@@ -3,7 +3,7 @@ use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
 use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
-mod custom_entities;
+mod custom_inputs;
 mod mutations;
 mod queries;
 
@@ -15,6 +15,7 @@ pub fn schema(
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
     let mut builder = Builder::new(&CONTEXT, database.clone());
+
     seaography::register_entities!(
         builder,
         [
@@ -37,11 +38,14 @@ pub fn schema(
         ]
     );
 
-    builder.register_basic_entity::<custom_entities::rental_request::Entity>();
+    seaography::register_custom_inputs!(
+        builder,
+        [custom_inputs::RentalRequest, custom_inputs::Location]
+    );
 
-    builder.queries.extend(queries::Operations::to_fields());
+    seaography::register_custom_queries!(builder, [queries::Operations]);
 
-    builder.mutations.extend(mutations::Operations::to_fields());
+    seaography::register_custom_mutations!(builder, [mutations::Operations]);
 
     builder
         .set_depth_limit(depth)

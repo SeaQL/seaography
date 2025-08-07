@@ -1,12 +1,17 @@
 use crate::{
-    converted_value_to_sea_orm_value, BuilderContext, Connection, EntityInputBuilder,
-    EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
+    converted_null_to_sea_orm_value, converted_value_to_sea_orm_value, BuilderContext, Connection,
+    EntityInputBuilder, EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult,
+    TypesMapHelper,
 };
 use async_graphql::{
-    dynamic::{FieldValue, ResolverContext, TypeRef},
+    dynamic::{Field, FieldValue, ResolverContext, TypeRef, ValueAccessor},
     InputType, Upload,
 };
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
+
+pub trait CustomOperation {
+    fn to_fields() -> Vec<Field>;
+}
 
 pub trait GqlScalarValueType: Sized {
     fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
@@ -22,6 +27,13 @@ pub trait GqlScalarValueType: Sized {
         context: &'static BuilderContext,
         ctx: &ResolverContext<'_>,
         name: &str,
+    ) -> SeaResult<Self> {
+        Self::parse_value(context, ctx.args.get(name))
+    }
+
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
     fn gql_field_value(value: Self) -> FieldValue<'static>
@@ -32,13 +44,20 @@ pub trait GqlScalarValueType: Sized {
     }
 }
 
-pub trait GqlInputType: Sized + Send + Sync + 'static {
+pub trait GqlInputModelType: Sized + Send + Sync + 'static {
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 
     fn try_get_arg(
         context: &'static BuilderContext,
         ctx: &ResolverContext<'_>,
         name: &str,
+    ) -> SeaResult<Self> {
+        Self::parse_value(context, ctx.args.get(name))
+    }
+
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 }
 
@@ -78,7 +97,7 @@ where
 {
     fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
         let ty = T::column_type();
-        let not_null = true;
+        let not_null = !T::is_option();
         let enum_type_name = T::enum_type_name();
         let types_map_helper = TypesMapHelper { context };
         match types_map_helper.sea_orm_column_type_to_graphql_type(&ty, not_null, enum_type_name) {
@@ -87,17 +106,21 @@ where
         }
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
-    ) -> SeaResult<T> {
-        let ty = T::column_type();
+        value: Option<ValueAccessor<'_>>,
+    ) -> SeaResult<Self> {
         let types_map_helper = TypesMapHelper { context };
-        let column_type = types_map_helper.get_column_type_helper("", "", &ty);
-        let value = ctx.args.try_get(name)?;
-        let val = converted_value_to_sea_orm_value(&column_type, &value, "", "")?;
-        Ok(val.unwrap())
+        let column_type = T::column_type();
+        let column_type =
+            types_map_helper.sea_orm_column_type_to_converted_type("", "", &column_type);
+
+        if value.is_none() {
+            Ok(converted_null_to_sea_orm_value(&column_type).unwrap())
+        } else {
+            let value = converted_value_to_sea_orm_value(&column_type, &value.unwrap(), "", "")?;
+            Ok(value.unwrap())
+        }
     }
 }
 
@@ -190,49 +213,46 @@ where
     }
 }
 
-impl GqlInputType for PaginationInput {
+impl GqlInputModelType for PaginationInput {
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named(ctx.pagination_input.type_name.to_owned())
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        let pagination = ctx.args.get(name);
-        Ok(PaginationInputBuilder { context }.parse_object(pagination))
+        Ok(PaginationInputBuilder { context }.parse_object(value))
     }
 }
 
-impl GqlInputType for Upload {
+impl GqlInputModelType for Upload {
     fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
         TypeRef::named_nn("Upload")
     }
 
-    fn try_get_arg(
+    fn parse_value(
         _context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        Ok(Upload::parse(
-            ctx.args.get(name).map(|v| v.as_value()).cloned(),
-        )?)
+        Ok(Upload::parse(value.map(|v| v.as_value()).cloned())?)
     }
 }
 
-impl GqlInputType for Option<Upload> {
-    fn gql_input_type_ref(_context: &'static BuilderContext) -> TypeRef {
-        TypeRef::named("Upload")
+impl<T: GqlInputModelType> GqlInputModelType for Option<T> {
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        match T::gql_input_type_ref(context) {
+            TypeRef::NonNull(ty) => ty.as_ref().to_owned(),
+            _ => unimplemented!("Cannot be used as optional input"),
+        }
     }
 
-    fn try_get_arg(
-        _context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        match ctx.args.get(name) {
-            Some(v) => Ok(Some(Upload::parse(Some(v.as_value().to_owned()))?)),
+        match value {
+            Some(v) => Ok(Some(T::parse_value(context, Some(v))?)),
             None => Ok(None),
         }
     }
