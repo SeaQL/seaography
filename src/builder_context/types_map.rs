@@ -850,9 +850,10 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> sea_orm::
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-postgres-array")]
-        ConvertedType::Array(ty) => {
-            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(&ty)?, None)
-        }
+        ConvertedType::Array(ty) => sea_orm::Value::Array(
+            converted_type_to_sea_orm_array_type(&ty).expect("failed to convert array"),
+            None,
+        ),
     }
 }
 
