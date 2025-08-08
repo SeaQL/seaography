@@ -13,7 +13,7 @@ use crate::{
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
     FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
     OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder, TypesMapHelper,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -124,8 +124,12 @@ impl Builder {
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
         };
-        let query = entity_query_field_builder.to_field::<T>();
-        self.queries.push(query);
+
+        #[cfg(feature = "field-pluralize")]
+        {
+            let query = entity_query_field_builder.to_field::<T>();
+            self.queries.push(query);
+        }
 
         let connection_query = entity_query_field_builder.to_connection_field::<T>();
         self.queries.push(connection_query);
@@ -429,7 +433,7 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
-            .register(mutation);
+            .register(mutation).data(TypesMapHelper { context: self.context });
 
         let schema = if let Some(depth) = self.depth {
             schema.limit_depth(depth)
