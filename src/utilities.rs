@@ -265,3 +265,23 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
 
     Ok(values)
 }
+
+#[cfg(feature = "field-pluralize")]
+pub fn pluralize_unique(word: &str, plural: bool) -> String {
+    use pluralizer::pluralize;
+    let name_single = pluralize(word, 1, false);
+    let name_plural = pluralize(word, 2, false);
+
+    if plural {
+        name_plural
+    } else if name_single == name_plural {
+        format!("{}_single", name_single)
+    } else {
+        name_single
+    }
+}
+
+#[cfg(not(feature = "field-pluralize"))]
+pub fn pluralize_unique(word: &str, _plural: bool) -> String {
+    word.into()
+}

@@ -1,7 +1,7 @@
 use crate::{
-    converted_null_to_sea_orm_value, converted_value_to_sea_orm_value, BuilderContext, Connection,
-    EntityInputBuilder, EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult,
-    TypesMapHelper,
+    converted_null_to_sea_orm_value, converted_value_to_sea_orm_value, pluralize_unique,
+    BuilderContext, Connection, EntityInputBuilder, EntityObjectBuilder, PaginationInput,
+    PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
 use async_graphql::{
     dynamic::{Field, FieldValue, ResolverContext, TypeRef, ValueAccessor},
@@ -193,7 +193,7 @@ where
 {
     fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
         let entity_object_builder = EntityObjectBuilder { context };
-        let entity_name = entity_object_builder.type_name::<E>();
+        let entity_name = pluralize_unique(&entity_object_builder.type_name::<E>(), true);
         let type_name = context.connection_object.type_name.as_ref()(&entity_name);
         TypeRef::named_nn(type_name)
     }

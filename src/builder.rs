@@ -13,7 +13,7 @@ use crate::{
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
     FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
     OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder, TypesMapHelper,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -123,8 +123,15 @@ impl Builder {
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
         };
-        let query = entity_query_field_builder.to_field::<T>();
-        self.queries.push(query);
+
+        #[cfg(feature = "field-pluralize")]
+        {
+            let query = entity_query_field_builder.to_field::<T>();
+            self.queries.push(query);
+        }
+
+        let connection_query = entity_query_field_builder.to_connection_field::<T>();
+        self.queries.push(connection_query);
 
         let schema = sea_orm::Schema::new(self.connection.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
@@ -143,6 +150,9 @@ impl Builder {
         };
         let entity_object = entity_object_builder.to_object::<T>();
         self.outputs.push(entity_object);
+
+        let basic_entity_object = entity_object_builder.to_basic_object::<T>();
+        self.outputs.push(basic_entity_object);
 
         let entity_input_builder = EntityInputBuilder {
             context: self.context,
@@ -416,7 +426,10 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
-            .register(mutation);
+            .register(mutation)
+            .data(TypesMapHelper {
+                context: self.context,
+            });
 
         let schema = if let Some(depth) = self.depth {
             schema.limit_depth(depth)
