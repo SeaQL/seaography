@@ -3,7 +3,9 @@ use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error, pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInputBuilder
+    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error,
+    pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder,
+    FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInputBuilder,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -61,17 +63,13 @@ impl EntityQueryFieldBuilder {
     }
 
     /// used to get the Query object field for a SeaORM entity
-    #[cfg(feature="field-pluralize")]
+    #[cfg(feature = "field-pluralize")]
     pub fn to_field<T>(&self) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        use sea_orm::{
-            Iterable,
-            PrimaryKeyToColumn,
-            ColumnTrait
-        };
+        use sea_orm::{ColumnTrait, Iterable, PrimaryKeyToColumn};
 
         use crate::TypesMapHelper;
 
@@ -90,15 +88,17 @@ impl EntityQueryFieldBuilder {
 
         let column_def = column.def();
         let enum_type_name = column.enum_type_name();
-        let types_helper = TypesMapHelper { context: self.context };
+        let types_helper = TypesMapHelper {
+            context: self.context,
+        };
 
-        let converted_type = types_helper.sea_orm_column_type_to_graphql_type(column_def.get_column_type(), true, enum_type_name);
-
-        let iv = InputValue::new(
-            "id",
-            converted_type.expect("primary key to be supported"),
+        let converted_type = types_helper.sea_orm_column_type_to_graphql_type(
+            column_def.get_column_type(),
+            true,
+            enum_type_name,
         );
 
+        let iv = InputValue::new("id", converted_type.expect("primary key to be supported"));
 
         Field::new(
             self.type_name::<T>(),
@@ -115,7 +115,6 @@ impl EntityQueryFieldBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-
                     #[cfg(not(feature = "with-uuid"))]
                     let stmt = T::find();
                     #[cfg(feature = "with-uuid")]
@@ -127,9 +126,14 @@ impl EntityQueryFieldBuilder {
                             .map(|variant| variant.into_column())
                             .collect::<Vec<T::Column>>()[0];
 
-                        let v = mapper.async_graphql_value_to_sea_orm_value::<T>(
-                            &column,
-                            &ctx.args.get("id").expect("id is null, even though set to not null")).unwrap();
+                        let v = mapper
+                            .async_graphql_value_to_sea_orm_value::<T>(
+                                &column,
+                                &ctx.args
+                                    .get("id")
+                                    .expect("id is null, even though set to not null"),
+                            )
+                            .unwrap();
                         stmt = stmt.filter(column.eq(v));
                     }
 
@@ -173,51 +177,44 @@ impl EntityQueryFieldBuilder {
         let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
-        #[cfg(feature ="field-pluralize")]
-        let connection_name =
-            &pluralizer::pluralize(&self.type_name::<T>(),2,false);
-        #[cfg(not(feature ="field-pluralize"))]
+        #[cfg(feature = "field-pluralize")]
+        let connection_name = &pluralizer::pluralize(&self.type_name::<T>(), 2, false);
+        #[cfg(not(feature = "field-pluralize"))]
         let connection_name = &self.type_name::<T>();
 
-        Field::new(
-            connection_name,
-            TypeRef::named_nn(type_name),
-            move |ctx| {
-                let object_name = object_name.clone();
-                FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                        return Err(guard_error(reason, "Entity guard triggered."));
-                    }
-                    if let GuardAction::Block(reason) =
-                        hooks.entity_guard(&ctx, &object_name, OperationType::Read)
-                    {
-                        return Err(guard_error(reason, "Entity guard triggered."));
-                    }
+        Field::new(connection_name, TypeRef::named_nn(type_name), move |ctx| {
+            let object_name = object_name.clone();
+            FieldFuture::new(async move {
+                if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                    return Err(guard_error(reason, "Entity guard triggered."));
+                }
+                if let GuardAction::Block(reason) =
+                    hooks.entity_guard(&ctx, &object_name, OperationType::Read)
+                {
+                    return Err(guard_error(reason, "Entity guard triggered."));
+                }
 
-                    let filters = ctx.args.get(&context.entity_query_field.filters);
-                    let filters = get_filter_conditions::<T>(context, filters);
-                    let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                    let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
-                    let pagination = ctx.args.get(&context.entity_query_field.pagination);
-                    let pagination = PaginationInputBuilder { context }.parse_object(pagination);
+                let filters = ctx.args.get(&context.entity_query_field.filters);
+                let filters = get_filter_conditions::<T>(context, filters);
+                let order_by = ctx.args.get(&context.entity_query_field.order_by);
+                let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
+                let pagination = ctx.args.get(&context.entity_query_field.pagination);
+                let pagination = PaginationInputBuilder { context }.parse_object(pagination);
 
-                    let mut stmt = T::find();
-                    if let Some(filter) =
-                        hooks.entity_filter(&ctx, &object_name, OperationType::Read)
-                    {
-                        stmt = stmt.filter(filter);
-                    }
-                    stmt = stmt.filter(filters);
-                    stmt = apply_order(stmt, order_by);
+                let mut stmt = T::find();
+                if let Some(filter) = hooks.entity_filter(&ctx, &object_name, OperationType::Read) {
+                    stmt = stmt.filter(filter);
+                }
+                stmt = stmt.filter(filters);
+                stmt = apply_order(stmt, order_by);
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                let db = ctx.data::<DatabaseConnection>()?;
 
-                    let connection = apply_pagination::<T>(db, stmt, pagination).await?;
+                let connection = apply_pagination::<T>(db, stmt, pagination).await?;
 
-                    Ok(Some(FieldValue::owned_any(connection)))
-                })
-            },
-        )
+                Ok(Some(FieldValue::owned_any(connection)))
+            })
+        })
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
             TypeRef::named(filter_input_builder.type_name(&object_name_)),

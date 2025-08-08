@@ -107,7 +107,6 @@ impl Builder {
         };
         let connection = connection_object_builder.to_object::<T>();
 
-
         self.outputs.extend(vec![entity_object, edge, connection]);
 
         let filter_input_builder = FilterInputBuilder {
@@ -313,9 +312,7 @@ impl Builder {
         let query = self
             .queries
             .into_iter()
-            .fold(query, |query, field| {
-                  query.field(field)
-            });
+            .fold(query, |query, field| query.field(field));
 
         const TABLE_NAME: &str = "table_name";
         let field = Field::new(
@@ -347,17 +344,13 @@ impl Builder {
         let mutation = self
             .mutations
             .into_iter()
-            .fold(mutation, |mutation, field| {
-                mutation.field(field)
-            });
+            .fold(mutation, |mutation, field| mutation.field(field));
 
         // register entities to schema
         let schema = self
             .outputs
             .into_iter()
-            .fold(schema, |schema, entity| {
-                schema.register(entity)
-            });
+            .fold(schema, |schema, entity| schema.register(entity));
 
         // register input types to schema
         let schema = self
@@ -433,7 +426,10 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
-            .register(mutation).data(TypesMapHelper { context: self.context });
+            .register(mutation)
+            .data(TypesMapHelper {
+                context: self.context,
+            });
 
         let schema = if let Some(depth) = self.depth {
             schema.limit_depth(depth)
