@@ -6,10 +6,7 @@ use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{EntityTrait, Iden, ModelTrait, QueryFilter, RelationDef};
 
 use crate::{
-    apply_guard, apply_memory_pagination, get_filter_conditions, guard_error, BuilderContext,
-    Connection, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction,
-    HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType,
-    OrderInputBuilder, PaginationInputBuilder,
+    apply_guard, apply_memory_pagination, get_filter_conditions, guard_error, pluralize_unique, BuilderContext, Connection, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder, PaginationInputBuilder
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -28,11 +25,13 @@ impl EntityObjectRelationBuilder {
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
-        let name = if cfg!(feature = "field-snake-case") {
+        let name_pp = &if cfg!(feature = "field-snake-case") {
             name.to_snake_case()
         } else {
             name.to_lower_camel_case()
         };
+        let name = pluralize_unique(name_pp, matches!(relation_definition.rel_type, sea_orm::RelationType::HasMany));
+
         let context: &'static BuilderContext = self.context;
         let entity_object_builder = EntityObjectBuilder { context };
         let connection_object_builder = ConnectionObjectBuilder { context };

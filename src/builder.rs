@@ -92,7 +92,6 @@ impl Builder {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
-        println!("registering {}", entity_object_builder.type_name::<T>());
         let entity_object = relations.into_iter().fold(
             entity_object_builder.to_object::<T>(),
             |entity_object, field| entity_object.field(field),
@@ -107,7 +106,6 @@ impl Builder {
             context: self.context,
         };
         let connection = connection_object_builder.to_object::<T>();
-        println!("built connection {:?}", connection);
 
 
         self.outputs.extend(vec![entity_object, edge, connection]);
@@ -303,7 +301,6 @@ impl Builder {
 
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
     pub fn schema_builder(self) -> SchemaBuilder {
-        println!("building");
         let query = self.query;
         let mutation = self.mutation;
         let schema = self.schema;
@@ -313,7 +310,6 @@ impl Builder {
             .queries
             .into_iter()
             .fold(query, |query, field| {
-                println!("registering query {:?}", field);
                   query.field(field)
             });
 
@@ -348,7 +344,6 @@ impl Builder {
             .mutations
             .into_iter()
             .fold(mutation, |mutation, field| {
-                println!("registering mut {:?}", field);
                 mutation.field(field)
             });
 
@@ -357,7 +352,6 @@ impl Builder {
             .outputs
             .into_iter()
             .fold(schema, |schema, entity| {
-                println!("registering outs {:?}", entity);
                 schema.register(entity)
             });
 

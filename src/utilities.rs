@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use pluralizer::pluralize;
 
 /// used to encode the primary key values of a SeaORM entity to a String
 pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
@@ -264,4 +265,17 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
     }
 
     Ok(values)
+}
+
+pub fn pluralize_unique(word: &str, plural: bool) -> String {
+    let name_single = pluralize(word, 1, false);
+    let name_plural = pluralize(word, 2, false);
+
+    if plural {
+        name_plural
+    } else if name_single == name_plural {
+        format!("{}_single", name_single)
+    } else {
+        name_single
+    }
 }

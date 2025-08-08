@@ -4,9 +4,7 @@ use pluralizer::pluralize;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error, BuilderContext,
-    ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType,
-    OrderInputBuilder, PaginationInputBuilder,
+    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error, pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInputBuilder
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -59,7 +57,7 @@ impl EntityQueryFieldBuilder {
         let entity_object = EntityObjectBuilder {
             context: self.context,
         };
-        let object_name = pluralize(&entity_object.type_name::<T>(), 1, false);
+        let object_name = pluralize_unique(&entity_object.type_name::<T>(), false);
         self.context.entity_query_field.type_name.as_ref()(&object_name)
     }
 
@@ -147,18 +145,15 @@ impl EntityQueryFieldBuilder {
             context: self.context,
         };
 
-        let object_name = pluralize(&entity_object.type_name::<T>(), 2, false);
+        let object_name = pluralize_unique(&entity_object.type_name::<T>(), true);
         let object_name_ = object_name.clone();
         let type_name = connection_object_builder.type_name(&object_name);
-        println!("connection type_name: {}", type_name);
 
         let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
         let connection_name =
             &pluralize(&self.type_name::<T>(),2,false);
-
-        println!("connection name: {}", connection_name);
 
         Field::new(
             connection_name,

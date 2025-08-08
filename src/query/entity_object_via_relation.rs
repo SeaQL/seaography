@@ -8,10 +8,7 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_guard, apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions,
-    guard_error, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder,
-    GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType,
-    OrderInputBuilder, PaginationInputBuilder,
+    apply_guard, apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, guard_error, pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder, PaginationInputBuilder
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
@@ -31,13 +28,14 @@ impl EntityObjectViaRelationBuilder {
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
-        let name = if cfg!(feature = "field-snake-case") {
+        let to_relation_definition = <T as Related<R>>::to();
+        let name_pp = if cfg!(feature = "field-snake-case") {
             name.to_snake_case()
         } else {
             name.to_lower_camel_case()
         };
+        let name = pluralize_unique(&name_pp, matches!(to_relation_definition.rel_type, sea_orm::RelationType::HasMany));
         let context: &'static BuilderContext = self.context;
-        let to_relation_definition = <T as Related<R>>::to();
         let (via_relation_definition, is_via_relation) = match <T as Related<R>>::via() {
             Some(def) => (def, true),
             None => (<T as Related<R>>::to(), false),

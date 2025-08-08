@@ -1,9 +1,8 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, Object, TypeRef};
-use pluralizer::pluralize;
 use sea_orm::EntityTrait;
 
 use crate::{
-    BuilderContext, Edge, EdgeObjectBuilder, EntityObjectBuilder, PageInfo, PaginationInfo,
+    pluralize_unique, BuilderContext, Edge, EdgeObjectBuilder, EntityObjectBuilder, PageInfo, PaginationInfo
 };
 
 /// used to represent a GraphQL Connection node for any Type
@@ -73,7 +72,7 @@ pub struct ConnectionObjectBuilder {
 impl ConnectionObjectBuilder {
     /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
-        let object_name = pluralize(&object_name, 2, false);
+        let object_name = pluralize_unique(&object_name, true);
         self.context.connection_object.type_name.as_ref()(&object_name)
     }
 
