@@ -1,4 +1,5 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
+use pluralizer::pluralize;
 use sea_orm::{EntityTrait, Iterable};
 
 use crate::{BuilderContext, EntityObjectBuilder};
@@ -27,7 +28,8 @@ pub struct OrderInputBuilder {
 impl OrderInputBuilder {
     /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
-        self.context.order_input.type_name.as_ref()(object_name)
+        let object_name = pluralize(&object_name, 1, false);
+        self.context.order_input.type_name.as_ref()(&object_name)
     }
 
     /// used to get the OrderInput object of a SeaORM entity

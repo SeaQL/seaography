@@ -1,4 +1,5 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, Object, TypeRef};
+use pluralizer::pluralize;
 use sea_orm::EntityTrait;
 
 use crate::{
@@ -72,7 +73,8 @@ pub struct ConnectionObjectBuilder {
 impl ConnectionObjectBuilder {
     /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
-        self.context.connection_object.type_name.as_ref()(object_name)
+        let object_name = pluralize(&object_name, 2, false);
+        self.context.connection_object.type_name.as_ref()(&object_name)
     }
 
     /// used to get the Connection object for a SeaORM entity

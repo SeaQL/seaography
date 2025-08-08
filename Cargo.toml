@@ -25,6 +25,7 @@ thiserror = { version = "1.0.44" }
 fnv = { version = "1.0.7" }
 lazy_static = { version = "1.5" }
 serde_json = { version = "1.0" }
+pluralizer = "0.5.0"
 
 [features]
 default = ["field-camel-case"]

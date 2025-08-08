@@ -92,6 +92,7 @@ impl Builder {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
+        println!("registering {}", entity_object_builder.type_name::<T>());
         let entity_object = relations.into_iter().fold(
             entity_object_builder.to_object::<T>(),
             |entity_object, field| entity_object.field(field),
@@ -106,6 +107,8 @@ impl Builder {
             context: self.context,
         };
         let connection = connection_object_builder.to_object::<T>();
+        println!("built connection {:?}", connection);
+
 
         self.outputs.extend(vec![entity_object, edge, connection]);
 
@@ -125,6 +128,9 @@ impl Builder {
         };
         let query = entity_query_field_builder.to_field::<T>();
         self.queries.push(query);
+
+        let connection_query = entity_query_field_builder.to_connection_field::<T>();
+        self.queries.push(connection_query);
 
         let schema = sea_orm::Schema::new(self.connection.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
@@ -297,6 +303,7 @@ impl Builder {
 
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
     pub fn schema_builder(self) -> SchemaBuilder {
+        println!("building");
         let query = self.query;
         let mutation = self.mutation;
         let schema = self.schema;
@@ -305,7 +312,10 @@ impl Builder {
         let query = self
             .queries
             .into_iter()
-            .fold(query, |query, field| query.field(field));
+            .fold(query, |query, field| {
+                println!("registering query {:?}", field);
+                  query.field(field)
+            });
 
         const TABLE_NAME: &str = "table_name";
         let field = Field::new(
@@ -337,13 +347,19 @@ impl Builder {
         let mutation = self
             .mutations
             .into_iter()
-            .fold(mutation, |mutation, field| mutation.field(field));
+            .fold(mutation, |mutation, field| {
+                println!("registering mut {:?}", field);
+                mutation.field(field)
+            });
 
         // register entities to schema
         let schema = self
             .outputs
             .into_iter()
-            .fold(schema, |schema, entity| schema.register(entity));
+            .fold(schema, |schema, entity| {
+                println!("registering outs {:?}", entity);
+                schema.register(entity)
+            });
 
         // register input types to schema
         let schema = self

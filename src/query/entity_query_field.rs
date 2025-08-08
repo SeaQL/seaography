@@ -1,5 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use heck::{ToLowerCamelCase, ToSnakeCase};
+use pluralizer::pluralize;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
@@ -58,12 +59,74 @@ impl EntityQueryFieldBuilder {
         let entity_object = EntityObjectBuilder {
             context: self.context,
         };
-        let object_name = entity_object.type_name::<T>();
+        let object_name = pluralize(&entity_object.type_name::<T>(), 1, false);
         self.context.entity_query_field.type_name.as_ref()(&object_name)
     }
 
     /// used to get the Query object field for a SeaORM entity
     pub fn to_field<T>(&self) -> Field
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let entity_object = EntityObjectBuilder {
+            context: self.context,
+        };
+
+        let object_name = entity_object.type_name::<T>();
+
+        let guard = self.context.guards.entity_guards.get(&object_name);
+        let hooks = &self.context.hooks;
+        let iv = InputValue::new(
+            "id",
+            TypeRef::named_nn(TypeRef::STRING),
+        );
+
+
+        Field::new(
+            self.type_name::<T>(),
+            TypeRef::named_nn(&object_name),
+            move |ctx| {
+                let object_name = object_name.clone();
+                FieldFuture::new(async move {
+                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Read)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+
+
+                    let mut stmt = T::find();
+                    #[cfg(feature = "with-uuid")]
+                    if cfg!(feature = "with-uuid") {
+                        use sea_orm::{
+                            Iterable,
+                            PrimaryKeyToColumn,
+                            ColumnTrait
+                        };
+                        let column = T::PrimaryKey::iter()
+                            .map(|variant| variant.into_column())
+                            .collect::<Vec<T::Column>>()[0];
+                        use std::str::FromStr;
+                        stmt = stmt.filter(column.eq(sea_orm::entity::prelude::Uuid::from_str(ctx.args.get("id").unwrap().string().unwrap()).unwrap()));
+                    }
+
+                    let db = ctx.data::<DatabaseConnection>()?;
+
+                    let r = stmt.one(db).await?;
+
+                    Ok(Some(FieldValue::owned_any(r)))
+                })
+            },
+        )
+        .argument(iv)
+    }
+
+    /// used to get the Query object field for a SeaORM entity
+    pub fn to_connection_field<T>(&self) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -84,16 +147,21 @@ impl EntityQueryFieldBuilder {
             context: self.context,
         };
 
-        let object_name = entity_object.type_name::<T>();
+        let object_name = pluralize(&entity_object.type_name::<T>(), 2, false);
         let object_name_ = object_name.clone();
         let type_name = connection_object_builder.type_name(&object_name);
+        println!("connection type_name: {}", type_name);
 
         let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
+        let connection_name =
+            &pluralize(&self.type_name::<T>(),2,false);
+
+        println!("connection name: {}", connection_name);
 
         Field::new(
-            self.type_name::<T>(),
+            connection_name,
             TypeRef::named_nn(type_name),
             move |ctx| {
                 let object_name = object_name.clone();
