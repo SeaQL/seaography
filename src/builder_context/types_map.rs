@@ -778,12 +778,12 @@ pub fn converted_value_to_sea_orm_value(
                 .list()?
                 .iter()
                 .map(|value| {
-                    converted_value_to_sea_orm_value(&*ty, &value, entity_name, column_name)
+                    converted_value_to_sea_orm_value(ty, &value, entity_name, column_name)
                 })
                 .collect::<SeaResult<Vec<sea_orm::Value>>>()?;
 
             sea_orm::Value::Array(
-                converted_type_to_sea_orm_array_type(&ty)?,
+                converted_type_to_sea_orm_array_type(ty)?,
                 Some(Box::new(list_value)),
             )
         } // FIXME: support ip type
@@ -851,7 +851,7 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> sea_orm::
         ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => sea_orm::Value::Array(
-            converted_type_to_sea_orm_array_type(&ty).expect("failed to convert array"),
+            converted_type_to_sea_orm_array_type(ty).expect("failed to convert array"),
             None,
         ),
     }

@@ -27,7 +27,7 @@ pub struct OrderInputBuilder {
 impl OrderInputBuilder {
     /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
-        let object_name = pluralize_unique(&object_name, false);
+        let object_name = pluralize_unique(object_name, false);
         self.context.order_input.type_name.as_ref()(&object_name)
     }
 

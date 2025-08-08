@@ -73,7 +73,7 @@ pub struct ConnectionObjectBuilder {
 impl ConnectionObjectBuilder {
     /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
-        let object_name = pluralize_unique(&object_name, true);
+        let object_name = pluralize_unique(object_name, true);
         self.context.connection_object.type_name.as_ref()(&object_name)
     }
 
