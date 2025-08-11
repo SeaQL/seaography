@@ -10,6 +10,7 @@ name: tests
       - .github/ISSUE_TEMPLATE/**
     branches:
       - main
+      - 1.1.x
       - pr/**/ci
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}'
