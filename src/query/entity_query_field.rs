@@ -62,6 +62,18 @@ impl EntityQueryFieldBuilder {
         self.context.entity_query_field.type_name.as_ref()(&object_name)
     }
 
+    #[cfg(feature = "field-pluralize")]
+    fn type_name_vanilla<T>(&self) -> String
+    where
+        T: EntityTrait,
+    {
+        let entity_object = EntityObjectBuilder {
+            context: self.context,
+        };
+        let object_name = &entity_object.type_name::<T>();
+        self.context.entity_query_field.type_name.as_ref()(&object_name)
+    }
+
     /// used to get the Query object field for a SeaORM entity
     #[cfg(feature = "field-pluralize")]
     pub fn to_field<T>(&self) -> Field
@@ -178,7 +190,7 @@ impl EntityQueryFieldBuilder {
         let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
         #[cfg(feature = "field-pluralize")]
-        let connection_name = &pluralizer::pluralize(&self.type_name::<T>(), 2, false);
+        let connection_name = &pluralizer::pluralize(&self.type_name_vanilla::<T>(), 2, false);
         #[cfg(not(feature = "field-pluralize"))]
         let connection_name = &self.type_name::<T>();
 

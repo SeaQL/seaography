@@ -450,7 +450,7 @@ async fn test_self_ref() {
             .execute(
                 r#"
                 {
-                    staffSingles {
+                    staff {
                       nodes {
                         firstName
                         reportsToId
@@ -472,7 +472,7 @@ async fn test_self_ref() {
             .await,
         r#"
             {
-                "staffSingles": {
+                "staff": {
                 "nodes": [
                     {
                     "firstName": "Mike",
