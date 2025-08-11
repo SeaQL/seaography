@@ -82,7 +82,8 @@ jobs:
         working-directory: ./examples/sqlite
         run: |
           cargo test --tests custom_
-          rm tests/custom_*_tests.rs
+          cargo test --test plural_query_tests
+          rm tests/custom_mutation_tests.rs tests/custom_query_tests.rs tests/plural_query_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
