@@ -267,6 +267,9 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
 }
 
 #[cfg(feature = "field-pluralize")]
+/// Returns unique names for singular and plural names,
+/// so they can be used in different endpoints.
+/// Right now a _single suffix is appended to the singular noun.
 pub fn pluralize_unique(word: &str, plural: bool) -> String {
     use pluralizer::pluralize;
     let name_single = pluralize(word, 1, false);

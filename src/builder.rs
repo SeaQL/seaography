@@ -124,13 +124,12 @@ impl Builder {
             context: self.context,
         };
 
-        #[cfg(feature = "field-pluralize")]
-        {
-            let query = entity_query_field_builder.to_field::<T>();
+        if cfg!(feature = "field-pluralize") {
+            let query = entity_query_field_builder.to_singular_field::<T>();
             self.queries.push(query);
         }
 
-        let connection_query = entity_query_field_builder.to_connection_field::<T>();
+        let connection_query = entity_query_field_builder.to_field::<T>();
         self.queries.push(connection_query);
 
         let schema = sea_orm::Schema::new(self.connection.get_database_backend());

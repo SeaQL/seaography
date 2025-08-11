@@ -62,7 +62,6 @@ impl EntityQueryFieldBuilder {
         self.context.entity_query_field.type_name.as_ref()(&object_name)
     }
 
-    #[cfg(feature = "field-pluralize")]
     fn type_name_vanilla<T>(&self) -> String
     where
         T: EntityTrait,
@@ -71,12 +70,11 @@ impl EntityQueryFieldBuilder {
             context: self.context,
         };
         let object_name = &entity_object.type_name::<T>();
-        self.context.entity_query_field.type_name.as_ref()(&object_name)
+        self.context.entity_query_field.type_name.as_ref()(object_name)
     }
 
-    /// used to get the Query object field for a SeaORM entity
-    #[cfg(feature = "field-pluralize")]
-    pub fn to_field<T>(&self) -> Field
+    /// the additional singular Query endpoint
+    pub fn to_singular_field<T>(&self) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -127,9 +125,7 @@ impl EntityQueryFieldBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    #[cfg(not(feature = "with-uuid"))]
-                    let stmt = T::find();
-                    #[cfg(feature = "with-uuid")]
+                    #[allow(unused_mut)]
                     let mut stmt = T::find();
                     #[cfg(feature = "with-uuid")]
                     {
@@ -161,7 +157,7 @@ impl EntityQueryFieldBuilder {
     }
 
     /// used to get the Query object field for a SeaORM entity
-    pub fn to_connection_field<T>(&self) -> Field
+    pub fn to_field<T>(&self) -> Field
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -189,10 +185,8 @@ impl EntityQueryFieldBuilder {
         let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
-        #[cfg(feature = "field-pluralize")]
-        let connection_name = &pluralizer::pluralize(&self.type_name_vanilla::<T>(), 2, false);
-        #[cfg(not(feature = "field-pluralize"))]
-        let connection_name = &self.type_name::<T>();
+        let connection_name = 
+            pluralize_unique(&self.type_name_vanilla::<T>(), true);
 
         Field::new(connection_name, TypeRef::named_nn(type_name), move |ctx| {
             let object_name = object_name.clone();
