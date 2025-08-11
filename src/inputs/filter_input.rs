@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
 use sea_orm::{EntityTrait, Iterable};
 
-use crate::{BuilderContext, EntityObjectBuilder, FilterTypesMapHelper};
+use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, FilterTypesMapHelper};
 
 /// The configuration structure for FilterInputBuilder
 pub struct FilterInputConfig {
@@ -28,7 +28,8 @@ impl FilterInputBuilder {
     /// used to get the filter input object name
     /// object_name is the name of the SeaORM Entity GraphQL object
     pub fn type_name(&self, object_name: &str) -> String {
-        self.context.filter_input.type_name.as_ref()(object_name)
+        let object_name = pluralize_unique(object_name, false);
+        self.context.filter_input.type_name.as_ref()(&object_name)
     }
 
     /// used to produce the filter input object of a SeaORM entity
