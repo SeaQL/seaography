@@ -18,9 +18,10 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
         // println!("{:#?}", func.output);
 
         if let ReturnType::Type(_, ty) = &mut func.output
-            && let Type::Path(type_path) = ty.as_mut() {
-                qualify_type_path(type_path);
-            }
+            && let Type::Path(type_path) = ty.as_mut()
+        {
+            qualify_type_path(type_path);
+        }
 
         let new_field_return_ty = match &func.output {
             ReturnType::Type(_, ty) => {

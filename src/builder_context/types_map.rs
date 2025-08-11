@@ -777,9 +777,7 @@ pub fn converted_value_to_sea_orm_value(
             let list_value = value
                 .list()?
                 .iter()
-                .map(|value| {
-                    converted_value_to_sea_orm_value(ty, &value, entity_name, column_name)
-                })
+                .map(|value| converted_value_to_sea_orm_value(ty, &value, entity_name, column_name))
                 .collect::<SeaResult<Vec<sea_orm::Value>>>()?;
 
             sea_orm::Value::Array(
