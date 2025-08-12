@@ -1,9 +1,7 @@
 use crate::entities::*;
 use sea_orm::{
-    ActiveModelTrait, ConnectionTrait, DbConn, EntityName, EntityTrait, ExecResult, Schema, Set,
     error::*,
     rbac::{
-        AccessType, RbacUserId,
         entity::{
             permission::{ActiveModel as Permission, PermissionId},
             resource::{ActiveModel as Resource, ResourceId},
@@ -15,7 +13,9 @@ use sea_orm::{
             user_role::ActiveModel as UserRole,
         },
         schema::{action_str, create_tables},
+        AccessType, RbacUserId,
     },
+    ActiveModelTrait, ConnectionTrait, DbConn, EntityName, EntityTrait, ExecResult, Schema, Set,
 };
 use std::collections::HashMap;
 

@@ -128,7 +128,8 @@ impl EntityQueryFieldBuilder {
 
                     dbg!(&user_context);
                     db.load_rbac().await?;
-                    let db = &db.restricted_for(sea_orm::rbac::RbacUserId(user_context.user_id.into()))?;
+                    let db =
+                        &db.restricted_for(sea_orm::rbac::RbacUserId(user_context.user_id.into()))?;
 
                     let connection = apply_pagination::<_, T>(db, stmt, pagination).await?;
 
