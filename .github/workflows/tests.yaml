@@ -79,7 +79,7 @@ jobs:
         with:
           crate: sea-orm-cli
           version: 1.0.0
-      - name: Integration tests
+      - name: Additional Integration tests
         working-directory: ./examples/sqlite
         run: |
           cargo test --tests custom_
@@ -204,8 +204,6 @@ jobs:
         with:
           crate: sea-orm-cli
           version: 1.0.0
-      - name: Remove generated folder
-        run: rm -rf ./examples/postgres/src
       - name: Create DB
         run: >-
           psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE
@@ -216,6 +214,13 @@ jobs:
       - name: Import DB Data
         run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql'
         working-directory: ./examples/postgres
+      - name: Additional Integration tests
+        working-directory: ./examples/postgres
+        run: |
+          cargo test --test query_array_tests
+          rm tests/query_array_tests.rs
+      - name: Remove generated folder
+        run: rm -rf ./examples/postgres/src
       - name: Generate entities
         run: >-
           sea-orm-cli generate entity -o ./examples/postgres/src/entities -u
