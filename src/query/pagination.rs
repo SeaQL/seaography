@@ -12,12 +12,13 @@ use crate::{
 };
 
 /// used to parse pagination input object and apply it to statement
-pub async fn apply_pagination<T>(
-    db: &DatabaseConnection,
+pub async fn apply_pagination<C, T>(
+    db: &C,
     stmt: Select<T>,
     pagination: PaginationInput,
 ) -> Result<Connection<T>, sea_orm::error::DbErr>
 where
+    C: ConnectionTrait,
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {

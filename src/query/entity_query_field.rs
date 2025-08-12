@@ -114,9 +114,6 @@ impl EntityQueryFieldBuilder {
                     let pagination = ctx.args.get(&context.entity_query_field.pagination);
                     let pagination = PaginationInputBuilder { context }.parse_object(pagination);
 
-                    let user_context = ctx.data::<crate::UserContext>()?;
-                    dbg!(&user_context);
-
                     let mut stmt = T::find();
                     if let Some(filter) =
                         hooks.entity_filter(&ctx, &object_name, OperationType::Read)
@@ -127,8 +124,13 @@ impl EntityQueryFieldBuilder {
                     stmt = apply_order(stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;
+                    let user_context = ctx.data::<crate::UserContext>()?;
 
-                    let connection = apply_pagination::<T>(db, stmt, pagination).await?;
+                    dbg!(&user_context);
+                    db.load_rbac().await?;
+                    let db = &db.restricted_for(sea_orm::rbac::RbacUserId(user_context.user_id.into()))?;
+
+                    let connection = apply_pagination::<_, T>(db, stmt, pagination).await?;
 
                     Ok(Some(FieldValue::owned_any(connection)))
                 })

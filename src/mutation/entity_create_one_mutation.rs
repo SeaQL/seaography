@@ -94,6 +94,12 @@ impl EntityCreateOneMutationBuilder {
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
                     let db = ctx.data::<DatabaseConnection>()?;
+                    let user_context = ctx.data::<crate::UserContext>()?;
+
+                    dbg!(&user_context);
+                    db.load_rbac().await?;
+                    let db = &db.restricted_for(sea_orm::rbac::RbacUserId(user_context.user_id.into()))?;
+
                     let value_accessor = ctx
                         .args
                         .get(&context.entity_create_one_mutation.data_field)
