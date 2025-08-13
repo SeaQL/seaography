@@ -361,10 +361,10 @@ impl FilterTypesMapHelper {
                         FilterType::Integer => &self.context.filter_types.integer_array_filter_info,
                         FilterType::Float => &self.context.filter_types.float_array_filter_info,
                         FilterType::Boolean => &self.context.filter_types.boolean_array_filter_info,
-                        FilterType::Id => todo!(),
-                        FilterType::Enumeration(_) => todo!(),
-                        FilterType::Custom(_) => todo!(),
-                        FilterType::Array(_) => todo!(),
+                        FilterType::Id => return None, // TODO
+                        FilterType::Enumeration(_) => return None, // TODO
+                        FilterType::Custom(_) => return None, // TODO
+                        FilterType::Array(_) => return None, // TODO
                     };
                     Some(InputValue::new(
                         column_name,
