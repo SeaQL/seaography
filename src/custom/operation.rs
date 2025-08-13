@@ -116,7 +116,7 @@ where
             types_map_helper.sea_orm_column_type_to_converted_type("", "", &column_type);
 
         if value.is_none() {
-            // this unwrap is Value::unwrap() and should not panic
+            // this is Value::unwrap() and should not panic
             Ok(converted_null_to_sea_orm_value(&column_type)?.unwrap())
         } else {
             let value = converted_value_to_sea_orm_value(
@@ -125,7 +125,7 @@ where
                 "",
                 "",
             )?;
-            // this unwrap is Value::unwrap() and should not panic
+            // this is Value::unwrap() and should not panic
             Ok(value.unwrap())
         }
     }
@@ -155,7 +155,7 @@ where
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
 
-        let input = ctx.args.get(name).unwrap();
+        let input = ctx.args.try_get(name)?;
         entity_object_builder.parse_object::<M>(&input.object()?)
     }
 }

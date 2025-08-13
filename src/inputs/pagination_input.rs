@@ -88,21 +88,21 @@ impl PaginationInputBuilder {
         };
 
         let cursor = if let Some(cursor) = object.get(&self.context.pagination_input.cursor) {
-            let object = cursor.object().unwrap();
+            let object = cursor.object()?;
             Some(cursor_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
         let page = if let Some(page) = object.get(&self.context.pagination_input.page) {
-            let object = page.object().unwrap();
+            let object = page.object()?;
             Some(page_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
         let offset = if let Some(offset) = object.get(&self.context.pagination_input.offset) {
-            let object = offset.object().unwrap();
+            let object = offset.object()?;
             Some(offset_input_builder.parse_object(&object)?)
         } else {
             None

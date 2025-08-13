@@ -134,14 +134,12 @@ impl EntityQueryFieldBuilder {
                             .map(|variant| variant.into_column())
                             .collect::<Vec<T::Column>>()[0];
 
-                        let v = mapper
-                            .async_graphql_value_to_sea_orm_value::<T>(
-                                &column,
-                                &ctx.args
-                                    .get("id")
-                                    .expect("id is null, even though set to not null"),
-                            )
-                            .unwrap();
+                        let v = mapper.async_graphql_value_to_sea_orm_value::<T>(
+                            &column,
+                            &ctx.args
+                                .get("id")
+                                .expect("id is null, even though set to not null"),
+                        )?;
                         stmt = stmt.filter(column.eq(v));
                     }
 

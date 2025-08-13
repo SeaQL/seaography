@@ -65,7 +65,7 @@ where
             stmt.after(cursor_values);
         }
 
-        let data = stmt.first(cursor_object.limit).all(db).await.unwrap();
+        let data = stmt.first(cursor_object.limit).all(db).await?;
 
         let has_next_page: bool = {
             let mut next_stmt = apply_stmt_cursor_by(next_stmt);
@@ -79,7 +79,7 @@ where
 
                 let values = map_cursor_values(values);
 
-                let next_data = next_stmt.first(1).after(values).all(db).await.unwrap();
+                let next_data = next_stmt.first(1).after(values).all(db).await?;
 
                 !next_data.is_empty()
             } else {
@@ -99,7 +99,7 @@ where
 
                 let values = map_cursor_values(values);
 
-                let previous_data = previous_stmt.first(1).before(values).all(db).await.unwrap();
+                let previous_data = previous_stmt.first(1).before(values).all(db).await?;
 
                 !previous_data.is_empty()
             } else {
@@ -337,8 +337,12 @@ where
 
         let edges: Vec<Edge<T>> = edges
             .into_iter()
-            .skip((page_object.page * page_object.limit).try_into().unwrap())
-            .take(page_object.limit.try_into().unwrap())
+            .skip(
+                (page_object.page * page_object.limit)
+                    .try_into()
+                    .expect("Out of range"),
+            )
+            .take(page_object.limit.try_into().expect("Out of range"))
             .collect();
 
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
@@ -366,8 +370,8 @@ where
 
         let edges: Vec<Edge<T>> = edges
             .into_iter()
-            .skip((offset_object.offset).try_into().unwrap())
-            .take(offset_object.limit.try_into().unwrap())
+            .skip((offset_object.offset).try_into().expect("Out of range"))
+            .take(offset_object.limit.try_into().expect("Out of range"))
             .collect();
 
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
