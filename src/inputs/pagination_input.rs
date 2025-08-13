@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
 
-use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBuilder};
+use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBuilder, SeaResult};
 
 use super::{CursorInput, OffsetInput, PageInput};
 
@@ -65,17 +65,17 @@ impl PaginationInputBuilder {
     }
 
     /// used to parse query input to pagination information structure
-    pub fn parse_object(&self, value: Option<ValueAccessor<'_>>) -> PaginationInput {
+    pub fn parse_object(&self, value: Option<ValueAccessor<'_>>) -> SeaResult<PaginationInput> {
         if value.is_none() {
-            return PaginationInput {
+            return Ok(PaginationInput {
                 cursor: None,
                 offset: None,
                 page: None,
-            };
+            });
         }
 
-        let binding = value.unwrap();
-        let object = binding.object().unwrap();
+        let binding = value.expect("Checked not null");
+        let object = binding.object()?;
 
         let cursor_input_builder = CursorInputBuilder {
             context: self.context,
@@ -89,29 +89,29 @@ impl PaginationInputBuilder {
 
         let cursor = if let Some(cursor) = object.get(&self.context.pagination_input.cursor) {
             let object = cursor.object().unwrap();
-            Some(cursor_input_builder.parse_object(&object))
+            Some(cursor_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
         let page = if let Some(page) = object.get(&self.context.pagination_input.page) {
             let object = page.object().unwrap();
-            Some(page_input_builder.parse_object(&object))
+            Some(page_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
         let offset = if let Some(offset) = object.get(&self.context.pagination_input.offset) {
             let object = offset.object().unwrap();
-            Some(offset_input_builder.parse_object(&object))
+            Some(offset_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
-        PaginationInput {
+        Ok(PaginationInput {
             cursor,
             page,
             offset,
-        }
+        })
     }
 }

@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 
-use crate::BuilderContext;
+use crate::{BuilderContext, SeaResult};
 
 /// used to hold information about page pagination
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -54,17 +54,13 @@ impl PageInputBuilder {
     }
 
     /// used to parse query input to page pagination options struct
-    pub fn parse_object(&self, object: &ObjectAccessor) -> PageInput {
+    pub fn parse_object(&self, object: &ObjectAccessor) -> SeaResult<PageInput> {
         let page = object
             .get(&self.context.page_input.page)
-            .map_or_else(|| Ok(0), |v| v.u64())
+            .map_or(Ok(0), |v| v.u64())
             .unwrap_or(0);
-        let limit = object
-            .get(&self.context.page_input.limit)
-            .unwrap()
-            .u64()
-            .unwrap();
+        let limit = object.try_get(&self.context.page_input.limit)?.u64()?;
 
-        PageInput { page, limit }
+        Ok(PageInput { page, limit })
     }
 }

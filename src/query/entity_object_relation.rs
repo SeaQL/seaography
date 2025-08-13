@@ -97,7 +97,7 @@ impl EntityObjectRelationBuilder {
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters)?;
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                    let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                    let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
                     let key = KeyComplex::<R> {
                         key: vec![parent.get(from_col)],
                         meta: HashableGroupKey::<R> {
@@ -150,7 +150,7 @@ impl EntityObjectRelationBuilder {
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let filters = get_filter_conditions::<R>(context, filters)?;
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                        let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                        let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
                         let key = KeyComplex::<R> {
                             key: vec![parent.get(from_col)],
                             meta: HashableGroupKey::<R> {
@@ -165,7 +165,7 @@ impl EntityObjectRelationBuilder {
 
                         let pagination = ctx.args.get(&context.entity_query_field.pagination);
                         let pagination =
-                            PaginationInputBuilder { context }.parse_object(pagination);
+                            PaginationInputBuilder { context }.parse_object(pagination)?;
 
                         let connection: Connection<R> = apply_memory_pagination(values, pagination);
 

@@ -202,9 +202,9 @@ impl EntityQueryFieldBuilder {
                 let filters = ctx.args.get(&context.entity_query_field.filters);
                 let filters = get_filter_conditions::<T>(context, filters)?;
                 let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by);
+                let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by)?;
                 let pagination = ctx.args.get(&context.entity_query_field.pagination);
-                let pagination = PaginationInputBuilder { context }.parse_object(pagination);
+                let pagination = PaginationInputBuilder { context }.parse_object(pagination)?;
 
                 let mut stmt = T::find();
                 if let Some(filter) = hooks.entity_filter(&ctx, &object_name, OperationType::Read) {

@@ -229,7 +229,7 @@ impl GqlInputModelType for PaginationInput {
         context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        Ok(PaginationInputBuilder { context }.parse_object(value))
+        Ok(PaginationInputBuilder { context }.parse_object(value)?)
     }
 }
 

@@ -297,6 +297,45 @@ async fn test_cursor_pagination() {
 }
 
 #[tokio::test]
+async fn test_cursor_pagination_error() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    payment(
+                        pagination: { cursor: { limit: -5 } }
+                    ) {
+                    edges { node { paymentId } }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"null"#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    payment(
+                        pagination: 1
+                    ) {
+                    edges { node { paymentId } }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"null"#,
+    );
+}
+
+#[tokio::test]
 async fn test_cursor_pagination_prev() {
     let schema = get_schema().await;
 
