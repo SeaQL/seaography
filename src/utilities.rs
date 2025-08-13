@@ -121,7 +121,7 @@ pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> sea_orm::sea_query::val
 }
 
 /// used to decode a String to a vector of SeaORM values
-pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbErr> {
+pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
     let chars = s.chars();
 
     let mut values: Vec<sea_orm::Value> = vec![];
@@ -146,7 +146,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
             DecodeMode::Length => {
                 if char.eq(&']') {
                     mode = DecodeMode::ColonSkip;
-                    length = length_indicator.parse::<i64>().unwrap();
+                    length = length_indicator.parse::<i64>().map_err(parse_int_err)?;
                 } else {
                     length_indicator.push(char);
                 }
@@ -167,28 +167,36 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::TinyInt(None)
                             } else {
-                                sea_orm::Value::TinyInt(Some(data_buffer.parse::<i8>().unwrap()))
+                                sea_orm::Value::TinyInt(Some(
+                                    data_buffer.parse::<i8>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "SmallInt" => {
                             if length.eq(&-1) {
                                 sea_orm::Value::SmallInt(None)
                             } else {
-                                sea_orm::Value::SmallInt(Some(data_buffer.parse::<i16>().unwrap()))
+                                sea_orm::Value::SmallInt(Some(
+                                    data_buffer.parse::<i16>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "Int" => {
                             if length.eq(&-1) {
                                 sea_orm::Value::Int(None)
                             } else {
-                                sea_orm::Value::Int(Some(data_buffer.parse::<i32>().unwrap()))
+                                sea_orm::Value::Int(Some(
+                                    data_buffer.parse::<i32>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "BigInt" => {
                             if length.eq(&-1) {
                                 sea_orm::Value::BigInt(None)
                             } else {
-                                sea_orm::Value::BigInt(Some(data_buffer.parse::<i64>().unwrap()))
+                                sea_orm::Value::BigInt(Some(
+                                    data_buffer.parse::<i64>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "TinyUnsigned" => {
@@ -196,7 +204,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::TinyUnsigned(None)
                             } else {
                                 sea_orm::Value::TinyUnsigned(Some(
-                                    data_buffer.parse::<u8>().unwrap(),
+                                    data_buffer.parse::<u8>().map_err(parse_int_err)?,
                                 ))
                             }
                         }
@@ -205,7 +213,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::SmallUnsigned(None)
                             } else {
                                 sea_orm::Value::SmallUnsigned(Some(
-                                    data_buffer.parse::<u16>().unwrap(),
+                                    data_buffer.parse::<u16>().map_err(parse_int_err)?,
                                 ))
                             }
                         }
@@ -213,7 +221,9 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::Unsigned(None)
                             } else {
-                                sea_orm::Value::Unsigned(Some(data_buffer.parse::<u32>().unwrap()))
+                                sea_orm::Value::Unsigned(Some(
+                                    data_buffer.parse::<u32>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "BigUnsigned" => {
@@ -221,7 +231,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::BigUnsigned(None)
                             } else {
                                 sea_orm::Value::BigUnsigned(Some(
-                                    data_buffer.parse::<u64>().unwrap(),
+                                    data_buffer.parse::<u64>().map_err(parse_int_err)?,
                                 ))
                             }
                         }
@@ -229,9 +239,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::String(None)
                             } else {
-                                sea_orm::Value::String(Some(Box::new(
-                                    data_buffer.parse::<String>().unwrap(),
-                                )))
+                                sea_orm::Value::String(Some(Box::new(data_buffer)))
                             }
                         }
                         #[cfg(feature = "with-uuid")]
@@ -240,7 +248,9 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::Uuid(None)
                             } else {
                                 sea_orm::Value::Uuid(Some(Box::new(
-                                    data_buffer.parse::<sea_orm::prelude::Uuid>().unwrap(),
+                                    data_buffer
+                                        .parse::<sea_orm::prelude::Uuid>()
+                                        .map_err(parse_int_err)?,
                                 )))
                             }
                         }
@@ -287,4 +297,8 @@ pub fn pluralize_unique(word: &str, plural: bool) -> String {
 #[cfg(not(feature = "field-pluralize"))]
 pub fn pluralize_unique(word: &str, _plural: bool) -> String {
     word.into()
+}
+
+fn parse_int_err(err: std::num::ParseIntError) -> sea_orm::DbErr {
+    sea_orm::DbErr::Type(format!("Failed to parse integer: {err}"))
 }
