@@ -503,7 +503,7 @@ pub fn converted_value_to_sea_orm_value(
     column_name: &str,
 ) -> SeaResult<sea_orm::Value> {
     if value.is_null() {
-        return Ok(converted_null_to_sea_orm_value(column_type)?);
+        return converted_null_to_sea_orm_value(column_type);
     }
     Ok(match column_type {
         ConvertedType::Bool => value.boolean().map(|v| v.into())?,
