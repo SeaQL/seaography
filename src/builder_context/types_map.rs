@@ -503,7 +503,7 @@ pub fn converted_value_to_sea_orm_value(
     column_name: &str,
 ) -> SeaResult<sea_orm::Value> {
     if value.is_null() {
-        return Ok(converted_null_to_sea_orm_value(column_type));
+        return Ok(converted_null_to_sea_orm_value(column_type)?);
     }
     Ok(match column_type {
         ConvertedType::Bool => value.boolean().map(|v| v.into())?,
@@ -799,8 +799,8 @@ pub fn converted_value_to_sea_orm_value(
     })
 }
 
-pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> sea_orm::Value {
-    match column_type {
+pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult<sea_orm::Value> {
+    Ok(match column_type {
         ConvertedType::Bool => sea_orm::Value::Bool(None),
         ConvertedType::TinyInteger => sea_orm::Value::TinyInt(None),
         ConvertedType::SmallInteger => sea_orm::Value::SmallInt(None),
@@ -848,11 +848,10 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> sea_orm::
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-postgres-array")]
-        ConvertedType::Array(ty) => sea_orm::Value::Array(
-            converted_type_to_sea_orm_array_type(ty).expect("failed to convert array"),
-            None,
-        ),
-    }
+        ConvertedType::Array(ty) => {
+            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(ty)?, None)
+        }
+    })
 }
 
 pub fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {

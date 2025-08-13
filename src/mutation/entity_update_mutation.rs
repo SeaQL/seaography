@@ -108,7 +108,7 @@ impl EntityUpdateMutationBuilder {
                     let entity_object_builder = EntityObjectBuilder { context };
 
                     let filters = ctx.args.get(&context.entity_update_mutation.filter_field);
-                    let filter_condition = get_filter_conditions::<T>(context, filters);
+                    let filter_condition = get_filter_conditions::<T>(context, filters)?;
 
                     let value_accessor = ctx
                         .args
