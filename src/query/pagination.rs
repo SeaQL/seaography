@@ -1,9 +1,7 @@
 use itertools::Itertools;
-#[allow(unused_imports)]
-use sea_orm::CursorTrait;
 use sea_orm::{
     ConnectionTrait, DatabaseConnection, EntityTrait, Iterable, ModelTrait, PaginatorTrait,
-    PrimaryKeyToColumn, QuerySelect, QueryTrait, Select,
+    PrimaryKeyArity, PrimaryKeyToColumn, PrimaryKeyTrait, QuerySelect, QueryTrait, Select,
 };
 
 use crate::{
@@ -16,7 +14,7 @@ pub async fn apply_pagination<T>(
     db: &DatabaseConnection,
     stmt: Select<T>,
     pagination: PaginationInput,
-) -> Result<Connection<T>, sea_orm::error::DbErr>
+) -> Result<Connection<T>, sea_orm::DbErr>
 where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
@@ -27,35 +25,37 @@ where
 
         fn apply_stmt_cursor_by<T>(
             stmt: sea_orm::entity::prelude::Select<T>,
-        ) -> sea_orm::Cursor<sea_orm::SelectModel<T::Model>>
+        ) -> Result<sea_orm::Cursor<sea_orm::SelectModel<T::Model>>, sea_orm::DbErr>
         where
             T: EntityTrait,
             <T as EntityTrait>::Model: Sync,
         {
-            let size = T::PrimaryKey::iter().fold(0, |acc, _| acc + 1);
+            let size = <<T::PrimaryKey as PrimaryKeyTrait>::ValueType as PrimaryKeyArity>::ARITY;
             if size == 1 {
                 let column = T::PrimaryKey::iter()
                     .map(|variant| variant.into_column())
                     .collect::<Vec<T::Column>>()[0];
-                stmt.cursor_by(column)
+                Ok(stmt.cursor_by(column))
             } else if size == 2 {
                 let columns = T::PrimaryKey::iter()
                     .map(|variant| variant.into_column())
                     .collect_tuple::<(T::Column, T::Column)>()
-                    .unwrap();
-                stmt.cursor_by(columns)
+                    .expect("infallible as arity is already checked");
+                Ok(stmt.cursor_by(columns))
             } else if size == 3 {
                 let columns = T::PrimaryKey::iter()
                     .map(|variant| variant.into_column())
                     .collect_tuple::<(T::Column, T::Column, T::Column)>()
-                    .unwrap();
-                stmt.cursor_by(columns)
+                    .expect("infallible as arity is already checked");
+                Ok(stmt.cursor_by(columns))
             } else {
-                panic!("seaography does not support cursors with size greater than 3")
+                return Err(sea_orm::DbErr::Custom(format!(
+                    "Not supporting primary key with arity > 3: {size}"
+                )));
             }
         }
 
-        let mut stmt = apply_stmt_cursor_by(stmt);
+        let mut stmt = apply_stmt_cursor_by(stmt)?;
 
         if let Some(cursor) = cursor_object.cursor {
             let values = decode_cursor(&cursor)?;
@@ -68,7 +68,7 @@ where
         let data = stmt.first(cursor_object.limit).all(db).await?;
 
         let has_next_page: bool = {
-            let mut next_stmt = apply_stmt_cursor_by(next_stmt);
+            let mut next_stmt = apply_stmt_cursor_by(next_stmt)?;
 
             let last_node = data.last();
 
@@ -88,7 +88,7 @@ where
         };
 
         let has_previous_page: bool = {
-            let mut previous_stmt = apply_stmt_cursor_by(previous_stmt);
+            let mut previous_stmt = apply_stmt_cursor_by(previous_stmt)?;
 
             let first_node = data.first();
 

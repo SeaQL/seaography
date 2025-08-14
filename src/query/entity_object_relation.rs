@@ -56,7 +56,7 @@ impl EntityObjectRelationBuilder {
                 .to_snake_case()
                 .as_str(),
         )
-        .unwrap();
+        .unwrap_or_else(|_| panic!("Illegal from_col: {:?}", relation_definition.from_col));
 
         let to_col = <R::Column as std::str::FromStr>::from_str(
             relation_definition
@@ -65,7 +65,7 @@ impl EntityObjectRelationBuilder {
                 .to_snake_case()
                 .as_str(),
         )
-        .unwrap();
+        .unwrap_or_else(|_| panic!("Illegal to_col: {:?}", relation_definition.to_col));
 
         let field = match relation_definition.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
