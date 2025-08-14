@@ -49,9 +49,9 @@ where
                     .expect("infallible as arity is already checked");
                 Ok(stmt.cursor_by(columns))
             } else {
-                return Err(sea_orm::DbErr::Custom(format!(
+                Err(sea_orm::DbErr::Custom(format!(
                     "Not supporting primary key with arity > 3: {size}"
-                )));
+                )))
             }
         }
 
