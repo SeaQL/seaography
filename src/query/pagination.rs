@@ -340,9 +340,9 @@ where
             .skip(
                 (page_object.page * page_object.limit)
                     .try_into()
-                    .expect("Out of range"),
+                    .expect("Integer out of range"),
             )
-            .take(page_object.limit.try_into().expect("Out of range"))
+            .take(page_object.limit.try_into().expect("Integer out of range"))
             .collect();
 
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
@@ -370,8 +370,18 @@ where
 
         let edges: Vec<Edge<T>> = edges
             .into_iter()
-            .skip((offset_object.offset).try_into().expect("Out of range"))
-            .take(offset_object.limit.try_into().expect("Out of range"))
+            .skip(
+                offset_object
+                    .offset
+                    .try_into()
+                    .expect("Integer out of range"),
+            )
+            .take(
+                offset_object
+                    .limit
+                    .try_into()
+                    .expect("Integer out of range"),
+            )
             .collect();
 
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());

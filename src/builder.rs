@@ -320,11 +320,7 @@ impl Builder {
             move |ctx| {
                 let metadata_hashmap = self.metadata.clone();
                 FieldFuture::new(async move {
-                    let table_name = ctx
-                        .args
-                        .get(TABLE_NAME)
-                        .expect("table_name is required")
-                        .string()?;
+                    let table_name = ctx.args.try_get(TABLE_NAME)?.string()?;
                     if let Some(metadata) = metadata_hashmap.get(table_name) {
                         Ok(Some(async_graphql::Value::from_json(metadata.to_owned())?))
                     } else {

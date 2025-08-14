@@ -136,9 +136,7 @@ impl EntityQueryFieldBuilder {
 
                         let v = mapper.async_graphql_value_to_sea_orm_value::<T>(
                             &column,
-                            &ctx.args
-                                .get("id")
-                                .expect("id is null, even though set to not null"),
+                            &ctx.args.try_get("id")?,
                         )?;
                         stmt = stmt.filter(column.eq(v));
                     }

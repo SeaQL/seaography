@@ -121,7 +121,7 @@ where
         } else {
             let value = converted_value_to_sea_orm_value(
                 &column_type,
-                &value.expect("checked not null"),
+                &value.expect("Checked not null"),
                 "",
                 "",
             )?;
