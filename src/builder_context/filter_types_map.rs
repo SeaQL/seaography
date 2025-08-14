@@ -32,6 +32,7 @@ pub struct FilterTypesMapConfig {
     pub integer_array_filter_info: FilterInfo,
     pub float_array_filter_info: FilterInfo,
     pub boolean_array_filter_info: FilterInfo,
+    pub id_array_filter_info: FilterInfo,
 }
 
 impl std::default::Default for FilterTypesMapConfig {
@@ -189,6 +190,15 @@ impl std::default::Default for FilterTypesMapConfig {
             boolean_array_filter_info: FilterInfo {
                 type_name: "BooleanArrayFilterInput".into(),
                 base_type: TypeRef::BOOLEAN.into(),
+                supported_operations: BTreeSet::from([
+                    FilterOperation::ArrayContains,
+                    FilterOperation::ArrayContained,
+                    FilterOperation::ArrayOverlap,
+                ]),
+            },
+            id_array_filter_info: FilterInfo {
+                type_name: "IdArrayFilterInput".into(),
+                base_type: TypeRef::ID.into(),
                 supported_operations: BTreeSet::from([
                     FilterOperation::ArrayContains,
                     FilterOperation::ArrayContained,
@@ -361,10 +371,12 @@ impl FilterTypesMapHelper {
                         FilterType::Integer => &self.context.filter_types.integer_array_filter_info,
                         FilterType::Float => &self.context.filter_types.float_array_filter_info,
                         FilterType::Boolean => &self.context.filter_types.boolean_array_filter_info,
-                        FilterType::Id => todo!(),
-                        FilterType::Enumeration(_) => todo!(),
-                        FilterType::Custom(_) => todo!(),
-                        FilterType::Array(_) => todo!(),
+                        FilterType::Id => &self.context.filter_types.id_array_filter_info,
+                        FilterType::Enumeration(_) => {
+                            &self.context.filter_types.string_array_filter_info
+                        }
+                        FilterType::Custom(_) => return None,
+                        FilterType::Array(_) => return None,
                     };
                     Some(InputValue::new(
                         column_name,
@@ -533,10 +545,12 @@ impl FilterTypesMapHelper {
                     FilterType::Integer => &self.context.filter_types.integer_array_filter_info,
                     FilterType::Float => &self.context.filter_types.float_array_filter_info,
                     FilterType::Boolean => &self.context.filter_types.boolean_array_filter_info,
-                    FilterType::Id => todo!(),
-                    FilterType::Enumeration(_) => todo!(),
-                    FilterType::Custom(_) => todo!(),
-                    FilterType::Array(_) => todo!(),
+                    FilterType::Id => &self.context.filter_types.id_array_filter_info,
+                    FilterType::Enumeration(_) => {
+                        &self.context.filter_types.string_array_filter_info
+                    }
+                    FilterType::Custom(_) => return None,
+                    FilterType::Array(_) => return None,
                 },
                 FilterType::Array(None) => {
                     return Ok(condition);
