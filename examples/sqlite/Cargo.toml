@@ -15,7 +15,7 @@ tracing-subscriber = { version = "0.3.17" }
 [dependencies.seaography]
 path = "../../"
 version = "~1.1.4" # seaography version
-features = ["macros", "with-decimal", "with-chrono", "field-pluralize"]
+features = ["macros", "with-decimal", "with-chrono"]
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -23,3 +23,11 @@ serde_json = { version = "1.0.103" }
 
 [workspace]
 members = []
+
+[features]
+field-pluralize = ["seaography/field-pluralize"]
+
+[[test]]
+name = "plural_query_tests"
+path = "tests/plural_query_tests.rs"
+required-features = ["field-pluralize"]

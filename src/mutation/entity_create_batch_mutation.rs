@@ -99,8 +99,7 @@ impl EntityCreateBatchMutationBuilder {
                     let mut results: Vec<_> = Vec::new();
                     for input in ctx
                         .args
-                        .get(&context.entity_create_batch_mutation.data_field)
-                        .unwrap()
+                        .try_get(&context.entity_create_batch_mutation.data_field)?
                         .list()?
                         .iter()
                     {

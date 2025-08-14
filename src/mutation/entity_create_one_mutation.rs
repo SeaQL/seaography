@@ -96,8 +96,7 @@ impl EntityCreateOneMutationBuilder {
                     let db = ctx.data::<DatabaseConnection>()?;
                     let value_accessor = ctx
                         .args
-                        .get(&context.entity_create_one_mutation.data_field)
-                        .unwrap();
+                        .try_get(&context.entity_create_one_mutation.data_field)?;
                     let input_object = &value_accessor.object()?;
 
                     for (column, _) in input_object.iter() {

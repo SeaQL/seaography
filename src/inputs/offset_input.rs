@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 
-use crate::BuilderContext;
+use crate::{BuilderContext, SeaResult};
 
 /// used to hold information about offset pagination
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -54,18 +54,13 @@ impl OffsetInputBuilder {
     }
 
     /// used to parse query input to offset pagination options struct
-    pub fn parse_object(&self, object: &ObjectAccessor) -> OffsetInput {
+    pub fn parse_object(&self, object: &ObjectAccessor) -> SeaResult<OffsetInput> {
         let offset = object
             .get(&self.context.offset_input.offset)
-            .map_or_else(|| Ok(0), |v| v.u64())
-            .unwrap();
+            .map_or(Ok(0), |v| v.u64())?;
 
-        let limit = object
-            .get(&self.context.offset_input.limit)
-            .unwrap()
-            .u64()
-            .unwrap();
+        let limit = object.try_get(&self.context.offset_input.limit)?.u64()?;
 
-        OffsetInput { offset, limit }
+        Ok(OffsetInput { offset, limit })
     }
 }

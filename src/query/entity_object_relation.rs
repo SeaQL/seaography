@@ -56,7 +56,7 @@ impl EntityObjectRelationBuilder {
                 .to_snake_case()
                 .as_str(),
         )
-        .unwrap();
+        .unwrap_or_else(|_| panic!("Illegal from_col: {:?}", relation_definition.from_col));
 
         let to_col = <R::Column as std::str::FromStr>::from_str(
             relation_definition
@@ -65,7 +65,7 @@ impl EntityObjectRelationBuilder {
                 .to_snake_case()
                 .as_str(),
         )
-        .unwrap();
+        .unwrap_or_else(|_| panic!("Illegal to_col: {:?}", relation_definition.to_col));
 
         let field = match relation_definition.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
@@ -80,10 +80,12 @@ impl EntityObjectRelationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let parent: &T::Model = ctx
-                        .parent_value
-                        .try_downcast_ref::<T::Model>()
-                        .expect("Parent should exist");
+                    let Ok(parent) = ctx.parent_value.try_downcast_ref::<T::Model>() else {
+                        return Err(async_graphql::Error::new(format!(
+                            "Failed to downcast object to {}",
+                            entity_object_builder.type_name::<T>()
+                        )));
+                    };
 
                     let loader = ctx.data_unchecked::<DataLoader<OneToOneLoader<R>>>();
 
@@ -95,9 +97,9 @@ impl EntityObjectRelationBuilder {
                     }
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);
-                    let filters = get_filter_conditions::<R>(context, filters);
+                    let filters = get_filter_conditions::<R>(context, filters)?;
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                    let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                    let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
                     let key = KeyComplex::<R> {
                         key: vec![parent.get(from_col)],
                         meta: HashableGroupKey::<R> {
@@ -133,10 +135,12 @@ impl EntityObjectRelationBuilder {
                             return Err(guard_error(reason, "Entity guard triggered."));
                         }
 
-                        let parent: &T::Model = ctx
-                            .parent_value
-                            .try_downcast_ref::<T::Model>()
-                            .expect("Parent should exist");
+                        let Ok(parent) = ctx.parent_value.try_downcast_ref::<T::Model>() else {
+                            return Err(async_graphql::Error::new(format!(
+                                "Failed to downcast object to {}",
+                                entity_object_builder.type_name::<T>()
+                            )));
+                        };
 
                         let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 
@@ -148,9 +152,9 @@ impl EntityObjectRelationBuilder {
                         }
 
                         let filters = ctx.args.get(&context.entity_query_field.filters);
-                        let filters = get_filter_conditions::<R>(context, filters);
+                        let filters = get_filter_conditions::<R>(context, filters)?;
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
-                        let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by);
+                        let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
                         let key = KeyComplex::<R> {
                             key: vec![parent.get(from_col)],
                             meta: HashableGroupKey::<R> {
@@ -165,7 +169,7 @@ impl EntityObjectRelationBuilder {
 
                         let pagination = ctx.args.get(&context.entity_query_field.pagination);
                         let pagination =
-                            PaginationInputBuilder { context }.parse_object(pagination);
+                            PaginationInputBuilder { context }.parse_object(pagination)?;
 
                         let connection: Connection<R> = apply_memory_pagination(values, pagination);
 

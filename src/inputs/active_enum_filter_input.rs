@@ -6,6 +6,7 @@ use sea_orm::{ActiveEnum, ColumnTrait, ColumnType, Condition, DynIden, EntityTra
 
 use crate::{
     format_variant, ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult,
+    SeaographyError,
 };
 
 /// The configuration structure for ActiveEnumFilterInputConfig
@@ -81,95 +82,97 @@ pub fn prepare_enumeration_condition<T>(
 where
     T: EntityTrait,
 {
-    let variants = if let ColumnType::Enum { name: _, variants } = column.def().get_column_type() {
-        variants.clone()
-    } else {
+    let column_def = column.def();
+
+    let ColumnType::Enum {
+        name: enum_type_name,
+        variants,
+    } = column_def.get_column_type()
+    else {
         return Ok(condition);
     };
 
-    let extract_variant = move |input: &str| -> String {
+    let extract_variant = |input: &str| -> SeaResult<String> {
         let variant = variants.iter().find(|variant| {
             let variant = format_variant(&variant.to_string());
             variant.eq(input)
         });
-        variant.unwrap().to_string()
+        Ok(variant
+            .ok_or_else(|| {
+                SeaographyError::TypeConversionError(enum_type_name.to_string(), input.to_owned())
+            })?
+            .to_string())
     };
 
     let condition = if let Some(data) = filter.get("eq") {
-        let data = data.enum_name().unwrap();
-        condition.add(column.eq(extract_variant(data)))
+        let data = data.enum_name()?;
+        condition.add(column.eq(extract_variant(data)?))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("ne") {
-        let data = data.enum_name().unwrap();
-        condition.add(column.ne(extract_variant(data)))
+        let data = data.enum_name()?;
+        condition.add(column.ne(extract_variant(data)?))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("gt") {
-        let data = data.enum_name().unwrap();
-        condition.add(column.gt(extract_variant(data)))
+        let data = data.enum_name()?;
+        condition.add(column.gt(extract_variant(data)?))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("gte") {
-        let data = data.enum_name().unwrap();
-        condition.add(column.gte(extract_variant(data)))
+        let data = data.enum_name()?;
+        condition.add(column.gte(extract_variant(data)?))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("lt") {
-        let data = data.enum_name().unwrap();
-        condition.add(column.lt(extract_variant(data)))
+        let data = data.enum_name()?;
+        condition.add(column.lt(extract_variant(data)?))
     } else {
         condition
     };
 
     let condition = if let Some(data) = filter.get("lte") {
-        let data = data.enum_name().unwrap();
-        condition.add(column.lte(extract_variant(data)))
+        let data = data.enum_name()?;
+        condition.add(column.lte(extract_variant(data)?))
     } else {
         condition
     };
 
     let condition = match filter.get("is_in") {
         Some(data) => {
-            let data: Vec<_> = data
-                .list()
-                .unwrap()
-                .iter()
-                .map(|item| item.enum_name().unwrap().to_string())
-                .map(|v| extract_variant(&v))
-                .collect();
+            let mut values = Vec::new();
+            for item in data.list()?.iter() {
+                values.push(extract_variant(item.enum_name()?)?);
+            }
 
-            condition.add(column.is_in(data))
+            condition.add(column.is_in(values))
         }
         None => condition,
     };
 
     let condition = match filter.get("is_not_in") {
         Some(data) => {
-            let data: Vec<_> = data
-                .list()
-                .unwrap()
-                .iter()
-                .map(|item| item.enum_name().unwrap().to_string())
-                .map(|v| extract_variant(&v))
-                .collect();
+            let mut values = Vec::new();
+            for item in data.list()?.iter() {
+                values.push(extract_variant(item.enum_name()?)?);
+            }
 
-            condition.add(column.is_not_in(data))
+            condition.add(column.is_not_in(values))
         }
         None => condition,
     };
 
     let condition = match filter.get("is_null") {
         Some(data) => {
-            let data = data.boolean().unwrap();
+            let data = data.boolean()?;
 
             if data {
                 condition.add(column.is_null())

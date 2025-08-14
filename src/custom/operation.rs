@@ -116,9 +116,16 @@ where
             types_map_helper.sea_orm_column_type_to_converted_type("", "", &column_type);
 
         if value.is_none() {
-            Ok(converted_null_to_sea_orm_value(&column_type).unwrap())
+            // this is Value::unwrap and should not panic
+            Ok(converted_null_to_sea_orm_value(&column_type)?.unwrap())
         } else {
-            let value = converted_value_to_sea_orm_value(&column_type, &value.unwrap(), "", "")?;
+            let value = converted_value_to_sea_orm_value(
+                &column_type,
+                &value.expect("Checked not null"),
+                "",
+                "",
+            )?;
+            // this is Value::unwrap and should not panic
             Ok(value.unwrap())
         }
     }
@@ -148,7 +155,7 @@ where
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
 
-        let input = ctx.args.get(name).unwrap();
+        let input = ctx.args.try_get(name)?;
         entity_object_builder.parse_object::<M>(&input.object()?)
     }
 }
@@ -222,7 +229,7 @@ impl GqlInputModelType for PaginationInput {
         context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
-        Ok(PaginationInputBuilder { context }.parse_object(value))
+        PaginationInputBuilder { context }.parse_object(value)
     }
 }
 

@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
 use sea_orm::{EntityTrait, Iterable};
 
-use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder};
+use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, SeaResult, SeaographyError};
 
 /// The configuration structure for OrderInputBuilder
 pub struct OrderInputConfig {
@@ -54,7 +54,7 @@ impl OrderInputBuilder {
     pub fn parse_object<T>(
         &self,
         value: Option<ValueAccessor<'_>>,
-    ) -> Vec<(T::Column, sea_orm::sea_query::Order)>
+    ) -> SeaResult<Vec<(T::Column, sea_orm::sea_query::Order)>>
     where
         T: EntityTrait,
     {
@@ -62,7 +62,7 @@ impl OrderInputBuilder {
             Some(value) => {
                 let mut data = Vec::new();
 
-                let order_by = value.object().unwrap();
+                let order_by = value.object()?;
 
                 let entity_object = EntityObjectBuilder {
                     context: self.context,
@@ -73,7 +73,7 @@ impl OrderInputBuilder {
                     let order = order_by.get(&column_name);
 
                     if let Some(order) = order {
-                        let order = order.enum_name().unwrap();
+                        let order = order.enum_name()?;
 
                         let asc_variant = &self.context.order_by_enum.asc_variant;
                         let desc_variant = &self.context.order_by_enum.desc_variant;
@@ -83,14 +83,17 @@ impl OrderInputBuilder {
                         } else if order.eq(desc_variant) {
                             data.push((col, sea_orm::Order::Desc));
                         } else {
-                            panic!("Cannot map enumeration")
+                            return Err(SeaographyError::TypeConversionError(
+                                "order_by".to_owned(),
+                                order.to_owned(),
+                            ));
                         }
                     }
                 }
 
-                data
+                Ok(data)
             }
-            None => Vec::new(),
+            None => Ok(Vec::new()),
         }
     }
 }

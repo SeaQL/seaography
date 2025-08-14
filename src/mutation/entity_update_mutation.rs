@@ -108,12 +108,11 @@ impl EntityUpdateMutationBuilder {
                     let entity_object_builder = EntityObjectBuilder { context };
 
                     let filters = ctx.args.get(&context.entity_update_mutation.filter_field);
-                    let filter_condition = get_filter_conditions::<T>(context, filters);
+                    let filter_condition = get_filter_conditions::<T>(context, filters)?;
 
                     let value_accessor = ctx
                         .args
-                        .get(&context.entity_update_mutation.data_field)
-                        .unwrap();
+                        .try_get(&context.entity_update_mutation.data_field)?;
                     let input_object = &value_accessor.object()?;
 
                     for (column, _) in input_object.iter() {

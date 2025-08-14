@@ -93,7 +93,7 @@ impl EntityDeleteMutationBuilder {
                     let db = ctx.data::<DatabaseConnection>()?;
 
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
-                    let filter_condition = get_filter_conditions::<T>(context, filters);
+                    let filter_condition = get_filter_conditions::<T>(context, filters)?;
 
                     let mut stmt = T::delete_many();
                     if let Some(filter) =
