@@ -254,9 +254,10 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
                                 )))
                             }
                         }
-                        _ => {
-                            // FIXME: missing value types
-                            panic!("cannot encode current type")
+                        ty => {
+                            return Err(sea_orm::DbErr::Type(format!(
+                                "Unsupported type {ty} in cursor"
+                            )));
                         }
                     };
 

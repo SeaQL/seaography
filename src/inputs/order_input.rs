@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
 use sea_orm::{EntityTrait, Iterable};
 
-use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, SeaResult};
+use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, SeaResult, SeaographyError};
 
 /// The configuration structure for OrderInputBuilder
 pub struct OrderInputConfig {
@@ -83,7 +83,10 @@ impl OrderInputBuilder {
                         } else if order.eq(desc_variant) {
                             data.push((col, sea_orm::Order::Desc));
                         } else {
-                            panic!("Cannot map enumeration")
+                            return Err(SeaographyError::TypeConversionError(
+                                "order_by".to_owned(),
+                                order.to_owned(),
+                            ));
                         }
                     }
                 }
