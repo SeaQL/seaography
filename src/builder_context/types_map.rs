@@ -666,8 +666,6 @@ pub fn converted_value_to_sea_orm_value(
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDate => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeDate::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATE,
@@ -683,8 +681,6 @@ pub fn converted_value_to_sea_orm_value(
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeTime => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeTime::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_TIME,
@@ -700,8 +696,6 @@ pub fn converted_value_to_sea_orm_value(
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTime => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeDateTime::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATETIME,
@@ -717,7 +711,6 @@ pub fn converted_value_to_sea_orm_value(
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTimeWithTimeZone => {
-            use std::str::FromStr;
             let value = sea_orm::entity::prelude::TimeDateTimeWithTimeZone::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATETIME_TZ,
