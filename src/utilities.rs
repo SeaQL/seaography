@@ -248,9 +248,9 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
                                 sea_orm::Value::Uuid(None)
                             } else {
                                 sea_orm::Value::Uuid(Some(Box::new(
-                                    data_buffer
-                                        .parse::<sea_orm::prelude::Uuid>()
-                                        .map_err(parse_int_err)?,
+                                    data_buffer.parse::<sea_orm::prelude::Uuid>().map_err(|e| {
+                                        sea_orm::DbErr::Type(format!("Failed to parse UUID: {e}"))
+                                    })?,
                                 )))
                             }
                         }
