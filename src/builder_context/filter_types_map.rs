@@ -549,8 +549,8 @@ impl FilterTypesMapHelper {
                     FilterType::Enumeration(_) => {
                         &self.context.filter_types.string_array_filter_info
                     }
-                    FilterType::Custom(_) => return None,
-                    FilterType::Array(_) => return None,
+                    FilterType::Custom(_) => return Ok(impossible_condition()),
+                    FilterType::Array(_) => return Ok(impossible_condition()),
                 },
                 FilterType::Array(None) => {
                     return Ok(condition);
@@ -558,6 +558,10 @@ impl FilterTypesMapHelper {
             },
             None => return Ok(condition),
         };
+
+        fn impossible_condition() -> Condition {
+            Condition::all().add(sea_orm::sea_query::Expr::val(1).eq(2))
+        }
 
         for operation in filter_info.supported_operations.iter() {
             match operation {
