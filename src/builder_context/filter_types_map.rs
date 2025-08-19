@@ -633,13 +633,11 @@ impl FilterTypesMapHelper {
                         if filter.get("is_null").is_some() {
                             condition = condition.add(column.is_null());
                         }
-                    } else {
-                        if let Some(value) = filter.get("is_null") {
-                            if value.boolean()? {
-                                condition = condition.add(column.is_null());
-                            } else {
-                                condition = condition.add(column.is_not_null());
-                            }
+                    } else if let Some(value) = filter.get("is_null") {
+                        if value.boolean()? {
+                            condition = condition.add(column.is_null());
+                        } else {
+                            condition = condition.add(column.is_not_null());
                         }
                     }
                 }
