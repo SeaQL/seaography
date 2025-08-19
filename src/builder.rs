@@ -316,7 +316,7 @@ impl Builder {
         const TABLE_NAME: &str = "table_name";
         let field = Field::new(
             "_sea_orm_entity_metadata",
-            TypeRef::named("String"),
+            TypeRef::named(TypeRef::STRING),
             move |ctx| {
                 let metadata_hashmap = self.metadata.clone();
                 FieldFuture::new(async move {

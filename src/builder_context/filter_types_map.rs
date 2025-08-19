@@ -434,12 +434,25 @@ impl FilterTypesMapHelper {
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::IsNull => {
-                        InputValue::new("is_null", TypeRef::named(filter_info.base_type.clone()))
+                        if !self.context.entity_query_field.combine_is_null_is_not_null {
+                            InputValue::new(
+                                "is_null",
+                                TypeRef::named(filter_info.base_type.clone()),
+                            )
+                        } else {
+                            InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN))
+                        }
                     }
-                    FilterOperation::IsNotNull => InputValue::new(
-                        "is_not_null",
-                        TypeRef::named(filter_info.base_type.clone()),
-                    ),
+                    FilterOperation::IsNotNull => {
+                        if !self.context.entity_query_field.combine_is_null_is_not_null {
+                            InputValue::new(
+                                "is_not_null",
+                                TypeRef::named(filter_info.base_type.clone()),
+                            )
+                        } else {
+                            return object;
+                        }
+                    }
                     FilterOperation::Contains => {
                         InputValue::new("contains", TypeRef::named(filter_info.base_type.clone()))
                     }
@@ -616,8 +629,18 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::IsNull => {
-                    if filter.get("is_null").is_some() {
-                        condition = condition.add(column.is_null());
+                    if !self.context.entity_query_field.combine_is_null_is_not_null {
+                        if filter.get("is_null").is_some() {
+                            condition = condition.add(column.is_null());
+                        }
+                    } else {
+                        if let Some(value) = filter.get("is_null") {
+                            if value.boolean()? {
+                                condition = condition.add(column.is_null());
+                            } else {
+                                condition = condition.add(column.is_not_null());
+                            }
+                        }
                     }
                 }
                 FilterOperation::IsNotNull => {
