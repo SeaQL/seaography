@@ -882,3 +882,137 @@ async fn related_queries_pagination() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn filter_is_in() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      is_in: ["PETER", "MARY"]
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              },
+              {
+                "customerId": 341,
+                "firstName": "PETER",
+                "lastName": "MENARD"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn filter_is_null() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  address(
+                    filters: { address: { contains: "Lane" } }
+                    pagination: { page: { page: 0, limit: 2 } }
+                  ) {
+                    nodes {
+                      addressId
+                      address
+                      address2
+                      postalCode
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "address": {
+            "nodes": [
+              {
+                "addressId": 3,
+                "address": "23 Workhaven Lane",
+                "address2": null,
+                "postalCode": null
+              },
+              {
+                "addressId": 19,
+                "address": "419 Iligan Lane",
+                "address2": null,
+                "postalCode": "72878"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  address(
+                    filters: { address: { contains: "Lane" }, postalCode: { is_not_null: "" } }
+                    pagination: { page: { page: 0, limit: 2 } }
+                  ) {
+                    nodes {
+                      addressId
+                      address
+                      address2
+                      postalCode
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "address": {
+            "nodes": [
+              {
+                "addressId": 19,
+                "address": "419 Iligan Lane",
+                "address2": null,
+                "postalCode": "72878"
+              },
+              {
+                "addressId": 40,
+                "address": "334 Munger (Monghyr) Lane",
+                "address2": null,
+                "postalCode": "38145"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
