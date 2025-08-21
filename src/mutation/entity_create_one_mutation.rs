@@ -94,12 +94,14 @@ impl EntityCreateOneMutationBuilder {
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
                     let db = ctx.data::<DatabaseConnection>()?;
-                    let user_context = ctx.data::<crate::UserContext>()?;
 
-                    dbg!(&user_context);
-                    db.load_rbac().await?;
-                    let db =
-                        &db.restricted_for(sea_orm::rbac::RbacUserId(user_context.user_id.into()))?;
+                    if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                        db.load_rbac().await?;
+                        let user_id = sea_orm::rbac::RbacUserId(user_context.user_id.into());
+                        let db = &db.restricted_for(user_id)?;
+                        let stmt = sea_orm::QueryTrait::into_query(T::delete_many());
+                        db.user_can_run(&stmt)?;
+                    }
 
                     let value_accessor = ctx
                         .args

@@ -124,14 +124,15 @@ impl EntityQueryFieldBuilder {
                     stmt = apply_order(stmt, order_by);
 
                     let db = ctx.data::<DatabaseConnection>()?;
-                    let user_context = ctx.data::<crate::UserContext>()?;
 
-                    dbg!(&user_context);
-                    db.load_rbac().await?;
-                    let db =
-                        &db.restricted_for(sea_orm::rbac::RbacUserId(user_context.user_id.into()))?;
-
-                    let connection = apply_pagination::<_, T>(db, stmt, pagination).await?;
+                    let connection = if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                        db.load_rbac().await?;
+                        let user_id = sea_orm::rbac::RbacUserId(user_context.user_id.into());
+                        let db = &db.restricted_for(user_id)?;
+                        apply_pagination::<_, T>(db, stmt, pagination).await?
+                    } else {
+                        apply_pagination::<_, T>(db, stmt, pagination).await?
+                    };
 
                     Ok(Some(FieldValue::owned_any(connection)))
                 })

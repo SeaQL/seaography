@@ -97,9 +97,29 @@ pub async fn setup(db: &DbConn) -> Result<(), DbErr> {
         .await?;
     }
 
-    // public can select everything
+    // public can only select public film data
+    let public_tables = [
+        actor::Entity.table_name(),
+        category::Entity.table_name(),
+        film::Entity.table_name(),
+        film_actor::Entity.table_name(),
+        film_category::Entity.table_name(),
+        film_text::Entity.table_name(),
+        language::Entity.table_name(),
+    ];
+    for table_name in public_tables {
+        RolePermission {
+            role_id: Set(*roles.get("public").unwrap()),
+            permission_id: Set(*permissions.get("select").unwrap()),
+            resource_id: Set(*resources.get(table_name).unwrap()),
+        }
+        .insert(db)
+        .await?;
+    }
+
+    // manager can select everything
     RolePermission {
-        role_id: Set(*roles.get("public").unwrap()),
+        role_id: Set(*roles.get("manager").unwrap()),
         permission_id: Set(*permissions.get("select").unwrap()),
         resource_id: Set(*resources.get("*").unwrap()),
     }

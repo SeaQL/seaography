@@ -4,7 +4,7 @@ use async_graphql::{
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
+    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, QueryTrait, Related
 };
 
 use crate::{
@@ -27,6 +27,7 @@ impl EntityObjectViaRelationBuilder {
         T: Related<R>,
         T: EntityTrait,
         R: EntityTrait,
+        <T as sea_orm::EntityTrait>::Model: Sync,
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
@@ -176,8 +177,24 @@ impl EntityObjectViaRelationBuilder {
 
                             let stmt = stmt.filter(condition.add(filters));
                             let stmt = apply_order(stmt, order_by);
-                            apply_pagination::<_, R>(db, stmt, pagination).await?
+
+                            if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                                db.load_rbac().await?;
+                                let user_id = sea_orm::rbac::RbacUserId(user_context.user_id.into());
+                                let db = &db.restricted_for(user_id)?;
+                                apply_pagination::<_, R>(db, stmt, pagination).await?
+                            } else {
+                                apply_pagination::<_, R>(db, stmt, pagination).await?
+                            }
                         } else {
+                            if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                                db.load_rbac().await?;
+                                let user_id = sea_orm::rbac::RbacUserId(user_context.user_id.into());
+                                let db = &db.restricted_for(user_id)?;
+                                let stmt = R::find().into_query();
+                                db.user_can_run(&stmt)?;
+                            }
+
                             let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 
                             let key = KeyComplex::<R> {
