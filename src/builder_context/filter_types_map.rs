@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
-use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait};
+use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, ExprTrait};
 
 use crate::{
     prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext,
