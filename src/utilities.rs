@@ -72,7 +72,6 @@ pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
                 }
                 sea_orm::Value::String(value) => {
                     if let Some(value) = value {
-                        let value = value.as_ref();
                         format!("String[{}]:{}", value.len(), value)
                     } else {
                         "String[-1]:".into()
@@ -81,7 +80,7 @@ pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
                 #[cfg(feature = "with-uuid")]
                 sea_orm::Value::Uuid(value) => {
                     if let Some(value) = value {
-                        let value = value.as_ref().to_string();
+                        let value = value.to_string();
                         format!("Uuid[{}]:{}", value.len(), value)
                     } else {
                         "Uuid[-1]:".into()
@@ -239,7 +238,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
                             if length.eq(&-1) {
                                 sea_orm::Value::String(None)
                             } else {
-                                sea_orm::Value::String(Some(Box::new(data_buffer)))
+                                sea_orm::Value::String(Some(data_buffer))
                             }
                         }
                         #[cfg(feature = "with-uuid")]
@@ -247,11 +246,11 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
                             if length.eq(&-1) {
                                 sea_orm::Value::Uuid(None)
                             } else {
-                                sea_orm::Value::Uuid(Some(Box::new(
+                                sea_orm::Value::Uuid(Some(
                                     data_buffer.parse::<sea_orm::prelude::Uuid>().map_err(|e| {
                                         sea_orm::DbErr::Type(format!("Failed to parse UUID: {e}"))
                                     })?,
-                                )))
+                                ))
                             }
                         }
                         ty => {
