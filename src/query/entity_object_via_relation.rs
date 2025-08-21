@@ -91,11 +91,16 @@ impl EntityObjectViaRelationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let Ok(parent) = ctx.parent_value.try_downcast_ref::<T::Model>() else {
-                        return Err(async_graphql::Error::new(format!(
-                            "Failed to downcast object to {}",
-                            entity_object_builder.type_name::<T>()
-                        )));
+                    let parent = match ctx.parent_value.try_downcast_ref::<T::Model>() {
+                        Ok(parent) => parent,
+                        Err(_) => match ctx.parent_value.try_downcast_ref::<Option<T::Model>>() {
+                            Ok(Some(parent)) => parent,
+                            _ => {
+                                return Err(async_graphql::Error::new(format!(
+                                    "Failed to downcast object to {object_name}"
+                                )));
+                            }
+                        },
                     };
 
                     let loader = ctx.data_unchecked::<DataLoader<OneToOneLoader<R>>>();
@@ -152,11 +157,18 @@ impl EntityObjectViaRelationBuilder {
                         // FIXME: optimize union queries
                         // NOTE: each has unique query in order to apply pagination...
 
-                        let Ok(parent) = ctx.parent_value.try_downcast_ref::<T::Model>() else {
-                            return Err(async_graphql::Error::new(format!(
-                                "Failed to downcast object to {}",
-                                entity_object_builder.type_name::<T>()
-                            )));
+                        let parent = match ctx.parent_value.try_downcast_ref::<T::Model>() {
+                            Ok(parent) => parent,
+                            Err(_) => {
+                                match ctx.parent_value.try_downcast_ref::<Option<T::Model>>() {
+                                    Ok(Some(parent)) => parent,
+                                    _ => {
+                                        return Err(async_graphql::Error::new(format!(
+                                            "Failed to downcast object to {object_name}"
+                                        )));
+                                    }
+                                }
+                            }
                         };
 
                         let mut stmt = if <T as Related<R>>::via().is_some() {
