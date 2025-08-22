@@ -36,7 +36,7 @@ impl Operations {
         use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
         use seaography::apply_pagination;
 
-        let db = ctx.data::<DatabaseConnection>()?;
+        let db = ctx.data::<sea_orm::RestrictedConnection>()?;
         let query = customer::Entity::find().filter(customer::Column::StoreId.eq(2));
         let connection = apply_pagination::<customer::Entity>(db, query, pagination).await?;
 

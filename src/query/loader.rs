@@ -171,7 +171,7 @@ pub struct OneToManyLoader<T>
 where
     T: sea_orm::EntityTrait,
 {
-    connection: sea_orm::DatabaseConnection,
+    connection: sea_orm::RestrictedConnection,
     entity: PhantomData<T>,
 }
 
@@ -180,7 +180,7 @@ where
     T: sea_orm::EntityTrait,
     T::Model: Sync,
 {
-    pub fn new(connection: sea_orm::DatabaseConnection) -> Self {
+    pub fn new(connection: sea_orm::RestrictedConnection) -> Self {
         Self {
             connection,
             entity: PhantomData::<T>,
@@ -292,7 +292,7 @@ pub struct OneToOneLoader<T>
 where
     T: sea_orm::EntityTrait,
 {
-    connection: sea_orm::DatabaseConnection,
+    connection: sea_orm::RestrictedConnection,
     entity: PhantomData<T>,
 }
 
@@ -301,7 +301,7 @@ where
     T: sea_orm::EntityTrait,
     T::Model: Sync,
 {
-    pub fn new(connection: sea_orm::DatabaseConnection) -> Self {
+    pub fn new(connection: sea_orm::RestrictedConnection) -> Self {
         Self {
             connection,
             entity: PhantomData::<T>,

@@ -49,7 +49,7 @@ impl Operations {
     async fn login(ctx: &ResolverContext<'_>) -> GqlResult<customer::Model> {
         use sea_orm::EntityTrait;
 
-        let db = ctx.data::<DatabaseConnection>().unwrap();
+        let db = ctx.data::<sea_orm::RestrictedConnection>().unwrap();
         Ok(customer::Entity::find()
             .one(db)
             .await?
@@ -79,7 +79,7 @@ impl Operations {
         ctx: &ResolverContext<'_>,
         rental_request: Option<RentalRequest>,
     ) -> GqlResult<Option<rental::Model>> {
-        let db = ctx.data::<DatabaseConnection>().unwrap();
+        let db = ctx.data::<sea_orm::RestrictedConnection>().unwrap();
 
         Ok(match rental_request {
             Some(_) => rental::Entity::find().one(db).await?,
@@ -94,7 +94,7 @@ impl Operations {
     ) -> GqlResult<String> {
         use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
-        let repo = ctx.data::<DatabaseConnection>().unwrap();
+        let repo = ctx.data::<sea_orm::RestrictedConnection>().unwrap();
         let staff = staff::Entity::find()
             .filter(staff::Column::Username.eq(username))
             .filter(staff::Column::Password.is_not_null())

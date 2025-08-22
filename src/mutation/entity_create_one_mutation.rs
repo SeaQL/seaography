@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Iterable,
+    ActiveModelTrait, RestrictedConnection, EntityTrait, IntoActiveModel, Iterable,
     PrimaryKeyToColumn, PrimaryKeyTrait,
 };
 
@@ -93,7 +93,7 @@ impl EntityCreateOneMutationBuilder {
 
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = ctx.data::<RestrictedConnection>()?;
                     let value_accessor = ctx
                         .args
                         .try_get(&context.entity_create_one_mutation.data_field)?;

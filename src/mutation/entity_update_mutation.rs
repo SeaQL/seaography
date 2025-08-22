@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
+    ActiveModelTrait, RestrictedConnection, EntityTrait, IntoActiveModel, QueryFilter,
     TransactionTrait,
 };
 
@@ -101,8 +101,8 @@ impl EntityUpdateMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
-                    let transaction = db.begin().await?;
+                    let db = ctx.data::<RestrictedConnection>()?;
+                    let transaction = db.conn.begin().await?;
 
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };

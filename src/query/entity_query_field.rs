@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use heck::{ToLowerCamelCase, ToSnakeCase};
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
+use sea_orm::{RestrictedConnection, EntityTrait, QueryFilter};
 
 use crate::{
     apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error,
@@ -146,7 +146,7 @@ impl EntityQueryFieldBuilder {
                         stmt = stmt.filter(column.eq(v));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = ctx.data::<RestrictedConnection>()?;
 
                     let r = stmt.one(db).await?;
 
@@ -214,7 +214,7 @@ impl EntityQueryFieldBuilder {
                 stmt = stmt.filter(filters);
                 stmt = apply_order(stmt, order_by);
 
-                let db = ctx.data::<DatabaseConnection>()?;
+                let db = ctx.data::<RestrictedConnection>()?;
 
                 let connection = apply_pagination::<T>(db, stmt, pagination).await?;
 

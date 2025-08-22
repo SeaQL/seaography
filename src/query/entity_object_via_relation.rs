@@ -4,7 +4,7 @@ use async_graphql::{
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
+    ColumnTrait, Condition, RestrictedConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
 };
 
 use crate::{
@@ -192,7 +192,7 @@ impl EntityObjectViaRelationBuilder {
                         let pagination =
                             PaginationInputBuilder { context }.parse_object(pagination)?;
 
-                        let db = ctx.data::<DatabaseConnection>()?;
+                        let db = ctx.data::<RestrictedConnection>()?;
 
                         let connection = if is_via_relation {
                             // TODO optimize query

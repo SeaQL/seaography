@@ -7,13 +7,7 @@ use async_graphql::{
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
-    ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, CustomInput, CustomOperation, EdgeObjectBuilder,
-    EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
-    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
-    FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
-    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder, TypesMapHelper,
+    builder, ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder, CursorInputBuilder, CustomInput, CustomOperation, EdgeObjectBuilder, EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder, PaginationInputBuilder, TypesMapHelper
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -43,7 +37,7 @@ pub struct Builder {
     pub metadata: std::collections::HashMap<String, serde_json::Value>,
 
     /// holds a copy to the database connection
-    pub connection: sea_orm::DatabaseConnection,
+    pub connection: sea_orm::RestrictedConnection,
 
     /// configuration for builder
     pub context: &'static BuilderContext,
@@ -57,7 +51,7 @@ pub struct Builder {
 
 impl Builder {
     /// Used to create a new Builder from the given configuration context
-    pub fn new(context: &'static BuilderContext, connection: sea_orm::DatabaseConnection) -> Self {
+    pub fn new(context: &'static BuilderContext, connection: sea_orm::RestrictedConnection) -> Self {
         let query: Object = Object::new("Query");
         let mutation = Object::new("Mutation").field(Field::new(
             "_ping",
@@ -132,7 +126,7 @@ impl Builder {
         let connection_query = entity_query_field_builder.to_field::<T>();
         self.queries.push(connection_query);
 
-        let schema = sea_orm::Schema::new(self.connection.get_database_backend());
+        let schema = sea_orm::Schema::new(self.connection.conn.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
         self.metadata.insert(T::default().to_string(), metadata);
     }
@@ -159,7 +153,7 @@ impl Builder {
         let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
         self.inputs.push(entity_insert_input_object);
 
-        let schema = sea_orm::Schema::new(self.connection.get_database_backend());
+        let schema = sea_orm::Schema::new(self.connection.conn.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
         self.metadata.insert(T::default().to_string(), metadata);
     }

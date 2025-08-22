@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{Field, FieldFuture, InputValue, TypeRef};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DeleteResult, EntityTrait, IntoActiveModel, QueryFilter,
+    ActiveModelTrait, RestrictedConnection, DeleteResult, EntityTrait, IntoActiveModel, QueryFilter,
 };
 
 use crate::{
@@ -90,7 +90,7 @@ impl EntityDeleteMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = ctx.data::<RestrictedConnection>()?;
 
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
                     let filter_condition = get_filter_conditions::<T>(context, filters)?;
