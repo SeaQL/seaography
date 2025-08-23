@@ -1,6 +1,8 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext, EntityQueryFieldConfig};
+use seaography::{
+    async_graphql, lazy_static, Builder, BuilderContext, DatabaseContext, EntityQueryFieldConfig,
+};
 use seaography_sqlite_example::entities::*;
 
 lazy_static::lazy_static! {
@@ -52,7 +54,7 @@ pub fn schema(
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = schema(database, None, None).unwrap();
+    let schema = schema(database.unrestricted(), None, None).unwrap();
 
     schema
 }

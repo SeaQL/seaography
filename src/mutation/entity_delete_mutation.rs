@@ -4,8 +4,9 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_guard, get_filter_conditions, guard_error, BuilderContext, EntityObjectBuilder,
-    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType,
+    apply_guard, get_filter_conditions, guard_error, BuilderContext, DatabaseContext,
+    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType,
+    UserContext,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -90,7 +91,9 @@ impl EntityDeleteMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = &ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
 
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
                     let filter_condition = get_filter_conditions::<T>(context, filters)?;

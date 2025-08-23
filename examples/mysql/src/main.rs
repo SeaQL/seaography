@@ -7,7 +7,7 @@ use axum::{
 };
 use dotenv::dotenv;
 use sea_orm::Database;
-use seaography::{async_graphql, lazy_static};
+use seaography::{async_graphql, lazy_static, DatabaseContext};
 use std::env;
 use tokio::net::TcpListener;
 
@@ -38,7 +38,8 @@ async fn main() {
         .init();
     let database = Database::connect(&*DATABASE_URL)
         .await
-        .expect("Fail to initialize database connection");
+        .expect("Fail to initialize database connection")
+        .unrestricted();
     let schema =
         seaography_mysql_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();

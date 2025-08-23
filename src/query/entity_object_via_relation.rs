@@ -4,14 +4,16 @@ use async_graphql::{
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, Related,
+    ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter,
+    QueryTrait, Related,
 };
 
 use crate::{
     apply_guard, apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions,
-    guard_error, pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder,
-    FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader,
-    OperationType, OrderInputBuilder, PaginationInputBuilder,
+    guard_error, pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex,
+    OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder, PaginationInputBuilder,
+    UserContext,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
@@ -91,6 +93,10 @@ impl EntityObjectViaRelationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
+                    let db = ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
+
                     let parent = match ctx.parent_value.try_downcast_ref::<T::Model>() {
                         Ok(parent) => parent,
                         Err(_) => match ctx.parent_value.try_downcast_ref::<Option<T::Model>>() {
@@ -115,6 +121,8 @@ impl EntityObjectViaRelationBuilder {
                     {
                         stmt = stmt.filter(filter);
                     }
+
+                    db.user_can_run(stmt.as_query())?;
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters)?;
@@ -192,7 +200,9 @@ impl EntityObjectViaRelationBuilder {
                         let pagination =
                             PaginationInputBuilder { context }.parse_object(pagination)?;
 
-                        let db = ctx.data::<DatabaseConnection>()?;
+                        let db = &ctx
+                            .data::<DatabaseConnection>()?
+                            .restricted(ctx.data_opt::<UserContext>())?;
 
                         let connection = if is_via_relation {
                             // TODO optimize query
@@ -203,6 +213,8 @@ impl EntityObjectViaRelationBuilder {
                             apply_pagination::<R>(db, stmt, pagination).await?
                         } else {
                             let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
+
+                            db.user_can_run(stmt.as_query())?;
 
                             let key = KeyComplex::<R> {
                                 key: vec![parent.get(from_col)],

@@ -19,7 +19,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
         };
         use dotenv::dotenv;
         use sea_orm::Database;
-        use seaography::{async_graphql, lazy_static};
+        use seaography::{async_graphql, lazy_static, DatabaseContext};
         use std::env;
         use tokio::net::TcpListener;
 
@@ -50,7 +50,8 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .init();
             let database = Database::connect(&*DATABASE_URL)
                 .await
-                .expect("Fail to initialize database connection");
+                .expect("Fail to initialize database connection")
+                .unrestricted();
             let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
             let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
             println!("Visit GraphQL Playground at http://{}", *URL);

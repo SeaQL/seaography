@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use sea_orm::{
-    ConnectionTrait, DatabaseConnection, EntityTrait, Iterable, ModelTrait, PaginatorTrait,
-    PrimaryKeyArity, PrimaryKeyToColumn, PrimaryKeyTrait, QuerySelect, QueryTrait, Select,
+    ConnectionTrait, EntityTrait, Iterable, ModelTrait, PaginatorTrait, PrimaryKeyArity,
+    PrimaryKeyToColumn, PrimaryKeyTrait, QuerySelect, QueryTrait, RestrictedConnection, Select,
 };
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
 
 /// used to parse pagination input object and apply it to statement
 pub async fn apply_pagination<T>(
-    db: &DatabaseConnection,
+    db: &RestrictedConnection,
     stmt: Select<T>,
     pagination: PaginationInput,
 ) -> Result<Connection<T>, sea_orm::DbErr>

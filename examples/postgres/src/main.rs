@@ -3,7 +3,7 @@ use async_graphql_poem::GraphQL;
 use dotenv::dotenv;
 use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
-use seaography::{async_graphql, lazy_static};
+use seaography::{async_graphql, lazy_static, DatabaseContext};
 use std::env;
 
 lazy_static::lazy_static! {
@@ -34,7 +34,8 @@ async fn main() {
         .init();
     let database = Database::connect(&*DATABASE_URL)
         .await
-        .expect("Fail to initialize database connection");
+        .expect("Fail to initialize database connection")
+        .unrestricted();
     let schema =
         seaography_postgres_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();

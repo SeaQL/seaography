@@ -4,8 +4,9 @@ use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
     apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error,
-    pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder,
-    FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInputBuilder,
+    pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder,
+    PaginationInputBuilder, UserContext,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -146,7 +147,9 @@ impl EntityQueryFieldBuilder {
                         stmt = stmt.filter(column.eq(v));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = &ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
 
                     let r = stmt.one(db).await?;
 
@@ -214,7 +217,9 @@ impl EntityQueryFieldBuilder {
                 stmt = stmt.filter(filters);
                 stmt = apply_order(stmt, order_by);
 
-                let db = ctx.data::<DatabaseConnection>()?;
+                let db = &ctx
+                    .data::<DatabaseConnection>()?
+                    .restricted(ctx.data_opt::<UserContext>())?;
 
                 let connection = apply_pagination::<T>(db, stmt, pagination).await?;
 

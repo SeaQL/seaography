@@ -1,6 +1,8 @@
 use super::*;
 use async_graphql::Result as GqlResult;
-use seaography::{macros::CustomOperation, Connection, PaginationInput};
+use seaography::{
+    macros::CustomOperation, Connection, DatabaseContext, PaginationInput, UserContext,
+};
 
 /*
 
@@ -36,7 +38,10 @@ impl Operations {
         use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
         use seaography::apply_pagination;
 
-        let db = ctx.data::<DatabaseConnection>()?;
+        let db = &ctx
+            .data::<DatabaseConnection>()?
+            .restricted(ctx.data_opt::<UserContext>())?;
+
         let query = customer::Entity::find().filter(customer::Column::StoreId.eq(2));
         let connection = apply_pagination::<customer::Entity>(db, query, pagination).await?;
 

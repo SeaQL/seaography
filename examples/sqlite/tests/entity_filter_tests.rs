@@ -1,8 +1,8 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{ColumnTrait, Condition, Database, DatabaseConnection};
 use seaography::{
-    async_graphql, lazy_static, Builder, BuilderContext, LifecycleHooks, LifecycleHooksInterface,
-    OperationType,
+    async_graphql, lazy_static, Builder, BuilderContext, DatabaseContext, LifecycleHooks,
+    LifecycleHooksInterface, OperationType,
 };
 use seaography_sqlite_example::entities::*;
 
@@ -71,7 +71,7 @@ pub fn schema(
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = schema(database, None, None).unwrap();
+    let schema = schema(database.unrestricted(), None, None).unwrap();
 
     schema
 }
