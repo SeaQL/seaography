@@ -38,7 +38,9 @@ impl Operations {
 
         let db = ctx.data::<DatabaseConnection>()?;
         let query = customer::Entity::find().filter(customer::Column::StoreId.eq(2));
-        let connection = apply_pagination::<customer::Entity>(db, query, pagination).await?;
+
+        let restricted_db = &db.restricted_for(sea_orm::rbac::RbacUserId(0))?;
+        let connection = apply_pagination::<customer::Entity>(restricted_db, query, pagination).await?;
 
         Ok(connection)
     }

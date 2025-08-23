@@ -92,6 +92,13 @@ impl EntityDeleteMutationBuilder {
 
                     let db = ctx.data::<DatabaseConnection>()?;
 
+                    let user_id = if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                        sea_orm::rbac::RbacUserId(user_context.user_id.into())
+                    } else {
+                        sea_orm::rbac::RbacUserId(0)
+                    };
+                    let db = &db.restricted_for(user_id)?;
+
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
                     let filter_condition = get_filter_conditions::<T>(context, filters)?;
 

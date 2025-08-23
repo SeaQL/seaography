@@ -30,22 +30,29 @@ async fn index(
 ) -> GraphQLResponse {
     let mut gql_req = gql_req.into_inner();
 
+    let mut is_public = true;
     if let Some(auth_header) = http_req.headers().get("Authorization") {
         if let Ok(auth_value) = auth_header.to_str() {
-            println!("Authorization header: {}", auth_value);
-
             use hmac::{Hmac, Mac};
             use jwt::VerifyWithKey;
             use sha2::Sha256;
             use std::collections::BTreeMap;
 
-            let key: Hmac<Sha256> = Hmac::new_from_slice(b"some-secret").unwrap();
-            let claims: BTreeMap<String, i32> = auth_value.verify_with_key(&key).unwrap();
-
-            gql_req = gql_req.data(seaography::UserContext {
-                user_id: claims["user_id"],
-            });
+            if let Ok(key) = Hmac::<Sha256>::new_from_slice(b"some-secret") {
+                if let Ok(claims) = auth_value.verify_with_key(&key) {
+                    let claims: BTreeMap<String, i32> = claims;
+                    gql_req = gql_req.data(seaography::UserContext {
+                        user_id: claims["user_id"],
+                    });
+                    is_public = false;
+                }
+            }
         }
+    }
+    if is_public {
+        gql_req = gql_req.data(seaography::UserContext {
+            user_id: 3,
+        });
     }
 
     schema.execute(gql_req).await.into()
@@ -67,6 +74,19 @@ async fn main() -> std::io::Result<()> {
     let database = Database::connect(&*DATABASE_URL)
         .await
         .expect("Fail to initialize database connection");
+
+    seaography_sqlite_example::rbac::setup(&database)
+        .await
+        .expect("RBAC setup failed");
+
+    // Setup RBAC
+    if let Ok(_) = database.load_rbac().await {
+        // Load RBAC from database
+    } else {
+        // Load RBAC placeholder
+        database.replace_rbac(sea_orm::rbac::RbacEngine::from_snapshot(sea_orm::rbac::RbacSnapshot::danger_unrestricted()));
+    }
+
     let schema =
         seaography_sqlite_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();

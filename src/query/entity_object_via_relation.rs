@@ -194,6 +194,13 @@ impl EntityObjectViaRelationBuilder {
 
                         let db = ctx.data::<DatabaseConnection>()?;
 
+                        let user_id = if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                            sea_orm::rbac::RbacUserId(user_context.user_id.into())
+                        } else {
+                            sea_orm::rbac::RbacUserId(0)
+                        };
+                        let db = &db.restricted_for(user_id)?;
+
                         let connection = if is_via_relation {
                             // TODO optimize query
                             let condition = Condition::all().add(from_col.eq(parent.get(from_col)));
@@ -202,6 +209,9 @@ impl EntityObjectViaRelationBuilder {
                             let stmt = apply_order(stmt, order_by);
                             apply_pagination::<R>(db, stmt, pagination).await?
                         } else {
+                            let select_stmt = sea_orm::QueryTrait::into_query(R::find());
+                            db.user_can_run(&select_stmt)?;
+
                             let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 
                             let key = KeyComplex::<R> {

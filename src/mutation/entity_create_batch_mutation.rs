@@ -91,6 +91,16 @@ impl EntityCreateBatchMutationBuilder {
                     }
 
                     let db = ctx.data::<DatabaseConnection>()?;
+
+                    let user_id = if let Ok(user_context) = ctx.data::<crate::UserContext>() {
+                        sea_orm::rbac::RbacUserId(user_context.user_id.into())
+                    } else {
+                        sea_orm::rbac::RbacUserId(0)
+                    };
+                    let restricted_db = &db.restricted_for(user_id)?;
+                    let stmt = sea_orm::QueryTrait::into_query(T::insert_many::<T::ActiveModel, _>([]));
+                    restricted_db.user_can_run(&stmt)?;
+
                     let transaction = db.begin().await?;
 
                     let entity_input_builder = EntityInputBuilder { context };
