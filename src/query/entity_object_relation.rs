@@ -3,13 +3,15 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
-use sea_orm::{EntityTrait, Iden, ModelTrait, QueryFilter, RelationDef};
+use sea_orm::{
+    DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, QueryTrait, RelationDef,
+};
 
 use crate::{
     apply_guard, apply_memory_pagination, get_filter_conditions, guard_error, pluralize_unique,
-    BuilderContext, Connection, ConnectionObjectBuilder, EntityObjectBuilder, FilterInputBuilder,
-    GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType,
-    OrderInputBuilder, PaginationInputBuilder,
+    BuilderContext, Connection, ConnectionObjectBuilder, DatabaseContext, EntityObjectBuilder,
+    FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader,
+    OperationType, OrderInputBuilder, PaginationInputBuilder, UserContext,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -87,6 +89,10 @@ impl EntityObjectRelationBuilder {
                         )));
                     };
 
+                    let db = ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
+
                     let loader = ctx.data_unchecked::<DataLoader<OneToOneLoader<R>>>();
 
                     let mut stmt = R::find();
@@ -95,6 +101,8 @@ impl EntityObjectRelationBuilder {
                     {
                         stmt = stmt.filter(filter);
                     }
+
+                    db.user_can_run(stmt.as_query())?;
 
                     let filters = ctx.args.get(&context.entity_query_field.filters);
                     let filters = get_filter_conditions::<R>(context, filters)?;
@@ -150,6 +158,12 @@ impl EntityObjectRelationBuilder {
                         {
                             stmt = stmt.filter(filter);
                         }
+
+                        let db = &ctx
+                            .data::<DatabaseConnection>()?
+                            .restricted(ctx.data_opt::<UserContext>())?;
+
+                        db.user_can_run(stmt.as_query())?;
 
                         let filters = ctx.args.get(&context.entity_query_field.filters);
                         let filters = get_filter_conditions::<R>(context, filters)?;
