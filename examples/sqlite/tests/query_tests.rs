@@ -1,10 +1,10 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
-use seaography::async_graphql;
+use seaography::{async_graphql, DatabaseContext};
 
 async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    seaography_sqlite_example::query_root::schema(database, None, None).unwrap()
+    seaography_sqlite_example::query_root::schema(database.unrestricted(), None, None).unwrap()
 }
 
 fn assert_eq(a: Response, b: &str) {

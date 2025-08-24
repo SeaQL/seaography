@@ -34,6 +34,7 @@ time = { version = "0.3", features = ["formatting"], optional = true }
 [features]
 default = ["field-camel-case"]
 macros = ["seaography-macros"]
+rbac = ["sea-orm/rbac"]
 with-json = ["sea-orm/with-json"]
 with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
 with-time = ["sea-orm/with-time", "async-graphql/time", "time"]
