@@ -6,8 +6,8 @@ use sea_orm::{
 
 use crate::{
     apply_guard, get_filter_conditions, guard_error, prepare_active_model, BuilderContext,
-    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder,
-    GuardAction, OperationType,
+    DatabaseContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
+    FilterInputBuilder, GuardAction, OperationType, UserContext,
 };
 
 /// The configuration structure of EntityUpdateMutationBuilder
@@ -101,7 +101,10 @@ impl EntityUpdateMutationBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
+
                     let transaction = db.begin().await?;
 
                     let entity_input_builder = EntityInputBuilder { context };

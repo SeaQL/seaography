@@ -5,8 +5,8 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_guard, guard_error, BuilderContext, EntityInputBuilder, EntityObjectBuilder,
-    EntityQueryFieldBuilder, GuardAction, OperationType,
+    apply_guard, guard_error, BuilderContext, DatabaseContext, EntityInputBuilder,
+    EntityObjectBuilder, EntityQueryFieldBuilder, GuardAction, OperationType, UserContext,
 };
 
 /// The configuration structure of EntityCreateOneMutationBuilder
@@ -93,7 +93,6 @@ impl EntityCreateOneMutationBuilder {
 
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
-                    let db = ctx.data::<DatabaseConnection>()?;
                     let value_accessor = ctx
                         .args
                         .try_get(&context.entity_create_one_mutation.data_field)?;
@@ -114,6 +113,10 @@ impl EntityCreateOneMutationBuilder {
                             return Err(guard_error(reason, "Field guard triggered."));
                         }
                     }
+
+                    let db = &ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
 
                     let active_model = prepare_active_model::<T, A>(
                         &entity_input_builder,
