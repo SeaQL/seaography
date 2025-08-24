@@ -6,7 +6,7 @@ use crate::{
     apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error,
     pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityColumnId, EntityObjectBuilder,
     FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInput,
-    PaginationInputBuilder,
+    PaginationInputBuilder,DatabaseContext,UserContext
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -143,7 +143,9 @@ impl EntityQueryFieldBuilder {
                     )?;
                     stmt = stmt.filter(column.eq(v));
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = &ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
 
                     let r = stmt.one(db).await?;
 
@@ -212,9 +214,11 @@ impl EntityQueryFieldBuilder {
                 stmt = stmt.filter(filters);
                 stmt = apply_order(stmt, order_by);
 
-                let db = ctx.data::<DatabaseConnection>()?;
+                let db = &ctx
+                    .data::<DatabaseConnection>()?
+                    .restricted(ctx.data_opt::<UserContext>())?;
 
-                let connection = apply_pagination::<T>(context, db, stmt, pagination).await?;
+                let connection = apply_pagination::<T, _>(context, db, stmt, pagination).await?;
 
                 Ok(Some(FieldValue::owned_any(connection)))
             })
