@@ -1,14 +1,6 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
-use seaography::{async_graphql, DatabaseContext};
-
-pub async fn get_schema() -> Schema {
-    let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema =
-        seaography_sqlite_example::query_root::schema(database.unrestricted(), None, None).unwrap();
-
-    schema
-}
+use seaography::async_graphql;
 
 #[tokio::test]
 async fn main() {
@@ -17,6 +9,13 @@ async fn main() {
     test_create_batch_mutation().await;
     test_update_mutation().await;
     test_delete_mutation().await;
+}
+
+pub async fn get_schema() -> Schema {
+    let database = Database::connect("sqlite://sakila.db").await.unwrap();
+    let schema = seaography_sqlite_example::query_root::schema(database, None, None).unwrap();
+
+    schema
 }
 
 pub fn assert_eq(a: Response, b: &str) {

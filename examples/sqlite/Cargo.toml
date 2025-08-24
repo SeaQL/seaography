@@ -25,6 +25,7 @@ serde_json = { version = "1.0.103" }
 members = []
 
 [features]
+rbac = ["seaography/rbac"]
 field-pluralize = ["seaography/field-pluralize"]
 
 [[test]]

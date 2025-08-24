@@ -15,7 +15,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
         use dotenv::dotenv;
         use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
         use sea_orm::Database;
-        use seaography::{async_graphql, lazy_static, DatabaseContext};
+        use seaography::{async_graphql, lazy_static};
         use std::env;
 
         lazy_static::lazy_static! {
@@ -46,8 +46,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .init();
             let database = Database::connect(&*DATABASE_URL)
                 .await
-                .expect("Fail to initialize database connection")
-                .unrestricted();
+                .expect("Fail to initialize database connection");
             let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
             let app = Route::new().at(
                 &*ENDPOINT,

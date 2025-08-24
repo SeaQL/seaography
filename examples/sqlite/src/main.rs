@@ -6,7 +6,7 @@ use async_graphql::{
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;
 use sea_orm::Database;
-use seaography::{async_graphql, lazy_static, DatabaseContext};
+use seaography::{async_graphql, lazy_static};
 use std::env;
 
 lazy_static::lazy_static! {
@@ -42,8 +42,7 @@ async fn main() -> std::io::Result<()> {
         .init();
     let database = Database::connect(&*DATABASE_URL)
         .await
-        .expect("Fail to initialize database connection")
-        .unrestricted();
+        .expect("Fail to initialize database connection");
     let schema =
         seaography_sqlite_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();

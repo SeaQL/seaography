@@ -3,9 +3,8 @@ use std::collections::BTreeMap;
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection, RelationTrait};
 use seaography::{
-    async_graphql, lazy_static, Builder, BuilderContext, DatabaseContext,
-    EntityObjectRelationBuilder, EntityObjectViaRelationBuilder, FnGuard, GuardAction,
-    GuardsConfig,
+    async_graphql, lazy_static, Builder, BuilderContext, EntityObjectRelationBuilder,
+    EntityObjectViaRelationBuilder, FnGuard, GuardAction, GuardsConfig,
 };
 
 lazy_static::lazy_static! {
@@ -268,7 +267,7 @@ pub fn schema(
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = schema(database.unrestricted(), None, None).unwrap();
+    let schema = schema(database, None, None).unwrap();
 
     schema
 }

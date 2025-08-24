@@ -1,11 +1,10 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
-use seaography::{async_graphql, DatabaseContext};
+use seaography::async_graphql;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema =
-        seaography_sqlite_example::query_root::schema(database.unrestricted(), None, None).unwrap();
+    let schema = seaography_sqlite_example::query_root::schema(database, None, None).unwrap();
 
     schema
 }
