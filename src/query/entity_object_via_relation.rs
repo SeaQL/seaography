@@ -210,7 +210,7 @@ impl EntityObjectViaRelationBuilder {
 
                             let stmt = stmt.filter(condition.add(filters));
                             let stmt = apply_order(stmt, order_by);
-                            apply_pagination::<R>(db, stmt, pagination).await?
+                            apply_pagination::<R, _>(db, stmt, pagination).await?
                         } else {
                             let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 

@@ -221,7 +221,7 @@ impl EntityQueryFieldBuilder {
                     .data::<DatabaseConnection>()?
                     .restricted(ctx.data_opt::<UserContext>())?;
 
-                let connection = apply_pagination::<T>(db, stmt, pagination).await?;
+                let connection = apply_pagination::<T, _>(db, stmt, pagination).await?;
 
                 Ok(Some(FieldValue::owned_any(connection)))
             })
