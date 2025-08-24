@@ -82,7 +82,9 @@ jobs:
       - name: Additional Integration tests
         working-directory: ./examples/sqlite
         run: |
-          cargo test --tests custom_
+          cargo test --test custom_query_tests
+          cargo test --test custom_mutation_tests
+          cargo test --test query_tests --features=rbac
           cargo test --test plural_query_tests --features=field-pluralize
           cargo test --test entity_filter_tests --features=field-pluralize
           rm tests/custom_mutation_tests.rs tests/custom_query_tests.rs tests/plural_query_tests.rs
