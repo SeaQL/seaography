@@ -1,7 +1,8 @@
 use async_graphql::{
     dataloader::DataLoader,
     dynamic::{
-        Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, TypeRef,
+        Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, Subscription,
+        SubscriptionField, TypeRef,
     },
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
@@ -22,6 +23,7 @@ use crate::{
 pub struct Builder {
     pub query: Object,
     pub mutation: Object,
+    pub subscription: Subscription,
     pub schema: SchemaBuilder,
 
     /// holds all output object types
@@ -38,6 +40,9 @@ pub struct Builder {
 
     /// holds all entities mutations
     pub mutations: Vec<Field>,
+
+    /// holds all subscriptions
+    pub subscriptions: Vec<SubscriptionField>,
 
     /// holds all entities metadata
     pub metadata: std::collections::HashMap<String, serde_json::Value>,
@@ -64,17 +69,25 @@ impl Builder {
             TypeRef::named(TypeRef::STRING),
             |_| FieldFuture::new(async move { Ok(Some(async_graphql::Value::from("pong"))) }),
         ));
-        let schema = Schema::build(query.type_name(), Some(mutation.type_name()), None);
+        let subscription = Subscription::new("Subscription");
+
+        let schema = Schema::build(
+            query.type_name(),
+            Some(mutation.type_name()),
+            Some(subscription.type_name()),
+        );
 
         Self {
             query,
             mutation,
+            subscription,
             schema,
             outputs: Vec::new(),
             inputs: Vec::new(),
             enumerations: Vec::new(),
             queries: Vec::new(),
             mutations: Vec::new(),
+            subscriptions: Vec::new(),
             metadata: Default::default(),
             connection,
             context,
@@ -291,6 +304,10 @@ impl Builder {
         self.mutations.append(&mut T::to_fields());
     }
 
+    pub fn register_subscription_field(&mut self, field: SubscriptionField) {
+        self.subscriptions.push(field);
+    }
+
     pub fn set_depth_limit(mut self, depth: Option<usize>) -> Self {
         self.depth = depth;
         self
@@ -305,7 +322,9 @@ impl Builder {
     pub fn schema_builder(self) -> SchemaBuilder {
         let query = self.query;
         let mutation = self.mutation;
+        let subscription = self.subscription;
         let schema = self.schema;
+        let have_subscription = !self.subscriptions.is_empty();
 
         // register queries
         let query = self
@@ -340,6 +359,14 @@ impl Builder {
             .mutations
             .into_iter()
             .fold(mutation, |mutation, field| mutation.field(field));
+
+        // register subscriptions
+        let subscription = self
+            .subscriptions
+            .into_iter()
+            .fold(subscription, |subscription, field| {
+                subscription.field(field)
+            });
 
         // register entities to schema
         let schema = self
@@ -425,6 +452,12 @@ impl Builder {
             .data(TypesMapHelper {
                 context: self.context,
             });
+
+        let schema = if have_subscription {
+            schema.register(subscription)
+        } else {
+            schema
+        };
 
         let schema = if let Some(depth) = self.depth {
             schema.limit_depth(depth)
