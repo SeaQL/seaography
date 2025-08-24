@@ -3,7 +3,7 @@
   <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280" alt="Seaography logo"/>
 
   <p>
-    <strong>🧭 A GraphQL framework and code generator for SeaORM</strong>
+    <strong>🧭 A dynamic GraphQL framework for SeaORM</strong>
   </p>
 
   [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
