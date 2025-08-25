@@ -94,6 +94,12 @@ async fn only_store_2() {
         "store"
     };
 
+    let staff_name = if cfg!(feature = "field-pluralize") {
+        "staff_single"
+    } else {
+        "staff"
+    };
+
     let query = format!(
         "
       {{
@@ -103,7 +109,7 @@ async fn only_store_2() {
             address {{
               address
             }}
-            staff {{
+            {staff_name} {{
               storeId
               firstName
               lastName
@@ -124,7 +130,7 @@ async fn only_store_2() {
                     "address": {
                         "address": "28 MySQL Boulevard"
                     },
-                    "staff": {
+                    staff_name: {
                         "storeId": 2,
                         "firstName": "Jon",
                         "lastName": "Stephens"
