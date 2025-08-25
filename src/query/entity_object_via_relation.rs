@@ -55,6 +55,7 @@ impl EntityObjectViaRelationBuilder {
         let filter_input_builder = FilterInputBuilder { context };
         let order_input_builder = OrderInputBuilder { context };
 
+        let parent_name: String = entity_object_builder.type_name::<T>();
         let object_name: String = entity_object_builder.type_name::<R>();
         let object_name_ = object_name.clone();
         let guard = self.context.guards.entity_guards.get(&object_name);
@@ -78,9 +79,12 @@ impl EntityObjectViaRelationBuilder {
         )
         .unwrap_or_else(|_| panic!("Illegal from_col: {:?}", to_relation_definition.to_col));
 
+        let field_name = name.clone();
         let field = match via_relation_definition.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
                 let object_name = object_name.clone();
+                let parent_name = parent_name.clone();
+                let field_name = field_name.clone();
                 FieldFuture::new(async move {
                     if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
                         return Err(guard_error(reason, "Entity guard triggered."));
@@ -89,6 +93,11 @@ impl EntityObjectViaRelationBuilder {
                         hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                     {
                         return Err(guard_error(reason, "Entity guard triggered."));
+                    }
+                    if let GuardAction::Block(reason) =
+                        hooks.field_guard(&ctx, &parent_name, &field_name, OperationType::Read)
+                    {
+                        return Err(guard_error(reason, "Field guard triggered."));
                     }
 
                     let parent = match ctx.parent_value.try_downcast_ref::<T::Model>() {
@@ -144,6 +153,8 @@ impl EntityObjectViaRelationBuilder {
                 TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
                 move |ctx| {
                     let object_name = object_name.clone();
+                    let parent_name = parent_name.clone();
+                    let field_name = field_name.clone();
                     FieldFuture::new(async move {
                         if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
                             return Err(guard_error(reason, "Entity guard triggered."));
@@ -152,6 +163,11 @@ impl EntityObjectViaRelationBuilder {
                             hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                         {
                             return Err(guard_error(reason, "Entity guard triggered."));
+                        }
+                        if let GuardAction::Block(reason) =
+                            hooks.field_guard(&ctx, &parent_name, &field_name, OperationType::Read)
+                        {
+                            return Err(guard_error(reason, "Field guard triggered."));
                         }
 
                         // FIXME: optimize union queries

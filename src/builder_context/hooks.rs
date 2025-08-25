@@ -19,7 +19,7 @@ impl Default for LifecycleHooks {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum OperationType {
     Read,
     Create,
