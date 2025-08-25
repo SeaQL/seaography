@@ -140,9 +140,7 @@ async fn test_custom_mutation_with_optional_custom_entities() {
             .await,
         r#"
         {
-          "maybe_rental_request": {
-            "rentalId": null
-          }
+          "maybe_rental_request": null
         }
         "#,
     );

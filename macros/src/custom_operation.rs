@@ -43,7 +43,7 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
         let new_field_return_value = match &func.output {
             ReturnType::Type(_, ty) => {
                 if let Type::Path(type_path) = ty.as_ref() {
-                    quote! { Ok(Some(#type_path::gql_field_value(result))) }
+                    quote! { Ok(#type_path::gql_field_value(result)) }
                 } else {
                     return quote_spanned! {
                         func.span() => compile_error!("Unknown return type");

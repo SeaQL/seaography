@@ -176,22 +176,12 @@ impl EntityObjectBuilder {
                     let object = match ctx.parent_value.try_downcast_ref::<T::Model>() {
                         Ok(object) => object,
                         Err(_) => {
-                            let option_object =
-                                ctx.parent_value.try_downcast_ref::<Option<T::Model>>();
-                            match option_object {
-                                Ok(Some(object)) => object,
-                                Ok(None) => {
-                                    return FieldFuture::new(async move { Ok(Some(Value::Null)) })
-                                }
-                                Err(_) => {
-                                    let object_name = object_name.clone();
-                                    return FieldFuture::new(async move {
-                                        Err::<Option<()>, _>(async_graphql::Error::new(format!(
-                                            "Failed to downcast object to {object_name}"
-                                        )))
-                                    });
-                                }
-                            }
+                            let object_name = object_name.clone();
+                            return FieldFuture::new(async move {
+                                Err::<Option<()>, _>(async_graphql::Error::new(format!(
+                                    "Failed to downcast object to {object_name}"
+                                )))
+                            });
                         }
                     };
 
