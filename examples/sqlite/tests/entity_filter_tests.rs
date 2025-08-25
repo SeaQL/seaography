@@ -5,6 +5,7 @@ use seaography::{
     OperationType,
 };
 use seaography_sqlite_example::entities::*;
+use serde_json::json;
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {
@@ -25,10 +26,10 @@ impl LifecycleHooksInterface for MyHooks {
         _action: OperationType,
     ) -> Option<Condition> {
         match entity {
-            "Customer" => Some(Condition::all().add(customer::Column::StoreId.eq(2))),
+            "Customer" | "Customers" => Some(Condition::all().add(customer::Column::StoreId.eq(2))),
             "Inventory" => Some(Condition::all().add(inventory::Column::StoreId.eq(2))),
             "Staff" => Some(Condition::all().add(staff::Column::StoreId.eq(2))),
-            "Store" => Some(Condition::all().add(store::Column::StoreId.eq(2))),
+            "Store" | "Stores" => Some(Condition::all().add(store::Column::StoreId.eq(2))),
             _ => None,
         }
     }
@@ -87,73 +88,81 @@ pub fn assert_eq(a: Response, b: &str) {
 async fn only_store_2() {
     let schema = get_schema().await;
 
-    assert_eq(
-        schema
-            .execute(
-                r#"
-                {
-                  store {
-                    nodes {
-                      storeId
-                      address {
-                        address
-                      }
-                      manager {
-                        storeId
-                        firstName
-                        lastName
-                      }
-                    }
-                  }
-                }
-                "#,
-            )
-            .await,
-        r#"
-        {
-            "store": {
-              "nodes": [
-                {
-                  "storeId": 2,
-                  "address": {
-                    "address": "28 MySQL Boulevard"
-                },
-                  "manager": {
+    #[cfg(feature = "field-pluralize")]
+    let stores_name = "stores";
+    #[cfg(not(feature = "field-pluralize"))]
+    let stores_name = "store";
+
+    let query = format!(
+        "
+      {{
+        {stores_name} {{
+          nodes {{
+            storeId
+            address {{
+              address
+            }}
+            manager {{
+              storeId
+              firstName
+              lastName
+            }}
+          }}
+        }}
+      }}
+    "
+    );
+    let response = schema.execute(query).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            stores_name: {
+                "nodes": [{
                     "storeId": 2,
-                    "firstName": "Jon",
-                    "lastName": "Stephens"
-                  }
-                }
-              ]
+                    "address": {
+                        "address": "28 MySQL Boulevard"
+                    },
+                    "manager": {
+                        "storeId": 2,
+                        "firstName": "Jon",
+                        "lastName": "Stephens"
+                    }
+                }]
             }
-        }
-        "#,
+        })
     );
 
-    assert_eq(
-        schema
-            .execute(
-                r#"
-                {
-                  customer(pagination: { page: { page: 0, limit: 2 } }) {
-                    nodes {
-                      storeId
-                      customerId
-                      firstName
-                      lastName
-                    }
-                    paginationInfo {
-                      pages
-                      current
-                    }
-                  }
-                }
-                "#,
-            )
-            .await,
-        r#"
-        {
-            "customer": {
+    #[cfg(feature = "field-pluralize")]
+    let customers_name = "customers";
+    #[cfg(not(feature = "field-pluralize"))]
+    let customers_name = "customer";
+
+    let query = format!(
+        "
+      {{
+        {customers_name}(pagination: {{ page: {{ page: 0, limit: 2 }} }}) {{
+          nodes {{
+            storeId
+            customerId
+            firstName
+            lastName
+          }}
+          paginationInfo {{
+            pages
+            current
+          }}
+        }}
+      }}
+    "
+    );
+
+    let response = schema.execute(query).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            customers_name: {
               "nodes": [
                 {
                   "storeId": 2,
@@ -173,44 +182,44 @@ async fn only_store_2() {
                 "current": 0
               }
             }
-        }
-        "#,
+        }),
     );
 
-    assert_eq(
-        schema
-            .execute(
-                r#"
-                {
-                  store {
-                    nodes {
-                      storeId
-                      address {
-                        address
-                    }
-                    customer(pagination: { page: { page: 0, limit: 2 } }) {
-                      nodes {
-                        storeId
-                        firstName
-                        lastName
-                      }
-                    }
-                  }
-                }
-                }
-                "#,
-            )
-            .await,
-        r#"
+    let query = format!(
+        "
+      {{
+        {stores_name} {{
+          nodes {{
+            storeId
+            address {{
+              address
+            }}
+            {customers_name}(pagination: {{ page: {{ page: 0, limit: 2 }} }}) {{
+              nodes {{
+                storeId
+                firstName
+                lastName
+              }}
+            }}
+          }}
+        }}
+      }}
+    "
+    );
+    let response = schema.execute(query).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!(
         {
-            "store": {
+            stores_name: {
               "nodes": [
                 {
                   "storeId": 2,
                   "address": {
                     "address": "28 MySQL Boulevard"
                   },
-                  "customer": {
+                  customers_name: {
                     "nodes": [
                       {
                         "storeId": 2,
@@ -227,7 +236,6 @@ async fn only_store_2() {
                 }
               ]
             }
-        }
-        "#,
+        }),
     );
 }
