@@ -148,10 +148,9 @@ impl EntityQueryFieldBuilder {
 
                     let db = ctx.data::<DatabaseConnection>()?;
 
-                    match stmt.one(db).await? {
-                        Some(r) => Ok(Some(FieldValue::owned_any(r))),
-                        None => Ok(None),
-                    }
+                    let r = stmt.one(db).await?;
+
+                    Ok(r.map(FieldValue::owned_any))
                 })
             },
         )
