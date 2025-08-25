@@ -161,19 +161,19 @@ async fn test_complex_filter_with_pagination() {
             .execute(
                 r#"
                 {
-                    payment(
-                      filters: { amount: { gt: "11.1" } }
-                      pagination: { page: { limit: 2, page: 3 } }
-                    ) {
-                      nodes {
-                        paymentId
-                        amount
-                      }
-                      paginationInfo {
-                        pages
-                        current
-                      }
+                  payment(
+                    filters: { amount: { gt: "11.1" } }
+                    pagination: { page: { limit: 2, page: 3 } }
+                  ) {
+                    nodes {
+                      paymentId
+                      amount
                     }
+                    paginationInfo {
+                      pages
+                      current
+                    }
+                  }
                 }
                 "#,
             )
@@ -205,95 +205,123 @@ async fn test_complex_filter_with_pagination() {
 async fn test_cursor_pagination() {
     let schema = get_schema().await;
 
+    let graphql_query = r#"
+        {
+          payment(
+              filters: { amount: { gt: "11" } }
+              pagination: { cursor: { limit: 5 } }
+          ) {
+            edges {
+              node {
+                paymentId
+                amount
+                customer {
+                  firstName
+                }
+              }
+            }
+            pageInfo {
+              hasPreviousPage
+              hasNextPage
+              startCursor
+              endCursor
+            }
+          }
+        }
+        "#;
+    let expected_output = r#"
+        {
+          "payment": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 342,
+                  "amount": "11.99",
+                    "customer": {
+                      "firstName": "KAREN"
+                    }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 3146,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VICTORIA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5280,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VANESSA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5281,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ALMA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5550,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ROSEMARY"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": false,
+              "hasNextPage": true,
+              "startCursor": "Int[3]:342",
+              "endCursor": "Int[4]:5550"
+            }
+          }
+        }
+        "#;
+
+    assert_eq(schema.execute(graphql_query).await, expected_output);
+
     assert_eq(
         schema
             .execute(
                 r#"
-                {
-                    payment(
-                        filters: { amount: { gt: "11" } }
-                        pagination: { cursor: { limit: 5 } }
-                    ) {
-                        edges {
-                        node {
-                            paymentId
-                            amount
-                            customer {
-                            firstName
-                            }
-                        }
-                        }
-                        pageInfo {
-                        hasPreviousPage
-                        hasNextPage
-                        startCursor
-                        endCursor
-                        }
-                    }
+        {
+          payment(
+              filters: { amount: { gt: "11" } }
+              pagination: { cursor: { cursor: null, limit: 5 } }
+          ) {
+            edges {
+              node {
+                paymentId
+                amount
+                customer {
+                  firstName
                 }
-                "#,
+              }
+            }
+            pageInfo {
+              hasPreviousPage
+              hasNextPage
+              startCursor
+              endCursor
+            }
+          }
+        }
+        "#,
             )
             .await,
-        r#"
-            {
-            "payment": {
-                "edges": [
-                {
-                    "node": {
-                    "paymentId": 342,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "KAREN"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 3146,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "VICTORIA"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 5280,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "VANESSA"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 5281,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "ALMA"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 5550,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "ROSEMARY"
-                    }
-                    }
-                }
-                ],
-                "pageInfo": {
-                "hasPreviousPage": false,
-                "hasNextPage": true,
-                "startCursor": "Int[3]:342",
-                "endCursor": "Int[4]:5550"
-                }
-            }
-            }
-            "#,
-    )
+        expected_output,
+    );
 }
 
 #[tokio::test]

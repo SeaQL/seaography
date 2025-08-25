@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 
-use crate::{BuilderContext, SeaResult};
+use crate::{BuilderContext, InputValueHelper, SeaResult};
 
 /// used to hold information about cursor pagination
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -58,9 +58,7 @@ impl CursorInputBuilder {
         let limit = object.try_get(&self.context.cursor_input.limit)?.u64()?;
 
         let cursor = object.get(&self.context.cursor_input.cursor);
-        let cursor: Option<String> = cursor
-            .map(|cursor| cursor.string().map(str::to_owned))
-            .transpose()?;
+        let cursor: Option<String> = cursor.maybe_string()?;
 
         Ok(CursorInput { cursor, limit })
     }

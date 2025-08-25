@@ -60,7 +60,7 @@ where
         if let Some(cursor) = cursor_object.cursor {
             let values = decode_cursor(&cursor)?;
 
-            let cursor_values: sea_orm::sea_query::value::ValueTuple = map_cursor_values(values);
+            let cursor_values: sea_orm::sea_query::value::ValueTuple = map_cursor_values(values)?;
 
             stmt.after(cursor_values);
         }
@@ -77,7 +77,7 @@ where
                     .map(|variant| node.get(variant.into_column()))
                     .collect();
 
-                let values = map_cursor_values(values);
+                let values = map_cursor_values(values)?;
 
                 let next_data = next_stmt.first(1).after(values).all(db).await?;
 
@@ -97,7 +97,7 @@ where
                     .map(|variant| node.get(variant.into_column()))
                     .collect();
 
-                let values = map_cursor_values(values);
+                let values = map_cursor_values(values)?;
 
                 let previous_data = previous_stmt.first(1).before(values).all(db).await?;
 

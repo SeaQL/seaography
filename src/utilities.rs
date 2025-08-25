@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use sea_orm::sea_query::value::ValueTuple;
 
 /// used to encode the primary key values of a SeaORM entity to a String
 pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
@@ -104,19 +105,23 @@ pub enum DecodeMode {
     Data,
 }
 
-pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> sea_orm::sea_query::value::ValueTuple {
-    if values.len() == 1 {
-        sea_orm::sea_query::value::ValueTuple::One(values[0].clone())
+pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> Result<ValueTuple, sea_orm::DbErr> {
+    if values.is_empty() {
+        Err(sea_orm::DbErr::Type("Missing cursor value".into()))
+    } else if values.len() == 1 {
+        Ok(ValueTuple::One(values[0].clone()))
     } else if values.len() == 2 {
-        sea_orm::sea_query::value::ValueTuple::Two(values[0].clone(), values[1].clone())
+        Ok(ValueTuple::Two(values[0].clone(), values[1].clone()))
     } else if values.len() == 3 {
-        sea_orm::sea_query::value::ValueTuple::Three(
+        Ok(ValueTuple::Three(
             values[0].clone(),
             values[1].clone(),
             values[2].clone(),
-        )
+        ))
     } else {
-        panic!("seaography does not support cursors values with size greater than 3")
+        Err(sea_orm::DbErr::Type(
+            "seaography does not support cursors values with size greater than 3".into(),
+        ))
     }
 }
 

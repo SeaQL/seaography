@@ -1,4 +1,7 @@
 // INPUTS
+pub mod value_input;
+pub use value_input::*;
+
 pub mod cursor_input;
 pub use cursor_input::*;
 
