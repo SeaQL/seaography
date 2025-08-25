@@ -69,5 +69,5 @@ pub enum RelatedEntity {
     #[sea_orm(entity = "super::inventory::Entity")]
     Inventory,
     #[sea_orm(entity = "super::staff::Entity")]
-    Manager,
+    Staff,
 }

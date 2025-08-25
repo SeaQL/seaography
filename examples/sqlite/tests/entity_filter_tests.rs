@@ -103,7 +103,7 @@ async fn only_store_2() {
             address {{
               address
             }}
-            manager {{
+            staff {{
               storeId
               firstName
               lastName
@@ -124,7 +124,7 @@ async fn only_store_2() {
                     "address": {
                         "address": "28 MySQL Boulevard"
                     },
-                    "manager": {
+                    "staff": {
                         "storeId": 2,
                         "firstName": "Jon",
                         "lastName": "Stephens"

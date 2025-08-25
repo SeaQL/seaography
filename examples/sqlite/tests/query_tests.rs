@@ -29,7 +29,7 @@ async fn test_simple_query() {
                     store {
                     nodes {
                         storeId
-                        manager {
+                        staff {
                         firstName
                         lastName
                         }
@@ -45,14 +45,14 @@ async fn test_simple_query() {
                 "nodes": [
                     {
                     "storeId": 1,
-                    "manager": {
+                    "staff": {
                         "firstName": "Mike",
                         "lastName": "Hillyer"
                     }
                     },
                     {
                     "storeId": 2,
-                    "manager": {
+                    "staff": {
                         "firstName": "Jon",
                         "lastName": "Stephens"
                     }
@@ -76,7 +76,7 @@ async fn test_simple_query_with_filter() {
                     store(filters: {storeId:{eq: 1}}) {
                         nodes {
                         storeId
-                        manager {
+                        staff {
                             firstName
                             lastName
                         }
@@ -92,7 +92,7 @@ async fn test_simple_query_with_filter() {
                 "nodes": [
                     {
                     "storeId": 1,
-                    "manager": {
+                    "staff": {
                         "firstName": "Mike",
                         "lastName": "Hillyer"
                     }
