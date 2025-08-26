@@ -1,7 +1,8 @@
-use async_graphql::{dynamic::*, Response};
+use async_graphql::{dynamic::*, Request, Response, Variables};
 use sea_orm::Database;
 use seaography::async_graphql;
 use serde::Deserialize;
+use serde_json::json;
 
 pub async fn get_schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
@@ -169,4 +170,234 @@ async fn test_custom_query_with_no_pagination() {
         pages: i32,
         current: i32,
     }
+}
+
+#[tokio::test]
+async fn option_entity_object() {
+    let schema = get_schema().await;
+
+    let query = r#"
+        query($staffId: Int!) {
+            staff_by_id(id: $staffId) {
+                firstName
+                lastName
+            }
+        }
+    "#;
+
+    let vars = Variables::from_json(json!({ "staffId": 2 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "firstName": "Jon",
+                "lastName": "Stephens",
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 0 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": null
+        })
+    );
+}
+
+#[tokio::test]
+async fn option_entity_object_relation_owner() {
+    let schema = get_schema().await;
+
+    let query = r#"
+        query($staffId: Int!) {
+            staff_by_id(id: $staffId) {
+                selfRefReverse {
+                    nodes {
+                        firstName
+                    }
+                }
+            }
+        }
+    "#;
+
+    let vars = Variables::from_json(json!({ "staffId": 1 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "selfRefReverse": {
+                    "nodes": [{
+                        "firstName": "Jon"
+                    }]
+                }
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 2 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "selfRefReverse": {
+                    "nodes": []
+                }
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 0 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": null
+        })
+    );
+}
+
+#[tokio::test]
+async fn option_entity_object_relation_not_owner() {
+    let schema = get_schema().await;
+
+    let query = r#"
+        query($staffId: Int!) {
+            staff_by_id(id: $staffId) {
+                selfRef {
+                    firstName
+                }
+            }
+        }
+    "#;
+
+    let vars = Variables::from_json(json!({ "staffId": 1 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "selfRef": null
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 2 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "selfRef": {
+                    "firstName": "Mike"
+                }
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 0 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": null
+        })
+    );
+}
+
+#[tokio::test]
+async fn option_entity_object_via_relation_owner() {
+    let schema = get_schema().await;
+
+    let query = r#"
+        query($staffId: Int!) {
+            staff_by_id(id: $staffId) {
+                rental(
+                    orderBy: { rentalId: ASC },
+                    pagination: { page: { page: 0, limit: 1 } }
+                ) {
+                    nodes {
+                        rentalId
+                    }
+                }
+            }
+        }
+    "#;
+
+    let vars = Variables::from_json(json!({ "staffId": 2 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "rental": {
+                    "nodes": [{
+                        "rentalId": 4
+                    }]
+                }
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 0 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": null
+        })
+    );
+}
+
+#[tokio::test]
+async fn option_entity_object_via_relation_not_owner() {
+    let schema = get_schema().await;
+
+    let query = r#"
+        query($staffId: Int!) {
+            staff_by_id(id: $staffId) {
+                store {
+                    storeId
+                }
+            }
+        }
+    "#;
+
+    let vars = Variables::from_json(json!({ "staffId": 1 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": {
+                "store": {
+                    "storeId": 1
+                }
+            }
+        })
+    );
+
+    let vars = Variables::from_json(json!({ "staffId": 0 }));
+    let response = schema.execute(Request::new(query).variables(vars)).await;
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        response.data.into_json().unwrap(),
+        json!({
+            "staff_by_id": null
+        })
+    );
 }

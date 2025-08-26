@@ -36,11 +36,11 @@ pub trait GqlScalarValueType: Sized {
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> FieldValue<'static>
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>>
     where
         async_graphql::Value: From<Self>,
     {
-        FieldValue::value(value)
+        Some(FieldValue::value(value))
     }
 }
 
@@ -71,8 +71,8 @@ pub trait GqlModelType: Sized + Send + Sync + 'static {
         name: &str,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> FieldValue<'static> {
-        FieldValue::owned_any(value)
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+        Some(FieldValue::owned_any(value))
     }
 }
 
@@ -86,9 +86,7 @@ pub trait GqlModelOptionType: Sized + Send + Sync + 'static {
         name: &str,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> FieldValue<'static> {
-        FieldValue::owned_any(value)
-    }
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>>;
 }
 
 impl<T> GqlScalarValueType for T
@@ -190,6 +188,10 @@ where
             )),
             None => Ok(None),
         }
+    }
+
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+        value.map(FieldValue::owned_any)
     }
 }
 

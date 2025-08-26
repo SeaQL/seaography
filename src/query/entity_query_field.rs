@@ -117,7 +117,7 @@ impl EntityQueryFieldBuilder {
 
         Field::new(
             self.type_name::<T>(),
-            TypeRef::named_nn(&object_name),
+            TypeRef::named(&object_name),
             move |ctx| {
                 let object_name = object_name.clone();
                 FieldFuture::new(async move {
@@ -150,7 +150,7 @@ impl EntityQueryFieldBuilder {
 
                     let r = stmt.one(db).await?;
 
-                    Ok(Some(FieldValue::owned_any(r)))
+                    Ok(r.map(FieldValue::owned_any))
                 })
             },
         )

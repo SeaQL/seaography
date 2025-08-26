@@ -84,6 +84,7 @@ jobs:
         run: |
           cargo test --tests custom_
           cargo test --test plural_query_tests --features=field-pluralize
+          cargo test --test entity_filter_tests --features=field-pluralize
           rm tests/custom_mutation_tests.rs tests/custom_query_tests.rs tests/plural_query_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
