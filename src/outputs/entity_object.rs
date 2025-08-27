@@ -187,13 +187,7 @@ impl EntityObjectBuilder {
 
                     if let Some(conversion_fn) = conversion_fn {
                         let result = conversion_fn(&object.get(column));
-                        return FieldFuture::new(async move {
-                            match result {
-                                Ok(value) => Ok(Some(value)),
-                                // FIXME: proper error reporting
-                                Err(_) => Ok(None),
-                            }
-                        });
+                        return FieldFuture::new(async move { result });
                     }
 
                     FieldFuture::new(async move {
