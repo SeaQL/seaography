@@ -24,6 +24,10 @@ pub struct TypesMapConfig {
     pub input_conversions: BTreeMap<String, FnInputTypeConversion>,
     /// used to map entity_name.column_name output to a custom formatter
     pub output_conversions: BTreeMap<String, FnOutputTypeConversion>,
+    /// used to override the type of this column in input objects
+    pub input_types: BTreeMap<String, TypeRef>,
+    /// used to override the type of this column in output objects
+    pub output_types: BTreeMap<String, TypeRef>,
     /// used to configure default time library
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
@@ -38,6 +42,8 @@ impl std::default::Default for TypesMapConfig {
             overwrites: BTreeMap::new(),
             input_conversions: BTreeMap::new(),
             output_conversions: BTreeMap::new(),
+            input_types: BTreeMap::new(),
+            output_types: BTreeMap::new(),
 
             #[cfg(all(not(feature = "with-time"), not(feature = "with-chrono")))]
             time_library: TimeLibrary::String,
@@ -357,6 +363,64 @@ impl TypesMapHelper {
                 ty
             }
         })
+    }
+
+    pub fn input_type_for_column<T>(
+        &self,
+        column: &T::Column,
+        entity_name: &str,
+        column_name: &str,
+        not_null: bool,
+    ) -> Option<TypeRef>
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        if let Some(type_ref) = self
+            .context
+            .types
+            .input_types
+            .get(&format!("{entity_name}.{column_name}"))
+        {
+            Some(type_ref.clone())
+        } else {
+            let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
+            self.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                not_null,
+                enum_type_name,
+            )
+        }
+    }
+
+    pub fn output_type_for_column<T>(
+        &self,
+        column: &T::Column,
+        entity_name: &str,
+        column_name: &str,
+        not_null: bool,
+    ) -> Option<TypeRef>
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        if let Some(type_ref) = self
+            .context
+            .types
+            .output_types
+            .get(&format!("{entity_name}.{column_name}"))
+        {
+            Some(type_ref.clone())
+        } else {
+            let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
+            self.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                not_null,
+                enum_type_name,
+            )
+        }
     }
 }
 
