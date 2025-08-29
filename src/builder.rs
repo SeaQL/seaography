@@ -67,7 +67,7 @@ impl Builder {
         let mutation = Object::new("Mutation").field(Field::new(
             "_ping",
             TypeRef::named(TypeRef::STRING),
-            |_| FieldFuture::new(async move { Ok(Some(async_graphql::Value::from("pong"))) }),
+            |_| FieldFuture::from_value(Some(async_graphql::Value::from("pong"))),
         ));
         let subscription = Subscription::new("Subscription");
 

@@ -190,12 +190,10 @@ impl EntityObjectBuilder {
                         return FieldFuture::new(async move { result });
                     }
 
-                    FieldFuture::new(async move {
-                        Ok(sea_query_value_to_graphql_value(
-                            object.get(column),
-                            is_enum,
-                        ))
-                    })
+                    FieldFuture::from_value(sea_query_value_to_graphql_value(
+                        object.get(column),
+                        is_enum,
+                    ))
                 });
 
                 object.field(field)
