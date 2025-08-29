@@ -195,6 +195,45 @@ where
     }
 }
 
+impl<M> GqlModelOptionType for Vec<M>
+where
+    M: ModelTrait + Sync + 'static,
+    <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_object_builder = EntityObjectBuilder { context };
+        let type_name = entity_object_builder.type_name::<M::Entity>();
+        TypeRef::named_nn_list_nn(type_name)
+    }
+
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        let entity_input_builder = EntityInputBuilder { context };
+        let type_name = entity_input_builder.insert_type_name::<M::Entity>();
+        TypeRef::named_nn_list_nn(type_name)
+    }
+
+    fn try_get_arg(
+        context: &'static BuilderContext,
+        ctx: &ResolverContext<'_>,
+        name: &str,
+    ) -> SeaResult<Self> {
+        let entity_object_builder = EntityObjectBuilder { context };
+
+        ctx.args
+            .try_get(name)?
+            .list()?
+            .iter()
+            .map(|item| entity_object_builder.parse_object::<M>(&item.object()?))
+            .collect()
+    }
+
+    fn gql_field_value(values: Self) -> Option<FieldValue<'static>> {
+        Some(FieldValue::list(
+            values.into_iter().map(|value| FieldValue::owned_any(value)),
+        ))
+    }
+}
+
 impl<E> GqlModelType for Connection<E>
 where
     E: EntityTrait,
