@@ -436,3 +436,50 @@ async fn option_entity_object_via_relation_not_owner() {
         })
     );
 }
+
+#[tokio::test]
+async fn test_custom_query_with_custom_output() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  purchase_order {
+                    po_number
+                    lineitems {
+                      product
+                      quantity
+                      size {
+                        size
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "purchase_order": {
+            "po_number": "AB1234",
+            "lineitems": [
+              {
+                "product": "Towel",
+                "quantity": 2.0,
+                "size": {
+                  "size": 4
+                }
+              },
+              {
+                "product": "Soap",
+                "quantity": 2.5,
+                "size": null
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}

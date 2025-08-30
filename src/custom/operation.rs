@@ -1,7 +1,7 @@
 use crate::{
     converted_null_to_sea_orm_value, converted_value_to_sea_orm_value, pluralize_unique,
-    BuilderContext, Connection, EntityInputBuilder, EntityObjectBuilder, PaginationInput,
-    PaginationInputBuilder, SeaResult, TypesMapHelper,
+    sea_query_value_to_graphql_value, BuilderContext, Connection, EntityInputBuilder,
+    EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
 use async_graphql::{
     dynamic::{Field, FieldValue, ResolverContext, TypeRef, ValueAccessor},
@@ -36,11 +36,10 @@ pub trait GqlScalarValueType: Sized {
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>>
-    where
-        async_graphql::Value: From<Self>,
-    {
-        Some(FieldValue::value(value))
+    fn to_graphql_value(self) -> Option<async_graphql::Value>;
+
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+        Self::to_graphql_value(value).map(FieldValue::value)
     }
 }
 
@@ -59,6 +58,14 @@ pub trait GqlInputModelType: Sized + Send + Sync + 'static {
         context: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
+}
+
+pub trait GqlOutputModelType: Sized + Send + Sync + 'static {
+    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
+
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+        Some(FieldValue::owned_any(value))
+    }
 }
 
 pub trait GqlModelType: Sized + Send + Sync + 'static {
@@ -91,7 +98,7 @@ pub trait GqlModelOptionType: Sized + Send + Sync + 'static {
 
 impl<T> GqlScalarValueType for T
 where
-    T: sea_orm::sea_query::ValueType,
+    T: sea_orm::sea_query::ValueType + Into<sea_orm::Value>,
 {
     fn gql_type_ref(context: &'static BuilderContext) -> TypeRef {
         let ty = T::column_type();
@@ -126,6 +133,13 @@ where
             // this is Value::unwrap and should not panic
             Ok(value.unwrap())
         }
+    }
+
+    fn to_graphql_value(self) -> Option<async_graphql::Value> {
+        Some(
+            sea_query_value_to_graphql_value(self.into(), false)
+                .unwrap_or(async_graphql::Value::Null),
+        )
     }
 }
 
@@ -303,5 +317,36 @@ impl<T: GqlInputModelType> GqlInputModelType for Option<T> {
             Some(v) => Ok(Some(T::parse_value(context, Some(v))?)),
             None => Ok(None),
         }
+    }
+}
+
+impl<M> GqlOutputModelType for Option<M>
+where
+    M: GqlOutputModelType,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        match M::gql_output_type_ref(context) {
+            TypeRef::NonNull(ty) => ty.as_ref().to_owned(),
+            _ => unimplemented!("Cannot be used as optional output"),
+        }
+    }
+
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+        value.map(FieldValue::owned_any)
+    }
+}
+
+impl<M> GqlOutputModelType for Vec<M>
+where
+    M: GqlOutputModelType,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        TypeRef::List(M::gql_output_type_ref(context).into())
+    }
+
+    fn gql_field_value(values: Self) -> Option<FieldValue<'static>> {
+        Some(FieldValue::list(
+            values.into_iter().map(|value| FieldValue::owned_any(value)),
+        ))
     }
 }

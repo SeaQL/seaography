@@ -30,6 +30,7 @@ pub struct Operations {
     customer_of_store2: fn(pagination: PaginationInput) -> Connection::<customer::Entity>,
     staff_by_id: fn(id: i16) -> Option<staff::Model>,
     many_rental: fn() -> Vec<rental::Model>,
+    purchase_order: fn() -> custom_output::PurchaseOrder,
 }
 
 impl Operations {
@@ -53,6 +54,24 @@ impl Operations {
         let db = ctx.data::<DatabaseConnection>().unwrap();
 
         Ok(rental::Entity::find().limit(10).all(db).await?)
+    }
+
+    async fn purchase_order(_ctx: &ResolverContext<'_>) -> GqlResult<custom_output::PurchaseOrder> {
+        Ok(custom_output::PurchaseOrder {
+            po_number: "AB1234".into(),
+            lineitems: vec![
+                custom_output::Lineitem {
+                    product: "Towel".into(),
+                    quantity: 2.0,
+                    size: Some(custom_output::ProductSize { size: 4 }),
+                },
+                custom_output::Lineitem {
+                    product: "Soap".into(),
+                    quantity: 2.5,
+                    size: None,
+                },
+            ],
+        })
     }
 }
 

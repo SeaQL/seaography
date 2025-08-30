@@ -4,6 +4,7 @@ use sea_orm::DatabaseConnection;
 use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
 mod custom_inputs;
+mod custom_output;
 mod mutations;
 mod queries;
 
@@ -41,6 +42,15 @@ pub fn schema(
     seaography::register_custom_inputs!(
         builder,
         [custom_inputs::RentalRequest, custom_inputs::Location]
+    );
+
+    seaography::register_custom_outputs!(
+        builder,
+        [
+            custom_output::PurchaseOrder,
+            custom_output::Lineitem,
+            custom_output::ProductSize
+        ]
     );
 
     seaography::register_custom_queries!(builder, [queries::Operations]);

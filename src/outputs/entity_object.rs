@@ -241,7 +241,7 @@ impl EntityObjectBuilder {
     }
 }
 
-fn sea_query_value_to_graphql_value(
+pub(crate) fn sea_query_value_to_graphql_value(
     sea_query_value: sea_orm::sea_query::Value,
     is_enum: bool,
 ) -> Option<Value> {
