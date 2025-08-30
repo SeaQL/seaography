@@ -9,12 +9,12 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoAc
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, CustomInput, CustomOperation, EdgeObjectBuilder,
+    CursorInputBuilder, CustomInput, CustomOperation, CustomOutput, EdgeObjectBuilder,
     EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
     FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
     OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder, TypesMapHelper,
+    PaginationInfoObjectBuilder, PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -290,6 +290,13 @@ impl Builder {
         self.inputs.push(T::input_object(self.context));
     }
 
+    pub fn register_custom_output<T>(&mut self)
+    where
+        T: CustomOutput,
+    {
+        self.outputs.push(T::basic_object(self.context));
+    }
+
     pub fn register_custom_query<T>(&mut self)
     where
         T: CustomOperation,
@@ -448,10 +455,7 @@ impl Builder {
                 .to_object(),
             )
             .register(query)
-            .register(mutation)
-            .data(TypesMapHelper {
-                context: self.context,
-            });
+            .register(mutation);
 
         let schema = if have_subscription {
             schema.register(subscription)
@@ -545,6 +549,13 @@ macro_rules! register_active_enums {
 macro_rules! register_custom_inputs {
     ($builder:expr, [$($ty:path),+ $(,)?]) => {
         $($builder.register_custom_input::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_outputs {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_output::<$ty>();)*
     };
 }
 

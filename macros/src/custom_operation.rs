@@ -113,7 +113,7 @@ fn impl_mutation(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
     quote! {
         impl seaography::CustomOperation for #the_struct {
             fn to_fields() -> std::vec::Vec<seaography::async_graphql::dynamic::Field> {
-                use seaography::{GqlScalarValueType, GqlInputModelType, GqlModelType, GqlModelOptionType};
+                use seaography::{GqlScalarValueType, GqlInputModelType, GqlOutputModelType, GqlModelType, GqlModelOptionType};
 
                 vec![
                     #(#gql_fields),*
