@@ -40,7 +40,7 @@ impl Operations {
     ) -> GqlResult<Connection<customer::Entity>> {
         let db = ctx.data::<DatabaseConnection>()?;
         let query = customer::Entity::find().filter(customer::Column::StoreId.eq(2));
-        let connection = apply_pagination::<customer::Entity>(db, query, pagination).await?;
+        let connection = apply_pagination(db, query, pagination).await?;
 
         Ok(connection)
     }
