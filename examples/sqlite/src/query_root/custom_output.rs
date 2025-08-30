@@ -1,28 +1,23 @@
-use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
-use seaography::{
-    async_graphql, BuilderContext, CustomOutput, GqlOutputModelType, GqlScalarValueType,
-};
+use seaography::macros::CustomOutput;
 
-#[derive(Clone)]
+#[derive(Clone, CustomOutput)]
 pub struct PurchaseOrder {
     pub po_number: String,
     pub lineitems: Vec<Lineitem>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, CustomOutput)]
 pub struct Lineitem {
     pub product: String,
     pub quantity: f64,
     pub size: Option<i32>,
 }
 
-impl CustomOutput for PurchaseOrder {
-    fn type_name() -> &'static str {
-        "PurchaseOrderBasic"
-    }
+/*
 
+impl CustomOutput for PurchaseOrder {
     fn basic_object(ctx: &'static BuilderContext) -> Object {
-        Object::new(Self::type_name())
+        Object::new("PurchaseOrderBasic")
             .field(Field::new(
                 "po_number",
                 String::gql_output_type_ref(ctx),
@@ -57,12 +52,8 @@ impl CustomOutput for PurchaseOrder {
 }
 
 impl CustomOutput for Lineitem {
-    fn type_name() -> &'static str {
-        "LineitemBasic"
-    }
-
     fn basic_object(ctx: &'static BuilderContext) -> Object {
-        Object::new(Self::type_name())
+        Object::new("LineitemBasic")
             .field(Field::new(
                 "product",
                 String::gql_output_type_ref(ctx),
@@ -113,12 +104,14 @@ impl CustomOutput for Lineitem {
 
 impl GqlOutputModelType for PurchaseOrder {
     fn gql_output_type_ref(_: &'static BuilderContext) -> TypeRef {
-        TypeRef::named_nn(Self::type_name())
+        TypeRef::named_nn("PurchaseOrderBasic")
     }
 }
 
 impl GqlOutputModelType for Lineitem {
     fn gql_output_type_ref(_: &'static BuilderContext) -> TypeRef {
-        TypeRef::named_nn(Self::type_name())
+        TypeRef::named_nn("LineitemBasic")
     }
 }
+
+*/
