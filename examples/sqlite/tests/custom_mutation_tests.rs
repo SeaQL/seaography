@@ -51,7 +51,7 @@ async fn test_custom_mutations() {
 }
 
 #[tokio::test]
-async fn test_custom_mutation_with_custom_entities() {
+async fn test_custom_mutation_with_custom_input() {
     let schema = get_schema().await;
 
     assert_eq(
@@ -123,7 +123,7 @@ async fn test_custom_mutation_with_custom_entities() {
 }
 
 #[tokio::test]
-async fn test_custom_mutation_with_optional_custom_entities() {
+async fn test_custom_mutation_with_optional_custom_input() {
     let schema = get_schema().await;
 
     assert_eq(
@@ -165,6 +165,31 @@ async fn test_custom_mutation_with_optional_custom_entities() {
           "maybe_rental_request": {
             "rentalId": 1
           }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn test_custom_mutation_with_vec_custom_input() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  many_rental_request(rental_requests: [
+                    { customer: "Alice" film: "Star Wars" },
+                    { customer: "Bob" film: "Star Trek" }
+                  ])
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "many_rental_request": 2
         }
         "#,
     );

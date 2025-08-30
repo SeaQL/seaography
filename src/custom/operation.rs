@@ -320,6 +320,26 @@ impl<T: GqlInputModelType> GqlInputModelType for Option<T> {
     }
 }
 
+impl<T: GqlInputModelType> GqlInputModelType for Vec<T> {
+    fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
+        TypeRef::List(T::gql_input_type_ref(context).into())
+    }
+
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
+    ) -> SeaResult<Self> {
+        match value {
+            Some(value) => value
+                .list()?
+                .iter()
+                .map(|v| T::parse_value(context, Some(v)))
+                .collect(),
+            None => Ok(Vec::new()),
+        }
+    }
+}
+
 impl<M> GqlOutputModelType for Option<M>
 where
     M: GqlOutputModelType,

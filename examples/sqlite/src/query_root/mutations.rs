@@ -27,6 +27,7 @@ pub struct Operations {
     rental_request: fn(rental_request: RentalRequest) -> String,
     upload: fn(upload: Upload) -> String,
     maybe_rental_request: fn(rental_request: Option<RentalRequest>) -> Option<rental::Model>,
+    many_rental_request: fn(rental_requests: Vec<RentalRequest>) -> i32,
 }
 
 impl Operations {
@@ -84,6 +85,13 @@ impl Operations {
             Some(_) => rental::Entity::find().one(db).await?,
             None => None,
         })
+    }
+
+    async fn many_rental_request(
+        _ctx: &ResolverContext<'_>,
+        rental_requests: Vec<RentalRequest>,
+    ) -> GqlResult<i32> {
+        Ok(rental_requests.len() as i32)
     }
 }
 
