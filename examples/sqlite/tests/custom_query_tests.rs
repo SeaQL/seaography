@@ -451,7 +451,9 @@ async fn test_custom_query_with_custom_output() {
                     lineitems {
                       product
                       quantity
-                      size
+                      size {
+                        size
+                      }
                     }
                   }
                 }
@@ -466,7 +468,9 @@ async fn test_custom_query_with_custom_output() {
               {
                 "product": "Towel",
                 "quantity": 2.0,
-                "size": 4
+                "size": {
+                  "size": 4
+                }
               },
               {
                 "product": "Soap",

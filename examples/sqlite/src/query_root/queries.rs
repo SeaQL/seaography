@@ -63,7 +63,7 @@ impl Operations {
                 custom_output::Lineitem {
                     product: "Towel".into(),
                     quantity: 2.0,
-                    size: Some(4),
+                    size: Some(custom_output::ProductSize { size: 4 }),
                 },
                 custom_output::Lineitem {
                     product: "Soap".into(),

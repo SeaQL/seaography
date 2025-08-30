@@ -10,7 +10,12 @@ pub struct PurchaseOrder {
 pub struct Lineitem {
     pub product: String,
     pub quantity: f64,
-    pub size: Option<i32>,
+    pub size: Option<ProductSize>,
+}
+
+#[derive(Clone, CustomOutput)]
+pub struct ProductSize {
+    pub size: i32,
 }
 
 /*

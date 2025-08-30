@@ -46,7 +46,11 @@ pub fn schema(
 
     seaography::register_custom_outputs!(
         builder,
-        [custom_output::PurchaseOrder, custom_output::Lineitem]
+        [
+            custom_output::PurchaseOrder,
+            custom_output::Lineitem,
+            custom_output::ProductSize
+        ]
     );
 
     seaography::register_custom_queries!(builder, [queries::Operations]);
