@@ -301,7 +301,10 @@ impl GqlInputModelType for Upload {
     }
 }
 
-impl<T: GqlInputModelType> GqlInputModelType for Option<T> {
+impl<T> GqlInputModelType for Option<T>
+where
+    T: GqlInputModelType,
+{
     fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
         match T::gql_input_type_ref(context) {
             TypeRef::NonNull(ty) => ty.as_ref().to_owned(),
@@ -320,7 +323,10 @@ impl<T: GqlInputModelType> GqlInputModelType for Option<T> {
     }
 }
 
-impl<T: GqlInputModelType> GqlInputModelType for Vec<T> {
+impl<T> GqlInputModelType for Vec<T>
+where
+    T: GqlInputModelType,
+{
     fn gql_input_type_ref(context: &'static BuilderContext) -> TypeRef {
         TypeRef::List(T::gql_input_type_ref(context).into())
     }
