@@ -1,8 +1,7 @@
 use super::*;
 use async_graphql::Result as GqlResult;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
-use seaography::apply_pagination;
-use seaography::{macros::CustomOperation, Connection, PaginationInput};
+use seaography::{apply_pagination, macros::CustomOperation, Connection, PaginationInput};
 
 /*
 
