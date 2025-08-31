@@ -130,21 +130,17 @@ impl EntityQueryFieldBuilder {
                         return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    #[allow(unused_mut)]
                     let mut stmt = T::find();
-                    #[cfg(feature = "with-uuid")]
-                    {
-                        let mapper = ctx.data::<crate::TypesMapHelper>()?;
-                        let column = T::PrimaryKey::iter()
-                            .map(|variant| variant.into_column())
-                            .collect::<Vec<T::Column>>()[0];
+                    let mapper = ctx.data::<crate::TypesMapHelper>()?;
+                    let column = T::PrimaryKey::iter()
+                        .map(|variant| variant.into_column())
+                        .collect::<Vec<T::Column>>()[0];
 
-                        let v = mapper.async_graphql_value_to_sea_orm_value::<T>(
-                            &column,
-                            &ctx.args.try_get("id")?,
-                        )?;
-                        stmt = stmt.filter(column.eq(v));
-                    }
+                    let v = mapper.async_graphql_value_to_sea_orm_value::<T>(
+                        &column,
+                        &ctx.args.try_get("id")?,
+                    )?;
+                    stmt = stmt.filter(column.eq(v));
 
                     let db = ctx.data::<DatabaseConnection>()?;
 
