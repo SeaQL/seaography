@@ -229,7 +229,13 @@ impl EntityObjectBuilder {
                     &column, &value,
                 )?;
 
-            active_model.set(column, value);
+            active_model.try_set(column, value).map_err(|e| {
+                let entity_name = entity_object_builder.type_name::<<M as ModelTrait>::Entity>();
+                SeaographyError::TypeConversionError(
+                    e.to_string(),
+                    format!("{entity_name} - {column_name}"),
+                )
+            })?;
         }
 
         active_model.try_into_model().map_err(|e| {

@@ -161,7 +161,7 @@ where
 
         match data.remove(&entity_object_builder.column_name::<T>(&column)) {
             Some(value) => {
-                active_model.set(column, value);
+                active_model.try_set(column, value)?;
             }
             None => continue,
         }
