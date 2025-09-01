@@ -35,7 +35,7 @@ fn impl_output(the_struct: syn::Ident, fields: FieldsNamed) -> TokenStream {
     quote! {
         impl seaography::CustomOutput for #the_struct {
             fn basic_object(ctx: &'static seaography::BuilderContext) -> seaography::async_graphql::dynamic::Object {
-                use seaography::{GqlOutputModelType, GqlScalarValueType};
+                use seaography::{GqlModelType, GqlModelOptionType, GqlOutputModelType, GqlScalarValueType};
                 use seaography::async_graphql::dynamic::{Field, FieldFuture, Object};
 
                 Object::new(format!("{}Basic", stringify!(#the_struct)))
