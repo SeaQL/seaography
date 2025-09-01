@@ -291,7 +291,11 @@ impl TypesMapHelper {
                 | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
                 ColumnType::Json | ColumnType::JsonBinary => {
-                    self.context.types.json_type.clone().map(TypeRef::named)
+                    if cfg!(feature = "with-json") {
+                        self.context.types.json_type.clone().map(TypeRef::named)
+                    } else {
+                        None
+                    }
                 }
                 ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Enum {
