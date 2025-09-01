@@ -62,6 +62,7 @@ impl EntityInputBuilder {
     fn input_object<T>(&self, is_insert: bool) -> InputObject
     where
         T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
     {
         let name = if is_insert {
             self.insert_type_name::<T>()
@@ -77,6 +78,7 @@ impl EntityInputBuilder {
         };
 
         T::Column::iter().fold(InputObject::new(name), |object, column| {
+            let entity_name = entity_object_builder.type_name::<T>();
             let column_name = entity_object_builder.column_name::<T>(&column);
 
             let full_name = format!("{}.{}", entity_object_builder.type_name::<T>(), column_name);
@@ -92,7 +94,6 @@ impl EntityInputBuilder {
             }
 
             let column_def = column.def();
-            let enum_type_name = column.enum_type_name();
 
             let auto_increment = match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
                 Some(_) => T::PrimaryKey::auto_increment(),
@@ -102,10 +103,11 @@ impl EntityInputBuilder {
             let is_insert_not_nullable =
                 is_insert && !(column_def.is_null() || auto_increment || has_default_expr);
 
-            let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
-                column_def.get_column_type(),
+            let graphql_type = match types_map_helper.input_type_for_column::<T>(
+                &column,
+                &entity_name,
+                &column_name,
                 is_insert_not_nullable,
-                enum_type_name,
             ) {
                 Some(type_name) => type_name,
                 None => return object,
@@ -119,6 +121,7 @@ impl EntityInputBuilder {
     pub fn insert_input_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
     {
         self.input_object::<T>(true)
     }
@@ -127,6 +130,7 @@ impl EntityInputBuilder {
     pub fn update_input_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
     {
         self.input_object::<T>(false)
     }

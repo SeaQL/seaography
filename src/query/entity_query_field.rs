@@ -101,17 +101,15 @@ impl EntityQueryFieldBuilder {
             .map(|variant| variant.into_column())
             .collect::<Vec<T::Column>>()[0];
 
-        let column_def = column.def();
-        let enum_type_name = column.enum_type_name();
+        let entity_name = entity_object.type_name::<T>();
+        let column_name = entity_object.column_name::<T>(&column);
+
         let types_helper = TypesMapHelper {
             context: self.context,
         };
 
-        let converted_type = types_helper.sea_orm_column_type_to_graphql_type(
-            column_def.get_column_type(),
-            true,
-            enum_type_name,
-        );
+        let converted_type =
+            types_helper.input_type_for_column::<T>(&column, &entity_name, &column_name, true);
 
         let iv = InputValue::new("id", converted_type.expect("primary key to be supported"));
         let context = self.context;
