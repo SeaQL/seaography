@@ -376,3 +376,16 @@ where
         ))
     }
 }
+
+impl<M> GqlOutputModelType for Box<M>
+where
+    M: GqlOutputModelType + Clone,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        M::gql_output_type_ref(context)
+    }
+
+    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+        M::gql_field_value(*value.clone())
+    }
+}
