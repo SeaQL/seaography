@@ -7,6 +7,8 @@ mod custom_inputs;
 mod custom_output;
 mod mutations;
 mod queries;
+#[cfg(feature = "rbac")]
+mod rbac;
 
 lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
 
@@ -56,6 +58,9 @@ pub fn schema(
     seaography::register_custom_queries!(builder, [queries::Operations]);
 
     seaography::register_custom_mutations!(builder, [mutations::Operations]);
+
+    #[cfg(feature = "rbac")]
+    rbac::register(&mut builder);
 
     builder
         .set_depth_limit(depth)

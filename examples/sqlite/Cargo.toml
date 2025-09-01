@@ -32,3 +32,11 @@ field-pluralize = ["seaography/field-pluralize"]
 name = "plural_query_tests"
 path = "tests/plural_query_tests.rs"
 required-features = ["field-pluralize"]
+
+[[test]]
+name = "rbac_tests"
+path = "tests/rbac_tests.rs"
+required-features = ["rbac"]
+
+[patch.crates-io]
+sea-orm = { git = "https://github.com/SeaQL/sea-orm", branch = "master" }

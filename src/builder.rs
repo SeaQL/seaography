@@ -571,6 +571,13 @@ macro_rules! register_active_enums {
 }
 
 #[macro_export]
+macro_rules! register_custom_entities {
+    ($builder:expr, [$($entity:ident),+ $(,)?]) => {
+        $($builder.register_custom_entity::<$entity::Entity>();)*
+    };
+}
+
+#[macro_export]
 macro_rules! register_custom_inputs {
     ($builder:expr, [$($ty:path),+ $(,)?]) => {
         $($builder.register_custom_input::<$ty>();)*
