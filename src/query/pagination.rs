@@ -5,12 +5,13 @@ use sea_orm::{
 };
 
 use crate::{
-    decode_cursor, encode_cursor, map_cursor_values, Connection, Edge, PageInfo, PaginationInfo,
-    PaginationInput,
+    decode_cursor, encode_cursor, map_cursor_values, BuilderContext, Connection, Edge, PageInfo,
+    PageInput, PaginationInfo, PaginationInput,
 };
 
 /// used to parse pagination input object and apply it to statement
 pub async fn apply_pagination<T>(
+    context: &'static BuilderContext,
     db: &DatabaseConnection,
     stmt: Select<T>,
     pagination: PaginationInput,
@@ -19,7 +20,11 @@ where
     T: EntityTrait,
     <T as EntityTrait>::Model: Sync,
 {
+    let pagination = apply_pagination_defaults(context, pagination);
+
     if let Some(cursor_object) = pagination.cursor {
+        check_limit(context, cursor_object.limit)?;
+
         let next_stmt = stmt.clone();
         let previous_stmt = stmt.clone();
 
@@ -134,6 +139,8 @@ where
             pagination_info: None,
         })
     } else if let Some(page_object) = pagination.page {
+        check_limit(context, page_object.limit)?;
+
         let paginator = stmt.paginate(db, page_object.limit);
 
         let paginator_info = paginator.num_items_and_pages().await?;
@@ -172,6 +179,8 @@ where
             }),
         })
     } else if let Some(offset_object) = pagination.offset {
+        check_limit(context, offset_object.limit)?;
+
         let offset = offset_object.offset;
         let limit = offset_object.limit;
 
@@ -264,13 +273,16 @@ where
 }
 
 pub fn apply_memory_pagination<T>(
+    context: &'static BuilderContext,
     values: Option<Vec<T::Model>>,
     pagination: PaginationInput,
-) -> Connection<T>
+) -> Result<Connection<T>, sea_orm::DbErr>
 where
     T: EntityTrait,
     T::Model: Sync,
 {
+    let pagination = apply_pagination_defaults(context, pagination);
+
     let edges: Vec<Edge<T>> = match values {
         Some(data) => {
             let edges: Vec<Edge<T>> = data
@@ -291,6 +303,7 @@ where
     };
 
     if let Some(cursor_object) = pagination.cursor {
+        check_limit(context, cursor_object.limit)?;
         let total: u64 = edges.len() as u64;
         let pages = f64::ceil(total as f64 / cursor_object.limit as f64) as u64;
 
@@ -316,7 +329,7 @@ where
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
         let end_cursor = edges.last().map(|edge| edge.cursor.clone());
 
-        Connection {
+        Ok(Connection {
             edges,
             page_info: PageInfo {
                 has_previous_page: !first_cursor.eq(&start_cursor),
@@ -330,8 +343,9 @@ where
                 offset: current * cursor_object.limit,
                 total,
             }),
-        }
+        })
     } else if let Some(page_object) = pagination.page {
+        check_limit(context, page_object.limit)?;
         let total = edges.len() as u64;
         let pages = f64::ceil(total as f64 / page_object.limit as f64) as u64;
 
@@ -348,7 +362,7 @@ where
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
         let end_cursor = edges.last().map(|edge| edge.cursor.clone());
 
-        Connection {
+        Ok(Connection {
             edges,
             page_info: PageInfo {
                 has_previous_page: page_object.page != 0,
@@ -362,8 +376,9 @@ where
                 offset: page_object.page * page_object.limit,
                 total,
             }),
-        }
+        })
     } else if let Some(offset_object) = pagination.offset {
+        check_limit(context, offset_object.limit)?;
         let total = edges.len() as u64;
         let pages = f64::ceil(total as f64 / offset_object.limit as f64) as u64;
         let current = f64::ceil(offset_object.offset as f64 / offset_object.limit as f64) as u64;
@@ -387,7 +402,7 @@ where
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
         let end_cursor = edges.last().map(|edge| edge.cursor.clone());
 
-        Connection {
+        Ok(Connection {
             edges,
             page_info: PageInfo {
                 has_previous_page: offset_object.offset != 0,
@@ -401,14 +416,14 @@ where
                 offset: offset_object.offset,
                 total,
             }),
-        }
+        })
     } else {
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
         let end_cursor = edges.last().map(|edge| edge.cursor.clone());
 
         let total = edges.len() as u64;
 
-        Connection {
+        Ok(Connection {
             edges,
             page_info: PageInfo {
                 has_previous_page: false,
@@ -422,6 +437,66 @@ where
                 offset: 0,
                 total,
             }),
+        })
+    }
+}
+
+// TODO: tests
+fn apply_pagination_defaults(
+    context: &'static BuilderContext,
+    pagination: PaginationInput,
+) -> PaginationInput {
+    // If there are no pagination options supplied, but a default of or maximum limit has been
+    // configured, use page-based pagination with a page number of 0 and the lower of the two
+    // applied.
+
+    if pagination.cursor.is_some() || pagination.page.is_some() || pagination.offset.is_some() {
+        return pagination;
+    }
+
+    let opts = &context.pagination_input;
+    let use_limit = match (opts.default_limit, opts.max_limit) {
+        (None, None) => None,
+        (None, Some(max_limit)) => Some(max_limit),
+        (Some(default_limit), None) => Some(default_limit),
+        (Some(default_limit), Some(max_limit)) => Some(std::cmp::min(default_limit, max_limit)),
+    };
+
+    if let Some(use_limit) = use_limit {
+        PaginationInput {
+            cursor: None,
+            offset: None,
+            page: Some(PageInput {
+                page: 0,
+                limit: use_limit,
+            }),
+        }
+    } else {
+        pagination
+    }
+}
+
+// TODO: tests
+fn check_limit(
+    context: &'static BuilderContext,
+    requested_limit: u64,
+) -> Result<(), sea_orm::DbErr> {
+    if requested_limit == 0 {
+        return Err(sea_orm::DbErr::Query(sea_orm::RuntimeErr::Internal(
+            "Requested pagination limit must be greater than 0".to_string(),
+        )));
+    }
+
+    if let Some(max_limit) = context.pagination_input.max_limit {
+        if requested_limit > max_limit {
+            return Err(sea_orm::DbErr::Query(sea_orm::RuntimeErr::Internal(
+                format!(
+                    "Requested pagination limit ({}) exceeds maximum allowed ({})",
+                    requested_limit, max_limit
+                ),
+            )));
         }
     }
+
+    Ok(())
 }
