@@ -27,12 +27,14 @@ heck = { version = "0.4.1" }
 thiserror = { version = "1.0.44" }
 fnv = { version = "1.0.7" }
 lazy_static = { version = "1.5" }
+serde = { version = "1.0", optional = true }
 serde_json = { version = "1.0" }
 pluralizer = { version = "0.5", optional = true }
 
 [features]
-default = ["field-camel-case"]
+default = ["field-camel-case", "schema-meta"]
 macros = ["seaography-macros"]
+schema-meta = ["macros", "serde/derive", "with-postgres-array"]
 rbac = ["sea-orm/rbac"]
 with-json = ["sea-orm/with-json"]
 with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
