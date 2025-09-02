@@ -220,8 +220,8 @@ jobs:
       - name: Additional Integration tests
         working-directory: ./examples/postgres
         run: |
-          cargo test --test query_array_tests
-          rm tests/query_array_tests.rs
+          cargo test --test query_array_tests entity_metadata_tests
+          rm tests/query_array_tests.rs tests/entity_metadata_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/postgres/src
       - name: Generate entities
