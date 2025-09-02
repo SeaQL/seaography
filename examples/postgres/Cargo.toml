@@ -15,7 +15,7 @@ tracing-subscriber = { version = "0.3.17" }
 [dependencies.seaography]
 path = "../../"
 version = "~2.0.0-rc.1" # seaography version
-features = ["with-decimal", "with-chrono", "with-postgres-array"]
+features = ["with-decimal", "with-chrono", "with-postgres-array", "schema-meta"]
 
 [dev-dependencies]
 serde_json = { version = "1.0.103" }

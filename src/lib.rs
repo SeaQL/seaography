@@ -267,6 +267,9 @@ pub use error::*;
 pub mod rbac;
 pub use rbac::*;
 
+#[cfg(feature = "schema-meta")]
+pub mod schema;
+
 pub type SimpleNamingFn = Box<dyn Fn(&str) -> String + Sync + Send>;
 pub type ComplexNamingFn = Box<dyn Fn(&str, &str) -> String + Sync + Send>;
 
