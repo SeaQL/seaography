@@ -187,7 +187,8 @@ impl EntityObjectRelationBuilder {
                         let pagination =
                             PaginationInputBuilder { context }.parse_object(pagination)?;
 
-                        let connection: Connection<R> = apply_memory_pagination(values, pagination);
+                        let connection: Connection<R> =
+                            apply_memory_pagination(context, values, pagination)?;
 
                         Ok(Some(FieldValue::owned_any(connection)))
                     })
