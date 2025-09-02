@@ -18,6 +18,8 @@ use crate::{
     PaginationInputBuilder,
 };
 
+type MetadataHashMap = std::collections::HashMap<String, serde_json::Value>;
+
 /// The Builder is used to create the Schema for GraphQL
 ///
 /// You can populate it with the entities, enumerations of your choice
@@ -52,7 +54,7 @@ pub struct Builder {
     pub subscriptions: Vec<SubscriptionField>,
 
     /// holds all entities metadata
-    pub metadata: std::collections::HashMap<String, serde_json::Value>,
+    pub metadata: MetadataHashMap,
 
     /// holds a copy to the database connection
     pub connection: sea_orm::DatabaseConnection,
@@ -373,8 +375,53 @@ impl Builder {
         self
     }
 
+    #[cfg(feature = "schema-meta")]
+    fn register_schema_meta(&mut self) {
+        use crate::schema;
+
+        self.register_custom_output::<schema::Table>();
+        self.register_custom_output::<schema::Column>();
+        self.register_custom_output::<schema::ColumnType>();
+        self.register_custom_output::<schema::Array>();
+        self.register_custom_output::<schema::Enumeration>();
+
+        use crate::GqlOutputModelType;
+        use async_graphql::dynamic::FieldValue;
+
+        const TABLE_NAME: &str = "table_name";
+        let metadata_hashmap = std::mem::take(&mut self.metadata);
+
+        let field = Field::new(
+            "_sea_orm_entity_metadata",
+            crate::schema::Table::gql_output_type_ref(self.context),
+            move |ctx| {
+                let metadata_hashmap = metadata_hashmap.clone();
+                FieldFuture::new(async move {
+                    let table_name = ctx.args.try_get(TABLE_NAME)?.string()?;
+                    if let Some(metadata) = metadata_hashmap.get(table_name) {
+                        let table: crate::schema::Table = serde_json::from_value(metadata.clone())?;
+                        Ok(Some(FieldValue::owned_any(table)))
+                    } else {
+                        Err(async_graphql::Error::new(format!(
+                            "table not found `{table_name}`"
+                        )))
+                    }
+                })
+            },
+        )
+        .argument(async_graphql::dynamic::InputValue::new(
+            TABLE_NAME,
+            TypeRef::named_nn(TypeRef::STRING),
+        ));
+
+        self.queries.push(field);
+    }
+
     /// used to consume the builder context and generate a ready to be completed GraphQL schema
-    pub fn schema_builder(self) -> SchemaBuilder {
+    pub fn schema_builder(mut self) -> SchemaBuilder {
+        #[cfg(feature = "schema-meta")]
+        self.register_schema_meta();
+
         let query = self.query;
         let mutation = self.mutation;
         let subscription = self.subscription;
@@ -386,28 +433,6 @@ impl Builder {
             .queries
             .into_iter()
             .fold(query, |query, field| query.field(field));
-
-        const TABLE_NAME: &str = "table_name";
-        let field = Field::new(
-            "_sea_orm_entity_metadata",
-            TypeRef::named(TypeRef::STRING),
-            move |ctx| {
-                let metadata_hashmap = self.metadata.clone();
-                FieldFuture::new(async move {
-                    let table_name = ctx.args.try_get(TABLE_NAME)?.string()?;
-                    if let Some(metadata) = metadata_hashmap.get(table_name) {
-                        Ok(Some(async_graphql::Value::from_json(metadata.to_owned())?))
-                    } else {
-                        Ok(None)
-                    }
-                })
-            },
-        )
-        .argument(async_graphql::dynamic::InputValue::new(
-            TABLE_NAME,
-            TypeRef::named_nn(TypeRef::STRING),
-        ));
-        let query = query.field(field);
 
         // register mutations
         let mutation = self
@@ -677,6 +702,13 @@ macro_rules! register_active_enums {
             $(builder.register_enumeration::<$enum_paths>();)*
             builder
         }
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_entities {
+    ($builder:expr, [$($entity:ident),+ $(,)?]) => {
+        $($builder.register_custom_entity::<$entity::Entity>();)*
     };
 }
 
