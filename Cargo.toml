@@ -3,7 +3,7 @@ members = [".", "cli", "generator", "macros"]
 
 [package]
 name = "seaography"
-version = "1.1.4"
+version = "2.0.0-rc.1"
 edition = "2021"
 rust-version = "1.70"
 authors = [
@@ -20,7 +20,7 @@ categories = ["database"]
 
 [dependencies]
 async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
-sea-orm = { version = "1.1.15", default-features = false, features = ["seaography", "with-json"] }
+sea-orm = { version = "~2.0.0-rc", default-features = false, features = ["seaography", "with-json"] }
 seaography-macros = { version = "0.1.0", path = "macros", optional = true }
 itertools = { version = "0.12.0" }
 heck = { version = "0.4.1" }
@@ -48,6 +48,5 @@ field-camel-case = []
 field-pluralize = ["pluralizer"]
 strict-custom-types = ["seaography-macros/strict-custom-types"]
 
-# [patch.crates-io]
-# sea-orm = { git = "https://github.com/SeaQL/sea-orm" }
-# sea-orm-migration = { git = "https://github.com/SeaQL/sea-orm" }
+[patch.crates-io]
+sea-orm = { git = "https://github.com/SeaQL/sea-orm", branch = "master" }

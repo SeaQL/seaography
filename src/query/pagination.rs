@@ -204,13 +204,12 @@ where
         let start_cursor = edges.first().map(|edge| edge.cursor.clone());
         let end_cursor = edges.last().map(|edge| edge.cursor.clone());
 
-        let count_stmt = db.get_database_backend().build(
-            sea_orm::sea_query::SelectStatement::new()
-                .expr(sea_orm::sea_query::Expr::cust("COUNT(*) AS num_items"))
-                .from_subquery(count_stmt, sea_orm::sea_query::Alias::new("sub_query")),
-        );
+        let count_query = sea_orm::sea_query::SelectStatement::new()
+            .expr(sea_orm::sea_query::Expr::cust("COUNT(*) AS num_items"))
+            .from_subquery(count_stmt, sea_orm::sea_query::Alias::new("sub_query"))
+            .take();
 
-        let total = match db.query_one(count_stmt).await? {
+        let total = match db.query_one(&count_query).await? {
             Some(res) => match db.get_database_backend() {
                 sea_orm::DbBackend::Postgres => res.try_get::<i64>("", "num_items")? as u64,
                 _ => res.try_get::<i32>("", "num_items")? as u64,
