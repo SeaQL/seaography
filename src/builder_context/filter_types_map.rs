@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
-use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait};
+use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, ExprTrait};
 
 use crate::{
     prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext,
@@ -661,14 +661,12 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::CaseInsensitiveEquals => {
-                    use sea_orm::sea_query::{Expr, ExprTrait, Func, SimpleExpr};
+                    use sea_orm::sea_query::{Expr, Func};
                     if let Some(value) = filter.get("ci_eq") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
-                        condition = condition.add(
-                            Func::lower(Expr::col(*column))
-                                .eq(SimpleExpr::FunctionCall(Func::lower(value))),
-                        );
+                        condition =
+                            condition.add(Func::lower(Expr::col(*column)).eq(Func::lower(value)));
                     }
                 }
                 FilterOperation::IsIn => {
