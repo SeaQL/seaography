@@ -957,6 +957,111 @@ async fn filter_is_in() {
 }
 
 #[tokio::test]
+async fn filter_ci_eq() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      eq: "MARY"
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      eq: "mary"
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      ci_eq: "mary"
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
 async fn filter_is_null() {
     let schema = get_schema().await;
 
