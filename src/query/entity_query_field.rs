@@ -22,6 +22,8 @@ pub struct EntityQueryFieldConfig {
     /// if true, `is_null` accepts `bool` and `is_null: false` means `is_not_null`;
     /// `is_not_null` will be removed.
     pub combine_is_null_is_not_null: bool,
+    /// Add the Postgres ilike operator for string filters
+    pub use_ilike: bool,
 }
 
 impl std::default::Default for EntityQueryFieldConfig {
@@ -45,6 +47,7 @@ impl std::default::Default for EntityQueryFieldConfig {
             },
             pagination: "pagination".into(),
             combine_is_null_is_not_null: false,
+            use_ilike: false,
         }
     }
 }
