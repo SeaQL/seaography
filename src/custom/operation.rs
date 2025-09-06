@@ -76,6 +76,13 @@ pub trait GqlModelType: Sized + Send + Sync + 'static {
         context: &'static BuilderContext,
         ctx: &ResolverContext<'_>,
         name: &str,
+    ) -> SeaResult<Self> {
+        Self::parse_value(context, Some(ctx.args.try_get(name)?))
+    }
+
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
     fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
@@ -91,6 +98,13 @@ pub trait GqlModelOptionType: Sized + Send + Sync + 'static {
         context: &'static BuilderContext,
         ctx: &ResolverContext<'_>,
         name: &str,
+    ) -> SeaResult<Self> {
+        Self::parse_value(context, ctx.args.get(name))
+    }
+
+    fn parse_value(
+        context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
     fn gql_field_value(value: Self) -> Option<FieldValue<'static>>;
@@ -160,15 +174,13 @@ where
         TypeRef::named_nn(type_name)
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
 
-        let input = ctx.args.try_get(name)?;
-        entity_object_builder.parse_object::<M>(&input.object()?)
+        entity_object_builder.parse_object::<M>(&value.expect("Checked not null").object()?)
     }
 }
 
@@ -189,14 +201,13 @@ where
         TypeRef::named(type_name)
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
 
-        match ctx.args.get(name) {
+        match value {
             Some(input) => Ok(Some(
                 entity_object_builder.parse_object::<M>(&input.object()?)?,
             )),
@@ -226,15 +237,17 @@ where
         TypeRef::named_nn_list_nn(type_name)
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
+        value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
 
-        ctx.args
-            .try_get(name)?
+        value
+            .ok_or_else(|| {
+                let type_name = entity_object_builder.type_name::<M::Entity>();
+                async_graphql::Error::new(format!("internal: field \"{}\" not found", type_name))
+            })?
             .list()?
             .iter()
             .map(|item| entity_object_builder.parse_object::<M>(&item.object()?))
@@ -264,10 +277,9 @@ where
         todo!()
     }
 
-    fn try_get_arg(
+    fn parse_value(
         context: &'static BuilderContext,
-        _ctx: &ResolverContext<'_>,
-        _name: &str,
+        _value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
         let entity_object_builder = EntityObjectBuilder { context };
         let object_name = entity_object_builder.type_name::<E>();
