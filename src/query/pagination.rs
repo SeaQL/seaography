@@ -441,7 +441,6 @@ where
     }
 }
 
-// TODO: tests
 fn apply_pagination_defaults(
     context: &'static BuilderContext,
     pagination: PaginationInput,
@@ -476,7 +475,6 @@ fn apply_pagination_defaults(
     }
 }
 
-// TODO: tests
 fn check_limit(
     context: &'static BuilderContext,
     requested_limit: u64,

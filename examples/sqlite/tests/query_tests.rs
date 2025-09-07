@@ -153,6 +153,38 @@ async fn test_filter_with_pagination() {
 }
 
 #[tokio::test]
+async fn test_pagination_error() {
+    let schema = get_schema().await;
+
+    let response = schema
+        .execute(
+            r#"
+            {
+              customer(
+                pagination: { page: { page: 2, limit: 0 } }
+              ) {
+                nodes {
+                  customerId
+                }
+                paginationInfo {
+                  pages
+                  current
+                }
+              }
+            }
+            "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(
+        response.errors[0].message,
+        "Query Error: Requested pagination limit must be greater than 0"
+    );
+}
+
+#[tokio::test]
 async fn test_complex_filter_with_pagination() {
     let schema = get_schema().await;
 
