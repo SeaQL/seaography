@@ -23,6 +23,19 @@ pub struct PaginationInputConfig {
     pub page: String,
     /// name for 'offset' field
     pub offset: String,
+    /// default limit for pagination
+    ///
+    /// If no default or maximum limit is specified, queries will return *all* matching rows.
+    ///
+    /// If both are specified, the lesser of the two will be used as the default. You should set
+    /// `default_limit` to be less than or equal to `max_limit`.
+    pub default_limit: Option<u64>,
+    /// maximum limit for pagination
+    ///
+    /// If set, requests including a pagination limit greater than this will be rejected.
+    /// If `default_limit` is _not_ set, but `max_limit` _is_, then the latter will effectively
+    /// be treated as the default.
+    pub max_limit: Option<u64>,
 }
 
 impl std::default::Default for PaginationInputConfig {
@@ -32,6 +45,8 @@ impl std::default::Default for PaginationInputConfig {
             cursor: "cursor".into(),
             page: "page".into(),
             offset: "offset".into(),
+            default_limit: None,
+            max_limit: None,
         }
     }
 }

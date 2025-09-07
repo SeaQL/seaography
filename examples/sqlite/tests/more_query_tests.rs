@@ -1,6 +1,9 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::{Database, DatabaseConnection};
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext, EntityQueryFieldConfig};
+use seaography::{
+    async_graphql, lazy_static, Builder, BuilderContext, EntityQueryFieldConfig,
+    PaginationInputConfig,
+};
 use seaography_sqlite_example::entities::*;
 
 lazy_static::lazy_static! {
@@ -9,6 +12,11 @@ lazy_static::lazy_static! {
             entity_query_field: EntityQueryFieldConfig {
                 combine_is_null_is_not_null: true,
                 ..Default::default()
+            },
+            pagination_input: PaginationInputConfig{
+              default_limit: Some(3),
+              max_limit: Some(10),
+              ..Default::default()
             },
             ..Default::default()
         }
@@ -186,5 +194,91 @@ async fn filter_is_null() {
           }
         }
         "#,
+    );
+}
+
+#[tokio::test]
+async fn test_default_pagination() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                    paginationInfo {
+                      pages
+                      current
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              },
+              {
+                "customerId": 2,
+                "firstName": "PATRICIA",
+                "lastName": "JOHNSON"
+              },
+              {
+                "customerId": 3,
+                "firstName": "LINDA",
+                "lastName": "WILLIAMS"
+              }
+            ],
+            "paginationInfo": {
+              "pages": 200,
+              "current": 0
+            }
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn test_pagination_error() {
+    let schema = get_schema().await;
+
+    let response = schema
+        .execute(
+            r#"
+            {
+              customer(
+                pagination: { page: { page: 1, limit: 11 } }
+              ) {
+                nodes {
+                  customerId
+                }
+                paginationInfo {
+                  pages
+                  current
+                }
+              }
+            }
+            "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(
+        response.errors[0].message,
+        "Query Error: Requested pagination limit (11) exceeds maximum allowed (10)"
     );
 }

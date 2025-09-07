@@ -204,7 +204,7 @@ impl EntityObjectViaRelationBuilder {
 
                             let stmt = stmt.filter(condition.add(filters));
                             let stmt = apply_order(stmt, order_by);
-                            apply_pagination::<R>(db, stmt, pagination).await?
+                            apply_pagination::<R>(context, db, stmt, pagination).await?
                         } else {
                             let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 
@@ -220,7 +220,7 @@ impl EntityObjectViaRelationBuilder {
 
                             let values = loader.load_one(key).await?;
 
-                            apply_memory_pagination(values, pagination)
+                            apply_memory_pagination(context, values, pagination)?
                         };
 
                         Ok(Some(FieldValue::owned_any(connection)))
