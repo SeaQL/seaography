@@ -1,14 +1,14 @@
-use std::{collections::BTreeMap, num::ParseIntError};
+use std::{collections::BTreeMap, num::ParseIntError, sync::Arc};
 
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
 use heck::ToUpperCamelCase;
 use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
-use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
+use crate::{ActiveEnumBuilder, BuilderContext, EntityColumnId, SeaResult};
 
 pub type FnInputTypeConversion =
-    Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
-pub type FnOutputTypeConversion = Box<
+    Arc<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
+pub type FnOutputTypeConversion = Arc<
     dyn Fn(
             &sea_orm::sea_query::Value,
         ) -> async_graphql::Result<Option<async_graphql::dynamic::FieldValue<'static>>>
@@ -16,18 +16,25 @@ pub type FnOutputTypeConversion = Box<
         + Sync,
 >;
 
+#[derive(Clone, Default)]
+#[non_exhaustive]
+pub struct ColumnOptions {
+    /// used to map entity_name.column_name to a custom Type
+    pub overwrite: Option<ConvertedType>,
+    /// used to map entity_name.column_name input to a custom parser
+    pub input_conversion: Option<FnInputTypeConversion>,
+    /// used to map entity_name.column_name output to a custom formatter
+    pub output_conversion: Option<FnOutputTypeConversion>,
+    /// used to override the type of this column in input objects
+    pub input_type: Option<TypeRef>,
+    /// used to override the type of this column in output objects
+    pub output_type: Option<TypeRef>,
+}
+
 /// Used to provide configuration for TypesMapHelper
 pub struct TypesMapConfig {
-    /// used to map entity_name.column_name to a custom Type
-    pub overwrites: BTreeMap<String, ConvertedType>,
-    /// used to map entity_name.column_name input to a custom parser
-    pub input_conversions: BTreeMap<String, FnInputTypeConversion>,
-    /// used to map entity_name.column_name output to a custom formatter
-    pub output_conversions: BTreeMap<String, FnOutputTypeConversion>,
-    /// used to override the type of this column in input objects
-    pub input_types: BTreeMap<String, TypeRef>,
-    /// used to override the type of this column in output objects
-    pub output_types: BTreeMap<String, TypeRef>,
+    // per-column options
+    pub column_options: BTreeMap<EntityColumnId, ColumnOptions>,
     /// used to configure default time library
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
@@ -39,11 +46,7 @@ pub struct TypesMapConfig {
 impl std::default::Default for TypesMapConfig {
     fn default() -> Self {
         Self {
-            overwrites: BTreeMap::new(),
-            input_conversions: BTreeMap::new(),
-            output_conversions: BTreeMap::new(),
-            input_types: BTreeMap::new(),
-            output_types: BTreeMap::new(),
+            column_options: BTreeMap::new(),
 
             #[cfg(all(not(feature = "with-time"), not(feature = "with-chrono")))]
             time_library: TimeLibrary::String,
@@ -77,15 +80,10 @@ impl TypesMapHelper {
     where
         T: EntityTrait,
     {
-        let entity_object_builder = EntityObjectBuilder {
-            context: self.context,
-        };
-        let entity_name = entity_object_builder.type_name::<T>();
-        let column_name = entity_object_builder.column_name::<T>(column);
+        let entity_column_id = EntityColumnId::of::<T>(column);
 
         self.sea_orm_column_type_to_converted_type(
-            &entity_name,
-            &column_name,
+            Some(&entity_column_id),
             column.def().get_column_type(),
         )
     }
@@ -93,15 +91,20 @@ impl TypesMapHelper {
     /// helper function used to determine the conversion type of a column type
     pub fn sea_orm_column_type_to_converted_type(
         &self,
-        entity_name: &str,
-        column_name: &str,
+        entity_column_id: Option<&EntityColumnId>,
         column_type: &ColumnType,
     ) -> ConvertedType {
         let context = self.context;
-        let name = format!("{entity_name}.{column_name}");
 
-        if let Some(overwrite) = context.types.overwrites.get(&name) {
-            return overwrite.clone();
+        if let Some(entity_column_id) = entity_column_id.as_ref() {
+            if let Some(overwrite) = context
+                .types
+                .column_options
+                .get(entity_column_id)
+                .and_then(|options| options.overwrite.as_ref())
+            {
+                return overwrite.clone();
+            }
         }
 
         match column_type {
@@ -197,11 +200,8 @@ impl TypesMapHelper {
             ColumnType::Array(_) => ConvertedType::String,
             #[cfg(feature = "with-postgres-array")]
             ColumnType::Array(ty) => {
-                let inner = self.sea_orm_column_type_to_converted_type(
-                    entity_name,
-                    &format!("{}.array", column_name),
-                    ty,
-                );
+                let array_ecid = entity_column_id.map(|ecid| ecid.with_array());
+                let inner = self.sea_orm_column_type_to_converted_type(array_ecid.as_ref(), ty);
                 ConvertedType::Array(Box::new(inner))
             }
 
@@ -214,7 +214,18 @@ impl TypesMapHelper {
             ColumnType::MacAddr => ConvertedType::String,
             // #[cfg(feature = "with-mac_address")]
             // ColumnType::MacAddr => ConvertedType::MacAddress,
-            _ => panic!("Type mapping is not implemented for '{entity_name}.{column_name}'"),
+            _ => match entity_column_id {
+                Some(entity_column_id) => {
+                    panic!(
+                        "Type mapping is not implemented for '{}.{}'",
+                        entity_column_id.entity_name(self.context),
+                        entity_column_id.column_name(self.context)
+                    );
+                }
+                None => {
+                    panic!("Type mapping is not implemented for unspecified entity/column");
+                }
+            },
         }
     }
 
@@ -227,17 +238,14 @@ impl TypesMapHelper {
     where
         T: EntityTrait,
     {
-        let entity_object_builder = EntityObjectBuilder {
-            context: self.context,
-        };
-        let entity_name = entity_object_builder.type_name::<T>();
-        let column_name = entity_object_builder.column_name::<T>(column);
+        let entity_column_id = EntityColumnId::of::<T>(column);
 
         if let Some(parser) = self
             .context
             .types
-            .input_conversions
-            .get(&format!("{entity_name}.{column_name}"))
+            .column_options
+            .get(&entity_column_id)
+            .and_then(|options| options.input_conversion.as_ref())
         {
             return parser.as_ref()(value);
         }
@@ -245,8 +253,8 @@ impl TypesMapHelper {
         converted_value_to_sea_orm_value(
             &self.get_column_type::<T>(column),
             value,
-            &entity_name,
-            &column_name,
+            &entity_column_id.entity_name(self.context),
+            &entity_column_id.column_name(self.context),
         )
     }
 
@@ -368,8 +376,7 @@ impl TypesMapHelper {
     pub fn input_type_for_column<T>(
         &self,
         column: &T::Column,
-        entity_name: &str,
-        column_name: &str,
+        entity_column_id: &EntityColumnId,
         not_null: bool,
     ) -> Option<TypeRef>
     where
@@ -379,8 +386,9 @@ impl TypesMapHelper {
         if let Some(type_ref) = self
             .context
             .types
-            .input_types
-            .get(&format!("{entity_name}.{column_name}"))
+            .column_options
+            .get(entity_column_id)
+            .and_then(|options| options.input_type.as_ref())
         {
             Some(type_ref.clone())
         } else {
@@ -397,8 +405,7 @@ impl TypesMapHelper {
     pub fn output_type_for_column<T>(
         &self,
         column: &T::Column,
-        entity_name: &str,
-        column_name: &str,
+        entity_column_id: &EntityColumnId,
         not_null: bool,
     ) -> Option<TypeRef>
     where
@@ -408,8 +415,9 @@ impl TypesMapHelper {
         if let Some(type_ref) = self
             .context
             .types
-            .output_types
-            .get(&format!("{entity_name}.{column_name}"))
+            .column_options
+            .get(entity_column_id)
+            .and_then(|options| options.output_type.as_ref())
         {
             Some(type_ref.clone())
         } else {

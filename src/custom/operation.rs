@@ -132,7 +132,7 @@ where
         let types_map_helper = TypesMapHelper { context };
         let column_type = T::column_type();
         let column_type =
-            types_map_helper.sea_orm_column_type_to_converted_type("", "", &column_type);
+            types_map_helper.sea_orm_column_type_to_converted_type(None, &column_type);
 
         if value.is_none() {
             // this is Value::unwrap and should not panic

@@ -4,7 +4,7 @@ use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
     apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error,
-    pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityObjectBuilder,
+    pluralize_unique, BuilderContext, ConnectionObjectBuilder, EntityColumnId, EntityObjectBuilder,
     FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInput,
     PaginationInputBuilder,
 };
@@ -105,15 +105,13 @@ impl EntityQueryFieldBuilder {
             .map(|variant| variant.into_column())
             .collect::<Vec<T::Column>>()[0];
 
-        let entity_name = entity_object.type_name::<T>();
-        let column_name = entity_object.column_name::<T>(&column);
-
         let types_helper = TypesMapHelper {
             context: self.context,
         };
 
+        let entity_column_id = EntityColumnId::of::<T>(&column);
         let converted_type =
-            types_helper.input_type_for_column::<T>(&column, &entity_name, &column_name, true);
+            types_helper.input_type_for_column::<T>(&column, &entity_column_id, true);
 
         let iv = InputValue::new("id", converted_type.expect("primary key to be supported"));
         let context = self.context;
