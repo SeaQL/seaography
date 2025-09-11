@@ -5,7 +5,7 @@ use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait};
 
 use crate::{
     prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext,
-    EntityObjectBuilder, SeaResult, TypesMapHelper,
+    EntityObjectBuilder, SeaResult, TypesMapConfig, TypesMapHelper,
 };
 
 type FnFilterCondition =
@@ -25,6 +25,7 @@ pub struct FilterTypesMapConfig {
     pub float_filter_info: FilterInfo,
     pub boolean_filter_info: FilterInfo,
     pub id_filter_info: FilterInfo,
+    pub json_filter_info: FilterInfo,
 
     // array filters
     pub string_array_filter_info: FilterInfo,
@@ -153,6 +154,14 @@ impl std::default::Default for FilterTypesMapConfig {
                     FilterOperation::NotBetween,
                 ]),
             },
+            json_filter_info: FilterInfo {
+                type_name: "JsonFilterInput".into(),
+                base_type: TypesMapConfig::default().json_type,
+                supported_operations: BTreeSet::from([
+                    FilterOperation::Equals,
+                    FilterOperation::NotEquals,
+                ]),
+            },
             string_array_filter_info: FilterInfo {
                 type_name: "StringArrayFilterInput".into(),
                 base_type: TypeRef::STRING.into(),
@@ -274,8 +283,13 @@ impl FilterTypesMapHelper {
                 ColumnType::Blob => None,
                 ColumnType::Boolean => Some(FilterType::Boolean),
                 ColumnType::Money(_) => Some(FilterType::Text),
-                ColumnType::Json => None,
-                ColumnType::JsonBinary => None,
+                ColumnType::Json | ColumnType::JsonBinary => {
+                    if cfg!(feature = "with-json") {
+                        Some(FilterType::Json)
+                    } else {
+                        None
+                    }
+                }
                 ColumnType::Uuid => Some(FilterType::Text),
                 ColumnType::Custom(name) => Some(FilterType::Custom(name.to_string())),
                 ColumnType::Enum { name, variants: _ } => {
@@ -350,6 +364,13 @@ impl FilterTypesMapHelper {
                         TypeRef::named(info.type_name.clone()),
                     ))
                 }
+                FilterType::Json => {
+                    let info = &self.context.filter_types.json_filter_info;
+                    Some(InputValue::new(
+                        column_name,
+                        TypeRef::named(info.type_name.clone()),
+                    ))
+                }
                 FilterType::Enumeration(name) => {
                     let active_enum_filter_input_builder = ActiveEnumFilterInputBuilder {
                         context: self.context,
@@ -377,6 +398,7 @@ impl FilterTypesMapHelper {
                         FilterType::Enumeration(_) => {
                             &self.context.filter_types.string_array_filter_info
                         }
+                        FilterType::Json => return None,
                         FilterType::Custom(_) => return None,
                         FilterType::Array(_) => return None,
                     };
@@ -401,6 +423,10 @@ impl FilterTypesMapHelper {
             self.generate_filter_input(&self.context.filter_types.boolean_filter_info),
             self.generate_filter_input(&self.context.filter_types.id_filter_info),
         ];
+
+        if cfg!(feature = "with-json") {
+            filters.push(self.generate_filter_input(&self.context.filter_types.json_filter_info));
+        }
 
         if cfg!(feature = "with-postgres-array") {
             filters.extend([
@@ -541,6 +567,7 @@ impl FilterTypesMapHelper {
                 FilterType::Float => &self.context.filter_types.float_filter_info,
                 FilterType::Boolean => &self.context.filter_types.boolean_filter_info,
                 FilterType::Id => &self.context.filter_types.id_filter_info,
+                FilterType::Json => &self.context.filter_types.json_filter_info,
                 FilterType::Enumeration(_) => {
                     return prepare_enumeration_condition::<T>(filter, column, condition)
                 }
@@ -574,6 +601,7 @@ impl FilterTypesMapHelper {
                     FilterType::Enumeration(_) => {
                         &self.context.filter_types.string_array_filter_info
                     }
+                    FilterType::Json => return Ok(impossible_condition()),
                     FilterType::Custom(_) => return Ok(impossible_condition()),
                     FilterType::Array(_) => return Ok(impossible_condition()),
                 },
@@ -833,6 +861,7 @@ pub enum FilterType {
     Float,
     Boolean,
     Id,
+    Json,
     Enumeration(String),
     Custom(String),
     Array(Option<Box<FilterType>>),

@@ -39,8 +39,8 @@ pub struct TypesMapConfig {
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
     pub decimal_library: DecimalLibrary,
-    /// if specified, expose JSON as scalar type using the following type name
-    pub json_type: Option<String>,
+    /// expose JSON as scalar type using the following type name
+    pub json_type: String,
 }
 
 impl std::default::Default for TypesMapConfig {
@@ -61,10 +61,7 @@ impl std::default::Default for TypesMapConfig {
             decimal_library: DecimalLibrary::Decimal,
             #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
             decimal_library: DecimalLibrary::BigDecimal,
-            #[cfg(feature = "with-json")]
-            json_type: Some("Json".into()),
-            #[cfg(not(feature = "with-json"))]
-            json_type: None,
+            json_type: "Json".into(),
         }
     }
 }
@@ -306,7 +303,7 @@ impl TypesMapHelper {
                 ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
                 ColumnType::Json | ColumnType::JsonBinary => {
                     if cfg!(feature = "with-json") {
-                        self.context.types.json_type.clone().map(TypeRef::named)
+                        Some(TypeRef::named(self.context.types.json_type.clone()))
                     } else {
                         None
                     }

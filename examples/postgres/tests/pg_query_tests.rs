@@ -151,3 +151,138 @@ async fn test_film_query_by_array_overlap() {
           "#,
     )
 }
+
+#[tokio::test]
+async fn test_film_query_by_json_eq() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: {
+                      filmId: { is_in: [1, 2, 3] }
+                    }
+                    orderBy: { filmId: ASC }
+                  ) {
+                    nodes {
+                      filmId
+                      title
+                      metadata
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 1,
+                "title": "ACADEMY DINOSAUR",
+                "metadata": {
+                  "bar": "baz",
+                  "foo": 123
+                }
+              },
+              {
+                "filmId": 2,
+                "title": "ACE GOLDFINGER",
+                "metadata": {
+                  "bar": "boo",
+                  "foo": 456
+                }
+              },
+              {
+                "filmId": 3,
+                "title": "ADAPTATION HOLES",
+                "metadata": null
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: {
+                      filmId: { is_in: [1, 2, 3] }
+                      metadata: { eq: { bar: "baz", foo: 123 } }
+                    }
+                  ) {
+                    nodes {
+                      filmId
+                      title
+                      metadata
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 1,
+                "title": "ACADEMY DINOSAUR",
+                "metadata": {
+                  "bar": "baz",
+                  "foo": 123
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: {
+                      filmId: { is_in: [1, 2, 3] }
+                      metadata: { ne: { bar: "baz", foo: 123 } }
+                    }
+                  ) {
+                    nodes {
+                      filmId
+                      title
+                      metadata
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 2,
+                "title": "ACE GOLDFINGER",
+                "metadata": {
+                  "bar": "boo",
+                  "foo": 456
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
