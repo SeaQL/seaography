@@ -210,16 +210,19 @@ jobs:
           psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE
           "sakila"'
       - name: Import DB Schema
-        run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql'
         working-directory: ./examples/postgres
+        run: |
+          psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql
       - name: Import DB Data
-        run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql'
         working-directory: ./examples/postgres
+        run: |
+          psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
+          psql -q postgres://sea:sea@localhost/sakila < sakila-patch.sql
       - name: Additional Integration tests
         working-directory: ./examples/postgres
         run: |
-          cargo test --test query_array_tests
-          rm tests/query_array_tests.rs
+          cargo test --test pg_query_tests
+          rm tests/pg_query_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/postgres/src
       - name: Generate entities

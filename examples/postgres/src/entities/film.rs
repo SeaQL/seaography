@@ -21,6 +21,7 @@ pub struct Model {
     pub rating: Option<MpaaRating>,
     pub last_update: DateTime,
     pub special_features: Option<Vec<String>>,
+    pub metadata: Option<Json>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
