@@ -192,6 +192,7 @@ async fn test_custom_query_with_no_pagination() {
         pagination_info: PaginationInfo,
     }
 
+    #[allow(dead_code)]
     #[derive(Deserialize)]
     #[serde(rename_all = "camelCase")]
     struct Customer {

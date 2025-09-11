@@ -8,7 +8,7 @@ use sea_orm::{
     ModelTrait, TryIntoModel,
 };
 
-use crate::{apply_guard, guard_error, OperationType, SeaResult, SeaographyError};
+use crate::{apply_guard, guard_error, EntityColumnId, OperationType, SeaResult, SeaographyError};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -108,7 +108,6 @@ impl EntityObjectBuilder {
         <T as EntityTrait>::Model: Sync,
     {
         let object_name = object_name.to_owned();
-        let entity_name = self.type_name::<T>();
 
         let types_map_helper = TypesMapHelper {
             context: self.context,
@@ -119,12 +118,12 @@ impl EntityObjectBuilder {
             move |object, column: T::Column| {
                 let object_name = object_name.clone();
                 let column_name = self.column_name::<T>(&column);
+                let entity_column_id = EntityColumnId::of::<T>(&column);
 
                 let column_def = column.def();
                 let graphql_type = match types_map_helper.output_type_for_column::<T>(
                     &column,
-                    &entity_name,
-                    &column_name,
+                    &entity_column_id,
                     !column_def.is_null(),
                 ) {
                     Some(type_name) => type_name,
@@ -152,8 +151,9 @@ impl EntityObjectBuilder {
                 let conversion_fn = self
                     .context
                     .types
-                    .output_conversions
-                    .get(&format!("{entity_name}.{column_name}"));
+                    .column_options
+                    .get(&entity_column_id)
+                    .and_then(|options| options.output_conversion.as_ref());
 
                 let hooks = &self.context.hooks;
 

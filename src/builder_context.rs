@@ -7,6 +7,9 @@ use crate::{
     PaginationInputConfig,
 };
 
+pub mod entity_column_id;
+pub use entity_column_id::*;
+
 pub mod guards;
 pub use guards::*;
 
