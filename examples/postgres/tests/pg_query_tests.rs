@@ -165,6 +165,7 @@ async fn test_film_query_by_json_eq() {
                     filters: {
                       filmId: { is_in: [1, 2, 3] }
                     }
+                    orderBy: { filmId: ASC }
                   ) {
                     nodes {
                       filmId
