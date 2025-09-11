@@ -226,13 +226,17 @@ lazy_static::lazy_static! {
   }
 }
 ```
+* Add case insensitive equals (`ci_eq`) and like (`ilike`)
+* Add options for default and max pagination limit (#223)
 
 ### Enhancements
 
 * Cleanup unwraps https://github.com/SeaQL/seaography/pull/204
 * Use `try_set` inplace of `set` (avoid panics)
 * Add `field_guard()` hooks for related entities https://github.com/SeaQL/seaography/pull/213
+* Allow GraphQL types to be specified per column (#219)
 * Add support for custom subscription fields https://github.com/SeaQL/seaography/pull/214
+* Expose JSON as scalar (#222)
 
 ### Bug Fixes
 
