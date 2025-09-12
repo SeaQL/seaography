@@ -9,7 +9,7 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoAc
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, CustomFields, CustomInput, CustomOutput, EdgeObjectBuilder,
+    CursorInputBuilder, CustomFields, CustomInputObject, CustomOutputObject, EdgeObjectBuilder,
     EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
     FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
@@ -285,14 +285,14 @@ impl Builder {
 
     pub fn register_custom_input<T>(&mut self)
     where
-        T: CustomInput,
+        T: CustomInputObject,
     {
         self.inputs.push(T::input_object(self.context));
     }
 
     pub fn register_custom_output<T>(&mut self)
     where
-        T: CustomOutput,
+        T: CustomOutputObject,
     {
         self.outputs.push(T::basic_object(self.context));
     }
