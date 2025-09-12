@@ -9,7 +9,7 @@ use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoAc
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, CustomInput, CustomOperation, CustomOutput, EdgeObjectBuilder,
+    CursorInputBuilder, CustomFields, CustomInput, CustomOutput, EdgeObjectBuilder,
     EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
     EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
     FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
@@ -299,16 +299,16 @@ impl Builder {
 
     pub fn register_custom_query<T>(&mut self)
     where
-        T: CustomOperation,
+        T: CustomFields,
     {
-        self.queries.append(&mut T::to_fields());
+        self.queries.append(&mut T::to_fields(self.context));
     }
 
     pub fn register_custom_mutation<T>(&mut self)
     where
-        T: CustomOperation,
+        T: CustomFields,
     {
-        self.mutations.append(&mut T::to_fields());
+        self.mutations.append(&mut T::to_fields(self.context));
     }
 
     pub fn register_subscription_field(&mut self, field: SubscriptionField) {
