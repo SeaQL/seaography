@@ -91,7 +91,7 @@ fn derive_custom_output_type_struct(
             }
         }
 
-        impl #impl_generics ::seaography::CustomOutput for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics ::seaography::CustomOutputObject for #orig_ident #ty_generics #where_clause {
             fn basic_object(
                 context: &'static ::seaography::BuilderContext,
             ) -> ::async_graphql::dynamic::Object {

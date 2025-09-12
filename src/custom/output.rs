@@ -8,7 +8,7 @@ pub trait CustomOutputType {
     fn gql_field_value(value: Self) -> Option<FieldValue<'static>>;
 }
 
-pub trait CustomOutput {
+pub trait CustomOutputObject {
     fn basic_object(context: &'static BuilderContext) -> Object;
 }
 

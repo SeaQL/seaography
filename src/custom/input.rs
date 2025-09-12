@@ -12,6 +12,6 @@ pub trait CustomInputType: Sized {
     ) -> SeaResult<Self>;
 }
 
-pub trait CustomInput {
+pub trait CustomInputObject {
     fn input_object(context: &'static BuilderContext) -> InputObject;
 }

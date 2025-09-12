@@ -110,7 +110,7 @@ fn derive_custom_input_type_struct(
             }
         }
 
-        impl #impl_generics ::seaography::CustomInput for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics ::seaography::CustomInputObject for #orig_ident #ty_generics #where_clause {
             fn input_object(
                 context: &'static ::seaography::BuilderContext,
             ) -> ::async_graphql::dynamic::InputObject {
@@ -234,7 +234,7 @@ fn derive_custom_input_type_enum_containers(
             }
         }
 
-        impl #impl_generics ::seaography::CustomInput for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics ::seaography::CustomInputObject for #orig_ident #ty_generics #where_clause {
             fn input_object(
                 context: &'static ::seaography::BuilderContext,
             ) -> ::async_graphql::dynamic::InputObject {
