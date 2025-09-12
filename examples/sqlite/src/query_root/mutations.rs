@@ -4,20 +4,6 @@ use custom_inputs::RentalRequest;
 use sea_orm::{DbErr, EntityTrait};
 use seaography::macros::CustomOperation;
 
-/*
-
-mutation {
-  foo(username: "hi")
-  bar(x: 2, y: 3)
-  upload(upload: File)
-  login {
-    customerId
-    firstName
-    lastName
-  }
-}
-
-*/
 #[allow(dead_code)]
 #[derive(CustomOperation)]
 pub struct Operations {
@@ -94,71 +80,3 @@ impl Operations {
         Ok(rental_requests.len() as i32)
     }
 }
-
-/*
-fn foo() -> gql_dyn::Field {
-    gql_dyn::Field::new(
-        "foo",
-        <String as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
-        move |ctx| {
-            FieldFuture::new(async move {
-                let username = <String as seaography::AsyncGqlValueType>::try_get_arg(
-                    &CONTEXT, &ctx, "username",
-                )?;
-
-                let result = format!("Hello, {}!", username);
-                Ok(Some(gql_dyn::FieldValue::value(result)))
-            })
-        },
-    )
-    .argument(gql_dyn::InputValue::new(
-        "username",
-        <String as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
-    ))
-}
-*/
-/*
-fn bar() -> gql_dyn::Field {
-    gql_dyn::Field::new(
-        "bar",
-        <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
-        move |ctx| {
-            FieldFuture::new(async move {
-                let x = <i32 as seaography::AsyncGqlValueType>::try_get_arg(&CONTEXT, &ctx, "x")?;
-                let y = <i32 as seaography::AsyncGqlValueType>::try_get_arg(&CONTEXT, &ctx, "y")?;
-
-                let result = x + y;
-                Ok(Some(gql_dyn::FieldValue::value(result)))
-            })
-        },
-    )
-    .argument(gql_dyn::InputValue::new(
-        "x",
-        <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
-    ))
-    .argument(gql_dyn::InputValue::new(
-        "y",
-        <i32 as seaography::AsyncGqlValueType>::gql_type_ref(&CONTEXT),
-    ))
-}
-*/
-/*
-fn login() -> gql_dyn::Field {
-    gql_dyn::Field::new(
-        "login",
-        <seaography::SeaOrmModel<customer::Model> as seaography::AsyncGqlValueType>::gql_type_ref(
-            &CONTEXT,
-        ),
-        move |ctx| {
-            FieldFuture::new(async move {
-                use sea_orm::EntityTrait;
-
-                let repo = ctx.data::<DatabaseConnection>().unwrap();
-
-                let result = customer::Entity::find().one(repo).await?.unwrap();
-                Ok(Some(gql_dyn::FieldValue::owned_any(result)))
-            })
-        },
-    )
-}
-*/
