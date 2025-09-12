@@ -1,38 +1,31 @@
 use super::*;
-use async_graphql::{Result as GqlResult, Upload};
+use async_graphql;
+use async_graphql::Context;
+use async_graphql::Upload;
 use custom_inputs::RentalRequest;
 use sea_orm::{DbErr, EntityTrait};
-use seaography::macros::CustomOperation;
+use seaography::CustomFields;
 
-#[allow(dead_code)]
-#[derive(CustomOperation)]
-pub struct Operations {
-    foo: fn(username: String) -> String,
-    bar: fn(x: i32, y: i32) -> i32,
-    login: fn() -> customer::Model,
-    rental_request: fn(rental_request: RentalRequest) -> String,
-    upload: fn(upload: Upload) -> String,
-    maybe_rental_request: fn(rental_request: Option<RentalRequest>) -> Option<rental::Model>,
-    many_rental_request: fn(rental_requests: Vec<RentalRequest>) -> i32,
-}
+pub struct Operations;
 
+#[CustomFields]
 impl Operations {
-    async fn upload(ctx: &ResolverContext<'_>, upload: Upload) -> GqlResult<String> {
+    async fn upload(ctx: &Context<'_>, upload: Upload) -> async_graphql::Result<String> {
         Ok(format!(
             "upload: filename={}",
             upload.value(ctx).unwrap().filename
         ))
     }
 
-    async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
+    async fn foo(_ctx: &Context<'_>, username: String) -> async_graphql::Result<String> {
         Ok(format!("Hello, {}!", username))
     }
 
-    async fn bar(_ctx: &ResolverContext<'_>, x: i32, y: i32) -> GqlResult<i32> {
+    async fn bar(_ctx: &Context<'_>, x: i32, y: i32) -> async_graphql::Result<i32> {
         Ok(x + y)
     }
 
-    async fn login(ctx: &ResolverContext<'_>) -> GqlResult<customer::Model> {
+    async fn login(ctx: &Context<'_>) -> async_graphql::Result<customer::Model> {
         use sea_orm::EntityTrait;
 
         let db = ctx.data::<DatabaseConnection>().unwrap();
@@ -43,9 +36,9 @@ impl Operations {
     }
 
     async fn rental_request(
-        _ctx: &ResolverContext<'_>,
+        _ctx: &Context<'_>,
         rental_request: RentalRequest,
-    ) -> GqlResult<String> {
+    ) -> async_graphql::Result<String> {
         let mut s = format!(
             "{} wants to rent {}",
             rental_request.customer, rental_request.film
@@ -62,9 +55,9 @@ impl Operations {
     }
 
     async fn maybe_rental_request(
-        ctx: &ResolverContext<'_>,
+        ctx: &Context<'_>,
         rental_request: Option<RentalRequest>,
-    ) -> GqlResult<Option<rental::Model>> {
+    ) -> async_graphql::Result<Option<rental::Model>> {
         let db = ctx.data::<DatabaseConnection>().unwrap();
 
         Ok(match rental_request {
@@ -74,9 +67,9 @@ impl Operations {
     }
 
     async fn many_rental_request(
-        _ctx: &ResolverContext<'_>,
+        _ctx: &Context<'_>,
         rental_requests: Vec<RentalRequest>,
-    ) -> GqlResult<i32> {
+    ) -> async_graphql::Result<i32> {
         Ok(rental_requests.len() as i32)
     }
 }
