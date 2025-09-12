@@ -1,31 +1,32 @@
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
     Error, FnArg, Ident, ImplItem, ItemImpl, PathArguments, ReturnType, Signature, Type,
     TypeReference, spanned::Spanned,
 };
 
-pub fn expand(input: ItemImpl, annotated_item: TokenStream) -> syn::Result<TokenStream> {
-    let mut impl_fields: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut field_calls: Vec<proc_macro2::TokenStream> = Vec::new();
+pub fn expand(
+    input: ItemImpl,
+    annotated_item: proc_macro::TokenStream,
+) -> syn::Result<TokenStream> {
+    let mut impl_fields: Vec<TokenStream> = Vec::new();
+    let mut field_calls: Vec<TokenStream> = Vec::new();
     for item in input.items.iter() {
         if let ImplItem::Fn(item_fn) = item {
             let field_fn_ident = format_field_name(&item_fn.sig.ident);
-            impl_fields.push(signature_to_field(
-                &item_fn.sig,
-                &item_fn.sig.ident,
-                &field_fn_ident,
-                true,
-            ));
+            impl_fields.push(
+                signature_to_field(&item_fn.sig, &item_fn.sig.ident, &field_fn_ident, true)
+                    .unwrap_or_else(Error::into_compile_error),
+            );
             field_calls.push(quote! {
                 Self::#field_fn_ident(context),
             });
         }
     }
 
-    let annotated_item = proc_macro2::TokenStream::from(annotated_item);
+    let annotated_item = TokenStream::from(annotated_item);
     let self_ty = &input.self_ty;
-    Ok(TokenStream::from(quote! {
+    Ok(quote! {
         #annotated_item
 
         impl #self_ty {
@@ -40,7 +41,7 @@ pub fn expand(input: ItemImpl, annotated_item: TokenStream) -> syn::Result<Token
             }
         }
 
-    }))
+    })
 }
 
 fn format_field_name(ident: &Ident) -> Ident {
@@ -52,12 +53,12 @@ fn signature_to_field(
     impl_fn_ident: &Ident,
     field_fn_ident: &Ident,
     is_member: bool,
-) -> proc_macro2::TokenStream {
+) -> syn::Result<TokenStream> {
     let fn_ident: &Ident = &sig.ident;
     let field_name = fn_ident;
-    let return_type: proc_macro2::TokenStream = return_type_to_type_ref(&sig.output);
-    let mut arguments: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut resolve_args: Vec<proc_macro2::TokenStream> = Vec::new();
+    let return_type: TokenStream = return_type_to_type_ref(&sig.output)?;
+    let mut arguments: Vec<TokenStream> = Vec::new();
+    let mut resolve_args: Vec<TokenStream> = Vec::new();
 
     let args: Vec<FnArg> = sig.inputs.iter().cloned().collect();
     let mut argno = 0;
@@ -65,18 +66,16 @@ fn signature_to_field(
 
     if let Some(FnArg::Receiver(receiver)) = args.get(argno) {
         if receiver.reference.is_none() {
-            return Error::new(
+            return Err(Error::new(
                 receiver.span(),
                 "self argument must be a reference; use &self",
-            )
-            .into_compile_error();
+            ));
         }
         if receiver.mutability.is_some() {
-            return Error::new(
+            return Err(Error::new(
                 receiver.span(),
                 "self reference must be immutable; use &self",
-            )
-            .into_compile_error();
+            ));
         }
 
         have_self = true;
@@ -96,10 +95,10 @@ fn signature_to_field(
         let arg = &args[argno];
         argno += 1;
 
-        arguments.push(fn_arg_to_field_argument(arg));
+        arguments.push(fn_arg_to_field_argument(arg).unwrap_or_else(Error::into_compile_error));
 
         let FnArg::Typed(typed_arg) = arg else {
-            return Error::new(arg.span(), "arg cannot be self").into_compile_error();
+            return Err(Error::new(arg.span(), "arg cannot be self"));
         };
         let arg_pat = &typed_arg.pat;
 
@@ -119,7 +118,7 @@ fn signature_to_field(
         });
     }
 
-    let fn_expr: proc_macro2::TokenStream = if !is_member {
+    let fn_expr: TokenStream = if !is_member {
         quote! { #impl_fn_ident }
     } else if have_self {
         quote! { ::seaography::try_downcast_ref::<Self>(ctx.parent_value)?.#impl_fn_ident }
@@ -127,7 +126,7 @@ fn signature_to_field(
         quote! { Self::#impl_fn_ident }
     };
 
-    quote! {
+    Ok(quote! {
         pub fn #field_fn_ident(
             context: &'static ::seaography::BuilderContext,
         ) -> ::async_graphql::dynamic::Field {
@@ -143,7 +142,7 @@ fn signature_to_field(
                 })
                 #(#arguments)*
         }
-    }
+    })
 }
 
 fn is_context_arg(arg: &FnArg) -> bool {
@@ -159,52 +158,54 @@ fn is_context_arg(arg: &FnArg) -> bool {
     }
 }
 
-fn return_type_to_type_ref(return_type: &ReturnType) -> proc_macro2::TokenStream {
+fn return_type_to_type_ref(return_type: &ReturnType) -> syn::Result<TokenStream> {
     let ReturnType::Type(_, ty) = return_type else {
-        return Error::new(return_type.span(), "Function must have a return type")
-            .into_compile_error();
+        return Err(Error::new(
+            return_type.span(),
+            "Function must have a return type",
+        ));
     };
 
     let Type::Path(type_path) = &**ty else {
-        return Error::new(ty.span(), "Expectd async_graphql::Result<..>").into_compile_error();
+        return Err(Error::new(ty.span(), "Expected async_graphql::Result<..>"));
     };
 
     let Some(last_segment) = type_path.path.segments.last() else {
-        return Error::new(ty.span(), "Expectd async_graphql::Result<..>").into_compile_error();
+        return Err(Error::new(ty.span(), "Expected async_graphql::Result<..>"));
     };
 
     if last_segment.ident != "Result" {
-        return Error::new(ty.span(), "Expectd async_graphql::Result<..>").into_compile_error();
+        return Err(Error::new(ty.span(), "Expected async_graphql::Result<..>"));
     }
 
     let PathArguments::AngleBracketed(angle_bracketed) = &last_segment.arguments else {
-        return Error::new(ty.span(), "Expectd async_graphql::Result<..>").into_compile_error();
+        return Err(Error::new(ty.span(), "Expected async_graphql::Result<..>"));
     };
 
     let Some(first_arg) = angle_bracketed.args.first() else {
-        return Error::new(ty.span(), "Expectd async_graphql::Result<..>").into_compile_error();
+        return Err(Error::new(ty.span(), "Expected async_graphql::Result<..>"));
     };
 
-    quote! {
+    Ok(quote! {
         <#first_arg as ::seaography::CustomOutputType>::gql_output_type_ref(context)
-    }
+    })
 }
 
-fn fn_arg_to_field_argument(fn_arg: &FnArg) -> proc_macro2::TokenStream {
+fn fn_arg_to_field_argument(fn_arg: &FnArg) -> syn::Result<TokenStream> {
     match fn_arg {
-        FnArg::Receiver(_) => Error::new(fn_arg.span(), "arg cannot be self").into_compile_error(),
+        FnArg::Receiver(_) => Err(Error::new(fn_arg.span(), "arg cannot be self")),
         FnArg::Typed(typed_arg) => {
             let pat = &typed_arg.pat;
             let ty = &typed_arg.ty;
 
-            quote! {
+            Ok(quote! {
                 .argument(
                     ::async_graphql::dynamic::InputValue::new(
                         stringify!(#pat),
                         <#ty as ::seaography::CustomInputType>::gql_input_type_ref(context),
                     )
                 )
-            }
+            })
         }
     }
 }
