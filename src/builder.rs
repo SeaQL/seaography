@@ -2,19 +2,20 @@ use async_graphql::{
     dataloader::DataLoader,
     dynamic::{
         Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, Subscription,
-        SubscriptionField, TypeRef,
+        SubscriptionField, TypeRef, Union,
     },
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, CustomFields, CustomInputObject, CustomOutputObject, EdgeObjectBuilder,
-    EntityCreateBatchMutationBuilder, EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder,
-    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder,
-    FilterInputBuilder, FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
-    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
-    PaginationInfoObjectBuilder, PaginationInputBuilder,
+    CursorInputBuilder, CustomEnum, CustomFields, CustomInputObject, CustomOutputObject,
+    CustomUnion, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
+    EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
+    EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
+    FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
+    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
+    PaginationInputBuilder,
 };
 
 /// The Builder is used to create the Schema for GraphQL
@@ -34,6 +35,12 @@ pub struct Builder {
 
     /// holds all enumeration types
     pub enumerations: Vec<Enum>,
+
+    /// holds all union types
+    pub unions: Vec<Union>,
+
+    /// holds all scalar types
+    pub scalars: Vec<Scalar>,
 
     /// holds all entities queries
     pub queries: Vec<Field>,
@@ -85,6 +92,8 @@ impl Builder {
             outputs: Vec::new(),
             inputs: Vec::new(),
             enumerations: Vec::new(),
+            unions: Vec::new(),
+            scalars: Vec::new(),
             queries: Vec::new(),
             mutations: Vec::new(),
             subscriptions: Vec::new(),
@@ -283,6 +292,20 @@ impl Builder {
             .push(filter_types_map_helper.generate_filter_input(&filter_info));
     }
 
+    pub fn register_custom_enum<T>(&mut self)
+    where
+        T: CustomEnum,
+    {
+        self.enumerations.push(T::to_enum());
+    }
+
+    pub fn register_custom_union<T>(&mut self)
+    where
+        T: CustomUnion,
+    {
+        self.unions.push(T::to_union());
+    }
+
     pub fn register_custom_input<T>(&mut self)
     where
         T: CustomInputObject,
@@ -295,6 +318,14 @@ impl Builder {
         T: CustomOutputObject,
     {
         self.outputs.push(T::basic_object(self.context));
+    }
+
+    pub fn register_custom_object<T>(&mut self)
+    where
+        T: CustomInputObject + CustomOutputObject,
+    {
+        self.register_custom_input::<T>();
+        self.register_custom_output::<T>();
     }
 
     pub fn register_custom_query<T>(&mut self)
@@ -313,6 +344,10 @@ impl Builder {
 
     pub fn register_subscription_field(&mut self, field: SubscriptionField) {
         self.subscriptions.push(field);
+    }
+
+    pub fn register_scalar(&mut self, scalar: Scalar) {
+        self.scalars.push(scalar);
     }
 
     pub fn set_depth_limit(mut self, depth: Option<usize>) -> Self {
@@ -390,6 +425,18 @@ impl Builder {
         // register enumerations
         let schema = self
             .enumerations
+            .into_iter()
+            .fold(schema, |schema, enumeration| schema.register(enumeration));
+
+        // register unions
+        let schema = self
+            .unions
+            .into_iter()
+            .fold(schema, |schema, enumeration| schema.register(enumeration));
+
+        // register scalars
+        let schema = self
+            .scalars
             .into_iter()
             .fold(schema, |schema, enumeration| schema.register(enumeration));
 
