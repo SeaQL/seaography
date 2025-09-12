@@ -1,17 +1,4 @@
-use proc_macro2::Span;
-use syn::{
-    DataEnum, DeriveInput, Error, Fields, Ident, PathArguments, Token, Type, TypePath,
-    spanned::Spanned,
-};
-
-pub fn qualify_type_path(type_path: &mut TypePath) {
-    // convert type path to turbo fish Option<String> -> Option::<String>
-    for segment in type_path.path.segments.iter_mut() {
-        if let PathArguments::AngleBracketed(arguments) = &mut segment.arguments {
-            arguments.colon2_token = Some(Token![::](Span::call_site()));
-        }
-    }
-}
+use syn::{DataEnum, DeriveInput, Error, Fields, Ident, Type, spanned::Spanned};
 
 #[derive(Debug)]
 pub enum EnumVariants {
