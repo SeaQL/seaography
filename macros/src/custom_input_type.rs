@@ -7,7 +7,7 @@
 #![allow(non_upper_case_globals)]
 
 use darling::FromDeriveInput;
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{
     Data, DataEnum, DataStruct, DeriveInput, Error, Field, Fields, FnArg, Ident, ImplItem,
@@ -25,7 +25,7 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
     let ident = &derive_input.ident;
     match &derive_input.data {
         Data::Struct(data_struct) => {
-            let name: proc_macro2::TokenStream = match &args.input_type_name {
+            let name: TokenStream = match &args.input_type_name {
                 Some(name) => quote! { #name },
                 None => {
                     let name = format!("{}Input", ident);
@@ -33,49 +33,37 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
                 }
             };
 
-            Ok(derive_custom_input_type_struct(
-                &derive_input,
-                data_struct,
-                name,
-            ))
+            derive_custom_input_type_struct(&derive_input, data_struct, name)
         }
         Data::Enum(data_enum) => {
-            let name: proc_macro2::TokenStream = match &args.input_type_name {
+            let name: TokenStream = match &args.input_type_name {
                 Some(name) => quote! { #name },
                 None => quote! { stringify!(#ident) },
             };
 
-            Ok(derive_custom_input_type_enum(
-                &derive_input,
-                data_enum,
-                name,
-            ))
+            derive_custom_input_type_enum(&derive_input, data_enum, name)
         }
         Data::Union(_) => Err(Error::new(
             derive_input.ident.span(),
             "Expected a struct or enum",
         )),
-        // .into_compile_error()
-        // .into(),
     }
 }
 
 fn derive_custom_input_type_struct(
     ast: &DeriveInput,
     data: &DataStruct,
-    name: proc_macro2::TokenStream,
-) -> TokenStream {
+    name: TokenStream,
+) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
 
     let Fields::Named(named) = &data.fields else {
-        return Error::new(ast.ident.span(), "Expected named fields")
-            .into_compile_error()
-            .into();
+        return Err(Error::new(ast.ident.span(), "Expected named fields"));
     };
 
     let fields: Vec<Field> = named.named.clone().into_iter().collect();
-    let mut resolve_args: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut dynamic_fields: Vec<proc_macro2::TokenStream> = Vec::new();
+    let mut resolve_args: Vec<TokenStream> = Vec::new();
+    let mut dynamic_fields: Vec<TokenStream> = Vec::new();
 
     for field in fields.iter() {
         let field_ident = &field.ident;
@@ -100,7 +88,7 @@ fn derive_custom_input_type_struct(
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    TokenStream::from(quote! {
+    Ok(quote! {
         impl #impl_generics ::seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
                 ctx: &'static ::seaography::BuilderContext,
@@ -137,12 +125,9 @@ fn derive_custom_input_type_struct(
 fn derive_custom_input_type_enum(
     ast: &DeriveInput,
     data: &DataEnum,
-    name: proc_macro2::TokenStream,
-) -> TokenStream {
-    let variants = match parse_enum_variants(ast, data) {
-        Ok(variants) => variants,
-        Err(e) => return e.into_compile_error().into(),
-    };
+    name: TokenStream,
+) -> syn::Result<TokenStream> {
+    let variants = parse_enum_variants(ast, data)?;
     match variants {
         EnumVariants::Units(variants) => derive_custom_input_type_enum_units(ast, variants, name),
         EnumVariants::Containers(variants) => {
@@ -154,11 +139,11 @@ fn derive_custom_input_type_enum(
 fn derive_custom_input_type_enum_units(
     ast: &DeriveInput,
     variants: Vec<Ident>,
-    name: proc_macro2::TokenStream,
-) -> TokenStream {
+    name: TokenStream,
+) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
 
-    let mut variant_matches: Vec<proc_macro2::TokenStream> = Vec::new();
+    let mut variant_matches: Vec<TokenStream> = Vec::new();
     for variant_ident in variants.iter() {
         let variant_value = quote! { stringify!(#variant_ident)};
         variant_matches.push(quote! {
@@ -169,7 +154,7 @@ fn derive_custom_input_type_enum_units(
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    TokenStream::from(quote! {
+    Ok(quote! {
         impl #impl_generics ::seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
                 ctx: &'static ::seaography::BuilderContext,
@@ -197,12 +182,12 @@ fn derive_custom_input_type_enum_units(
 fn derive_custom_input_type_enum_containers(
     ast: &DeriveInput,
     variants: Vec<Ident>,
-    name: proc_macro2::TokenStream,
-) -> TokenStream {
+    name: TokenStream,
+) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
 
-    let mut variant_matches: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut input_object_fields: Vec<proc_macro2::TokenStream> = Vec::new();
+    let mut variant_matches: Vec<TokenStream> = Vec::new();
+    let mut input_object_fields: Vec<TokenStream> = Vec::new();
     for variant_ident in variants.iter() {
         let variant_value = quote! { stringify!(#variant_ident) };
 
@@ -224,7 +209,7 @@ fn derive_custom_input_type_enum_containers(
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
-    TokenStream::from(quote! {
+    Ok(quote! {
         impl #impl_generics ::seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
                 ctx: &'static ::seaography::BuilderContext,
