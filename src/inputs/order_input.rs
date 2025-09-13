@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
-use sea_orm::{EntityTrait, Iterable};
+use sea_orm::{ColumnTrait, EntityTrait, Iterable};
 
 use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, SeaResult, SeaographyError};
 
@@ -44,6 +44,9 @@ impl OrderInputBuilder {
         let name = self.type_name(&object_name);
 
         T::Column::iter().fold(InputObject::new(name), |object, column| {
+            if column.def().seaography().ignore {
+                return object;
+            }
             object.field(InputValue::new(
                 entity_object_builder.column_name::<T>(&column),
                 TypeRef::named(&self.context.order_by_enum.type_name),
