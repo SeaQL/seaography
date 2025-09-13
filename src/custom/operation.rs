@@ -4,10 +4,24 @@ use crate::{
     EntityObjectBuilder, PaginationInput, PaginationInputBuilder, SeaResult, TypesMapHelper,
 };
 use async_graphql::{
-    dynamic::{Field, FieldValue, ResolverContext, TypeRef, ValueAccessor},
+    dynamic::{Enum, Field, FieldValue, ResolverContext, TypeRef, Union, ValueAccessor},
     InputType, Upload,
 };
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
+#[cfg(feature = "macros")]
+pub use seaography_macros::{CustomEnum, CustomFields};
+
+pub trait CustomFields {
+    fn to_fields(context: &'static BuilderContext) -> Vec<Field>;
+}
+
+pub trait CustomEnum {
+    fn to_enum() -> Enum;
+}
+
+pub trait CustomUnion {
+    fn to_union() -> Union;
+}
 
 pub trait CustomOperation {
     fn to_fields() -> Vec<Field>;
