@@ -5,19 +5,18 @@ use std::ops::Deref;
 
 pub struct LifecycleHooks(pub(crate) Box<dyn LifecycleHooksInterface>);
 
-impl Deref for LifecycleHooks {
-    type Target = dyn LifecycleHooksInterface;
-
-    fn deref(&self) -> &Self::Target {
-        &*self.0
-    }
-}
-
 impl Default for LifecycleHooks {
     fn default() -> Self {
         Self(Box::new(DefaultLifecycleHook))
     }
 }
+
+#[derive(Default)]
+pub struct MultiLifecycleHooks {
+    hooks: Vec<Box<dyn LifecycleHooksInterface>>,
+}
+
+pub struct DefaultLifecycleHook;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum OperationType {
@@ -25,12 +24,6 @@ pub enum OperationType {
     Create,
     Update,
     Delete,
-}
-
-impl LifecycleHooks {
-    pub fn new<T: LifecycleHooksInterface + 'static>(t: T) -> Self {
-        Self(Box::new(t))
-    }
 }
 
 #[async_trait::async_trait]
@@ -68,6 +61,86 @@ pub trait LifecycleHooksInterface: Send + Sync {
     }
 }
 
-pub struct DefaultLifecycleHook;
-
 impl LifecycleHooksInterface for DefaultLifecycleHook {}
+
+impl LifecycleHooks {
+    pub fn new<T: LifecycleHooksInterface + 'static>(t: T) -> Self {
+        Self(Box::new(t))
+    }
+}
+
+impl Deref for LifecycleHooks {
+    type Target = dyn LifecycleHooksInterface;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.0
+    }
+}
+
+impl MultiLifecycleHooks {
+    pub fn add<T: LifecycleHooksInterface + 'static>(mut self, t: T) -> Self {
+        self.hooks.push(Box::new(t));
+        self
+    }
+}
+
+#[async_trait::async_trait]
+impl LifecycleHooksInterface for MultiLifecycleHooks {
+    fn entity_guard(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        action: OperationType,
+    ) -> GuardAction {
+        for hook in &self.hooks {
+            let result = hook.entity_guard(ctx, entity, action);
+            if matches!(result, GuardAction::Block(_)) {
+                return result;
+            }
+        }
+        GuardAction::Allow
+    }
+
+    async fn entity_watch(&self, ctx: &ResolverContext, entity: &str, action: OperationType) {
+        for hook in &self.hooks {
+            hook.entity_watch(ctx, entity, action).await;
+        }
+    }
+
+    fn field_guard(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        field: &str,
+        action: OperationType,
+    ) -> GuardAction {
+        for hook in &self.hooks {
+            let result = hook.field_guard(ctx, entity, field, action);
+            if matches!(result, GuardAction::Block(_)) {
+                return result;
+            }
+        }
+        GuardAction::Allow
+    }
+
+    fn entity_filter(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        action: OperationType,
+    ) -> Option<Condition> {
+        let mut cond = Condition::all();
+        for hook in &self.hooks {
+            if let Some(inner_cond) = hook.entity_filter(ctx, entity, action) {
+                if !inner_cond.is_empty() {
+                    cond = cond.add(inner_cond);
+                }
+            }
+        }
+        if !cond.is_empty() {
+            Some(cond)
+        } else {
+            None
+        }
+    }
+}
