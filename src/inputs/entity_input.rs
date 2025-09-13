@@ -95,6 +95,10 @@ impl EntityInputBuilder {
 
             let column_def = column.def();
 
+            if column_def.seaography().ignore {
+                return object;
+            }
+
             let auto_increment = match <T::PrimaryKey as PrimaryKeyToColumn>::from_column(column) {
                 Some(_) => T::PrimaryKey::auto_increment(),
                 None => false,

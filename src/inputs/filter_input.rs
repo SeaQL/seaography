@@ -1,5 +1,5 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
-use sea_orm::{EntityTrait, Iterable};
+use sea_orm::{ColumnTrait, EntityTrait, Iterable};
 
 use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, FilterTypesMapHelper};
 
@@ -48,6 +48,9 @@ impl FilterInputBuilder {
         let filter_name = self.type_name(&entity_name);
 
         let object = T::Column::iter().fold(InputObject::new(&filter_name), |object, column| {
+            if column.def().seaography().ignore {
+                return object;
+            }
             match filter_types_map_helper.get_column_filter_input_value::<T>(&column) {
                 Some(field) => object.field(field),
                 None => object,

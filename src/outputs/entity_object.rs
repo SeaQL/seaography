@@ -130,6 +130,10 @@ impl EntityObjectBuilder {
                     None => return object,
                 };
 
+                if column_def.seaography().ignore {
+                    return object;
+                }
+
                 // This isn't the most beautiful flag: it's indicating whether the leaf type is an
                 // enum, rather than the type itself. Ideally we'd only calculate this for the leaf
                 // type itself. Could be a good candidate for refactor as this code evolves to support
