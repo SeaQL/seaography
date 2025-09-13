@@ -131,6 +131,10 @@ impl EntityCreateBatchMutationBuilder {
 
                     transaction.commit().await?;
 
+                    hooks
+                        .entity_watch(&ctx, &object_name, OperationType::Create)
+                        .await;
+
                     Ok(Some(FieldValue::list(
                         results.into_iter().map(FieldValue::owned_any),
                     )))

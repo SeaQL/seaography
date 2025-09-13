@@ -103,6 +103,10 @@ impl EntityDeleteMutationBuilder {
                     }
                     let res: DeleteResult = stmt.filter(filter_condition).exec(db).await?;
 
+                    hooks
+                        .entity_watch(&ctx, &object_name, OperationType::Delete)
+                        .await;
+
                     Ok(Some(async_graphql::Value::from(res.rows_affected)))
                 })
             },

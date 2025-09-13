@@ -1,6 +1,6 @@
 use super::GuardAction;
 use async_graphql::dynamic::ResolverContext;
-use sea_orm::Condition;
+use sea_orm::{entity::prelude::async_trait, Condition};
 use std::ops::Deref;
 
 pub struct LifecycleHooks(pub(crate) Box<dyn LifecycleHooksInterface>);
@@ -33,7 +33,9 @@ impl LifecycleHooks {
     }
 }
 
+#[async_trait::async_trait]
 pub trait LifecycleHooksInterface: Send + Sync {
+    /// This happens before an Entity is accessed
     fn entity_guard(
         &self,
         _ctx: &ResolverContext,
@@ -42,6 +44,9 @@ pub trait LifecycleHooksInterface: Send + Sync {
     ) -> GuardAction {
         GuardAction::Allow
     }
+
+    /// This happens after an Entity is mutated
+    async fn entity_watch(&self, _ctx: &ResolverContext, _entity: &str, _action: OperationType) {}
 
     fn field_guard(
         &self,

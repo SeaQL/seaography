@@ -123,6 +123,10 @@ impl EntityCreateOneMutationBuilder {
 
                     let result = active_model.insert(db).await?;
 
+                    hooks
+                        .entity_watch(&ctx, &object_name, OperationType::Create)
+                        .await;
+
                     Ok(Some(FieldValue::owned_any(result)))
                 })
             },

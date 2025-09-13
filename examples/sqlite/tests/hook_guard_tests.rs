@@ -2,7 +2,7 @@ use async_graphql::{
     dynamic::{FieldValue, ResolverContext, Schema, SchemaError},
     Request, Response, Variables,
 };
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::{entity::prelude::async_trait, Database, DatabaseConnection};
 use seaography::{
     async_graphql, lazy_static, Builder, BuilderContext, GuardAction, LifecycleHooks,
     LifecycleHooksInterface, OperationType,
@@ -26,6 +26,7 @@ lazy_static::lazy_static! {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 enum HookCall {
     EntityGuard(String, OperationType),
+    EntityWatch(String, OperationType),
     FieldGuard(String, Option<i64>, String, OperationType),
 }
 
@@ -47,6 +48,10 @@ fn id_from_entity(entity: &str, value: &FieldValue<'_>) -> Option<i64> {
 impl HookCall {
     fn entity_guard(entity: impl Into<String>, action: OperationType) -> Self {
         HookCall::EntityGuard(entity.into(), action)
+    }
+
+    fn entity_watch(entity: impl Into<String>, action: OperationType) -> Self {
+        HookCall::EntityWatch(entity.into(), action)
     }
 
     fn field_guard(
@@ -84,8 +89,13 @@ impl Log {
         calls.sort();
         calls
     }
+
+    fn calls_unsorted(&self) -> Vec<HookCall> {
+        self.calls.lock().unwrap().clone()
+    }
 }
 
+#[async_trait::async_trait]
 impl LifecycleHooksInterface for MyHooks {
     fn entity_guard(
         &self,
@@ -100,6 +110,12 @@ impl LifecycleHooksInterface for MyHooks {
             "FilmCategory" => GuardAction::Block(None),
             _ => GuardAction::Allow,
         }
+    }
+
+    async fn entity_watch(&self, ctx: &ResolverContext, entity: &str, action: OperationType) {
+        ctx.data::<Log>()
+            .unwrap()
+            .record(HookCall::entity_watch(entity, action));
     }
 
     fn field_guard(
@@ -359,6 +375,79 @@ async fn field_guard_mutation() {
             HookCall::entity_guard("Language", OperationType::Update),
             HookCall::field_guard("Language", None, "name", OperationType::Update),
         ]
+    );
+}
+
+#[tokio::test]
+async fn entity_watch_mutation() {
+    let permissions = Permissions::default();
+    let (schema, log) = get_schema(permissions).await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    countryUpdate(
+                      data: { country: "[UPDATED]" }
+                      filter: { countryId: { eq: 1 } }
+                    ) {
+                      countryId
+                      country
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "countryUpdate": [
+              {
+                "countryId": 1,
+                "country": "[UPDATED]"
+              }
+            ]
+        }
+        "#,
+    );
+
+    assert_eq!(
+        log.calls_unsorted(),
+        vec![
+            HookCall::entity_guard("Country", OperationType::Update),
+            HookCall::field_guard("Country", None, "country", OperationType::Update),
+            HookCall::entity_watch("Country", OperationType::Update),
+            HookCall::field_guard("CountryBasic", None, "countryId", OperationType::Read),
+            HookCall::field_guard("CountryBasic", None, "country", OperationType::Read),
+        ]
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    countryUpdate(
+                      data: { country: "Afghanistan" }
+                      filter: { countryId: { eq: 1 } }
+                    ) {
+                      countryId
+                      country
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "countryUpdate": [
+              {
+                "countryId": 1,
+                "country": "Afghanistan"
+              }
+            ]
+        }
+        "#,
     );
 }
 

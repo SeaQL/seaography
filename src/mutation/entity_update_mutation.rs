@@ -152,6 +152,10 @@ impl EntityUpdateMutationBuilder {
 
                     transaction.commit().await?;
 
+                    hooks
+                        .entity_watch(&ctx, &object_name, OperationType::Update)
+                        .await;
+
                     Ok(Some(FieldValue::list(
                         result.into_iter().map(FieldValue::owned_any),
                     )))
