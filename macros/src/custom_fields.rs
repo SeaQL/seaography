@@ -33,8 +33,8 @@ pub fn expand(
             #(#impl_fields)*
         }
 
-        impl ::seaography::CustomFields for #self_ty {
-            fn to_fields(context: &'static ::seaography::BuilderContext) -> Vec<::async_graphql::dynamic::Field> {
+        impl seaography::CustomFields for #self_ty {
+            fn to_fields(context: &'static seaography::BuilderContext) -> Vec<async_graphql::dynamic::Field> {
                 vec![
                     #(#field_calls)*
                 ]
@@ -103,11 +103,11 @@ fn signature_to_field(
         let arg_pat = &typed_arg.pat;
 
         resolve_args.push(quote! {
-            ::seaography::CustomInputType::
+            seaography::CustomInputType::
                 parse_value(
                     context,
                     ctx.args.get(stringify!(#arg_pat))
-                ).map_err(|e| ::seaography::SeaographyError::AsyncGraphQLError(
+                ).map_err(|e| seaography::SeaographyError::AsyncGraphQLError(
                     format!(
                         "Error decoding {} argument {}: {}",
                         stringify!(#field_name),
@@ -121,21 +121,21 @@ fn signature_to_field(
     let fn_expr: TokenStream = if !is_member {
         quote! { #impl_fn_ident }
     } else if have_self {
-        quote! { ::seaography::try_downcast_ref::<Self>(ctx.parent_value)?.#impl_fn_ident }
+        quote! { seaography::try_downcast_ref::<Self>(ctx.parent_value)?.#impl_fn_ident }
     } else {
         quote! { Self::#impl_fn_ident }
     };
 
     Ok(quote! {
         pub fn #field_fn_ident(
-            context: &'static ::seaography::BuilderContext,
-        ) -> ::async_graphql::dynamic::Field {
-            ::async_graphql::dynamic::Field::new(
+            context: &'static seaography::BuilderContext,
+        ) -> async_graphql::dynamic::Field {
+            async_graphql::dynamic::Field::new(
                 stringify!(#field_name),
                 #return_type,
                 move |ctx| {
-                    ::async_graphql::dynamic::FieldFuture::new(async move {
-                        Ok(::seaography::CustomOutputType::gql_field_value(#fn_expr(
+                    async_graphql::dynamic::FieldFuture::new(async move {
+                        Ok(seaography::CustomOutputType::gql_field_value(#fn_expr(
                             #(#resolve_args)*
                         ).await?))
                     })
@@ -187,7 +187,7 @@ fn return_type_to_type_ref(return_type: &ReturnType) -> syn::Result<TokenStream>
     };
 
     Ok(quote! {
-        <#first_arg as ::seaography::CustomOutputType>::gql_output_type_ref(context)
+        <#first_arg as seaography::CustomOutputType>::gql_output_type_ref(context)
     })
 }
 
@@ -200,9 +200,9 @@ fn fn_arg_to_field_argument(fn_arg: &FnArg) -> syn::Result<TokenStream> {
 
             Ok(quote! {
                 .argument(
-                    ::async_graphql::dynamic::InputValue::new(
+                    async_graphql::dynamic::InputValue::new(
                         stringify!(#pat),
-                        <#ty as ::seaography::CustomInputType>::gql_input_type_ref(context),
+                        <#ty as seaography::CustomInputType>::gql_input_type_ref(context),
                     )
                 )
             })

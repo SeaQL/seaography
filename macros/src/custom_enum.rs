@@ -31,9 +31,9 @@ pub fn expand(ast: DeriveInput) -> syn::Result<TokenStream> {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomEnum for #orig_ident  #ty_generics #where_clause {
-            fn to_enum() -> ::async_graphql::dynamic::Enum {
-                ::async_graphql::dynamic::Enum::new(#name)
+        impl #impl_generics seaography::CustomEnum for #orig_ident  #ty_generics #where_clause {
+            fn to_enum() -> async_graphql::dynamic::Enum {
+                async_graphql::dynamic::Enum::new(#name)
                 #(#enum_variants)*
             }
         }

@@ -47,13 +47,13 @@ fn derive_custom_output_type_struct(
         let field_ident = &field.ident;
         let field_ty = &field.ty;
         fields.push(quote! {
-            .field(::async_graphql::dynamic::Field::new(
+            .field(async_graphql::dynamic::Field::new(
                 stringify!(#field_ident),
-                <#field_ty as ::seaography::CustomOutputType>::gql_output_type_ref(context),
+                <#field_ty as seaography::CustomOutputType>::gql_output_type_ref(context),
                 move |ctx| {
-                    ::async_graphql::dynamic::FieldFuture::new(async move {
-                        let obj = ::seaography::try_downcast_ref::<#orig_ident #ty_generics>(ctx.parent_value)?;
-                        Ok(<#field_ty as ::seaography::CustomOutputType>::gql_field_value(
+                    async_graphql::dynamic::FieldFuture::new(async move {
+                        let obj = seaography::try_downcast_ref::<#orig_ident #ty_generics>(ctx.parent_value)?;
+                        Ok(<#field_ty as seaography::CustomOutputType>::gql_field_value(
                             obj.#field_ident.clone()
                         ))
                     })
@@ -62,14 +62,14 @@ fn derive_custom_output_type_struct(
     }
 
     let mut object_def: TokenStream = quote! {
-        ::async_graphql::dynamic::Object::new(#name)
+        async_graphql::dynamic::Object::new(#name)
         #(#fields)*
     };
 
     if args.custom_fields {
         object_def = quote! {
             let mut obj = #object_def;
-            for field in <Self as ::seaography::CustomFields>::to_fields(context) {
+            for field in <Self as seaography::CustomFields>::to_fields(context) {
                 obj = obj.field(field);
             }
             obj
@@ -77,24 +77,24 @@ fn derive_custom_output_type_struct(
     }
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
             fn gql_output_type_ref(
-                ctx: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::TypeRef {
-                ::async_graphql::dynamic::TypeRef::named_nn(#name)
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
             fn gql_field_value(
                 value: Self,
-            ) -> Option<::async_graphql::dynamic::FieldValue<'static>> {
-                Some(::async_graphql::dynamic::FieldValue::owned_any(value))
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                Some(async_graphql::dynamic::FieldValue::owned_any(value))
             }
         }
 
-        impl #impl_generics ::seaography::CustomOutputObject for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomOutputObject for #orig_ident #ty_generics #where_clause {
             fn basic_object(
-                context: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::Object {
+                context: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::Object {
                 #object_def
             }
         }
@@ -127,8 +127,8 @@ fn derive_custom_output_type_enum_units(
         let variant_value = quote! { stringify!(#variant_ident )};
 
         variants_gql_field_value.push(quote! {
-            Self::#variant_ident => Some(::async_graphql::dynamic::FieldValue::value(
-                ::async_graphql::Value::Enum(::async_graphql::Name::new(#variant_value))
+            Self::#variant_ident => Some(async_graphql::dynamic::FieldValue::value(
+                async_graphql::Value::Enum(async_graphql::Name::new(#variant_value))
             )),
         });
     }
@@ -137,16 +137,16 @@ fn derive_custom_output_type_enum_units(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
             fn gql_output_type_ref(
-                ctx: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::TypeRef {
-                ::async_graphql::dynamic::TypeRef::named_nn(#name)
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
             fn gql_field_value(
                 value: Self,
-            ) -> Option<::async_graphql::dynamic::FieldValue<'static>> {
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
                 match value {
                     #(#variants_gql_field_value)*
                 }
@@ -173,7 +173,7 @@ fn derive_custom_output_type_enum_containers(
 
         variant_matches.push(quote! {
             #orig_ident::#variant_ident(inner) => Ok(Some(
-                ::async_graphql::dynamic::FieldValue::owned_any(inner)
+                async_graphql::dynamic::FieldValue::owned_any(inner)
                     .with_type(#variant_value),
             )),
         });
@@ -183,20 +183,20 @@ fn derive_custom_output_type_enum_containers(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomUnion for #orig_ident #ty_generics #where_clause {
-            fn to_union() -> ::async_graphql::dynamic::Union {
-                ::async_graphql::dynamic::Union::new(stringify!(#orig_ident))
+        impl #impl_generics seaography::CustomUnion for #orig_ident #ty_generics #where_clause {
+            fn to_union() -> async_graphql::dynamic::Union {
+                async_graphql::dynamic::Union::new(stringify!(#orig_ident))
                     #(#possible_types)*
             }
         }
 
-        impl #impl_generics ::seaography::ConvertOutput for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::ConvertOutput for #orig_ident #ty_generics #where_clause {
             fn convert_output(
-                value: &::sea_orm::sea_query::Value,
-            ) -> ::async_graphql::Result<Option<::async_graphql::dynamic::FieldValue<'static>>> {
-                if let ::sea_orm::sea_query::value::Value::Json(opt_json) = value {
+                value: &sea_orm::sea_query::Value,
+            ) -> async_graphql::Result<Option<async_graphql::dynamic::FieldValue<'static>>> {
+                if let sea_orm::sea_query::value::Value::Json(opt_json) = value {
                     if let Some(json) = opt_json {
-                        match ::serde_json::from_value::<#orig_ident>(*json.clone()) {
+                        match serde_json::from_value::<#orig_ident>(*json.clone()) {
                             Ok(obj) => match obj {
                                 #(#variant_matches)*
                             },

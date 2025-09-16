@@ -68,7 +68,7 @@ fn derive_custom_input_type_struct(
     for field in fields.iter() {
         let field_ident = &field.ident;
         resolve_args.push(quote! {
-            #field_ident: ::seaography::CustomInputType::
+            #field_ident: seaography::CustomInputType::
                 parse_value(
                     context,
                     input_object.get(stringify!(#field_ident))
@@ -78,7 +78,7 @@ fn derive_custom_input_type_struct(
         let field_ty = &field.ty;
 
         dynamic_fields.push(quote! {
-            .field(::async_graphql::dynamic::InputValue::new(
+            .field(async_graphql::dynamic::InputValue::new(
                 stringify!(#field_ident),
                 <#field_ty>::gql_input_type_ref(context),
             ))
@@ -89,19 +89,19 @@ fn derive_custom_input_type_struct(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
-                ctx: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::TypeRef {
-                ::async_graphql::dynamic::TypeRef::named_nn(#name)
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
             fn parse_value(
-                context: &'static ::seaography::BuilderContext,
-                value: Option<::async_graphql::dynamic::ValueAccessor<'_>>,
-            ) -> ::seaography::SeaResult<Self> {
+                context: &'static seaography::BuilderContext,
+                value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
+            ) -> seaography::SeaResult<Self> {
                 let input = value.ok_or(
-                    ::seaography::SeaographyError::AsyncGraphQLError("Expected a value".into())
+                    seaography::SeaographyError::AsyncGraphQLError("Expected a value".into())
                 )?;
                 let input_object = input.object()?;
                 Ok(Self {
@@ -110,12 +110,12 @@ fn derive_custom_input_type_struct(
             }
         }
 
-        impl #impl_generics ::seaography::CustomInputObject for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomInputObject for #orig_ident #ty_generics #where_clause {
             fn input_object(
-                context: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::InputObject {
-                use ::seaography::CustomInputType;
-                ::async_graphql::dynamic::InputObject::new(#name)
+                context: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::InputObject {
+                use seaography::CustomInputType;
+                async_graphql::dynamic::InputObject::new(#name)
                 #(#dynamic_fields)*
             }
         }
@@ -155,24 +155,24 @@ fn derive_custom_input_type_enum_units(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
-                ctx: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::TypeRef {
-                ::async_graphql::dynamic::TypeRef::named_nn(#name)
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
             fn parse_value(
-                context: &'static ::seaography::BuilderContext,
-                value: Option<::async_graphql::dynamic::ValueAccessor<'_>>,
-            ) -> ::seaography::SeaResult<Self> {
+                context: &'static seaography::BuilderContext,
+                value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
+            ) -> seaography::SeaResult<Self> {
                 let value = value.ok_or(
-                    ::seaography::SeaographyError::AsyncGraphQLError("Expected a value".into())
+                    seaography::SeaographyError::AsyncGraphQLError("Expected a value".into())
                 )?;
                 let enum_name = value.enum_name()?;
                 match enum_name {
                     #(#variant_matches)*
-                    _ => Err(::seaography::SeaographyError::AsyncGraphQLError("Unknown enum value".into())),
+                    _ => Err(seaography::SeaographyError::AsyncGraphQLError("Unknown enum value".into())),
                 }
             }
         }
@@ -199,9 +199,9 @@ fn derive_custom_input_type_enum_containers(
         });
 
         input_object_fields.push(quote! {
-            .field(::async_graphql::dynamic::InputValue::new(
+            .field(async_graphql::dynamic::InputValue::new(
                 #variant_value,
-                <Option<#variant_ident> as ::seaography::CustomInputType>::gql_input_type_ref(context),
+                <Option<#variant_ident> as seaography::CustomInputType>::gql_input_type_ref(context),
             ))
         });
     }
@@ -210,35 +210,35 @@ fn derive_custom_input_type_enum_containers(
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     Ok(quote! {
-        impl #impl_generics ::seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
-                ctx: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::TypeRef {
-                ::async_graphql::dynamic::TypeRef::named_nn(format!("{}Input", #name))
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                async_graphql::dynamic::TypeRef::named_nn(format!("{}Input", #name))
             }
 
             fn parse_value(
-                context: &'static ::seaography::BuilderContext,
-                value: Option<::async_graphql::dynamic::ValueAccessor<'_>>,
-            ) -> ::seaography::SeaResult<Self> {
+                context: &'static seaography::BuilderContext,
+                value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
+            ) -> seaography::SeaResult<Self> {
                 let Some(value) = value else {
-                    return Err(::seaography::SeaographyError::AsyncGraphQLError("Value expected".into()));
+                    return Err(seaography::SeaographyError::AsyncGraphQLError("Value expected".into()));
                 };
                 let obj = value.object()?;
 
                 #(#variant_matches)*
 
-                Err(::seaography::SeaographyError::AsyncGraphQLError(
+                Err(seaography::SeaographyError::AsyncGraphQLError(
                     format!("Unknown {} variant", stringify!(#orig_ident)).into(),
                 ))
             }
         }
 
-        impl #impl_generics ::seaography::CustomInputObject for #orig_ident #ty_generics #where_clause {
+        impl #impl_generics seaography::CustomInputObject for #orig_ident #ty_generics #where_clause {
             fn input_object(
-                context: &'static ::seaography::BuilderContext,
-            ) -> ::async_graphql::dynamic::InputObject {
-                ::async_graphql::dynamic::InputObject::new(format!("{}Input", #name))
+                context: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::InputObject {
+                async_graphql::dynamic::InputObject::new(format!("{}Input", #name))
                 #(#input_object_fields)*
             }
         }
