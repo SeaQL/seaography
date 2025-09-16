@@ -320,6 +320,19 @@ impl Builder {
         self.outputs.push(T::basic_object(self.context));
     }
 
+    pub fn register_custom_output_with_fields<T>(&mut self)
+    where
+        T: CustomOutputObject + CustomFields,
+    {
+        let object = T::to_fields(self.context)
+            .into_iter()
+            .fold(T::basic_object(self.context), |object, field| {
+                object.field(field)
+            });
+
+        self.outputs.push(object);
+    }
+
     pub fn register_custom_object<T>(&mut self)
     where
         T: CustomInputObject + CustomOutputObject,

@@ -3,6 +3,7 @@ use async_graphql;
 use async_graphql::Context;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect};
 use seaography::{apply_pagination, Connection, CustomFields, PaginationInput};
+use types::{Lineitem, ProductSize, PurchaseOrder, Shape};
 
 pub struct Operations;
 
@@ -33,23 +34,25 @@ impl Operations {
         Ok(rental::Entity::find().limit(10).all(db).await?)
     }
 
-    async fn purchase_order(
-        _ctx: &Context<'_>,
-    ) -> async_graphql::Result<custom_output::PurchaseOrder> {
-        Ok(custom_output::PurchaseOrder {
+    async fn purchase_order(_ctx: &Context<'_>) -> async_graphql::Result<PurchaseOrder> {
+        Ok(PurchaseOrder {
             po_number: "AB1234".into(),
             lineitems: vec![
-                custom_output::Lineitem {
+                Lineitem {
                     product: "Towel".into(),
                     quantity: 2.0,
-                    size: Some(custom_output::ProductSize { size: 4 }),
+                    size: Some(ProductSize { size: 4 }),
                 },
-                custom_output::Lineitem {
+                Lineitem {
                     product: "Soap".into(),
                     quantity: 2.5,
                     size: None,
                 },
             ],
         })
+    }
+
+    async fn echo_shape(shape: Shape) -> async_graphql::Result<Shape> {
+        Ok(shape)
     }
 }

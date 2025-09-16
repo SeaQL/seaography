@@ -158,12 +158,13 @@ fn derive_custom_output_type_enum_units(
 fn derive_custom_output_type_enum_containers(
     ast: &DeriveInput,
     variants: Vec<Ident>,
-    _name: TokenStream,
+    name: TokenStream,
 ) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
 
     let mut possible_types: Vec<TokenStream> = Vec::new();
     let mut variant_matches: Vec<TokenStream> = Vec::new();
+    let mut field_value_matches: Vec<TokenStream> = Vec::new();
     for variant_ident in variants.iter() {
         let variant_value = quote! { stringify!(#variant_ident )};
 
@@ -177,6 +178,13 @@ fn derive_custom_output_type_enum_containers(
                     .with_type(#variant_value),
             )),
         });
+
+        field_value_matches.push(quote! {
+            #orig_ident::#variant_ident(inner) => Some(
+                async_graphql::dynamic::FieldValue::owned_any(inner)
+                    .with_type(#variant_value),
+            ),
+        });
     }
 
     let generics = &ast.generics;
@@ -187,6 +195,22 @@ fn derive_custom_output_type_enum_containers(
             fn to_union() -> async_graphql::dynamic::Union {
                 async_graphql::dynamic::Union::new(stringify!(#orig_ident))
                     #(#possible_types)*
+            }
+        }
+
+        impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
+            fn gql_output_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                async_graphql::dynamic::TypeRef::named_nn(#name)
+            }
+
+            fn gql_field_value(
+                value: Self,
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                match value {
+                    #(#field_value_matches)*
+                }
             }
         }
 

@@ -2,9 +2,9 @@ use super::*;
 use async_graphql;
 use async_graphql::Context;
 use async_graphql::Upload;
-use custom_inputs::RentalRequest;
 use sea_orm::{DbErr, EntityTrait};
 use seaography::CustomFields;
+use types::RentalRequest;
 
 pub struct Operations;
 

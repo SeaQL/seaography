@@ -12,15 +12,13 @@ sea-orm = { version = "~1.1.14", features = ["sqlx-sqlite", "runtime-async-std-r
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1.0.103" }
 
 [dependencies.seaography]
 path = "../../"
 version = "~1.1.4" # seaography version
 features = ["macros", "with-decimal", "with-chrono"]
-
-[dev-dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1.0.103" }
 
 [workspace]
 members = []

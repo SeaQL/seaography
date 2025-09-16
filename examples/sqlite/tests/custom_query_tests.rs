@@ -484,3 +484,137 @@ async fn test_custom_query_with_custom_output() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn test_custom_union() {
+    let schema = get_schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  echo_shape(
+                    shape: {
+                      Rectangle: {
+                        origin: { x: 3, y: 12 },
+                        size: { width: 20, height: 10},
+                      }
+                    }
+                  ) {
+                    __typename
+                    ... on Rectangle {
+                      origin { x y }
+                      size { width height }
+                      area
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "echo_shape": {
+            "__typename": "Rectangle",
+            "area": 200.0,
+            "origin": {
+              "x": 3.0,
+              "y": 12.0
+            },
+            "size": {
+              "height": 10.0,
+              "width": 20.0
+            }
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  echo_shape(
+                    shape: {
+                      Circle: {
+                        center: { x: 3, y: 12 },
+                        radius: 8
+                      }
+                    }
+                  ) {
+                    __typename
+                    ... on Circle {
+                      center { x y }
+                      radius
+                      area
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "echo_shape": {
+            "__typename": "Circle",
+            "area": 201.06192982974676,
+            "center": {
+              "x": 3.0,
+              "y": 12.0
+            },
+            "radius": 8.0
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  echo_shape(
+                    shape: {
+                      Triangle: {
+                        p1: { x: 0, y: 0 },
+                        p2: { x: 3, y: 0 },
+                        p3: { x: 0, y: 4 },
+                      }
+                    }
+                  ) {
+                    __typename
+                    ... on Triangle {
+                      p1 { x y }
+                      p2 { x y }
+                      p3 { x y }
+                      area
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "echo_shape": {
+            "__typename": "Triangle",
+            "area": 6.0,
+            "p1": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "p2": {
+              "x": 3.0,
+              "y": 0.0
+            },
+            "p3": {
+              "x": 0.0,
+              "y": 4.0
+            }
+          }
+        }
+        "#,
+    );
+}
