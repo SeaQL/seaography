@@ -63,11 +63,12 @@ pub fn schema(
         ]
     );
 
-    builder.register_custom_output_with_fields::<types::Rectangle>();
-    builder.register_custom_output_with_fields::<types::Circle>();
-    builder.register_custom_output_with_fields::<types::Triangle>();
+    seaography::register_complex_custom_outputs!(
+        builder,
+        [types::Rectangle, types::Circle, types::Triangle]
+    );
 
-    builder.register_custom_union::<types::Shape>();
+    seaography::register_custom_unions!(builder, [types::Shape]);
 
     seaography::register_custom_queries!(builder, [queries::Operations]);
 

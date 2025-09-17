@@ -320,7 +320,7 @@ impl Builder {
         self.outputs.push(T::basic_object(self.context));
     }
 
-    pub fn register_custom_output_with_fields<T>(&mut self)
+    pub fn register_complex_custom_output<T>(&mut self)
     where
         T: CustomOutputObject + CustomFields,
     {
@@ -544,8 +544,28 @@ pub trait RelationBuilder {
 }
 
 #[macro_export]
+macro_rules! impl_custom_output_type_for_entity {
+    ($name:ty) => {
+        #[allow(non_local_definitions)]
+        impl seaography::CustomOutputType for $name {
+            fn gql_output_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                <$name as seaography::GqlModelType>::gql_output_type_ref(ctx)
+            }
+
+            fn gql_field_value(value: Self) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                <$name as seaography::GqlModelType>::gql_field_value(value)
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
+        seaography::impl_custom_output_type_for_entity!($module_path::Model);
+
         $builder.register_entity::<$module_path::Entity>(
             <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
                 .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
@@ -616,6 +636,20 @@ macro_rules! register_custom_inputs {
 macro_rules! register_custom_outputs {
     ($builder:expr, [$($ty:path),+ $(,)?]) => {
         $($builder.register_custom_output::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_unions {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_union::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_complex_custom_outputs {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_complex_custom_output::<$ty>();)*
     };
 }
 
