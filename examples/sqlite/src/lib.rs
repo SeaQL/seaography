@@ -3,17 +3,17 @@ pub mod query_root;
 
 macro_rules! entity_custom_type {
     ($name:ty) => {
-        impl ::seaography::CustomOutputType for $name {
+        impl seaography::CustomOutputType for $name {
             fn gql_output_type_ref(
-                ctx: &'static ::seaography::BuilderContext,
+                ctx: &'static seaography::BuilderContext,
             ) -> ::async_graphql::dynamic::TypeRef {
-                <$name as ::seaography::GqlModelType>::gql_output_type_ref(ctx)
+                <$name as seaography::GqlModelType>::gql_output_type_ref(ctx)
             }
 
             fn gql_field_value(
                 value: Self,
             ) -> Option<::async_graphql::dynamic::FieldValue<'static>> {
-                <$name as ::seaography::GqlModelType>::gql_field_value(value)
+                <$name as seaography::GqlModelType>::gql_field_value(value)
             }
         }
     };
