@@ -78,6 +78,7 @@ impl Deref for LifecycleHooks {
 }
 
 impl MultiLifecycleHooks {
+    #[allow(clippy::should_implement_trait)]
     pub fn add<T: LifecycleHooksInterface + 'static>(mut self, t: T) -> Self {
         self.hooks.push(Box::new(t));
         self
