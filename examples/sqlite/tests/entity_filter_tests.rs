@@ -35,49 +35,14 @@ impl LifecycleHooksInterface for MyHooks {
     }
 }
 
-pub fn schema(
-    database: DatabaseConnection,
-    depth: Option<usize>,
-    complexity: Option<usize>,
-) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT, database.clone());
-    seaography::register_entities!(
-        builder,
-        [
-            actor,
-            address,
-            category,
-            city,
-            country,
-            customer,
-            film,
-            film_actor,
-            film_category,
-            film_text,
-            inventory,
-            language,
-            payment,
-            rental,
-            staff,
-            store,
-        ]
-    );
-    builder
-        .set_depth_limit(depth)
-        .set_complexity_limit(complexity)
-        .schema_builder()
-        .data(database)
-        .finish()
-}
-
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = schema(database, None, None).unwrap();
-
-    schema
+    seaography_sqlite_example::query_root::schema_builder(&CONTEXT, database, None, None)
+        .finish()
+        .unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -86,7 +51,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn only_store_2() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let stores_name = if cfg!(feature = "field-pluralize") {
         "stores"

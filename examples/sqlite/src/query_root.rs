@@ -14,7 +14,16 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT, database.clone());
+    schema_builder(&CONTEXT, database, depth, complexity).finish()
+}
+
+pub fn schema_builder(
+    context: &'static BuilderContext,
+    database: DatabaseConnection,
+    depth: Option<usize>,
+    complexity: Option<usize>,
+) -> SchemaBuilder {
+    let mut builder = Builder::new(context, database.clone());
 
     seaography::register_entities!(
         builder,
@@ -80,5 +89,4 @@ pub fn schema(
         .schema_builder()
         .enable_uploading()
         .data(database)
-        .finish()
 }
