@@ -4,14 +4,12 @@ use seaography::async_graphql;
 use serde::Deserialize;
 use serde_json::json;
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = seaography_sqlite_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_sqlite_example::query_root::schema(database, None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -20,7 +18,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn test_custom_query_with_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -113,7 +111,7 @@ async fn test_custom_query_with_pagination() {
 
 #[tokio::test]
 async fn test_custom_query_many() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -148,7 +146,7 @@ async fn test_custom_query_many() {
 
 #[tokio::test]
 async fn test_custom_query_with_no_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let json = schema
         .execute(
@@ -210,7 +208,7 @@ async fn test_custom_query_with_no_pagination() {
 
 #[tokio::test]
 async fn option_entity_object() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let query = r#"
         query($staffId: Int!) {
@@ -247,7 +245,7 @@ async fn option_entity_object() {
 
 #[tokio::test]
 async fn option_entity_object_relation_owner() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let query = r#"
         query($staffId: Int!) {
@@ -304,7 +302,7 @@ async fn option_entity_object_relation_owner() {
 
 #[tokio::test]
 async fn option_entity_object_relation_not_owner() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let query = r#"
         query($staffId: Int!) {
@@ -355,7 +353,7 @@ async fn option_entity_object_relation_not_owner() {
 
 #[tokio::test]
 async fn option_entity_object_via_relation_owner() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let query = r#"
         query($staffId: Int!) {
@@ -401,7 +399,7 @@ async fn option_entity_object_via_relation_owner() {
 
 #[tokio::test]
 async fn option_entity_object_via_relation_not_owner() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let query = r#"
         query($staffId: Int!) {
@@ -440,7 +438,7 @@ async fn option_entity_object_via_relation_not_owner() {
 
 #[tokio::test]
 async fn test_custom_query_with_custom_output() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -479,6 +477,140 @@ async fn test_custom_query_with_custom_output() {
                 "size": null
               }
             ]
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn test_custom_union() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  echo_shape(
+                    shape: {
+                      Rectangle: {
+                        origin: { x: 3, y: 12 },
+                        size: { width: 20, height: 10},
+                      }
+                    }
+                  ) {
+                    __typename
+                    ... on Rectangle {
+                      origin { x y }
+                      size { width height }
+                      area
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "echo_shape": {
+            "__typename": "Rectangle",
+            "area": 200.0,
+            "origin": {
+              "x": 3.0,
+              "y": 12.0
+            },
+            "size": {
+              "height": 10.0,
+              "width": 20.0
+            }
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  echo_shape(
+                    shape: {
+                      Circle: {
+                        center: { x: 3, y: 12 },
+                        radius: 8
+                      }
+                    }
+                  ) {
+                    __typename
+                    ... on Circle {
+                      center { x y }
+                      radius
+                      area
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "echo_shape": {
+            "__typename": "Circle",
+            "area": 201.06192982974676,
+            "center": {
+              "x": 3.0,
+              "y": 12.0
+            },
+            "radius": 8.0
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  echo_shape(
+                    shape: {
+                      Triangle: {
+                        p1: { x: 0, y: 0 },
+                        p2: { x: 3, y: 0 },
+                        p3: { x: 0, y: 4 },
+                      }
+                    }
+                  ) {
+                    __typename
+                    ... on Triangle {
+                      p1 { x y }
+                      p2 { x y }
+                      p3 { x y }
+                      area
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "echo_shape": {
+            "__typename": "Triangle",
+            "area": 6.0,
+            "p1": {
+              "x": 0.0,
+              "y": 0.0
+            },
+            "p2": {
+              "x": 3.0,
+              "y": 0.0
+            },
+            "p3": {
+              "x": 0.0,
+              "y": 4.0
+            }
           }
         }
         "#,

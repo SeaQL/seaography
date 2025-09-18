@@ -2,14 +2,12 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = seaography_sqlite_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_sqlite_example::query_root::schema(database, None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -18,7 +16,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn test_simple_query() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -65,7 +63,7 @@ async fn test_simple_query() {
 
 #[tokio::test]
 async fn test_simple_query_with_filter() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -105,7 +103,7 @@ async fn test_simple_query_with_filter() {
 
 #[tokio::test]
 async fn test_filter_with_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -154,7 +152,7 @@ async fn test_filter_with_pagination() {
 
 #[tokio::test]
 async fn test_complex_filter_with_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -203,7 +201,7 @@ async fn test_complex_filter_with_pagination() {
 
 #[tokio::test]
 async fn test_cursor_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -298,7 +296,7 @@ async fn test_cursor_pagination() {
 
 #[tokio::test]
 async fn test_cursor_pagination_prev() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -375,7 +373,7 @@ async fn test_cursor_pagination_prev() {
 
 #[tokio::test]
 async fn test_cursor_pagination_no_next() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -443,7 +441,7 @@ async fn test_cursor_pagination_no_next() {
 
 #[tokio::test]
 async fn test_self_ref() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -507,7 +505,7 @@ async fn test_self_ref() {
 
 #[tokio::test]
 async fn related_queries_filters() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -709,7 +707,7 @@ async fn related_queries_filters() {
 
 #[tokio::test]
 async fn related_queries_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema

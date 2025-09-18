@@ -2,19 +2,17 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect(
         &std::env::var("DATABASE_URL")
             .unwrap_or_else(|_| "postgres://sea:sea@127.0.0.1/sakila".to_owned()),
     )
     .await
     .unwrap();
-    let schema = seaography_postgres_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_postgres_example::query_root::schema(database, None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -23,7 +21,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn test_film_query() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -71,7 +69,7 @@ async fn test_film_query() {
 
 #[tokio::test]
 async fn test_film_query_by_array_contains() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -112,7 +110,7 @@ async fn test_film_query_by_array_contains() {
 
 #[tokio::test]
 async fn test_film_query_by_array_overlap() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -154,7 +152,7 @@ async fn test_film_query_by_array_overlap() {
 
 #[tokio::test]
 async fn test_film_query_by_json_eq() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema

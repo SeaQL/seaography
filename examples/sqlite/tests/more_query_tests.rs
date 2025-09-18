@@ -23,49 +23,14 @@ lazy_static::lazy_static! {
     };
 }
 
-pub fn schema(
-    database: DatabaseConnection,
-    depth: Option<usize>,
-    complexity: Option<usize>,
-) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT, database.clone());
-    seaography::register_entities!(
-        builder,
-        [
-            actor,
-            address,
-            category,
-            city,
-            country,
-            customer,
-            film,
-            film_actor,
-            film_category,
-            film_text,
-            inventory,
-            language,
-            payment,
-            rental,
-            staff,
-            store,
-        ]
-    );
-    builder
-        .set_depth_limit(depth)
-        .set_complexity_limit(complexity)
-        .schema_builder()
-        .data(database)
-        .finish()
-}
-
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = schema(database, None, None).unwrap();
-
-    schema
+    seaography_sqlite_example::query_root::schema_builder(&CONTEXT, database, None, None)
+        .finish()
+        .unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -74,7 +39,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn filter_is_null() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -199,7 +164,7 @@ async fn filter_is_null() {
 
 #[tokio::test]
 async fn test_default_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -253,7 +218,7 @@ async fn test_default_pagination() {
 
 #[tokio::test]
 async fn test_pagination_error() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let response = schema
         .execute(

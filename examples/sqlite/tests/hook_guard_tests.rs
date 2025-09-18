@@ -1,10 +1,10 @@
 use async_graphql::{
-    dynamic::{FieldValue, ResolverContext, Schema, SchemaError},
+    dynamic::{FieldValue, ResolverContext, Schema},
     Request, Response, Variables,
 };
-use sea_orm::{entity::prelude::async_trait, Database, DatabaseConnection};
+use sea_orm::{entity::prelude::async_trait, Database};
 use seaography::{
-    async_graphql, lazy_static, Builder, BuilderContext, GuardAction, LifecycleHooks,
+    async_graphql, lazy_static, BuilderContext, GuardAction, LifecycleHooks,
     LifecycleHooksInterface, OperationType,
 };
 use seaography_sqlite_example::entities::*;
@@ -168,54 +168,21 @@ impl LifecycleHooksInterface for MyHooks {
     }
 }
 
-fn schema(
-    database: DatabaseConnection,
-    log: Log,
-    permissions: Permissions,
-    depth: Option<usize>,
-    complexity: Option<usize>,
-) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT, database.clone());
-    seaography::register_entities!(
-        builder,
-        [
-            actor,
-            address,
-            category,
-            city,
-            country,
-            customer,
-            film,
-            film_actor,
-            film_category,
-            film_text,
-            inventory,
-            language,
-            payment,
-            rental,
-            staff,
-            store,
-        ]
-    );
-    builder
-        .set_depth_limit(depth)
-        .set_complexity_limit(complexity)
-        .schema_builder()
-        .data(database)
-        .data(log)
-        .data(permissions)
-        .finish()
-}
-
-async fn get_schema(permissions: Permissions) -> (Schema, Log) {
+async fn schema(permissions: Permissions) -> (Schema, Log) {
     let log = Log::default();
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = schema(database, log.clone(), permissions, None, None).unwrap();
+
+    let schema =
+        seaography_sqlite_example::query_root::schema_builder(&CONTEXT, database, None, None)
+            .data(log.clone())
+            .data(permissions)
+            .finish()
+            .unwrap();
 
     (schema, log)
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -225,7 +192,7 @@ pub fn assert_eq(a: Response, b: &str) {
 #[tokio::test]
 async fn entity_guard() {
     let permissions = Permissions::default();
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
 
     assert_eq(
         schema
@@ -317,7 +284,7 @@ async fn entity_guard() {
 #[tokio::test]
 async fn field_guard() {
     let permissions = Permissions::default();
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
 
     let response = schema
         .execute(
@@ -352,7 +319,7 @@ async fn field_guard() {
 #[tokio::test]
 async fn field_guard_mutation() {
     let permissions = Permissions::default();
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
 
     let response = schema
         .execute(
@@ -381,7 +348,7 @@ async fn field_guard_mutation() {
 #[tokio::test]
 async fn entity_watch_mutation() {
     let permissions = Permissions::default();
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
 
     assert_eq(
         schema
@@ -455,7 +422,7 @@ async fn entity_watch_mutation() {
 async fn permissions() {
     let mut permissions = Permissions::default();
     permissions.actors.insert(3);
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = r#"
         query ($actorId: Int!) {
             actor(filters: { actorId: { eq: $actorId } }) {
@@ -506,7 +473,7 @@ async fn entity_object_relation_owner1() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
     permissions.staff.insert(2);
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
     let query = entity_object_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -541,7 +508,7 @@ async fn entity_object_relation_owner2() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
     permissions.staff.insert(2);
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
     let query = entity_object_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 2 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -574,7 +541,7 @@ async fn entity_object_relation_owner3() {
     // be non-empty
     let mut permissions = Permissions::default();
     permissions.staff.insert(2);
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = entity_object_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -591,7 +558,7 @@ async fn entity_object_relation_owner4() {
     // Check that access to selfRefReverse is denied in the case where it would otherwise
     // be an empty list
     let permissions = Permissions::default();
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = entity_object_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 2 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -623,7 +590,7 @@ async fn entity_object_relation_not_owner1() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
     permissions.staff.insert(2);
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
     let query = entity_object_relation_not_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -653,7 +620,7 @@ async fn entity_object_relation_not_owner2() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
     permissions.staff.insert(2);
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
     let query = entity_object_relation_not_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 2 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -685,7 +652,7 @@ async fn entity_object_relation_not_owner2() {
 async fn entity_object_relation_not_owner3() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(2);
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = entity_object_relation_not_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -701,7 +668,7 @@ async fn entity_object_relation_not_owner3() {
 async fn entity_object_relation_not_owner4() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = entity_object_relation_not_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 2 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -737,7 +704,7 @@ fn entity_object_via_relation_owner_query() -> String {
 async fn entity_object_via_relation_owner1() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(2);
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
     let query = entity_object_via_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 2 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -772,7 +739,7 @@ async fn entity_object_via_relation_owner1() {
 async fn entity_object_via_relation_owner2() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = entity_object_via_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 2 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -800,7 +767,7 @@ fn entity_object_via_relation_not_owner_query() -> String {
 async fn entity_object_via_relation_not_owner1() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
-    let (schema, log) = get_schema(permissions).await;
+    let (schema, log) = schema(permissions).await;
     let query = entity_object_via_relation_not_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;
@@ -832,7 +799,7 @@ async fn entity_object_via_relation_not_owner1() {
 async fn entity_object_via_relation_not_owner2() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(2);
-    let (schema, _log) = get_schema(permissions).await;
+    let (schema, _log) = schema(permissions).await;
     let query = entity_object_via_relation_not_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
     let response = schema.execute(Request::new(&query).variables(vars)).await;

@@ -2,14 +2,12 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = seaography_sqlite_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_sqlite_example::query_root::schema(database, None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -18,7 +16,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn test_custom_mutations() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -52,7 +50,7 @@ async fn test_custom_mutations() {
 
 #[tokio::test]
 async fn test_custom_mutation_with_custom_input() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -124,7 +122,7 @@ async fn test_custom_mutation_with_custom_input() {
 
 #[tokio::test]
 async fn test_custom_mutation_with_optional_custom_input() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -172,7 +170,7 @@ async fn test_custom_mutation_with_optional_custom_input() {
 
 #[tokio::test]
 async fn test_custom_mutation_with_vec_custom_input() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema

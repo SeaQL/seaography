@@ -3,10 +3,9 @@ use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
 use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
 
-mod custom_inputs;
-mod custom_output;
 mod mutations;
 mod queries;
+mod types;
 
 lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
 
@@ -15,7 +14,16 @@ pub fn schema(
     depth: Option<usize>,
     complexity: Option<usize>,
 ) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT, database.clone());
+    schema_builder(&CONTEXT, database, depth, complexity).finish()
+}
+
+pub fn schema_builder(
+    context: &'static BuilderContext,
+    database: DatabaseConnection,
+    depth: Option<usize>,
+    complexity: Option<usize>,
+) -> SchemaBuilder {
+    let mut builder = Builder::new(context, database.clone());
 
     seaography::register_entities!(
         builder,
@@ -41,17 +49,35 @@ pub fn schema(
 
     seaography::register_custom_inputs!(
         builder,
-        [custom_inputs::RentalRequest, custom_inputs::Location]
+        [
+            types::RentalRequest,
+            types::Location,
+            types::Point,
+            types::Size,
+            types::Rectangle,
+            types::Circle,
+            types::Triangle,
+            types::Shape,
+        ]
     );
 
     seaography::register_custom_outputs!(
         builder,
         [
-            custom_output::PurchaseOrder,
-            custom_output::Lineitem,
-            custom_output::ProductSize
+            types::PurchaseOrder,
+            types::Lineitem,
+            types::ProductSize,
+            types::Point,
+            types::Size,
         ]
     );
+
+    seaography::register_complex_custom_outputs!(
+        builder,
+        [types::Rectangle, types::Circle, types::Triangle]
+    );
+
+    seaography::register_custom_unions!(builder, [types::Shape]);
 
     seaography::register_custom_queries!(builder, [queries::Operations]);
 
@@ -63,5 +89,4 @@ pub fn schema(
         .schema_builder()
         .enable_uploading()
         .data(database)
-        .finish()
 }

@@ -28,7 +28,7 @@ lazy_static::lazy_static! {
     };
 }
 
-pub fn schema(
+fn schema(
     database: DatabaseConnection,
     depth: Option<usize>,
     complexity: Option<usize>,
@@ -267,7 +267,7 @@ pub fn schema(
         .finish()
 }
 
-pub async fn get_schema() -> Schema {
+async fn get_schema() -> Schema {
     let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
@@ -276,7 +276,7 @@ pub async fn get_schema() -> Schema {
     schema
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()

@@ -11,16 +11,14 @@ async fn main() {
     test_delete_mutation().await;
 }
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let schema = seaography_postgres_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_postgres_example::query_root::schema(database, None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -28,7 +26,7 @@ pub fn assert_eq(a: Response, b: &str) {
 }
 
 async fn test_simple_insert_one() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -110,7 +108,7 @@ async fn test_simple_insert_one() {
 }
 
 async fn test_complex_insert_one() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -216,7 +214,7 @@ async fn test_complex_insert_one() {
 }
 
 async fn test_create_batch_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -349,7 +347,7 @@ async fn test_create_batch_mutation() {
 }
 
 async fn test_update_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -495,7 +493,7 @@ async fn test_update_mutation() {
 }
 
 async fn test_delete_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema

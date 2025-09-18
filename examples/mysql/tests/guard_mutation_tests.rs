@@ -1,9 +1,8 @@
 use std::collections::BTreeMap;
 
 use async_graphql::{dynamic::*, Response};
-use sea_orm::{Database, DatabaseConnection};
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext, FnGuard, GuardsConfig};
-use seaography_mysql_example::entities::*;
+use sea_orm::Database;
+use seaography::{async_graphql, lazy_static, BuilderContext, FnGuard, GuardsConfig};
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {
@@ -26,52 +25,16 @@ lazy_static::lazy_static! {
     };
 }
 
-pub fn schema(
-    database: DatabaseConnection,
-    depth: Option<usize>,
-    complexity: Option<usize>,
-) -> Result<Schema, SchemaError> {
-    let mut builder = Builder::new(&CONTEXT, database.clone());
-    seaography::register_entities!(
-        builder,
-        [
-            actor,
-            address,
-            category,
-            city,
-            country,
-            customer,
-            film,
-            film_actor,
-            film_category,
-            film_text,
-            inventory,
-            language,
-            payment,
-            rental,
-            staff,
-            store,
-        ]
-    );
-    builder.register_enumeration::<sea_orm_active_enums::Rating>();
-    builder
-        .set_depth_limit(depth)
-        .set_complexity_limit(complexity)
-        .schema_builder()
-        .data(database)
-        .finish()
-}
-
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let schema = schema(database, None, None).unwrap();
-
-    schema
+    seaography_mysql_example::query_root::schema_builder(&CONTEXT, database, None, None)
+        .finish()
+        .unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -80,7 +43,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn entity_guard_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -143,7 +106,7 @@ async fn entity_guard_mutation() {
 
 #[tokio::test]
 async fn field_guard_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     let response = schema
         .execute(
