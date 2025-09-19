@@ -8,10 +8,6 @@ use async_graphql::{
     dynamic::{FieldValue, TypeRef, ValueAccessor},
     Upload,
 };
-#[cfg(feature = "with-chrono")]
-use chrono::{DateTime, Utc};
-#[cfg(feature = "with-uuid")]
-use uuid::Uuid;
 
 macro_rules! impl_primitive {
     ($name:ty, $method:tt) => {
@@ -55,119 +51,75 @@ impl_primitive!(i64, i64);
 impl_primitive!(f32, f32);
 impl_primitive!(f64, f64);
 
-impl CustomInputType for String {
-    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
-        <String as GqlScalarValueType>::gql_input_type_ref(ctx)
-    }
+macro_rules! impl_scalar_type {
+    ($type:ty) => {
+        impl CustomInputType for $type {
+            fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+                <$type as GqlScalarValueType>::gql_input_type_ref(ctx)
+            }
 
-    fn parse_value(
-        _context: &'static BuilderContext,
-        value: Option<ValueAccessor<'_>>,
-    ) -> SeaResult<Self> {
-        match value {
-            None => Err(SeaographyError::AsyncGraphQLError("Value expected".into())),
-            Some(v) => Ok(v.string()?.to_owned()),
-        }
-    }
-}
-
-impl CustomOutputType for String {
-    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef {
-        <String as GqlScalarValueType>::gql_output_type_ref(ctx)
-    }
-
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::value(value))
-    }
-}
-
-#[cfg(feature = "with-uuid")]
-impl CustomInputType for Uuid {
-    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
-        <Uuid as GqlScalarValueType>::gql_input_type_ref(ctx)
-    }
-
-    fn parse_value(
-        _context: &'static BuilderContext,
-        value: Option<ValueAccessor<'_>>,
-    ) -> SeaResult<Self> {
-        use std::str::FromStr;
-        match value {
-            None => Err(SeaographyError::AsyncGraphQLError("Value expected".into())),
-            Some(v) => {
-                let s = v.string()?;
-                Ok(Uuid::from_str(s).map_err(|e| SeaographyError::AsyncGraphQLError(e.into()))?)
+            fn parse_value(
+                context: &'static BuilderContext,
+                value: Option<ValueAccessor<'_>>,
+            ) -> SeaResult<Self> {
+                <$type as GqlScalarValueType>::parse_value(context, value)
             }
         }
-    }
+
+        impl CustomOutputType for $type {
+            fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef {
+                <$type as GqlScalarValueType>::gql_output_type_ref(ctx)
+            }
+
+            fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+                <$type as GqlScalarValueType>::to_graphql_value(value).map(FieldValue::value)
+            }
+        }
+    };
 }
+
+impl_scalar_type!(String);
+
+impl_scalar_type!(serde_json::Value);
+
+#[cfg(feature = "with-chrono")]
+impl_scalar_type!(sea_orm::entity::prelude::ChronoDate);
+
+#[cfg(feature = "with-chrono")]
+impl_scalar_type!(sea_orm::entity::prelude::ChronoTime);
+
+#[cfg(feature = "with-chrono")]
+impl_scalar_type!(sea_orm::entity::prelude::ChronoDateTime);
+
+#[cfg(feature = "with-chrono")]
+impl_scalar_type!(sea_orm::entity::prelude::ChronoDateTimeWithTimeZone);
+
+#[cfg(feature = "with-chrono")]
+impl_scalar_type!(sea_orm::entity::prelude::ChronoDateTimeUtc);
+
+#[cfg(feature = "with-chrono")]
+impl_scalar_type!(sea_orm::entity::prelude::ChronoDateTimeLocal);
+
+#[cfg(feature = "with-time")]
+impl_scalar_type!(sea_orm::entity::prelude::TimeDate);
+
+#[cfg(feature = "with-time")]
+impl_scalar_type!(sea_orm::entity::prelude::TimeTime);
+
+#[cfg(feature = "with-time")]
+impl_scalar_type!(sea_orm::entity::prelude::TimeDateTime);
+
+#[cfg(feature = "with-time")]
+impl_scalar_type!(sea_orm::entity::prelude::TimeDateTimeWithTimeZone);
+
+#[cfg(feature = "with-decimal")]
+impl_scalar_type!(sea_orm::entity::prelude::Decimal);
+
+#[cfg(feature = "with-bigdecimal")]
+impl_scalar_type!(sea_orm::entity::prelude::BigDecimal);
 
 #[cfg(feature = "with-uuid")]
-impl CustomOutputType for Uuid {
-    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef {
-        <Uuid as GqlScalarValueType>::gql_output_type_ref(ctx)
-    }
-
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::value(value.to_string()))
-    }
-}
-
-#[cfg(feature = "with-chrono")]
-impl CustomInputType for DateTime<Utc> {
-    fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef {
-        <DateTime<Utc> as GqlScalarValueType>::gql_input_type_ref(ctx)
-    }
-
-    fn parse_value(
-        context: &'static BuilderContext,
-        value: Option<ValueAccessor<'_>>,
-    ) -> SeaResult<Self> {
-        <DateTime<Utc> as GqlScalarValueType>::parse_value(context, value)
-    }
-}
-
-#[cfg(feature = "with-chrono")]
-impl CustomOutputType for DateTime<Utc> {
-    fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef {
-        <DateTime<Utc> as GqlScalarValueType>::gql_output_type_ref(ctx)
-    }
-
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::value(async_graphql::Value::String(
-            value.to_string(),
-        )))
-    }
-}
-
-impl CustomInputType for serde_json::Value {
-    fn gql_input_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
-        TypeRef::named_nn("Json")
-    }
-
-    fn parse_value(
-        _context: &'static BuilderContext,
-        value: Option<ValueAccessor<'_>>,
-    ) -> SeaResult<Self> {
-        match value {
-            None => Err(SeaographyError::AsyncGraphQLError("Value expected".into())),
-            Some(value) => Ok(value.deserialize()?),
-        }
-    }
-}
-
-impl CustomOutputType for serde_json::Value {
-    fn gql_output_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
-        TypeRef::named_nn("Json")
-    }
-
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        // TODO check that this can't fail
-        Some(FieldValue::value(
-            async_graphql::Value::from_json(value).unwrap(),
-        ))
-    }
-}
+impl_scalar_type!(sea_orm::entity::prelude::Uuid);
 
 impl<T> CustomInputType for Option<T>
 where

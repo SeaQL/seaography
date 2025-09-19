@@ -1,7 +1,7 @@
-use async_graphql::{dynamic::*, Response};
-use sea_orm::{ColumnTrait, Condition, Database, DatabaseConnection};
+use async_graphql::dynamic::*;
+use sea_orm::{ColumnTrait, Condition, Database};
 use seaography::{
-    async_graphql, lazy_static, Builder, BuilderContext, LifecycleHooks, LifecycleHooksInterface,
+    async_graphql, lazy_static, BuilderContext, LifecycleHooks, LifecycleHooksInterface,
     OperationType,
 };
 use seaography_sqlite_example::entities::*;
@@ -40,13 +40,6 @@ async fn schema() -> Schema {
     seaography_sqlite_example::query_root::schema_builder(&CONTEXT, database, None, None)
         .finish()
         .unwrap()
-}
-
-fn assert_eq(a: Response, b: &str) {
-    assert_eq!(
-        a.data.into_json().unwrap(),
-        serde_json::from_str::<serde_json::Value>(b).unwrap()
-    )
 }
 
 #[tokio::test]

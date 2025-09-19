@@ -40,12 +40,12 @@ impl Operations {
             lineitems: vec![
                 Lineitem {
                     product: "Towel".into(),
-                    quantity: 2.0,
+                    quantity: "2".parse().unwrap(),
                     size: Some(ProductSize { size: 4 }),
                 },
                 Lineitem {
                     product: "Soap".into(),
-                    quantity: 2.5,
+                    quantity: "2.5".parse().unwrap(),
                     size: None,
                 },
             ],

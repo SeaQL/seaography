@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use async_graphql::{dynamic::*, Response};
-use sea_orm::{Database, DatabaseConnection};
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext, FnGuard, GuardsConfig};
+use sea_orm::Database;
+use seaography::{async_graphql, lazy_static, BuilderContext, FnGuard, GuardsConfig};
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {

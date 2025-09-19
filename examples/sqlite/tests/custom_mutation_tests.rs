@@ -60,6 +60,7 @@ async fn test_custom_mutation_with_custom_input() {
                   rental_request(rental_request: {
                     customer: "Alice"
                     film: "Star Wars"
+                    timestamp: "2025-01-01 02:03:05 UTC"
                   })
                 }
                 "#,
@@ -83,6 +84,7 @@ async fn test_custom_mutation_with_custom_input() {
                     location: {
                       city: "Riverside"
                     }
+                    timestamp: "2025-01-01 02:03:05 UTC"
                   })
                 }
                 "#,
@@ -107,6 +109,7 @@ async fn test_custom_mutation_with_custom_input() {
                       city: "Riverside"
                       county: "West"
                     }
+                    timestamp: "2025-01-01 02:03:05 UTC"
                   })
                 }
                 "#,
@@ -151,8 +154,10 @@ async fn test_custom_mutation_with_optional_custom_input() {
                   maybe_rental_request(rental_request: {
                     customer: "Bob"
                     film: "Star Trek"
+                    timestamp: "2022-11-14 10:30:10 UTC"
                   }) {
                     rentalId
+                    lastUpdate
                   }
                 }
                 "#,
@@ -161,7 +166,8 @@ async fn test_custom_mutation_with_optional_custom_input() {
         r#"
         {
           "maybe_rental_request": {
-            "rentalId": 1
+            "rentalId": 1,
+            "lastUpdate": "2022-11-14 10:30:12 UTC"
           }
         }
         "#,
@@ -178,8 +184,16 @@ async fn test_custom_mutation_with_vec_custom_input() {
                 r#"
                 mutation {
                   many_rental_request(rental_requests: [
-                    { customer: "Alice" film: "Star Wars" },
-                    { customer: "Bob" film: "Star Trek" }
+                    {
+                      customer: "Alice"
+                      film: "Star Wars"
+                      timestamp: "2022-11-14 10:30:10 UTC"
+                    },
+                    {
+                      customer: "Bob"
+                      film: "Star Trek"
+                      timestamp: "2022-11-14 10:30:10 UTC"
+                    }
                   ])
                 }
                 "#,

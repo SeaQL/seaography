@@ -1,10 +1,8 @@
 use async_graphql::{dynamic::*, Response};
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::Database;
 use seaography::{
-    async_graphql, lazy_static, Builder, BuilderContext, EntityQueryFieldConfig,
-    PaginationInputConfig,
+    async_graphql, lazy_static, BuilderContext, EntityQueryFieldConfig, PaginationInputConfig,
 };
-use seaography_sqlite_example::entities::*;
 
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {

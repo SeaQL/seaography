@@ -1,4 +1,5 @@
 use async_graphql;
+use sea_orm::entity::prelude::{DateTimeUtc, Decimal};
 use seaography::{CustomFields, CustomInputType, CustomOutputType};
 use serde::Deserialize;
 
@@ -7,6 +8,7 @@ pub struct RentalRequest {
     pub customer: String,
     pub film: String,
     pub location: Option<Location>,
+    pub timestamp: DateTimeUtc,
 }
 
 #[derive(Clone, CustomInputType)]
@@ -24,7 +26,7 @@ pub struct PurchaseOrder {
 #[derive(Clone, CustomOutputType)]
 pub struct Lineitem {
     pub product: String,
-    pub quantity: f64,
+    pub quantity: Decimal,
     pub size: Option<ProductSize>,
 }
 
