@@ -156,6 +156,7 @@ impl EntityObjectBuilder {
                     .and_then(|options| options.output_conversion.as_ref());
 
                 let hooks = &self.context.hooks;
+                let context = self.context;
 
                 let field = Field::new(column_name.clone(), graphql_type, move |ctx| {
                     if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
@@ -190,6 +191,7 @@ impl EntityObjectBuilder {
                     }
 
                     FieldFuture::from_value(sea_query_value_to_graphql_value(
+                        context,
                         object.get(column),
                         is_enum,
                     ))
@@ -247,6 +249,7 @@ impl EntityObjectBuilder {
 }
 
 pub(crate) fn sea_query_value_to_graphql_value(
+    _context: &'static BuilderContext,
     sea_query_value: sea_orm::sea_query::Value,
     is_enum: bool,
 ) -> Option<Value> {
@@ -276,7 +279,8 @@ pub(crate) fn sea_query_value_to_graphql_value(
             Value::List(
                 it.into_iter()
                     .map(|item| {
-                        sea_query_value_to_graphql_value(item, is_enum).unwrap_or(Value::Null)
+                        sea_query_value_to_graphql_value(_context, item, is_enum)
+                            .unwrap_or(Value::Null)
                     })
                     .collect(),
             )
@@ -307,21 +311,33 @@ pub(crate) fn sea_query_value_to_graphql_value(
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.to_rfc3339()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.to_rfc3339()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.to_rfc3339()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
@@ -339,9 +355,14 @@ pub(crate) fn sea_query_value_to_graphql_value(
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.format(&time::format_description::well_known::Rfc3339)
+                    .unwrap()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-uuid")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]

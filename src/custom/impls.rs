@@ -16,8 +16,8 @@ macro_rules! impl_primitive {
                 <$name as GqlScalarValueType>::gql_output_type_ref(ctx)
             }
 
-            fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-                Some(FieldValue::value(value))
+            fn gql_field_value(self, _ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+                Some(FieldValue::value(self))
             }
         }
 
@@ -27,7 +27,7 @@ macro_rules! impl_primitive {
             }
 
             fn parse_value(
-                _context: &'static BuilderContext,
+                _ctx: &'static BuilderContext,
                 value: Option<ValueAccessor<'_>>,
             ) -> SeaResult<Self> {
                 match value {
@@ -71,8 +71,8 @@ macro_rules! impl_scalar_type {
                 <$type as GqlScalarValueType>::gql_output_type_ref(ctx)
             }
 
-            fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-                <$type as GqlScalarValueType>::to_graphql_value(value).map(FieldValue::value)
+            fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+                <$type as GqlScalarValueType>::to_graphql_value(self, ctx).map(FieldValue::value)
             }
         }
     };
@@ -159,9 +159,9 @@ where
         }
     }
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        match value {
-            Some(value) => T::gql_field_value(value),
+    fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        match self {
+            Some(value) => T::gql_field_value(value, ctx),
             None => None,
         }
     }
@@ -212,12 +212,12 @@ where
         )))))
     }
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
+    fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
         let mut items: Vec<FieldValue<'static>> = Vec::new();
         // TODO: Figure out what the right behaviour is here in the case where
         // T::gql_field_value returns None. For now, we just skip such values.
-        for v in value.into_iter() {
-            if let Some(item) = T::gql_field_value(v) {
+        for v in self.into_iter() {
+            if let Some(item) = T::gql_field_value(v, ctx) {
                 items.push(item);
             }
         }
@@ -231,7 +231,7 @@ impl CustomInputType for Upload {
     }
 
     fn parse_value(
-        _context: &'static BuilderContext,
+        _ctx: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self> {
         Ok(<Upload as async_graphql::InputType>::parse(
@@ -259,8 +259,8 @@ impl CustomOutputType for PageInfo {
         TypeRef::named_nn(page_info_object_builder.type_name())
     }
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::owned_any(value))
+    fn gql_field_value(self, _ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        Some(FieldValue::owned_any(self))
     }
 }
 
@@ -270,8 +270,8 @@ impl CustomOutputType for PaginationInfo {
         TypeRef::named_nn(page_info_object_builder.type_name())
     }
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::owned_any(value))
+    fn gql_field_value(self, _ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        Some(FieldValue::owned_any(self))
     }
 }
 
@@ -287,7 +287,7 @@ where
         TypeRef::named_nn(ConnectionObjectBuilder { context: ctx }.type_name(&object_name))
     }
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::owned_any(value))
+    fn gql_field_value(self, _ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        Some(FieldValue::owned_any(self))
     }
 }

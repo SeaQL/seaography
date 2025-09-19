@@ -137,7 +137,7 @@ fn signature_to_field(
                     async_graphql::dynamic::FieldFuture::new(async move {
                         Ok(seaography::CustomOutputType::gql_field_value(#fn_expr(
                             #(#resolve_args)*
-                        ).await?))
+                        ).await?, context))
                     })
                 })
                 #(#arguments)*

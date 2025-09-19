@@ -41,6 +41,8 @@ pub struct TypesMapConfig {
     pub decimal_library: DecimalLibrary,
     /// expose JSON as scalar type using the following type name
     pub json_type: String,
+    /// Use RFC3339 for timestamp format
+    pub timestamp_rfc3339: bool,
 }
 
 impl std::default::Default for TypesMapConfig {
@@ -62,6 +64,7 @@ impl std::default::Default for TypesMapConfig {
             #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
             decimal_library: DecimalLibrary::BigDecimal,
             json_type: "Json".into(),
+            timestamp_rfc3339: false,
         }
     }
 }

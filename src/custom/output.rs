@@ -5,7 +5,7 @@ pub use seaography_macros::CustomOutputType;
 
 pub trait CustomOutputType {
     fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>>;
+    fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>>;
 }
 
 pub trait CustomOutputObject {

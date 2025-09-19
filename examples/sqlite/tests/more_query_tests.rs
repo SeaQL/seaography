@@ -2,6 +2,7 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::{
     async_graphql, lazy_static, BuilderContext, EntityQueryFieldConfig, PaginationInputConfig,
+    TypesMapConfig,
 };
 
 lazy_static::lazy_static! {
@@ -14,6 +15,10 @@ lazy_static::lazy_static! {
             pagination_input: PaginationInputConfig{
               default_limit: Some(3),
               max_limit: Some(10),
+              ..Default::default()
+            },
+            types: TypesMapConfig {
+              timestamp_rfc3339: true,
               ..Default::default()
             },
             ..Default::default()
@@ -244,4 +249,38 @@ async fn test_pagination_error() {
         response.errors[0].message,
         "Query Error: Requested pagination limit (11) exceeds maximum allowed (10)"
     );
+}
+
+#[tokio::test]
+async fn test_timestamp_format() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                    film(filters:{filmId: {eq: 1}}) {
+                      nodes {
+                        title
+                        lastUpdate
+                      }
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "film": {
+              "nodes": [
+                {
+                  "title": "ACADEMY DINOSAUR",
+                  "lastUpdate": "2022-11-14T10:30:09+00:00"
+                }
+              ]
+            }
+        }
+        "#,
+    )
 }

@@ -554,8 +554,11 @@ macro_rules! impl_custom_output_type_for_entity {
                 <$name as seaography::GqlModelType>::gql_output_type_ref(ctx)
             }
 
-            fn gql_field_value(value: Self) -> Option<async_graphql::dynamic::FieldValue<'static>> {
-                <$name as seaography::GqlModelType>::gql_field_value(value)
+            fn gql_field_value(
+                self,
+                ctx: &'static seaography::BuilderContext,
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                <$name as seaography::GqlModelType>::gql_field_value(self, ctx)
             }
         }
     };

@@ -187,7 +187,7 @@ async fn test_custom_mutation_with_vec_custom_input() {
                     {
                       customer: "Alice"
                       film: "Star Wars"
-                      timestamp: "2022-11-14 10:30:10 UTC"
+                      timestamp: "2022-11-14T10:30:10+00:00"
                     },
                     {
                       customer: "Bob"

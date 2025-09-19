@@ -54,7 +54,7 @@ fn derive_custom_output_type_struct(
                     async_graphql::dynamic::FieldFuture::new(async move {
                         let obj = seaography::try_downcast_ref::<#orig_ident #ty_generics>(ctx.parent_value)?;
                         Ok(<#field_ty as seaography::CustomOutputType>::gql_field_value(
-                            obj.#field_ident.clone()
+                            obj.#field_ident.clone(), context
                         ))
                     })
                 }))
@@ -78,16 +78,12 @@ fn derive_custom_output_type_struct(
 
     Ok(quote! {
         impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
-            fn gql_output_type_ref(
-                ctx: &'static seaography::BuilderContext,
-            ) -> async_graphql::dynamic::TypeRef {
+            fn gql_output_type_ref(ctx: &'static seaography::BuilderContext) -> async_graphql::dynamic::TypeRef {
                 async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
-            fn gql_field_value(
-                value: Self,
-            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
-                Some(async_graphql::dynamic::FieldValue::owned_any(value))
+            fn gql_field_value(self, ctx: &'static seaography::BuilderContext) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                Some(async_graphql::dynamic::FieldValue::owned_any(self))
             }
         }
 
@@ -138,16 +134,12 @@ fn derive_custom_output_type_enum_units(
 
     Ok(quote! {
         impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
-            fn gql_output_type_ref(
-                ctx: &'static seaography::BuilderContext,
-            ) -> async_graphql::dynamic::TypeRef {
+            fn gql_output_type_ref(ctx: &'static seaography::BuilderContext) -> async_graphql::dynamic::TypeRef {
                 async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
-            fn gql_field_value(
-                value: Self,
-            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
-                match value {
+            fn gql_field_value(self, ctx: &'static seaography::BuilderContext) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                match self {
                     #(#variants_gql_field_value)*
                 }
             }
@@ -205,10 +197,8 @@ fn derive_custom_output_type_enum_containers(
                 async_graphql::dynamic::TypeRef::named_nn(#name)
             }
 
-            fn gql_field_value(
-                value: Self,
-            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
-                match value {
+            fn gql_field_value(self, ctx: &'static seaography::BuilderContext) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                match self {
                     #(#field_value_matches)*
                 }
             }

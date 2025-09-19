@@ -45,14 +45,14 @@ pub trait GqlScalarValueType: Sized {
     }
 
     fn parse_value(
-        context: &'static BuilderContext,
+        ctx: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
-    fn to_graphql_value(self) -> Option<async_graphql::Value>;
+    fn to_graphql_value(self, ctx: &'static BuilderContext) -> Option<async_graphql::Value>;
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Self::to_graphql_value(value).map(FieldValue::value)
+    fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        Self::to_graphql_value(self, ctx).map(FieldValue::value)
     }
 }
 
@@ -69,12 +69,12 @@ pub trait GqlModelType: Sized + Send + Sync + 'static {
     }
 
     fn parse_value(
-        context: &'static BuilderContext,
+        ctx: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
     ) -> SeaResult<Self>;
 
-    fn gql_field_value(value: Self) -> Option<FieldValue<'static>> {
-        Some(FieldValue::owned_any(value))
+    fn gql_field_value(self, _ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        Some(FieldValue::owned_any(self))
     }
 }
 
@@ -117,9 +117,9 @@ where
         }
     }
 
-    fn to_graphql_value(self) -> Option<async_graphql::Value> {
+    fn to_graphql_value(self, ctx: &'static BuilderContext) -> Option<async_graphql::Value> {
         Some(
-            sea_query_value_to_graphql_value(self.into(), false)
+            sea_query_value_to_graphql_value(ctx, self.into(), false)
                 .unwrap_or(async_graphql::Value::Null),
         )
     }
