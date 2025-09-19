@@ -1,0 +1,59 @@
+[package]
+name = "sea-draw"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+async-graphql-axum = { version = "7" }
+axum = { version = "0.8.*", features = ["ws"] }
+chrono = { version = "0.4.30", default-features = false }
+clap = { version = "4.5", features = ["derive", "env"] }
+dotenv = "0.15.0"
+reqwest = { version = "0.12", features = [
+    "json",
+    "deflate",
+    "rustls-tls",
+    "multipart",
+], default-features = false }
+sea-orm = { version = "~1.1.14", features = [
+    "sqlx-sqlite",
+    "sqlx-postgres",
+    "sqlx-mysql",
+    "runtime-async-std-rustls",
+    "seaography",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1.0.103" }
+sqlx = { version = "0.8.6", default-features = false, features = [
+    "chrono",
+    "json",
+    "macros",
+    "postgres",
+    "runtime-tokio-rustls",
+    "uuid",
+] }
+tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
+tokio-stream = "0.1"
+tracing = { version = "0.1.37" }
+tracing-subscriber = { version = "0.3.17" }
+uuid = { version = "1", default-features = false, features = ["v4"] }
+
+[dependencies.seaography]
+path = "../../"
+version = "~1.1.4" # seaography version
+features = [
+    "with-postgres-array",
+    "with-chrono",
+    "with-uuid",
+    "with-json",
+    "macros",
+    "field-snake-case",
+    "with-time",
+    "with-bigdecimal",
+    "with-decimal",
+    "field-pluralize",
+]
+
+[workspace]
+members = []

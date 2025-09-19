@@ -1,0 +1,11 @@
+#!/bin/bash
+set -eu
+rm -f generic.db
+export DATABASE_URL="postgres://sea:sea@127.0.0.1/sea_draw_example"
+
+psql -q postgres://sea:sea@localhost/postgres -c 'DROP DATABASE IF EXISTS "sea_draw_example"'
+psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE "sea_draw_example"'
+
+psql -q "$DATABASE_URL" sea_draw_example < schema/postgres.sql
+
+cargo run --bin server
