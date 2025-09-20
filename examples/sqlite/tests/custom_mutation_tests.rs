@@ -68,7 +68,7 @@ async fn test_custom_mutation_with_custom_input() {
             .await,
         r#"
         {
-          "rental_request": "Alice wants to rent Star Wars"
+          "rental_request": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars"
         }
         "#,
     );
@@ -92,7 +92,7 @@ async fn test_custom_mutation_with_custom_input() {
             .await,
         r#"
         {
-          "rental_request": "Alice wants to rent Star Wars (at Riverside)"
+          "rental_request": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars (at Riverside)"
         }
         "#,
     );
@@ -117,7 +117,7 @@ async fn test_custom_mutation_with_custom_input() {
             .await,
         r#"
         {
-          "rental_request": "Alice wants to rent Star Wars (at Riverside, West)"
+          "rental_request": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars (at Riverside, West)"
         }
         "#,
     );

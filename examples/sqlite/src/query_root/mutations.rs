@@ -40,8 +40,10 @@ impl Operations {
         rental_request: RentalRequest,
     ) -> async_graphql::Result<String> {
         let mut s = format!(
-            "{} wants to rent {}",
-            rental_request.customer, rental_request.film
+            "[{}] {} wants to rent {}",
+            rental_request.timestamp.to_rfc3339(),
+            rental_request.customer,
+            rental_request.film
         );
         if let Some(location) = rental_request.location {
             use std::fmt::Write;
