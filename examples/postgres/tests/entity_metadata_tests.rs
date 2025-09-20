@@ -2,7 +2,7 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
 
-pub async fn get_schema() -> Schema {
+pub async fn schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
@@ -20,7 +20,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn test_entity_metadata() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -242,6 +242,15 @@ async fn test_entity_metadata() {
                       "primitive": "string"
                     }
                   },
+                  "enumeration": null
+                }
+              },
+              {
+                "name": "metadata",
+                "nullable": true,
+                "type_": {
+                  "primitive": "json",
+                  "array": null,
                   "enumeration": null
                 }
               }

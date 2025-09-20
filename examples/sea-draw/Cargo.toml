@@ -7,7 +7,6 @@ edition = "2024"
 async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 async-graphql-axum = { version = "7" }
 axum = { version = "0.8.*", features = ["ws"] }
-chrono = { version = "0.4.30", default-features = false }
 clap = { version = "4.5", features = ["derive", "env"] }
 dotenv = "0.15.0"
 reqwest = { version = "0.12", features = [
@@ -16,7 +15,7 @@ reqwest = { version = "0.12", features = [
     "rustls-tls",
     "multipart",
 ], default-features = false }
-sea-orm = { version = "~1.1.14", features = [
+sea-orm = { version = "~2.0.0-rc", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
     "runtime-tokio-native-tls",
@@ -31,7 +30,7 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 
 [dependencies.seaography]
 path = "../../"
-version = "~1.1.4" # seaography version
+version = "~2.0.0-rc" # seaography version
 features = [
     "macros",
     "field-pluralize",

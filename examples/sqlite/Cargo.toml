@@ -17,7 +17,7 @@ serde_json = { version = "1.0.103" }
 
 [dependencies.seaography]
 path = "../../"
-version = "~2.0.0-rc.1" # seaography version
+version = "~2.0.0-rc" # seaography version
 features = ["macros", "with-decimal", "with-chrono"]
 
 [workspace]

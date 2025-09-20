@@ -4,10 +4,10 @@ use crate::{
     types::{Fill, Shape, Stroke},
 };
 use async_graphql::Context;
-use chrono::Utc;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter,
-    entity::prelude::Uuid, sea_query::query::OnConflict,
+    entity::prelude::{ChronoUtc as Utc, Uuid},
+    sea_query::query::OnConflict,
 };
 use seaography::CustomFields;
 use tracing::instrument;

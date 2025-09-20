@@ -1,15 +1,15 @@
 use crate as seaography;
-use crate::macros::CustomOutput;
+use crate::CustomOutputType;
 use serde::Deserialize;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutput)]
+#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutputType)]
 pub struct Table {
     pub columns: Vec<Column>,
     pub primary_key: Vec<String>,
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutput)]
+#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutputType)]
 pub struct Column {
     pub name: String,
     #[serde(rename = "type")]
@@ -19,19 +19,19 @@ pub struct Column {
     pub comment: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, CustomOutput)]
+#[derive(Debug, Clone, PartialEq, CustomOutputType)]
 pub struct ColumnType {
     pub primitive: Option<String>,
     pub array: Option<Array>,
     pub enumeration: Option<Enumeration>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutput)]
+#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutputType)]
 pub struct Array {
     pub array: Box<ColumnType>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutput)]
+#[derive(Debug, Clone, PartialEq, Deserialize, CustomOutputType)]
 pub struct Enumeration {
     pub name: String,
     pub variants: Vec<String>, // this requires `postgres-array`

@@ -14,9 +14,7 @@ pub mod subscriptions;
 pub mod types;
 
 pub fn never_condition() -> sea_orm::Condition {
-    sea_orm::query::Condition::any().add(sea_orm::sea_query::ConditionExpression::SimpleExpr(
-        sea_orm::sea_query::SimpleExpr::Constant(sea_orm::sea_query::Value::Bool(Some(false))),
-    ))
+    sea_orm::query::Condition::any().add(sea_orm::sea_query::Expr::val(false))
 }
 
 pub fn permission_for_operation_type(op: seaography::OperationType) -> entities::Permission {
