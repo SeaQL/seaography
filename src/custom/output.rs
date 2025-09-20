@@ -1,7 +1,7 @@
 use crate::BuilderContext;
 use async_graphql::dynamic::{FieldValue, Object, TypeRef};
 #[cfg(feature = "macros")]
-pub use seaography_macros::CustomOutputType;
+pub use seaography_macros::{ConvertOutput, CustomOutputType};
 
 pub trait CustomOutputType {
     fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;

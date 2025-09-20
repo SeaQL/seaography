@@ -203,26 +203,5 @@ fn derive_custom_output_type_enum_containers(
                 }
             }
         }
-
-        impl #impl_generics seaography::ConvertOutput for #orig_ident #ty_generics #where_clause {
-            fn convert_output(
-                value: &sea_orm::sea_query::Value,
-            ) -> async_graphql::Result<Option<async_graphql::dynamic::FieldValue<'static>>> {
-                if let sea_orm::sea_query::value::Value::Json(opt_json) = value {
-                    if let Some(json) = opt_json {
-                        match serde_json::from_value::<#orig_ident>(*json.clone()) {
-                            Ok(obj) => match obj {
-                                #(#variant_matches)*
-                            },
-                            Err(e) => Err(e.into()),
-                        }
-                    } else {
-                        Ok(None)
-                    }
-                } else {
-                    Err(format!("Expected JSON, got {:?}", value).into())
-                }
-            }
-        }
     })
 }

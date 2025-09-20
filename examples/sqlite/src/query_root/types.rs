@@ -1,7 +1,6 @@
 use async_graphql;
 use sea_orm::entity::prelude::{DateTimeUtc, Decimal};
 use seaography::{CustomFields, CustomInputType, CustomOutputType};
-use serde::Deserialize;
 
 #[derive(Clone, CustomInputType)]
 pub struct RentalRequest {
@@ -35,7 +34,7 @@ pub struct ProductSize {
     pub size: i32,
 }
 
-#[derive(Clone, Copy, CustomInputType, CustomOutputType, Deserialize)]
+#[derive(Clone, Copy, CustomInputType, CustomOutputType)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -49,13 +48,13 @@ impl Point {
     }
 }
 
-#[derive(Clone, Copy, CustomInputType, CustomOutputType, Deserialize)]
+#[derive(Clone, Copy, CustomInputType, CustomOutputType)]
 pub struct Size {
     pub width: f64,
     pub height: f64,
 }
 
-#[derive(Clone, CustomInputType, CustomOutputType, Deserialize)]
+#[derive(Clone, CustomInputType, CustomOutputType)]
 pub struct Rectangle {
     pub origin: Point,
     pub size: Size,
@@ -68,7 +67,7 @@ impl Rectangle {
     }
 }
 
-#[derive(Clone, CustomInputType, CustomOutputType, Deserialize)]
+#[derive(Clone, CustomInputType, CustomOutputType)]
 pub struct Circle {
     pub center: Point,
     pub radius: f64,
@@ -81,7 +80,7 @@ impl Circle {
     }
 }
 
-#[derive(Clone, CustomInputType, CustomOutputType, Deserialize)]
+#[derive(Clone, CustomInputType, CustomOutputType)]
 pub struct Triangle {
     pub p1: Point,
     pub p2: Point,
@@ -99,7 +98,7 @@ impl Triangle {
     }
 }
 
-#[derive(Clone, CustomInputType, CustomOutputType, Deserialize)]
+#[derive(Clone, CustomInputType, CustomOutputType)]
 pub enum Shape {
     Rectangle(Rectangle),
     Circle(Circle),
