@@ -3,9 +3,7 @@ use crate::{
     sea_query_value_to_graphql_value, BuilderContext, Connection, EntityInputBuilder,
     EntityObjectBuilder, SeaResult, TypesMapHelper,
 };
-use async_graphql::dynamic::{
-    Enum, Field, FieldValue, ResolverContext, TypeRef, Union, ValueAccessor,
-};
+use async_graphql::dynamic::{Enum, Field, FieldValue, TypeRef, Union, ValueAccessor};
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 #[cfg(feature = "macros")]
 pub use seaography_macros::{CustomEnum, CustomFields};
@@ -36,14 +34,6 @@ pub trait GqlScalarValueType: Sized {
         Self::gql_type_ref(ctx)
     }
 
-    fn try_get_arg(
-        context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
-    ) -> SeaResult<Self> {
-        Self::parse_value(context, ctx.args.get(name))
-    }
-
     fn parse_value(
         ctx: &'static BuilderContext,
         value: Option<ValueAccessor<'_>>,
@@ -59,14 +49,6 @@ pub trait GqlScalarValueType: Sized {
 pub trait GqlModelType: Sized + Send + Sync + 'static {
     fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
-
-    fn try_get_arg(
-        context: &'static BuilderContext,
-        ctx: &ResolverContext<'_>,
-        name: &str,
-    ) -> SeaResult<Self> {
-        Self::parse_value(context, Some(ctx.args.try_get(name)?))
-    }
 
     fn parse_value(
         ctx: &'static BuilderContext,
