@@ -225,6 +225,19 @@ where
     }
 }
 
+impl<M> CustomOutputType for Box<M>
+where
+    M: CustomOutputType,
+{
+    fn gql_output_type_ref(context: &'static BuilderContext) -> TypeRef {
+        M::gql_output_type_ref(context)
+    }
+
+    fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        M::gql_field_value(*self, ctx)
+    }
+}
+
 impl CustomInputType for Upload {
     fn gql_input_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
         TypeRef::named_nn("Upload")

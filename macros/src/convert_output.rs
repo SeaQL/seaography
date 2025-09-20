@@ -28,9 +28,7 @@ fn derive_custom_output_type_enum(
 ) -> syn::Result<TokenStream> {
     let variants = parse_enum_variants(ast, data)?;
     match variants {
-        EnumVariants::Units(_) => {
-            return Err(Error::new(ast.ident.span(), "Expected a container enum"));
-        }
+        EnumVariants::Units(_) => Err(Error::new(ast.ident.span(), "Expected a container enum")),
         EnumVariants::Containers(variants) => {
             derive_convert_output_enum_containers(ast, variants, name)
         }
