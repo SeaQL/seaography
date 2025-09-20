@@ -67,7 +67,7 @@ macro_rules! impl_scalar_type {
             }
 
             fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
-                <$type as GqlScalarValueType>::to_graphql_value(self, ctx).map(FieldValue::value)
+                <$type as GqlScalarValueType>::gql_field_value(self, ctx)
             }
         }
     };

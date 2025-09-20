@@ -17,7 +17,7 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
     };
     match &derive_input.data {
         Data::Struct(data_struct) => {
-            derive_custom_output_type_struct(&derive_input, data_struct, &args, name)
+            derive_custom_output_type_struct(&derive_input, data_struct, name)
         }
         Data::Enum(data_enum) => derive_custom_output_type_enum(&derive_input, data_enum, name),
         Data::Union(_) => Err(Error::new(
@@ -30,7 +30,6 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
 fn derive_custom_output_type_struct(
     ast: &DeriveInput,
     data: &DataStruct,
-    args: &Args,
     name: TokenStream,
 ) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
@@ -49,11 +48,11 @@ fn derive_custom_output_type_struct(
         fields.push(quote! {
             .field(async_graphql::dynamic::Field::new(
                 stringify!(#field_ident),
-                <#field_ty as seaography::CustomOutputType>::gql_output_type_ref(context),
+                <#field_ty>::gql_output_type_ref(context),
                 move |ctx| {
                     async_graphql::dynamic::FieldFuture::new(async move {
                         let obj = seaography::try_downcast_ref::<#orig_ident #ty_generics>(ctx.parent_value)?;
-                        Ok(<#field_ty as seaography::CustomOutputType>::gql_field_value(
+                        Ok(<#field_ty>::gql_field_value(
                             obj.#field_ident.clone(), context
                         ))
                     })
@@ -61,20 +60,10 @@ fn derive_custom_output_type_struct(
         });
     }
 
-    let mut object_def: TokenStream = quote! {
+    let object_def: TokenStream = quote! {
         async_graphql::dynamic::Object::new(#name)
         #(#fields)*
     };
-
-    if args.custom_fields {
-        object_def = quote! {
-            let mut obj = #object_def;
-            for field in <Self as seaography::CustomFields>::to_fields(context) {
-                obj = obj.field(field);
-            }
-            obj
-        }
-    }
 
     Ok(quote! {
         impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
@@ -139,6 +128,7 @@ fn derive_custom_output_type_enum_units(
             }
 
             fn gql_field_value(self, ctx: &'static seaography::BuilderContext) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                use seaography::CustomOutputType;
                 match self {
                     #(#variants_gql_field_value)*
                 }

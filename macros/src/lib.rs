@@ -18,8 +18,6 @@ struct Args {
     input_type_name: Option<String>,
     output_type_name: Option<String>,
     enum_name: Option<String>,
-    #[darling(default)]
-    custom_fields: bool,
 }
 
 #[proc_macro_derive(CustomEnum, attributes(seaography))]

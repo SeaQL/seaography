@@ -95,7 +95,19 @@ fn signature_to_field(
         let arg = &args[argno];
         argno += 1;
 
-        arguments.push(fn_arg_to_field_argument(arg).unwrap_or_else(Error::into_compile_error));
+        let (arg_name, arg_type) = match arg {
+            FnArg::Receiver(_) => return Err(Error::new(arg.span(), "arg cannot be self")),
+            FnArg::Typed(typed_arg) => (&typed_arg.pat, &typed_arg.ty),
+        };
+
+        arguments.push(quote! {
+            .argument(
+                async_graphql::dynamic::InputValue::new(
+                    stringify!(#arg_name),
+                    <#arg_type>::gql_input_type_ref(context),
+                )
+            )
+        });
 
         let FnArg::Typed(typed_arg) = arg else {
             return Err(Error::new(arg.span(), "arg cannot be self"));
@@ -103,18 +115,17 @@ fn signature_to_field(
         let arg_pat = &typed_arg.pat;
 
         resolve_args.push(quote! {
-            seaography::CustomInputType::
-                parse_value(
-                    context,
-                    ctx.args.get(stringify!(#arg_pat))
-                ).map_err(|e| seaography::SeaographyError::AsyncGraphQLError(
-                    format!(
-                        "Error decoding {} argument {}: {}",
-                        stringify!(#field_name),
-                        stringify!(#arg_pat),
-                        e,
-                    ).into()
-                ))?,
+            <#arg_type>::parse_value(
+                context,
+                ctx.args.get(stringify!(#arg_pat))
+            ).map_err(|e| seaography::SeaographyError::AsyncGraphQLError(
+                format!(
+                    "Error decoding {} argument {}: {}",
+                    stringify!(#field_name),
+                    stringify!(#arg_pat),
+                    e,
+                ).into()
+            ))?,
         });
     }
 
@@ -130,12 +141,14 @@ fn signature_to_field(
         pub fn #field_fn_ident(
             context: &'static seaography::BuilderContext,
         ) -> async_graphql::dynamic::Field {
+            use seaography::{CustomInputType, CustomOutputType};
+
             async_graphql::dynamic::Field::new(
                 stringify!(#field_name),
-                #return_type,
+                <#return_type>::gql_output_type_ref(context),
                 move |ctx| {
                     async_graphql::dynamic::FieldFuture::new(async move {
-                        Ok(seaography::CustomOutputType::gql_field_value(#fn_expr(
+                        Ok(<#return_type>::gql_field_value(#fn_expr(
                             #(#resolve_args)*
                         ).await?, context))
                     })
@@ -186,26 +199,5 @@ fn return_type_to_type_ref(return_type: &ReturnType) -> syn::Result<TokenStream>
         return Err(Error::new(ty.span(), "Expected async_graphql::Result<..>"));
     };
 
-    Ok(quote! {
-        <#first_arg as seaography::CustomOutputType>::gql_output_type_ref(context)
-    })
-}
-
-fn fn_arg_to_field_argument(fn_arg: &FnArg) -> syn::Result<TokenStream> {
-    match fn_arg {
-        FnArg::Receiver(_) => Err(Error::new(fn_arg.span(), "arg cannot be self")),
-        FnArg::Typed(typed_arg) => {
-            let pat = &typed_arg.pat;
-            let ty = &typed_arg.ty;
-
-            Ok(quote! {
-                .argument(
-                    async_graphql::dynamic::InputValue::new(
-                        stringify!(#pat),
-                        <#ty as seaography::CustomInputType>::gql_input_type_ref(context),
-                    )
-                )
-            })
-        }
-    }
+    Ok(quote!(#first_arg))
 }

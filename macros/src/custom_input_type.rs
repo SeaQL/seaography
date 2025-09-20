@@ -67,15 +67,14 @@ fn derive_custom_input_type_struct(
 
     for field in fields.iter() {
         let field_ident = &field.ident;
-        resolve_args.push(quote! {
-            #field_ident: seaography::CustomInputType::
-                parse_value(
-                    context,
-                    input_object.get(stringify!(#field_ident))
-                )?,
-        });
-
         let field_ty = &field.ty;
+
+        resolve_args.push(quote! {
+            #field_ident: <#field_ty>::parse_value(
+                context,
+                input_object.get(stringify!(#field_ident))
+            )?,
+        });
 
         dynamic_fields.push(quote! {
             .field(async_graphql::dynamic::InputValue::new(
@@ -201,7 +200,7 @@ fn derive_custom_input_type_enum_containers(
         input_object_fields.push(quote! {
             .field(async_graphql::dynamic::InputValue::new(
                 #variant_value,
-                <Option<#variant_ident> as seaography::CustomInputType>::gql_input_type_ref(context),
+                <Option<#variant_ident>>::gql_input_type_ref(context),
             ))
         });
     }
