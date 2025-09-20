@@ -35,7 +35,7 @@ time = { version = "0.3", features = ["formatting"], optional = true }
 [features]
 default = ["field-camel-case", "schema-meta"]
 macros = ["seaography-macros"]
-schema-meta = ["macros", "serde/derive", "with-postgres-array"]
+schema-meta = ["macros", "serde/derive"]
 rbac = ["sea-orm/rbac"]
 with-json = ["sea-orm/with-json"]
 with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]

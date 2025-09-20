@@ -385,7 +385,7 @@ impl Builder {
         self.register_custom_output::<schema::Array>();
         self.register_custom_output::<schema::Enumeration>();
 
-        use crate::GqlOutputModelType;
+        use crate::CustomOutputType;
         use async_graphql::dynamic::FieldValue;
 
         const TABLE_NAME: &str = "table_name";

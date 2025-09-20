@@ -280,7 +280,7 @@ async fn entity_guard() {
             .execute(
                 r#"
                 {
-                    language(orderBy: { languageId: ASC }) {
+                    language(filters: { languageId: { lte: 6 } }, orderBy: { languageId: ASC }) {
                       nodes {
                         languageId
                         name
