@@ -1,17 +1,19 @@
-use async_graphql::dynamic::{Schema, SchemaError};
+use async_graphql::dynamic::{Schema, SchemaError, TypeRef, ValueAccessor};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::Extension;
 use seaography::{
-    Builder, BuilderContext, CustomFields, EntityObjectConfig, EntityQueryFieldConfig, TimeLibrary,
-    TypesMapConfig,
+    Builder, BuilderContext, ColumnOptions, ConvertOutput, CustomFields, EntityColumnId,
+    EntityObjectConfig, EntityQueryFieldConfig, TimeLibrary, TypesMapConfig,
     heck::{ToSnakeCase, ToUpperCamelCase},
     lazy_static,
 };
+use std::sync::Arc;
 
 use crate::{
     backend::Backend,
     entities::{accounts, drawings, objects, projects},
-    mutations, queries, subscriptions, types,
+    mutations, queries, subscriptions,
+    types::{self, Shape},
 };
 
 fn singular(name: impl Into<String>) -> String {
@@ -31,6 +33,40 @@ fn type_name(entity_name: &str) -> String {
 
 fn column_name(_entity_name: &str, column_name: &str) -> String {
     column_name.to_snake_case()
+}
+
+fn convert_value_from_json(accessor: &ValueAccessor) -> seaography::SeaResult<sea_orm::Value> {
+    let value = accessor.as_value();
+    let json = value
+        .clone()
+        .into_json()
+        .map_err(|e| seaography::SeaographyError::AsyncGraphQLError(e.to_string().into()))?;
+    Ok(sea_orm::Value::from(json))
+}
+
+fn convert_output_column_options<T>(
+    input_type: Option<TypeRef>,
+    output_type: Option<TypeRef>,
+) -> ColumnOptions
+where
+    T: ConvertOutput + 'static,
+{
+    let mut options = ColumnOptions::default();
+    options.input_conversion = Some(Arc::new(convert_value_from_json));
+    options.output_conversion = Some(Arc::new(T::convert_output));
+    options.input_type = input_type;
+    options.output_type = output_type;
+    options
+}
+
+fn set_column_options(context: &mut BuilderContext) {
+    context.types.column_options.insert(
+        EntityColumnId::of::<objects::Entity>(&objects::Column::Shape),
+        convert_output_column_options::<Shape>(
+            Some(TypeRef::named_nn("ShapeInput")),
+            Some(TypeRef::named_nn("Shape")),
+        ),
+    );
 }
 
 lazy_static::lazy_static! {
@@ -60,7 +96,7 @@ lazy_static::lazy_static! {
         context.pagination_input.default_limit = Some(100);
         context.pagination_input.max_limit = Some(500);
 
-        // set_column_options(&mut context);
+        set_column_options(&mut context);
 
         context
     };
@@ -132,9 +168,9 @@ pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
     builder.register_custom_output::<types::Color>();
     builder.register_custom_output::<types::Point>();
     builder.register_custom_output::<types::Size>();
-    builder.register_custom_output::<types::Rectangle>();
-    builder.register_custom_output::<types::Circle>();
-    builder.register_custom_output::<types::Triangle>();
+    builder.register_complex_custom_output::<types::Rectangle>();
+    builder.register_complex_custom_output::<types::Circle>();
+    builder.register_complex_custom_output::<types::Triangle>();
     // builder.register_custom_output::<types::Shape>();
 
     builder.register_custom_enum::<types::Style>();

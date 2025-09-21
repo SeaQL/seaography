@@ -30,26 +30,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Client test: url = {}", url);
     println!("root token = {}", args.root_token);
 
-    // let result = graphql(
-    //     url,
-    //     args.root_token,
-    //     r#"
-    //         mutation($name: String!, $email: String!) {
-    //             create_account(name: $name, email: $email) {
-    //                 id
-    //             }
-    //         }
-    //     "#,
-    //     Some(json!({
-    //         "name": "Test account",
-    //         "email": "user@example.com",
-    //     })),
-    // ).await.unwrap();
-    // println!("result = {}", serde_json::to_string_pretty(&result).unwrap());
-
-    // let account_id = serde_json::from_value::<Uuid>(result["create_account"]["id"].clone()).unwrap();
-    // println!("account_id = {}", account_id);
-
     let account_id = create_account(url, args.root_token).await;
     println!("account_id = {}", account_id);
 
@@ -86,6 +66,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .unwrap();
     println!("object_id = {}", object_id);
+
+    let query = r#"
+        query($id: String!) {
+            object(id: $id) {
+                shape {
+                    __typename
+                    ... on Rectangle {
+                        origin { x y }
+                        size { width height }
+                        area
+                    }
+                    ... on Circle {
+                        center { x y }
+                        radius
+                        area
+                    }
+                    ... on Triangle {
+                        p1 { x y }
+                        p2 { x y }
+                        p3 { x y }
+                        area
+                    }
+                }
+            }
+        }
+    "#;
+
+    let result = graphql(
+        &client.url,
+        client.token,
+        query,
+        Some(json!({ "id": object_id })),
+    )
+    .await
+    .unwrap();
+    println!(
+        "object = {}",
+        serde_json::to_string_pretty(&result).unwrap()
+    );
 
     Ok(())
 }
