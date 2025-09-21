@@ -1,4 +1,4 @@
-use super::graphql::{graphql, GraphQLError};
+use super::graphql::{GraphQLError, graphql};
 use serde_json::{Value, json};
 use uuid::Uuid;
 
@@ -24,8 +24,11 @@ impl Client {
                 }
             "#,
             Some(json!({ "name": name.into() })),
-        ).await?;
-        Ok(serde_json::from_value::<Uuid>(result["create_project"]["id"].clone())?)
+        )
+        .await?;
+        Ok(serde_json::from_value::<Uuid>(
+            result["create_project"]["id"].clone(),
+        )?)
     }
 
     pub async fn create_drawing(
@@ -55,9 +58,12 @@ impl Client {
                 "name": name.into(),
                 "width": width,
                 "height": height,
-            }))
-        ).await?;
-        Ok(serde_json::from_value::<Uuid>(result["create_drawing"]["id"].clone())?)
+            })),
+        )
+        .await?;
+        Ok(serde_json::from_value::<Uuid>(
+            result["create_drawing"]["id"].clone(),
+        )?)
     }
 
     pub async fn create_object(
@@ -93,8 +99,11 @@ impl Client {
                 "fill": fill,
                 "stroke": stroke,
                 "shape": shape,
-            }))
-        ).await?;
-        Ok(serde_json::from_value::<Uuid>(result["create_object"]["id"].clone())?)
+            })),
+        )
+        .await?;
+        Ok(serde_json::from_value::<Uuid>(
+            result["create_object"]["id"].clone(),
+        )?)
     }
 }

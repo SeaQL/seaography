@@ -1,9 +1,9 @@
 use clap::Parser;
 use dotenv::dotenv;
-use uuid::Uuid;
 use serde_json::json;
+use uuid::Uuid;
 
-use sea_draw::client::{graphql::graphql, client::Client};
+use sea_draw::client::{client::Client, graphql::graphql};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -58,27 +58,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let project_id = client.create_project("Test project").await.unwrap();
     println!("project_id = {}", project_id);
 
-    let drawing_id = client.create_drawing(project_id, "Tree", 1024, 768).await.unwrap();
+    let drawing_id = client
+        .create_drawing(project_id, "Tree", 1024, 768)
+        .await
+        .unwrap();
     println!("drawing_id = {}", drawing_id);
 
-    let object_id = client.create_object(
-        drawing_id,
-        json!({
-            "color": { "red": 0.0, "green": 0.0, "blue": 0.0 },
-            "opacity": 1.0,
-        }),
-        json!({
-            "color": { "red": 1.0, "green": 0.0, "blue": 0.0 },
-            "width": 1.0,
-            "style": "Solid",
-        }),
-        json!({
-            "Rectangle": {
-                "origin": { "x": 4.0, "y": 7.0 },
-                "size": { "width": 10.0, "height": 5.0 },
-            }
-        }),
-    ).await.unwrap();
+    let object_id = client
+        .create_object(
+            drawing_id,
+            json!({
+                "color": { "red": 0.0, "green": 0.0, "blue": 0.0 },
+                "opacity": 1.0,
+            }),
+            json!({
+                "color": { "red": 1.0, "green": 0.0, "blue": 0.0 },
+                "width": 1.0,
+                "style": "Solid",
+            }),
+            json!({
+                "Rectangle": {
+                    "origin": { "x": 4.0, "y": 7.0 },
+                    "size": { "width": 10.0, "height": 5.0 },
+                }
+            }),
+        )
+        .await
+        .unwrap();
     println!("object_id = {}", object_id);
 
     Ok(())
@@ -99,7 +105,9 @@ pub async fn create_account(url: &str, root_token: Uuid) -> Uuid {
             "name": "Test account",
             "email": "user@example.com",
         })),
-    ).await.unwrap();
+    )
+    .await
+    .unwrap();
     // println!("result = {}", serde_json::to_string_pretty(&result).unwrap());
 
     serde_json::from_value::<Uuid>(result["create_account"]["id"].clone()).unwrap()

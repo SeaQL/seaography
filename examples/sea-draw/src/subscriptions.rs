@@ -1,14 +1,9 @@
-use seaography::{BuilderContext, CustomInputType};
 use async_graphql::dynamic::{
-    SubscriptionField,
-    TypeRef,
-    SubscriptionFieldFuture,
-    InputValue,
-    ResolverContext,
-    FieldValue,
+    FieldValue, InputValue, ResolverContext, SubscriptionField, SubscriptionFieldFuture, TypeRef,
 };
-use uuid::Uuid;
+use seaography::{BuilderContext, CustomInputType};
 use tokio_stream::Stream;
+use uuid::Uuid;
 
 pub fn subscriptions(context: &'static BuilderContext) -> Vec<SubscriptionField> {
     let mut fields: Vec<SubscriptionField> = Vec::new();

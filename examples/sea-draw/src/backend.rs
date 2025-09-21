@@ -1,4 +1,4 @@
-use chrono::{Utc};
+use chrono::Utc;
 use sea_orm::{
     DatabaseConnection,
     entity::{ActiveModelTrait, EntityTrait, IntoActiveModel, ModelTrait},

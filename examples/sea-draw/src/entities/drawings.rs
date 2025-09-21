@@ -3,9 +3,9 @@ use sea_orm::entity::prelude::{
     ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity, DeriveRelation,
     EnumIter, Expr, PrimaryKeyTrait,
 };
+use seaography::CustomFields;
 use sqlx::FromRow;
 use uuid::Uuid;
-use seaography::CustomFields;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, FromRow)]
 #[sea_orm(table_name = "drawings")]

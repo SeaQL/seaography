@@ -1,6 +1,6 @@
 use async_graphql;
 use sea_orm::FromJsonQueryResult;
-use seaography::{CustomFields, CustomInputType, CustomOutputType, CustomEnum};
+use seaography::{CustomEnum, CustomFields, CustomInputType, CustomOutputType};
 use serde::{Deserialize, Serialize};
 
 #[derive(

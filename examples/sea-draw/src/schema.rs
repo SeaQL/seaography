@@ -2,20 +2,16 @@ use async_graphql::dynamic::{Schema, SchemaError};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::Extension;
 use seaography::{
-    Builder, BuilderContext, EntityObjectConfig, EntityQueryFieldConfig, TimeLibrary,
+    Builder, BuilderContext, CustomFields, EntityObjectConfig, EntityQueryFieldConfig, TimeLibrary,
     TypesMapConfig,
     heck::{ToSnakeCase, ToUpperCamelCase},
     lazy_static,
-    CustomFields,
 };
 
 use crate::{
     backend::Backend,
     entities::{accounts, drawings, objects, projects},
-    queries,
-    mutations,
-    subscriptions,
-    types,
+    mutations, queries, subscriptions, types,
 };
 
 fn singular(name: impl Into<String>) -> String {
@@ -180,8 +176,6 @@ pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
     // seaography::register_custom_queries!(builder, [queries::Operations]);
 
     // seaography::register_custom_mutations!(builder, [mutations::Operations]);
-
-
 
     let db = backend.db.clone();
     builder

@@ -1,12 +1,12 @@
-use sea_orm::{ModelTrait, EntityTrait};
+use crate::{
+    backend::Backend,
+    entities::{Account, Drawing, Object, Project},
+    types::{Fill, Shape, Stroke},
+};
 use async_graphql::Context;
+use sea_orm::{EntityTrait, ModelTrait};
 use seaography::CustomFields;
 use uuid::Uuid;
-use crate::{
-    entities::{Account, Project, Drawing, Object},
-    types::{Fill, Stroke, Shape},
-    backend::Backend,
-};
 
 pub struct CustomMutations;
 
@@ -22,10 +22,7 @@ impl CustomMutations {
         Ok(account)
     }
 
-    async fn create_project(
-        ctx: &Context<'_>,
-        name: String,
-    ) -> async_graphql::Result<Project> {
+    async fn create_project(ctx: &Context<'_>, name: String) -> async_graphql::Result<Project> {
         let backend = ctx.data::<Backend>()?;
         let project = backend.create_project(name).await?;
         Ok(project)
@@ -39,7 +36,9 @@ impl CustomMutations {
         height: i64,
     ) -> async_graphql::Result<Drawing> {
         let backend = ctx.data::<Backend>()?;
-        let drawing = backend.create_drawing(project_id, name, width, height).await?;
+        let drawing = backend
+            .create_drawing(project_id, name, width, height)
+            .await?;
         Ok(drawing)
     }
 
@@ -52,16 +51,14 @@ impl CustomMutations {
     ) -> async_graphql::Result<Object> {
         let backend = ctx.data::<Backend>()?;
 
-        let drawing = <Drawing as ModelTrait>::Entity::find_by_id(drawing_id).one(&backend.db).await?
+        let drawing = <Drawing as ModelTrait>::Entity::find_by_id(drawing_id)
+            .one(&backend.db)
+            .await?
             .ok_or("Drawing not found")?;
 
-        let object = backend.create_object(
-            drawing.project_id,
-            drawing_id,
-            fill,
-            stroke,
-            shape,
-        ).await?;
+        let object = backend
+            .create_object(drawing.project_id, drawing_id, fill, stroke, shape)
+            .await?;
         Ok(object)
     }
 }

@@ -2,10 +2,7 @@ use async_graphql::http::{GraphQLPlaygroundConfig, graphiql_source, playground_s
 use axum::{Extension, Router, response, routing};
 use clap::Parser;
 use dotenv::dotenv;
-use sea_orm::{
-    Database, ModelTrait,
-    entity::{EntityTrait},
-};
+use sea_orm::{Database, ModelTrait, entity::EntityTrait};
 use std::net::{IpAddr, SocketAddr};
 use tokio::net::TcpListener;
 
