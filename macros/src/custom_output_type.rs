@@ -64,6 +64,7 @@ fn derive_custom_output_type_struct(
         async_graphql::dynamic::Object::new(#name)
         #(#fields)*
     };
+    let imports = output_type_imports();
 
     Ok(quote! {
         impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
@@ -80,6 +81,8 @@ fn derive_custom_output_type_struct(
             fn basic_object(
                 context: &'static seaography::BuilderContext,
             ) -> async_graphql::dynamic::Object {
+                #imports
+
                 #object_def
             }
         }
@@ -120,6 +123,7 @@ fn derive_custom_output_type_enum_units(
 
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let imports = output_type_imports();
 
     Ok(quote! {
         impl #impl_generics seaography::CustomOutputType for #orig_ident #ty_generics #where_clause {
@@ -128,7 +132,8 @@ fn derive_custom_output_type_enum_units(
             }
 
             fn gql_field_value(self, ctx: &'static seaography::BuilderContext) -> Option<async_graphql::dynamic::FieldValue<'static>> {
-                use seaography::CustomOutputType;
+                #imports
+
                 match self {
                     #(#variants_gql_field_value)*
                 }
@@ -194,4 +199,16 @@ fn derive_custom_output_type_enum_containers(
             }
         }
     })
+}
+
+fn output_type_imports() -> TokenStream {
+    let imports = quote!(
+        use seaography::CustomOutputType;
+    );
+    #[cfg(not(feature = "opt-in-custom-types"))]
+    let imports = quote! {
+        #imports
+        use seaography::{GqlScalarValueType, GqlModelType, GqlModelHolderType};
+    };
+    imports
 }

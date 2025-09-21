@@ -567,8 +567,6 @@ macro_rules! impl_custom_output_type_for_entity {
 #[macro_export]
 macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
-        seaography::impl_custom_output_type_for_entity!($module_path::Model);
-
         $builder.register_entity::<$module_path::Entity>(
             <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
                 .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
@@ -600,6 +598,14 @@ macro_rules! register_entity_without_relation {
 macro_rules! register_entities_without_relation {
     ($builder:expr, [$($module_paths:ident),+ $(,)?]) => {
         $(seaography::register_entity_without_relation!($builder, $module_paths);)*
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "opt-in-custom-types")]
+macro_rules! impl_custom_output_type_for_entities {
+    ([$($module_paths:ident),+ $(,)?]) => {
+        $(seaography::impl_custom_output_type_for_entity!($module_paths::Model);)*
     };
 }
 

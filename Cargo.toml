@@ -46,6 +46,7 @@ with-postgres-array = ["sea-orm/postgres-array"]
 field-snake-case = []
 field-camel-case = []
 field-pluralize = ["pluralizer"]
+opt-in-custom-types = ["seaography-macros/opt-in-custom-types"]
 
 # [patch.crates-io]
 # sea-orm = { git = "https://github.com/SeaQL/sea-orm" }

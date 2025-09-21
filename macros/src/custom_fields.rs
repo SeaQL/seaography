@@ -137,11 +137,20 @@ fn signature_to_field(
         quote! { Self::#impl_fn_ident }
     };
 
+    let imports = quote!(
+        use seaography::{CustomInputType, CustomOutputType};
+    );
+    #[cfg(not(feature = "opt-in-custom-types"))]
+    let imports = quote! {
+        #imports
+        use seaography::{GqlScalarValueType, GqlModelType, GqlModelHolderType};
+    };
+
     Ok(quote! {
         pub fn #field_fn_ident(
             context: &'static seaography::BuilderContext,
         ) -> async_graphql::dynamic::Field {
-            use seaography::{CustomInputType, CustomOutputType};
+            #imports
 
             async_graphql::dynamic::Field::new(
                 stringify!(#field_name),

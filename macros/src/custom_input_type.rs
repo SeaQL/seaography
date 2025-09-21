@@ -87,6 +87,15 @@ fn derive_custom_input_type_struct(
     let generics = &ast.generics;
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
+    let imports = quote!(
+        use seaography::CustomInputType;
+    );
+    #[cfg(not(feature = "opt-in-custom-types"))]
+    let imports = quote! {
+        #imports
+        use seaography::{GqlScalarValueType, GqlModelType, GqlModelHolderType};
+    };
+
     Ok(quote! {
         impl #impl_generics seaography::CustomInputType for #orig_ident #ty_generics #where_clause {
             fn gql_input_type_ref(
@@ -99,6 +108,8 @@ fn derive_custom_input_type_struct(
                 context: &'static seaography::BuilderContext,
                 value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
             ) -> seaography::SeaResult<Self> {
+                #imports
+
                 let input = value.ok_or(
                     seaography::SeaographyError::AsyncGraphQLError("Expected a value".into())
                 )?;
@@ -113,7 +124,8 @@ fn derive_custom_input_type_struct(
             fn input_object(
                 context: &'static seaography::BuilderContext,
             ) -> async_graphql::dynamic::InputObject {
-                use seaography::CustomInputType;
+                #imports
+
                 async_graphql::dynamic::InputObject::new(#name)
                 #(#dynamic_fields)*
             }
