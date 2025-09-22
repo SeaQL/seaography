@@ -553,9 +553,7 @@ macro_rules! impl_custom_type_for_enum {
                 <$name as seaography::GqlScalarValueType>::gql_output_type_ref(ctx)
             }
 
-            fn gql_field_value(
-                value: Self,
-            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+            fn gql_field_value(value: Self) -> Option<async_graphql::dynamic::FieldValue<'static>> {
                 <$name as seaography::GqlScalarValueType>::gql_field_value(value)
             }
         }
@@ -572,7 +570,9 @@ macro_rules! impl_custom_type_for_enum {
                 value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
             ) -> seaography::SeaResult<Self> {
                 match value {
-                    None => Err(seaography::SeaographyError::AsyncGraphQLError("Value expected".into())),
+                    None => Err(seaography::SeaographyError::AsyncGraphQLError(
+                        "Value expected".into(),
+                    )),
                     Some(v) => {
                         let s = v.enum_name()?.to_string();
                         match sea_orm::ActiveEnum::try_from_value(&s) {
