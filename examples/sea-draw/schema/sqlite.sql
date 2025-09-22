@@ -46,3 +46,11 @@ CREATE TABLE project_permissions (
     permission     PERMISSION NOT NULL,
     PRIMARY KEY (project_id, account_id)
 );
+
+INSERT INTO accounts (id, created_at, updated_at, name, email) VALUES (
+    unhex('b5a6d582-322a-459e-ba2a-28d51a4e63ec', '-'),
+    datetime(),
+    datetime(),
+    'root',
+    'root@example.com'
+);
