@@ -106,4 +106,74 @@ impl Client {
             result["create_object"]["id"].clone(),
         )?)
     }
+
+    pub async fn update_object(
+        &self,
+        object_id: Uuid,
+        fill: Option<serde_json::Value>,
+        stroke: Option<serde_json::Value>,
+        shape: Option<serde_json::Value>,
+    ) -> Result<(), GraphQLError> {
+        graphql(
+            &self.url,
+            self.token,
+            r#"
+                mutation(
+                    $object_id: String!
+                    $fill: FillInput
+                    $stroke: StrokeInput
+                    $shape: ShapeInput
+                ) {
+                    update_object(
+                        object_id: $object_id
+                        fill: $fill
+                        stroke: $stroke
+                        shape: $shape
+                    ) {
+                        id
+                    }
+                }
+            "#,
+            Some(json!({
+                "object_id": object_id,
+                "fill": fill,
+                "stroke": stroke,
+                "shape": shape,
+            })),
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn delete_object(&self, object_id: Uuid) -> Result<(), GraphQLError> {
+        graphql(
+            &self.url,
+            self.token,
+            r#"
+                mutation($id: String!) {
+                    delete_object(object_id: $id)
+                }
+            "#,
+            Some(json!({ "id": object_id })),
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn drawing_svg(&self, drawing_id: Uuid) -> Result<String, GraphQLError> {
+        let result = graphql(
+            &self.url,
+            self.token,
+            r#"
+                query($id: String!) {
+                    drawing(id: $id) {
+                        svg
+                    }
+                }
+            "#,
+            Some(json!({ "id": drawing_id })),
+        )
+        .await?;
+        Ok(result["drawing"]["svg"].as_str().unwrap().to_string())
+    }
 }

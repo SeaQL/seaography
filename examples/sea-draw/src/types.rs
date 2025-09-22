@@ -21,6 +21,17 @@ pub struct Fill {
 
 impl std::cmp::Eq for Fill {} // contains float values
 
+impl Fill {
+    pub fn to_svg_attrs(&self) -> String {
+        let mut svg = String::new();
+        svg.push_str(&format!(" fill=\"{}\"", self.color.to_svg_color()));
+        if self.opacity != 0.0 {
+            svg.push_str(&format!(" fill-opacity=\"{}\"", self.opacity));
+        }
+        svg
+    }
+}
+
 #[derive(
     Clone,
     Debug,
@@ -39,6 +50,15 @@ pub struct Stroke {
 }
 
 impl std::cmp::Eq for Stroke {} // contains float values
+
+impl Stroke {
+    pub fn to_svg_attrs(&self) -> String {
+        let mut svg = String::new();
+        svg.push_str(&format!(" stroke=\"{}\"", self.color.to_svg_color()));
+        svg.push_str(&format!(" stroke-width=\"{}\"", self.width));
+        svg
+    }
+}
 
 #[derive(
     Clone,
@@ -78,6 +98,15 @@ pub struct Color {
 }
 
 impl std::cmp::Eq for Color {} // contains float values
+
+impl Color {
+    fn to_svg_color(&self) -> String {
+        let r = (self.red * 255.0) as u8;
+        let g = (self.green * 255.0) as u8;
+        let b = (self.blue * 255.0) as u8;
+        format!("rgb({}, {}, {})", r, g, b)
+    }
+}
 
 #[derive(
     Clone,
@@ -140,6 +169,21 @@ pub struct Rectangle {
     pub size: Size,
 }
 
+impl Rectangle {
+    pub fn to_svg(&self, fill: &Fill, stroke: &Stroke) -> String {
+        let mut svg = String::new();
+        svg.push_str("<rect");
+        svg.push_str(&format!(
+            " x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"",
+            self.origin.x, self.origin.y, self.size.width, self.size.height,
+        ));
+        svg.push_str(&fill.to_svg_attrs());
+        svg.push_str(&stroke.to_svg_attrs());
+        svg.push_str("/>");
+        svg
+    }
+}
+
 #[CustomFields]
 impl Rectangle {
     pub async fn area(&self) -> async_graphql::Result<f64> {
@@ -172,6 +216,21 @@ impl Circle {
     }
 }
 
+impl Circle {
+    pub fn to_svg(&self, fill: &Fill, stroke: &Stroke) -> String {
+        let mut svg = String::new();
+        svg.push_str("<circle");
+        svg.push_str(&format!(
+            " cx=\"{}\" cy=\"{}\" r=\"{}\"",
+            self.center.x, self.center.y, self.radius,
+        ));
+        svg.push_str(&fill.to_svg_attrs());
+        svg.push_str(&stroke.to_svg_attrs());
+        svg.push_str("/>");
+        svg
+    }
+}
+
 #[derive(
     Clone,
     Debug,
@@ -188,6 +247,21 @@ pub struct Triangle {
     pub p1: Point,
     pub p2: Point,
     pub p3: Point,
+}
+
+impl Triangle {
+    pub fn to_svg(&self, fill: &Fill, stroke: &Stroke) -> String {
+        let mut svg = String::new();
+        svg.push_str("<polygon ");
+        svg.push_str(&format!(
+            " points=\"{} {} {} {} {} {}\"",
+            self.p1.x, self.p1.y, self.p2.x, self.p2.y, self.p3.x, self.p3.y,
+        ));
+        svg.push_str(&fill.to_svg_attrs());
+        svg.push_str(&stroke.to_svg_attrs());
+        svg.push_str("/>");
+        svg
+    }
 }
 
 #[CustomFields]
@@ -216,4 +290,14 @@ pub enum Shape {
     Rectangle(Rectangle),
     Circle(Circle),
     Triangle(Triangle),
+}
+
+impl Shape {
+    pub fn to_svg(&self, fill: &Fill, stroke: &Stroke) -> String {
+        match self {
+            Shape::Rectangle(r) => r.to_svg(fill, stroke),
+            Shape::Circle(c) => c.to_svg(fill, stroke),
+            Shape::Triangle(t) => t.to_svg(fill, stroke),
+        }
+    }
 }

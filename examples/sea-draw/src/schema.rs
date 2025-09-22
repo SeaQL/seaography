@@ -1,17 +1,21 @@
 use async_graphql::dynamic::{Schema, SchemaError, TypeRef, ValueAccessor};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-use axum::Extension;
+use axum::{Extension, http::HeaderMap};
 use seaography::{
     Builder, BuilderContext, ColumnOptions, ConvertOutput, CustomFields, EntityColumnId,
     EntityObjectConfig, EntityQueryFieldConfig, TimeLibrary, TypesMapConfig,
     heck::{ToSnakeCase, ToUpperCamelCase},
     lazy_static,
 };
-use std::sync::Arc;
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
+use uuid::Uuid;
 
 use crate::{
     backend::Backend,
-    entities::{accounts, drawings, objects, projects},
+    entities::{
+        Access, Account, Permission, accounts, drawings, objects, project_permissions,
+        project_permissions::permissions_by_account, projects,
+    },
     mutations, queries, subscriptions,
     types::{self, Shape},
 };
@@ -138,6 +142,9 @@ pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
     register_entity!(builder, drawings, drawings::Model::to_fields(&CONTEXT));
     register_entity!(builder, objects, objects::Model::to_fields(&CONTEXT));
     register_entity!(builder, projects);
+    register_entity!(builder, project_permissions);
+
+    builder.register_enumeration::<Permission>();
 
     builder
         .mutations
@@ -222,39 +229,63 @@ pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
         .finish()
 }
 
+/// Helper function for extract important headers and metadata.
+fn extract_token_from_headers(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("Authorization")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| {
+            if value.to_lowercase().starts_with("bearer ") {
+                Some(String::from(&value[7..]))
+            } else {
+                None
+            }
+        })
+}
+
+async fn create_access_object(
+    backend: &Backend,
+    token: String,
+) -> Result<Access, Box<dyn std::error::Error>> {
+    let account_id = Uuid::from_str(&token)?;
+
+    let account = backend
+        .find_by_id::<Account>(account_id)
+        .await?
+        .ok_or("Account not found")?;
+
+    let mut permissions: BTreeMap<Uuid, Permission> = BTreeMap::new();
+
+    let project_ps = permissions_by_account(&backend.db, account_id).await?;
+    for p in project_ps.iter() {
+        permissions.insert(p.project_id, p.permission);
+    }
+    let is_root = account.id == backend.root_account_id;
+    Ok(Access::new(account, permissions, is_root))
+}
+
 /// This handler serves the all GraphQL queries and mutations. Before handing
 /// control to the query and mutation schemas, it will extract important headers
 /// and metadata and insert them into the context.
 pub async fn queries_and_mutations(
     schema: Extension<Schema>,
-    // auth_provider: Extension<AuthProvider>,
-    // headers: HeaderMap,
+    backend: Extension<Backend>,
+    headers: HeaderMap,
     req: GraphQLRequest,
 ) -> GraphQLResponse {
-    let req = req.into_inner();
-    // if let Some(token) = extract_token_from_headers(&headers) {
-    //     match auth_provider.0.validate_token(&token).await {
-    //         Ok(claims) => {
-    //             let mut retry_count = 0;
-    //             loop {
-    //                 match auth_provider.get_or_create_user_access(&claims).await {
-    //                     Ok(access) => {
-    //                         req.data.insert(access);
-    //                         break;
-    //                     }
-    //                     Err(e) => {
-    //                         retry_count += 1;
-    //                         if retry_count >= 3 {
-    //                             tracing::error!("bad auth: internal: {:?}", e);
-    //                             break;
-    //                         }
-    //                         tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         Err(e) => tracing::error!("bad auth: {:?}", e),
-    //     }
-    // }
+    let mut req = req.into_inner();
+    if let Some(token) = extract_token_from_headers(&headers) {
+        match create_access_object(&backend, token).await {
+            Ok(access) => {
+                tracing::info!("queries_and_mutations: account {}", access.account_id());
+                req.data.insert(access);
+            }
+            Err(e) => {
+                tracing::error!("bad auth: {:?}", e);
+            }
+        }
+    } else {
+        tracing::info!("queries_and_mutations: unauthenticated");
+    }
     schema.execute(req).await.into()
 }

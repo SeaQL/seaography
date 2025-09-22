@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::{
     ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity, DeriveRelation,
-    EnumIter, Expr, PrimaryKeyTrait,
+    EntityTrait, EnumIter, Expr, PrimaryKeyTrait, Related, RelationDef, RelationTrait,
 };
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -23,9 +23,32 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::project_permissions::Entity")]
+    ProjectPermissions,
+}
+
+impl Related<super::project_permissions::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ProjectPermissions.def()
+    }
+}
+
+impl Related<super::projects::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::project_permissions::Relation::Projects.def()
+    }
+    fn via() -> Option<RelationDef> {
+        Some(super::project_permissions::Relation::Accounts.def().rev())
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
-pub enum RelatedEntity {}
+pub enum RelatedEntity {
+    #[sea_orm(entity = "super::project_permissions::Entity")]
+    ProjectPermissions,
+    #[sea_orm(entity = "super::projects::Entity")]
+    Projects,
+}

@@ -1,7 +1,10 @@
+use crate::backend::Backend;
+use async_graphql::Context;
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::{
-    ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity, DeriveRelation,
-    EnumIter, Expr, PrimaryKeyTrait,
+    ActiveModelBehavior, ColumnTrait, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity,
+    DeriveRelation, EntityTrait, EnumIter, Expr, PrimaryKeyTrait, QueryFilter, Related,
+    RelationDef, RelationTrait,
 };
 use seaography::CustomFields;
 use sqlx::FromRow;
@@ -32,16 +35,63 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::objects::Entity")]
+    Objects,
+    #[sea_orm(
+        belongs_to = "super::projects::Entity",
+        from = "Column::ProjectId",
+        to = "super::projects::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Projects,
+}
+
+impl Related<super::objects::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Objects.def()
+    }
+}
+
+impl Related<super::projects::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Projects.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
-pub enum RelatedEntity {}
+pub enum RelatedEntity {
+    #[sea_orm(entity = "super::objects::Entity")]
+    Objects,
+    #[sea_orm(entity = "super::projects::Entity")]
+    Projects,
+}
 
 #[CustomFields]
 impl Model {
-    async fn svg(&self) -> async_graphql::Result<String> {
-        Ok("TODO".to_string())
+    async fn svg(&self, ctx: &Context<'_>) -> async_graphql::Result<String> {
+        let backend = ctx.data::<Backend>()?;
+        let objects = crate::entities::objects::Entity::find()
+            .filter(crate::entities::objects::Column::DrawingId.eq(self.id))
+            .filter(crate::entities::objects::Column::DeletedAt.is_null())
+            .all(&backend.db)
+            .await?;
+
+        let mut svg = String::new();
+
+        svg.push_str("<?xml version=\"1.0\" standalone=\"no\"?>\n");
+        svg.push_str(&format!("<svg width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">\n",
+            self.width, self.height));
+
+        for object in objects.iter() {
+            svg.push_str("  ");
+            svg.push_str(&object.shape.to_svg(&object.fill, &object.stroke));
+            svg.push('\n');
+        }
+        svg.push_str("</svg>\n");
+        Ok(svg)
     }
 }

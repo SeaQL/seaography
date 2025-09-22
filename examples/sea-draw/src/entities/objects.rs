@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::{
     ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity, DeriveRelation,
-    EnumIter, Expr, PrimaryKeyTrait,
+    EntityTrait, EnumIter, Expr, PrimaryKeyTrait, Related, RelationDef, RelationTrait,
 };
 use seaography::CustomFields;
 use sqlx::FromRow;
@@ -30,16 +30,50 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::drawings::Entity",
+        from = "Column::DrawingId",
+        to = "super::drawings::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Drawings,
+    #[sea_orm(
+        belongs_to = "super::projects::Entity",
+        from = "Column::ProjectId",
+        to = "super::projects::Column::Id",
+        on_update = "NoAction",
+        on_delete = "Cascade"
+    )]
+    Projects,
+}
+
+impl Related<super::drawings::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Drawings.def()
+    }
+}
+
+impl Related<super::projects::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Projects.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
-pub enum RelatedEntity {}
+pub enum RelatedEntity {
+    #[sea_orm(entity = "super::drawings::Entity")]
+    Drawings,
+    #[sea_orm(entity = "super::projects::Entity")]
+    Projects,
+}
 
 #[CustomFields]
 impl Model {
     async fn svg(&self) -> async_graphql::Result<String> {
-        Ok("TODO".to_string())
+        Ok(self.shape.to_svg(&self.fill, &self.stroke))
     }
 }

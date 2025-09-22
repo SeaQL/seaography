@@ -544,6 +544,49 @@ pub trait RelationBuilder {
 }
 
 #[macro_export]
+macro_rules! impl_custom_type_for_enum {
+    ($name:ty) => {
+        impl seaography::CustomOutputType for $name {
+            fn gql_output_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                <$name as seaography::GqlScalarValueType>::gql_output_type_ref(ctx)
+            }
+
+            fn gql_field_value(
+                value: Self,
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                <$name as seaography::GqlScalarValueType>::gql_field_value(value)
+            }
+        }
+
+        impl seaography::CustomInputType for $name {
+            fn gql_input_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                <$name as seaography::GqlScalarValueType>::gql_input_type_ref(ctx)
+            }
+
+            fn parse_value(
+                context: &'static seaography::BuilderContext,
+                value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
+            ) -> seaography::SeaResult<Self> {
+                match value {
+                    None => Err(seaography::SeaographyError::AsyncGraphQLError("Value expected".into())),
+                    Some(v) => {
+                        let s = v.enum_name()?.to_string();
+                        match sea_orm::ActiveEnum::try_from_value(&s) {
+                            Ok(v) => Ok(v),
+                            Err(e) => Err(seaography::SeaographyError::AsyncGraphQLError(e.into())),
+                        }
+                    }
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! impl_custom_output_type_for_entity {
     ($name:ty) => {
         #[allow(non_local_definitions)]

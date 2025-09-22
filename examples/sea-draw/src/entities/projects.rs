@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::{
     ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity, DeriveRelation,
-    EnumIter, Expr, PrimaryKeyTrait,
+    EntityTrait, EnumIter, Expr, PrimaryKeyTrait, Related, RelationDef, RelationTrait,
 };
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -21,9 +21,52 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::drawings::Entity")]
+    Drawings,
+    #[sea_orm(has_many = "super::objects::Entity")]
+    Objects,
+    #[sea_orm(has_many = "super::project_permissions::Entity")]
+    ProjectPermissions,
+}
+
+impl Related<super::drawings::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Drawings.def()
+    }
+}
+
+impl Related<super::objects::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Objects.def()
+    }
+}
+
+impl Related<super::project_permissions::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ProjectPermissions.def()
+    }
+}
+
+impl Related<super::accounts::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::project_permissions::Relation::Accounts.def()
+    }
+    fn via() -> Option<RelationDef> {
+        Some(super::project_permissions::Relation::Projects.def().rev())
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelatedEntity)]
-pub enum RelatedEntity {}
+pub enum RelatedEntity {
+    #[sea_orm(entity = "super::drawings::Entity")]
+    Drawings,
+    #[sea_orm(entity = "super::objects::Entity")]
+    Objects,
+    #[sea_orm(entity = "super::project_permissions::Entity")]
+    ProjectPermissions,
+    #[sea_orm(entity = "super::accounts::Entity")]
+    Accounts,
+}

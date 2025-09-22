@@ -36,7 +36,7 @@ sqlx = { version = "0.8.6", default-features = false, features = [
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1"
 tracing = { version = "0.1.37" }
-tracing-subscriber = { version = "0.3.17" }
+tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 uuid = { version = "1", default-features = false, features = ["v4"] }
 
 [dependencies.seaography]

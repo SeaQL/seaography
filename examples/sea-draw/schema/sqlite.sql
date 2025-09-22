@@ -1,3 +1,5 @@
+-- CREATE TYPE PERMISSION AS ENUM ('read', 'write', 'admin');
+
 CREATE TABLE accounts (
     id             TEXT NOT NULL PRIMARY KEY,
     created_at     TEXT NOT NULL,
@@ -36,4 +38,11 @@ CREATE TABLE objects (
     fill           JSONB NOT NULL,
     stroke         JSONB NOT NULL,
     shape          JSONB NOT NULL
+);
+
+CREATE TABLE project_permissions (
+    project_id     TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    account_id     TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    permission     PERMISSION NOT NULL,
+    PRIMARY KEY (project_id, account_id)
 );
