@@ -11,23 +11,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 * Macros for custom queries and mutations https://github.com/SeaQL/seaography/pull/193
 ```rust
-#[derive(CustomOperation)]
-pub struct Operations {
-    foo: fn(username: String) -> String,
-    bar: fn(x: i32, y: i32) -> i32,
-    login: fn() -> customer::Model,
-}
-
+#[CustomFields]
 impl Operations {
-    async fn foo(_ctx: &ResolverContext<'_>, username: String) -> GqlResult<String> {
+    async fn foo(_ctx: &Context<'_>, username: String) -> async_graphql::Result<String> {
         Ok(format!("Hello, {}!", username))
     }
 
-    async fn bar(_ctx: &ResolverContext<'_>, x: i32, y: i32) -> GqlResult<i32> {
+    async fn bar(_ctx: &Context<'_>, x: i32, y: i32) -> async_graphql::Result<i32> {
         Ok(x + y)
     }
 
-    async fn login(ctx: &ResolverContext<'_>) -> GqlResult<customer::Model> {
+    async fn login(ctx: &Context<'_>) -> async_graphql::Result<customer::Model> {
         use sea_orm::EntityTrait;
 
         let db = ctx.data::<DatabaseConnection>().unwrap();
@@ -40,16 +34,12 @@ impl Operations {
 ```
 * Support pagination in custom query https://github.com/SeaQL/seaography/pull/194
 ```rust
-#[derive(CustomOperation)]
-pub struct Operations {
-    customer_of_store2: fn(pagination: PaginationInput) -> Connection::<customer::Entity>,
-}
-
+#[CustomFields]
 impl Operations {
     async fn customer_of_store2(
-        ctx: &ResolverContext<'_>,
+        ctx: &Context<'_>,
         pagination: PaginationInput,
-    ) -> GqlResult<Connection<customer::Entity>> {
+    ) -> async_graphql::Result<Connection<customer::Entity>> {
         let db = ctx.data::<DatabaseConnection>()?;
         let query = customer::Entity::find().filter(customer::Column::StoreId.eq(2));
         let connection = apply_pagination(&CONTEXT, db, query, pagination).await?;
@@ -119,42 +109,46 @@ impl LifecycleHooksInterface for MyHooks {
 ```
 * Custom input type and derive macro https://github.com/SeaQL/seaography/pull/203
 ```rust
-#[derive(Clone, CustomInput)]
+#[derive(Clone, CustomInputType)]
 pub struct RentalRequest {
     pub customer: String,
     pub film: String,
     pub location: Option<Location>,
 }
 
-#[derive(Clone, CustomInput)]
+#[derive(Clone, CustomInputType)]
 pub struct Location {
     pub city: String,
     pub county: Option<String>,
 }
 
-#[derive(CustomOperation)]
-pub struct Operations {
-    rental_request: fn(rental_request: RentalRequest) -> String,
+#[CustomFields]
+impl Operations {
+    async fn rental_request(
+        _ctx: &Context<'_>, rental_request: RentalRequest
+    ) -> async_graphql::Result<String> { .. }
 }
 ```
 * Custom output type and derive macro https://github.com/SeaQL/seaography/pull/220
 ```rust
-#[derive(Clone, CustomOutput)]
+#[derive(Clone, CustomOutputType)]
 pub struct PurchaseOrder {
     pub po_number: String,
     pub lineitems: Vec<Lineitem>,
 }
 
-#[derive(Clone, CustomOutput)]
+#[derive(Clone, CustomOutputType)]
 pub struct Lineitem {
     pub product: String,
-    pub quantity: f64,
-    pub size: i32,
+    pub quantity: Decimal,
+    pub size: Option<ProductSize>,
 }
 
-#[derive(CustomOperation)]
-pub struct Operations {
-    purchase_order: fn(po_number: String) -> PurchaseOrder,
+#[CustomFields]
+impl Operations {
+    async fn purchase_order(
+        _ctx: &Context<'_>, po_number: String
+    ) -> async_graphql::Result<PurchaseOrder> { .. }
 }
 ```
 * Support singular / plural field names https://github.com/SeaQL/seaography/pull/202
