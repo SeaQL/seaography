@@ -1,8 +1,10 @@
 pub mod backend;
 pub mod client;
+pub mod client_test;
 pub mod entities;
 pub mod mutations;
 pub mod queries;
 pub mod schema;
+pub mod server;
 pub mod subscriptions;
 pub mod types;

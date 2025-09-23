@@ -1,10 +1,21 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
+#![allow(unused_mut)]
+#![allow(unused_assignments)]
+#![allow(unused_imports)]
+#![allow(unused_macros)]
+#![allow(non_upper_case_globals)]
+
 use clap::Parser;
 use dotenv::dotenv;
-use tokio::sync::oneshot;
+use tokio::{
+    sync::oneshot,
+    task::{JoinHandle, spawn},
+};
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
-use sea_draw::server::server;
+use sea_draw::{client_test::client_test, server::server};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -32,12 +43,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .with(tracing_subscriber::fmt::layer())
         .init();
     let args = Args::parse();
-    server(
-        args.address,
+
+    // Start the server
+    let (stop_tx, stop_rx) = oneshot::channel();
+    let server_handle = tokio::task::spawn(server(
+        args.address.clone(),
         args.port,
-        args.database_url,
+        args.database_url.clone(),
         args.root_account_id,
-        oneshot::channel().1,
-    )
-    .await
+        stop_rx,
+    ));
+
+    // Run the client tesst
+    client_test(args.address, args.port, args.root_account_id).await?;
+
+    // Stop the server
+    stop_tx.send(()).unwrap();
+    server_handle.await.unwrap()?;
+
+    Ok(())
 }

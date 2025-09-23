@@ -10,12 +10,14 @@ use sea_orm::{
     sea_query::query::OnConflict,
 };
 use seaography::CustomFields;
+use tracing::instrument;
 use uuid::Uuid;
 
 pub struct CustomMutations;
 
 #[CustomFields]
 impl CustomMutations {
+    #[instrument(skip_all)]
     async fn create_account(
         ctx: &Context<'_>,
         name: String,
@@ -46,6 +48,7 @@ impl CustomMutations {
         Ok(account)
     }
 
+    #[instrument(skip_all)]
     async fn create_project(ctx: &Context<'_>, name: String) -> async_graphql::Result<Project> {
         let backend = ctx.data::<Backend>()?;
         let access = ctx
@@ -76,7 +79,7 @@ impl CustomMutations {
             .exec(&backend.db)
             .await?;
 
-        println!("Created project {}", project.id);
+        tracing::info!("Created project {}", project.id);
         Ok(project)
     }
 
@@ -86,6 +89,7 @@ impl CustomMutations {
     /// If the permission is null, the permission will be revoked. Only accounts with admin
     /// permissions on a project are allowed to call this message, and attempts to revoke or
     /// downgrade your own permission on the project are prohibited.
+    #[instrument(skip_all)]
     pub async fn set_project_permission(
         ctx: &Context<'_>,
         project_id: Uuid,
@@ -145,6 +149,7 @@ impl CustomMutations {
         Ok(true)
     }
 
+    #[instrument(skip_all)]
     async fn create_drawing(
         ctx: &Context<'_>,
         project_id: Uuid,
@@ -181,11 +186,12 @@ impl CustomMutations {
             .exec(&backend.db)
             .await?;
 
-        println!("Created drawing {}", drawing.id);
+        tracing::info!("Created drawing {}", drawing.id);
 
         Ok(drawing)
     }
 
+    #[instrument(skip_all)]
     async fn create_object(
         ctx: &Context<'_>,
         drawing_id: Uuid,
@@ -225,11 +231,12 @@ impl CustomMutations {
             .exec(&backend.db)
             .await?;
 
-        println!("Created object {}", object.id);
+        tracing::info!("Created object {}", object.id);
 
         Ok(object)
     }
 
+    #[instrument(skip_all)]
     async fn update_object(
         ctx: &Context<'_>,
         object_id: Uuid,
@@ -252,10 +259,6 @@ impl CustomMutations {
             return Err("unauthorized".into());
         }
 
-        tracing::info!("update_object: fill = {:?}", fill);
-        tracing::info!("update_object: stroke = {:?}", stroke);
-        tracing::info!("update_object: shape = {:?}", shape);
-
         // Update specified fields
         if let Some(fill) = fill {
             object.fill = fill;
@@ -276,6 +279,7 @@ impl CustomMutations {
         Ok(object)
     }
 
+    #[instrument(skip_all)]
     async fn delete_object(ctx: &Context<'_>, object_id: Uuid) -> async_graphql::Result<bool> {
         let backend = ctx.data::<Backend>()?;
         let access = ctx

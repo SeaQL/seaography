@@ -55,6 +55,8 @@ jobs:
           toolchain: stable
           components: rustfmt
       - run: cargo fmt --all -- --check
+      - working-directory: ./examples/sea-draw
+        run: cargo fmt --all -- --check
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -65,6 +67,8 @@ jobs:
           toolchain: stable
           components: clippy
       - run: cargo clippy --all -- -D warnings
+      - working-directory: ./examples/sea-draw
+        run: cargo clippy --all -- -D warnings
   integration-sqlite:
     name: SQLite integration tests
     runs-on: ubuntu-latest
@@ -112,6 +116,12 @@ jobs:
       - name: Integration tests
         working-directory: ./examples/sqlite
         run: cargo test
+      - name: Build sea-draw
+        working-directory: ./examples/sea-draw
+        run: cargo build
+      - name: Run sea-draw integration tests
+        working-directory: ./examples/sea-draw
+        run: ./integration_test_sqlite.sh
   integration-mysql:
     name: MySQL integration tests
     runs-on: ubuntu-latest
@@ -250,3 +260,9 @@ jobs:
       - name: Integration tests
         working-directory: ./examples/postgres
         run: cargo test
+      - name: Build sea-draw
+        working-directory: ./examples/sea-draw
+        run: cargo build
+      - name: Run sea-draw integration tests
+        working-directory: ./examples/sea-draw
+        run: ./integration_test_postgres.sh

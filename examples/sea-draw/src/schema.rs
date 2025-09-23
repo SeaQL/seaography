@@ -277,15 +277,13 @@ pub async fn queries_and_mutations(
     if let Some(token) = extract_token_from_headers(&headers) {
         match create_access_object(&backend, token).await {
             Ok(access) => {
-                tracing::info!("queries_and_mutations: account {}", access.account_id());
+                // tracing::info!("queries_and_mutations: account {}", access.account_id());
                 req.data.insert(access);
             }
             Err(e) => {
                 tracing::error!("bad auth: {:?}", e);
             }
         }
-    } else {
-        tracing::info!("queries_and_mutations: unauthenticated");
     }
     schema.execute(req).await.into()
 }
