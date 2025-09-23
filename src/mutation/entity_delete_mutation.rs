@@ -4,9 +4,8 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_guard, get_filter_conditions, guard_error, BuilderContext, DatabaseContext,
-    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType,
-    UserContext,
+    get_filter_conditions, guard_error, BuilderContext, DatabaseContext, EntityObjectBuilder,
+    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType, UserContext,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -72,8 +71,6 @@ impl EntityDeleteMutationBuilder {
         let object_name_ = object_name.clone();
 
         let context = self.context;
-
-        let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
 
         Field::new(
@@ -82,9 +79,6 @@ impl EntityDeleteMutationBuilder {
             move |ctx| {
                 let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                        return Err(guard_error(reason, "Entity guard triggered."));
-                    }
                     if let GuardAction::Block(reason) =
                         hooks.entity_guard(&ctx, &object_name, OperationType::Delete)
                     {

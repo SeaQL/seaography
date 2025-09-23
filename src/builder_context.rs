@@ -55,7 +55,6 @@ pub struct BuilderContext {
 
     pub entity_input: EntityInputConfig,
 
-    pub guards: GuardsConfig,
     pub hooks: LifecycleHooks,
     pub types: TypesMapConfig,
     pub filter_types: FilterTypesMapConfig,

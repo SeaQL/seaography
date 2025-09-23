@@ -9,8 +9,8 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_guard, apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions,
-    guard_error, pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext,
+    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, guard_error,
+    pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext,
     EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex,
     OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder, PaginationInputBuilder,
     UserContext,
@@ -60,7 +60,6 @@ impl EntityObjectViaRelationBuilder {
         let parent_name: String = entity_object_builder.type_name::<T>();
         let object_name: String = entity_object_builder.type_name::<R>();
         let object_name_ = object_name.clone();
-        let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
 
         let from_col = <T::Column as std::str::FromStr>::from_str(
@@ -88,9 +87,6 @@ impl EntityObjectViaRelationBuilder {
                 let parent_name = parent_name.clone();
                 let field_name = field_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                        return Err(guard_error(reason, "Entity guard triggered."));
-                    }
                     if let GuardAction::Block(reason) =
                         hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                     {
@@ -159,9 +155,6 @@ impl EntityObjectViaRelationBuilder {
                     let parent_name = parent_name.clone();
                     let field_name = field_name.clone();
                     FieldFuture::new(async move {
-                        if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                            return Err(guard_error(reason, "Entity guard triggered."));
-                        }
                         if let GuardAction::Block(reason) =
                             hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                         {

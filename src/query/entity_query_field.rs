@@ -3,10 +3,10 @@ use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_guard, apply_order, apply_pagination, get_filter_conditions, guard_error,
-    pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext, EntityColumnId,
-    EntityObjectBuilder, FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder,
-    PaginationInput, PaginationInputBuilder, UserContext,
+    apply_order, apply_pagination, get_filter_conditions, guard_error, pluralize_unique,
+    BuilderContext, ConnectionObjectBuilder, DatabaseContext, EntityColumnId, EntityObjectBuilder,
+    FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInput,
+    PaginationInputBuilder, UserContext,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -97,8 +97,6 @@ impl EntityQueryFieldBuilder {
         };
 
         let object_name = entity_object.type_name::<T>();
-
-        let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
 
         let column = T::PrimaryKey::iter()
@@ -122,9 +120,6 @@ impl EntityQueryFieldBuilder {
             move |ctx| {
                 let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                        return Err(guard_error(reason, "Entity guard triggered."));
-                    }
                     if let GuardAction::Block(reason) =
                         hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                     {
@@ -182,7 +177,6 @@ impl EntityQueryFieldBuilder {
         let object_name_ = object_name.clone();
         let type_name = connection_object_builder.type_name(&object_name);
 
-        let guard = self.context.guards.entity_guards.get(&object_name);
         let hooks = &self.context.hooks;
         let context: &'static BuilderContext = self.context;
         let connection_name = pluralize_unique(&self.type_name_vanilla::<T>(), true);
@@ -190,9 +184,6 @@ impl EntityQueryFieldBuilder {
         Field::new(connection_name, TypeRef::named_nn(type_name), move |ctx| {
             let object_name = object_name.clone();
             FieldFuture::new(async move {
-                if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                    return Err(guard_error(reason, "Entity guard triggered."));
-                }
                 if let GuardAction::Block(reason) =
                     hooks.entity_guard(&ctx, &object_name, OperationType::Read)
                 {

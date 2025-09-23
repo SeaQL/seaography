@@ -5,9 +5,9 @@ use sea_orm::{
 };
 
 use crate::{
-    apply_guard, get_filter_conditions, guard_error, prepare_active_model, BuilderContext,
-    DatabaseContext, EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder,
-    FilterInputBuilder, GuardAction, OperationType, UserContext,
+    get_filter_conditions, guard_error, prepare_active_model, BuilderContext, DatabaseContext,
+    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder,
+    GuardAction, OperationType, UserContext,
 };
 
 /// The configuration structure of EntityUpdateMutationBuilder
@@ -81,9 +81,6 @@ impl EntityUpdateMutationBuilder {
         let object_name_ = object_name.clone();
 
         let context = self.context;
-
-        let guard = self.context.guards.entity_guards.get(&object_name);
-        let field_guards = &self.context.guards.field_guards;
         let hooks = &self.context.hooks;
 
         Field::new(
@@ -92,9 +89,6 @@ impl EntityUpdateMutationBuilder {
             move |ctx| {
                 let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    if let GuardAction::Block(reason) = apply_guard(&ctx, guard) {
-                        return Err(guard_error(reason, "Entity guard triggered."));
-                    }
                     if let GuardAction::Block(reason) =
                         hooks.entity_guard(&ctx, &object_name, OperationType::Update)
                     {
@@ -119,14 +113,6 @@ impl EntityUpdateMutationBuilder {
                     let input_object = &value_accessor.object()?;
 
                     for (column, _) in input_object.iter() {
-                        let field_guard = field_guards.get(&format!(
-                            "{}.{}",
-                            entity_object_builder.type_name::<T>(),
-                            column
-                        ));
-                        if let GuardAction::Block(reason) = apply_guard(&ctx, field_guard) {
-                            return Err(guard_error(reason, "Field guard triggered."));
-                        }
                         if let GuardAction::Block(reason) =
                             hooks.field_guard(&ctx, &object_name, column, OperationType::Update)
                         {
