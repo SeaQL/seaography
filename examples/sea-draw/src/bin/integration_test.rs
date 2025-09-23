@@ -1,16 +1,7 @@
-#![allow(unused_variables)]
-#![allow(dead_code)]
-#![allow(unused_mut)]
-#![allow(unused_assignments)]
-#![allow(unused_imports)]
-#![allow(unused_macros)]
-#![allow(non_upper_case_globals)]
-
 use clap::Parser;
 use dotenv::dotenv;
 use tokio::{
     sync::oneshot,
-    task::{JoinHandle, spawn},
 };
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
