@@ -553,8 +553,11 @@ macro_rules! impl_custom_type_for_enum {
                 <$name as seaography::GqlScalarValueType>::gql_output_type_ref(ctx)
             }
 
-            fn gql_field_value(value: Self) -> Option<async_graphql::dynamic::FieldValue<'static>> {
-                <$name as seaography::GqlScalarValueType>::gql_field_value(value)
+            fn gql_field_value(
+                self,
+                ctx: &'static seaography::BuilderContext,
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                <$name as seaography::GqlScalarValueType>::gql_field_value(self, ctx)
             }
         }
 
@@ -645,7 +648,7 @@ macro_rules! register_entities_without_relation {
 }
 
 #[macro_export]
-#[cfg(feature = "opt-in-custom-types")]
+#[cfg(feature = "strict-custom-types")]
 macro_rules! impl_custom_output_type_for_entities {
     ([$($module_paths:ident),+ $(,)?]) => {
         $(seaography::impl_custom_output_type_for_entity!($module_paths::Model);)*

@@ -1,6 +1,6 @@
 use async_graphql;
 use sea_orm::FromJsonQueryResult;
-use seaography::{CustomEnum, CustomFields, CustomInputType, CustomOutputType};
+use seaography::{ConvertOutput, CustomEnum, CustomFields, CustomInputType, CustomOutputType};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -282,6 +282,7 @@ impl Triangle {
     Deserialize,
     CustomInputType,
     CustomOutputType,
+    ConvertOutput,
     FromJsonQueryResult,
     PartialEq,
     Eq,

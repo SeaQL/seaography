@@ -90,7 +90,7 @@ fn derive_custom_input_type_struct(
     let imports = quote!(
         use seaography::CustomInputType;
     );
-    #[cfg(not(feature = "opt-in-custom-types"))]
+    #[cfg(not(feature = "strict-custom-types"))]
     let imports = quote! {
         #imports
         use seaography::{GqlScalarValueType, GqlModelType, GqlModelHolderType};

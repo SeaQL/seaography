@@ -33,7 +33,6 @@ pub struct Model {
 // Specifically, just because you have access to see the list of permissions for project,
 // you shouldn't be able to view all information about the accounts that have access.
 #[derive(Clone, Debug, CustomOutputType)]
-#[seaography(custom_fields)]
 pub struct ProjectPermissionSummary {
     pub project_id: Uuid,
     pub account_id: Uuid,

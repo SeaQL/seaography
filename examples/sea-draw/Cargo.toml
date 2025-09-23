@@ -43,16 +43,17 @@ uuid = { version = "1", default-features = false, features = ["v4"] }
 path = "../../"
 version = "~1.1.4" # seaography version
 features = [
-    "with-postgres-array",
-    "with-chrono",
-    "with-uuid",
-    "with-json",
     "macros",
-    "field-snake-case",
-    "with-time",
-    "with-bigdecimal",
-    "with-decimal",
     "field-pluralize",
+    "field-snake-case",
+    "with-bigdecimal",
+    "with-chrono",
+    "with-decimal",
+    "with-json",
+    "with-postgres-array",
+    "with-time",
+    "with-uuid",
+    "strict-custom-types",
 ]
 
 [workspace]
