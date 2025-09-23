@@ -1,4 +1,3 @@
-use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::*;
 use seaography::CustomFields;
 
@@ -13,10 +12,10 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     #[sea_orm(default_expr = "Expr::current_timestamp()")]
-    pub created_at: DateTime<Utc>,
+    pub created_at: DateTimeUtc,
     #[sea_orm(default_expr = "Expr::current_timestamp()")]
-    pub updated_at: DateTime<Utc>,
-    pub deleted_at: Option<DateTime<Utc>>,
+    pub updated_at: DateTimeUtc,
+    pub deleted_at: Option<DateTimeUtc>,
     pub project_id: Uuid,
     pub drawing_id: Uuid,
     #[sea_orm(column_type = "JsonBinary")]
