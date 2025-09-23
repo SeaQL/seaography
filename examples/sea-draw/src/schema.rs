@@ -184,42 +184,6 @@ pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
     builder.register_custom_input::<types::Shape>();
     builder.register_custom_union::<types::Shape>();
 
-    // seaography::register_custom_inputs!(
-    //     builder,
-    //     [
-    //         types::RentalRequest,
-    //         types::Location,
-    //         types::Point,
-    //         types::Size,
-    //         types::Rectangle,
-    //         types::Circle,
-    //         types::Triangle,
-    //         types::Shape,
-    //     ]
-    // );
-
-    // seaography::register_custom_outputs!(
-    //     builder,
-    //     [
-    //         types::PurchaseOrder,
-    //         types::Lineitem,
-    //         types::ProductSize,
-    //         types::Point,
-    //         types::Size,
-    //     ]
-    // );
-
-    // seaography::register_complex_custom_outputs!(
-    //     builder,
-    //     [types::Rectangle, types::Circle, types::Triangle]
-    // );
-
-    // seaography::register_custom_unions!(builder, [types::Shape]);
-
-    // seaography::register_custom_queries!(builder, [queries::Operations]);
-
-    // seaography::register_custom_mutations!(builder, [mutations::Operations]);
-
     let db = backend.db.clone();
     builder
         .schema_builder()
