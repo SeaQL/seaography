@@ -1,9 +1,9 @@
 use sea_orm::{
     DatabaseConnection, PrimaryKeyTrait,
+    entity::prelude::Uuid,
     entity::{ActiveModelTrait, EntityTrait, IntoActiveModel, ModelTrait},
     error::DbErr,
 };
-use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct Backend {

@@ -1,10 +1,9 @@
 use async_graphql::http::{GraphQLPlaygroundConfig, graphiql_source, playground_source};
 use axum::{Extension, Router, response, routing};
-use sea_orm::Database;
+use sea_orm::{Database, entity::prelude::Uuid};
 use std::net::{IpAddr, SocketAddr};
 use tokio::{net::TcpListener, sync::oneshot::Receiver};
 use tracing::instrument;
-use uuid::Uuid;
 
 use crate::{backend::Backend, schema::queries_and_mutations};
 

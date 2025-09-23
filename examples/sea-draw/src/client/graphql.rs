@@ -2,10 +2,10 @@ use reqwest::{
     RequestBuilder, StatusCode,
     multipart::{Form, Part},
 };
+use sea_orm::entity::prelude::Uuid;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::borrow::Borrow;
-use uuid::{Uuid, uuid};
 
 pub async fn graphql(
     url: &str,
@@ -209,5 +209,5 @@ impl std::fmt::Display for GraphQLError {
 impl std::error::Error for GraphQLError {}
 
 pub fn unauthenticated() -> Uuid {
-    uuid!("ffffffff-ffff-ffff-ffff-ffffffffffff")
+    Uuid::max()
 }

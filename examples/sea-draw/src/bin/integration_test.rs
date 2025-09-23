@@ -1,8 +1,8 @@
 use clap::Parser;
 use dotenv::dotenv;
+use sea_orm::entity::prelude::Uuid;
 use tokio::sync::oneshot;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 use sea_draw::{client_test::client_test, server::server};
 

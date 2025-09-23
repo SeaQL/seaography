@@ -1,6 +1,6 @@
 use super::graphql::{GraphQLError, graphql};
+use sea_orm::entity::prelude::Uuid;
 use serde_json::{Value, json};
-use uuid::Uuid;
 
 pub struct Client {
     pub url: String,

@@ -1,6 +1,7 @@
 #!/bin/bash
 set -eu
 rm -f generic.db
+export TRACE=info
 export DATABASE_URL="postgres://sea:sea@127.0.0.1/sea_draw_example"
 
 psql -q postgres://sea:sea@localhost/postgres -c 'DROP DATABASE IF EXISTS "sea_draw_example"'

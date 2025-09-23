@@ -1,10 +1,6 @@
 use sea_orm::{
     ColumnTrait, DatabaseConnection, DbErr, EntityTrait, Order, QueryFilter, QueryOrder,
-    RelationTrait,
-    entity::prelude::{
-        ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity,
-        DeriveRelation, EnumIter, PrimaryKeyTrait, Related, RelationDef,
-    },
+    RelationTrait, entity::prelude::*,
 };
 use seaography::{CustomFields, CustomOutputType};
 use serde::Serialize;
@@ -12,7 +8,6 @@ use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
 };
-use uuid::Uuid;
 
 use crate::{
     backend::Backend,

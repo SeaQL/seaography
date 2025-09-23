@@ -1,18 +1,13 @@
 use chrono::{DateTime, Utc};
-use sea_orm::entity::prelude::{
-    ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity, DeriveRelation,
-    EntityTrait, EnumIter, Expr, PrimaryKeyTrait, Related, RelationDef, RelationTrait,
-};
+use sea_orm::entity::prelude::*;
 use seaography::CustomFields;
-use sqlx::FromRow;
-use uuid::Uuid;
 
 use crate::{
     InProject,
     types::{Fill, Shape, Stroke},
 };
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, FromRow)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "objects")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]

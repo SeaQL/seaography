@@ -1,7 +1,6 @@
 use async_graphql::Enum;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
-use sqlx::Type;
 use std::hash::Hash;
 
 #[derive(
@@ -17,7 +16,6 @@ use std::hash::Hash;
     Copy,
     Serialize,
     Deserialize,
-    Type,
     Enum,
 )]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "permission")]

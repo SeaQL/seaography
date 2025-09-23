@@ -1,18 +1,9 @@
 use async_graphql::{Context, dynamic::ResolverContext};
 use chrono::{DateTime, Utc};
-use sea_orm::{
-    Condition,
-    entity::prelude::{
-        ActiveModelBehavior, ColumnTrait, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity,
-        DeriveRelation, EntityTrait, EnumIter, Expr, PrimaryKeyTrait, Related, RelationDef,
-        RelationTrait,
-    },
-};
+use sea_orm::{Condition, entity::prelude::*};
 use seaography::{
     CustomFields, GuardAction, LifecycleHooksInterface, OperationType, try_downcast_ref,
 };
-use sqlx::FromRow;
-use uuid::Uuid;
 
 use crate::{
     backend::Backend,
@@ -20,7 +11,7 @@ use crate::{
     never_condition, permission_for_operation_type,
 };
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, FromRow)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "projects")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]

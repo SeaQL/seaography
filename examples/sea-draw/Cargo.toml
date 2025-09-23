@@ -19,25 +19,15 @@ reqwest = { version = "0.12", features = [
 sea-orm = { version = "~1.1.14", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
-    "sqlx-mysql",
-    "runtime-async-std-rustls",
+    "runtime-tokio-native-tls",
     "seaography",
 ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1.0.103" }
-sqlx = { version = "0.8.6", default-features = false, features = [
-    "chrono",
-    "json",
-    "macros",
-    "postgres",
-    "runtime-tokio-rustls",
-    "uuid",
-] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tokio-stream = "0.1"
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
-uuid = { version = "1", default-features = false, features = ["v4"] }
 
 [dependencies.seaography]
 path = "../../"
@@ -46,12 +36,9 @@ features = [
     "macros",
     "field-pluralize",
     "field-snake-case",
-    "with-bigdecimal",
     "with-chrono",
-    "with-decimal",
     "with-json",
     "with-postgres-array",
-    "with-time",
     "with-uuid",
     "strict-custom-types",
 ]

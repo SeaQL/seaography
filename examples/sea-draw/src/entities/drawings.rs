@@ -1,17 +1,11 @@
 use async_graphql::Context;
 use chrono::{DateTime, Utc};
-use sea_orm::entity::prelude::{
-    ActiveModelBehavior, ColumnTrait, DeriveEntityModel, DerivePrimaryKey, DeriveRelatedEntity,
-    DeriveRelation, EntityTrait, EnumIter, Expr, PrimaryKeyTrait, QueryFilter, Related,
-    RelationDef, RelationTrait,
-};
+use sea_orm::entity::prelude::*;
 use seaography::CustomFields;
-use sqlx::FromRow;
-use uuid::Uuid;
 
 use crate::{InProject, backend::Backend};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, FromRow)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
 #[sea_orm(table_name = "drawings")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]

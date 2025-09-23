@@ -7,11 +7,10 @@ use async_graphql::Context;
 use chrono::Utc;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter,
-    sea_query::query::OnConflict,
+    entity::prelude::Uuid, sea_query::query::OnConflict,
 };
 use seaography::CustomFields;
 use tracing::instrument;
-use uuid::Uuid;
 
 pub struct CustomMutations;
 

@@ -1,6 +1,6 @@
 use entities::Permission;
+use sea_orm::entity::prelude::Uuid;
 use seaography::OperationType;
-use uuid::Uuid;
 
 pub mod backend;
 pub mod client;

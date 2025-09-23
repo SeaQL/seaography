@@ -1,7 +1,7 @@
+use sea_orm::entity::prelude::Uuid;
 use serde_json::json;
 use std::time::Duration;
 use tracing::instrument;
-use uuid::Uuid;
 
 const OUTPUT1_EXPECTED: &str = include_str!("../fixtures/output1.svg");
 const OUTPUT2_EXPECTED: &str = include_str!("../fixtures/output2.svg");

@@ -1,7 +1,7 @@
 use clap::Parser;
 use dotenv::dotenv;
+use sea_orm::entity::prelude::Uuid;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{ResolverContext, Schema, SchemaError, TypeRef, ValueAccessor};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{Extension, http::HeaderMap};
-use sea_orm::{ColumnTrait, Condition};
+use sea_orm::{ColumnTrait, Condition, entity::prelude::Uuid};
 use seaography::{
     Builder, BuilderContext, ColumnOptions, ConvertOutput, CustomFields, EntityColumnId,
     EntityObjectConfig, EntityQueryFieldConfig, GuardAction, LifecycleHooks,
@@ -10,7 +10,6 @@ use seaography::{
     lazy_static, try_downcast_ref,
 };
 use std::{collections::BTreeMap, str::FromStr, sync::Arc};
-use uuid::Uuid;
 
 use crate::{
     InProject,
