@@ -18,22 +18,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
   test:
     name: Test
     runs-on: ubuntu-latest
+    if: false # we don't actually have any unit tests
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -46,35 +34,21 @@ jobs:
           command: test
           args: '--workspace'
   fmt:
-    name: Rustfmt
+    name: Rustfmt & Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          components: rustfmt
+          components: rustfmt, clippy
       - run: cargo fmt --all -- --check
       - working-directory: ./examples/sea-draw
         run: cargo fmt --all -- --check
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          components: clippy
       - run: cargo clippy --all -- -D warnings
-      - working-directory: ./examples/sea-draw
-        run: cargo clippy --all -- -D warnings
   integration-sqlite:
     name: SQLite integration tests
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -86,7 +60,8 @@ jobs:
       - name: Additional Integration tests
         working-directory: ./examples/sqlite
         run: |
-          cargo test --tests custom_
+          cargo test --test custom_query_tests
+          cargo test --test custom_mutation_tests
           cargo test --test plural_query_tests --features=field-pluralize
           cargo test --test entity_filter_tests --features=field-pluralize
           rm tests/custom_mutation_tests.rs tests/custom_query_tests.rs tests/plural_query_tests.rs
@@ -119,9 +94,6 @@ jobs:
   integration-mysql:
     name: MySQL integration tests
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     services:
       mysql:
         image: 'mysql:8.0'
@@ -186,9 +158,6 @@ jobs:
   integration-postgres:
     name: Postgres integration tests
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     services:
       postgres:
         image: 'postgres:14.4'
@@ -257,9 +226,6 @@ jobs:
   integration-sqlite-sea-draw:
     name: SQLite integration tests (sea-draw)
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -272,9 +238,6 @@ jobs:
   integration-postgres-sea-draw:
     name: Postgres integration tests (sea-draw)
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     services:
       postgres:
         image: 'postgres:14.4'
