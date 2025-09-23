@@ -8,8 +8,11 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(url: String, token: Uuid) -> Self {
-        Self { url, token }
+    pub fn new(url: impl Into<String>, token: Uuid) -> Self {
+        Self {
+            url: url.into(),
+            token,
+        }
     }
 
     pub async fn create_project(&self, name: impl Into<String>) -> Result<Uuid, GraphQLError> {
@@ -175,5 +178,64 @@ impl Client {
         )
         .await?;
         Ok(result["drawing"]["svg"].as_str().unwrap().to_string())
+    }
+
+    pub async fn set_project_permission(
+        &self,
+        project_id: Uuid,
+        account_id: Uuid,
+        permission: Option<&str>,
+    ) -> async_graphql::Result<()> {
+        graphql(
+            &self.url,
+            self.token,
+            r#"
+                mutation(
+                    $project_id: String!,
+                    $account_id: String!,
+                    $permission: PermissionEnum
+                ) {
+                    set_project_permission(
+                        project_id: $project_id,
+                        account_id: $account_id,
+                        permission: $permission
+                    )
+                }
+            "#,
+            Some(json!({
+                "project_id": project_id,
+                "account_id": account_id,
+                "permission": permission,
+            })),
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn list_projects(&self) -> async_graphql::Result<Value> {
+        let mut result = graphql(
+            &self.url,
+            self.token,
+            r#"
+                {
+                    projects {
+                        nodes {
+                            id
+                            name
+                            permission
+                        }
+                    }
+                }
+            "#,
+            None,
+        )
+        .await?;
+
+        result["projects"]["nodes"]
+            .as_array_mut()
+            .unwrap()
+            .sort_by(|a, b| a["name"].as_str().unwrap().cmp(b["name"].as_str().unwrap()));
+
+        Ok(result["projects"]["nodes"].clone())
     }
 }

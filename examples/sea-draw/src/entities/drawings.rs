@@ -1,4 +1,3 @@
-use crate::backend::Backend;
 use async_graphql::Context;
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::{
@@ -9,6 +8,8 @@ use sea_orm::entity::prelude::{
 use seaography::CustomFields;
 use sqlx::FromRow;
 use uuid::Uuid;
+
+use crate::{InProject, backend::Backend};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, FromRow)]
 #[sea_orm(table_name = "drawings")]
@@ -32,6 +33,12 @@ pub struct Model {
     // #[sea_orm(column_type = "JsonBinary")]
     // pub data: serde_json::Value,
     // pub tags: Vec<String>,
+}
+
+impl InProject for Model {
+    fn project_id(&self) -> Uuid {
+        self.project_id
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

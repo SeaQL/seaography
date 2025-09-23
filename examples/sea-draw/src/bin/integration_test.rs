@@ -1,8 +1,6 @@
 use clap::Parser;
 use dotenv::dotenv;
-use tokio::{
-    sync::oneshot,
-};
+use tokio::sync::oneshot;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 

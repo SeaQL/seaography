@@ -1,22 +1,26 @@
-use async_graphql::dynamic::{Schema, SchemaError, TypeRef, ValueAccessor};
+use async_graphql::dynamic::{ResolverContext, Schema, SchemaError, TypeRef, ValueAccessor};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{Extension, http::HeaderMap};
+use sea_orm::{ColumnTrait, Condition};
 use seaography::{
     Builder, BuilderContext, ColumnOptions, ConvertOutput, CustomFields, EntityColumnId,
-    EntityObjectConfig, EntityQueryFieldConfig, TimeLibrary, TypesMapConfig,
+    EntityObjectConfig, EntityQueryFieldConfig, GuardAction, LifecycleHooks,
+    LifecycleHooksInterface, OperationType, TimeLibrary, TypesMapConfig,
     heck::{ToSnakeCase, ToUpperCamelCase},
-    lazy_static,
+    lazy_static, try_downcast_ref,
 };
 use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 use uuid::Uuid;
 
 use crate::{
+    InProject,
     backend::Backend,
     entities::{
-        Access, Account, Permission, accounts, drawings, objects, project_permissions,
+        Access, Account, Drawing, Object, Permission, PermissionAccount, Project,
+        ProjectPermissionSummary, accounts, drawings, objects, project_permissions,
         project_permissions::permissions_by_account, projects,
     },
-    mutations, queries, subscriptions,
+    mutations, never_condition, permission_for_operation_type, queries, subscriptions,
     types::{self, Shape},
 };
 
@@ -82,7 +86,7 @@ lazy_static::lazy_static! {
             ..types
         };
         let mut context = BuilderContext {
-            // hooks: LifecycleHooks::new(AuthHooks::new()),
+            hooks: LifecycleHooks::new(AuthHooks::new()),
             entity_object: EntityObjectConfig {
                 type_name: Box::new(type_name),
                 column_name: Box::new(column_name),
@@ -104,6 +108,223 @@ lazy_static::lazy_static! {
 
         context
     };
+}
+
+#[derive(Clone)]
+struct EntityHooks {
+    entity_guard: fn(&ResolverContext, OperationType) -> GuardAction,
+    field_guard: fn(&ResolverContext, &str, OperationType) -> GuardAction,
+    entity_filter: fn(&ResolverContext, OperationType) -> Option<Condition>,
+}
+
+impl LifecycleHooksInterface for EntityHooks {
+    fn entity_guard(
+        &self,
+        ctx: &ResolverContext,
+        _entity: &str,
+        action: OperationType,
+    ) -> GuardAction {
+        (self.entity_guard)(ctx, action)
+    }
+
+    fn field_guard(
+        &self,
+        ctx: &ResolverContext,
+        _entity: &str,
+        field: &str,
+        action: OperationType,
+    ) -> GuardAction {
+        (self.field_guard)(ctx, field, action)
+    }
+
+    fn entity_filter(
+        &self,
+        ctx: &ResolverContext,
+        _entity: &str,
+        action: OperationType,
+    ) -> Option<Condition> {
+        (self.entity_filter)(ctx, action)
+    }
+}
+
+struct AuthHooks {
+    entries: BTreeMap<String, Box<dyn LifecycleHooksInterface>>,
+}
+
+macro_rules! auth_project_based {
+    ($self:expr, $entity_module:ident) => {
+        let table_name =
+            <$entity_module::Entity as sea_orm::EntityName>::table_name(&Default::default())
+                .to_string();
+
+        let plural = table_name.to_upper_camel_case();
+        let single = singular(table_name).to_upper_camel_case();
+
+        let entity_hooks = EntityHooks {
+            entity_guard: |_ctx: &ResolverContext, _action: OperationType| -> GuardAction {
+                GuardAction::Allow
+            },
+            field_guard: |ctx: &ResolverContext,
+                          field: &str,
+                          action: OperationType|
+             -> GuardAction {
+                EntityFieldGuard::<$entity_module::Model>::check(ctx, Some(field), action)
+            },
+            entity_filter: |ctx: &ResolverContext, _action: OperationType| -> Option<Condition> {
+                if let Ok(access) = ctx.data::<Access>() {
+                    if access.is_root {
+                        None
+                    } else {
+                        let public_project_id = Uuid::nil();
+                        Some(
+                            Condition::all().add(
+                                $entity_module::Column::ProjectId.is_in(
+                                    access
+                                        .permissions()
+                                        .keys()
+                                        .cloned()
+                                        .chain([public_project_id].into_iter())
+                                        .collect::<Vec<Uuid>>(),
+                                ),
+                            ),
+                        )
+                    }
+                } else {
+                    // Client is not authenticated
+                    Some(never_condition())
+                }
+            },
+        };
+        ($self)
+            .entries
+            .insert(single.clone(), Box::new(entity_hooks.clone()));
+        ($self)
+            .entries
+            .insert(plural.clone(), Box::new(entity_hooks));
+    };
+}
+
+impl AuthHooks {
+    fn new() -> Self {
+        let mut auth_hooks = Self {
+            entries: BTreeMap::new(),
+        };
+        auth_hooks.build();
+        auth_hooks
+    }
+
+    fn add<T>(&mut self, name: impl Into<String>)
+    where
+        T: LifecycleHooksInterface + Default + 'static,
+    {
+        self.entries.insert(name.into(), Box::new(T::default()));
+    }
+
+    fn build(&mut self) {
+        self.add::<accounts::Entity>("Account");
+        self.add::<accounts::Entity>("Accounts");
+
+        self.add::<projects::Entity>("Project");
+        self.add::<projects::Entity>("Projects");
+
+        auth_project_based!(self, drawings);
+        auth_project_based!(self, objects);
+    }
+}
+
+pub struct EntityFieldGuard<T>(std::marker::PhantomData<T>)
+where
+    T: InProject + 'static;
+
+impl<T> EntityFieldGuard<T>
+where
+    T: InProject + 'static,
+{
+    pub fn check(ctx: &ResolverContext, name: Option<&str>, action: OperationType) -> GuardAction {
+        let access = if let Ok(access) = ctx.data::<Access>() {
+            access
+        } else {
+            return GuardAction::Block(Some("unauthenticated".to_string()));
+        };
+
+        let permission = permission_for_operation_type(action);
+
+        match try_downcast_ref::<T>(ctx.parent_value) {
+            Ok(entity) => {
+                if access.has_permission_on_project(entity.project_id(), permission) {
+                    GuardAction::Allow
+                } else {
+                    GuardAction::Block(Some("unauthorized".to_string()))
+                }
+            }
+            Err(_) => GuardAction::Block(Some(format!(
+                "field {:?}: Cannot downcast {:?} to {}",
+                name,
+                ctx.parent_value,
+                std::any::type_name::<T>()
+            ))),
+        }
+    }
+}
+
+impl LifecycleHooksInterface for AuthHooks {
+    fn field_guard(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        field: &str,
+        action: OperationType,
+    ) -> GuardAction {
+        if let Some(entry) = self.entries.get(entity) {
+            entry.field_guard(ctx, entity, field, action)
+        } else {
+            tracing::error!(
+                "field_guard: lifecycle hooks not implemented for entity {}",
+                entity
+            );
+            GuardAction::Block(Some(format!(
+                "field_guard: lifecycle hooks not implemented for entity {}",
+                entity
+            )))
+        }
+    }
+
+    fn entity_guard(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        action: OperationType,
+    ) -> GuardAction {
+        if let Some(entry) = self.entries.get(entity) {
+            entry.entity_guard(ctx, entity, action)
+        } else {
+            tracing::error!(
+                "entity_guard: lifecycle hooks not implemented for entity {}",
+                entity
+            );
+            GuardAction::Block(Some(format!(
+                "entity_guard: lifecycle hooks not implemented for entity {}",
+                entity
+            )))
+        }
+    }
+
+    fn entity_filter(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        action: OperationType,
+    ) -> Option<sea_orm::Condition> {
+        if let Some(entry) = self.entries.get(entity) {
+            entry.entity_filter(ctx, entity, action)
+        } else {
+            tracing::info!(
+                "entity_filter: lifecycle hooks not implemented for entity {}",
+                entity
+            );
+            Some(never_condition())
+        }
+    }
 }
 
 macro_rules! register_entity {
@@ -138,10 +359,10 @@ macro_rules! register_entity {
 pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
     let mut builder = Builder::new(&CONTEXT, backend.db.clone());
 
-    register_entity!(builder, accounts);
-    register_entity!(builder, drawings, drawings::Model::to_fields(&CONTEXT));
-    register_entity!(builder, objects, objects::Model::to_fields(&CONTEXT));
-    register_entity!(builder, projects);
+    register_entity!(builder, accounts, Account::to_fields(&CONTEXT));
+    register_entity!(builder, drawings, Drawing::to_fields(&CONTEXT));
+    register_entity!(builder, objects, Object::to_fields(&CONTEXT));
+    register_entity!(builder, projects, Project::to_fields(&CONTEXT));
     register_entity!(builder, project_permissions);
 
     builder.register_enumeration::<Permission>();
@@ -175,6 +396,8 @@ pub fn schema(backend: Backend) -> Result<Schema, SchemaError> {
     builder.register_custom_output::<types::Color>();
     builder.register_custom_output::<types::Point>();
     builder.register_custom_output::<types::Size>();
+    builder.register_complex_custom_output::<ProjectPermissionSummary>();
+    builder.register_custom_output::<PermissionAccount>();
     builder.register_complex_custom_output::<types::Rectangle>();
     builder.register_complex_custom_output::<types::Circle>();
     builder.register_complex_custom_output::<types::Triangle>();

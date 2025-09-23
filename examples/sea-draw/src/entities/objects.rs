@@ -7,7 +7,10 @@ use seaography::CustomFields;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-use crate::types::{Fill, Shape, Stroke};
+use crate::{
+    InProject,
+    types::{Fill, Shape, Stroke},
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, FromRow)]
 #[sea_orm(table_name = "objects")]
@@ -27,6 +30,12 @@ pub struct Model {
     pub stroke: Stroke,
     #[sea_orm(column_type = "JsonBinary")]
     pub shape: Shape,
+}
+
+impl InProject for Model {
+    fn project_id(&self) -> Uuid {
+        self.project_id
+    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

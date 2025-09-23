@@ -17,16 +17,26 @@ pub async fn client_test(
     port: u16,
     root_account_id: Uuid,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let url = &format!("http://{}:{}", address, port);
-    wait_for_server(url).await?;
+    let url = format!("http://{}:{}", address, port);
+    wait_for_server(&url).await?;
 
     tracing::info!("Client test: url = {}", url);
     tracing::info!("root token = {}", root_account_id);
 
-    let account_id = create_account(url, root_account_id).await;
+    test_permissions(&url, root_account_id).await;
+    test_entities(&url, root_account_id).await;
+
+    tracing::info!("All tests completed successfully!");
+
+    Ok(())
+}
+
+#[instrument(skip_all)]
+async fn test_entities(url: &str, root_account_id: Uuid) {
+    let account_id = create_account(url, root_account_id, "Test").await;
     tracing::info!("account_id = {}", account_id);
 
-    let client = Client::new(url.clone(), account_id);
+    let client = Client::new(url, account_id);
 
     let project_id = client.create_project("Test project").await.unwrap();
     tracing::info!("project_id = {}", project_id);
@@ -137,13 +147,189 @@ pub async fn client_test(
     std::fs::write("output2.svg", svg.clone()).unwrap();
     tracing::info!("Wrote to {}", "output2.svg");
     assert_eq!(svg, OUTPUT2_EXPECTED);
-
-    tracing::info!("All tests completed successfully!");
-
-    Ok(())
 }
 
-pub async fn create_account(url: &str, root_account_id: Uuid) -> Uuid {
+#[instrument(skip_all)]
+async fn test_permissions(url: &str, root_account_id: Uuid) {
+    let account1 = create_account(url, root_account_id, "Account 1").await;
+    let account2 = create_account(url, root_account_id, "Account 2").await;
+    let account3 = create_account(url, root_account_id, "Account 3").await;
+    let account4 = create_account(url, root_account_id, "Account 3").await;
+
+    let client1 = Client::new(url, account1);
+
+    let project1 = client1.create_project("Project 1").await.unwrap();
+    let project2 = client1.create_project("Project 2").await.unwrap();
+    let project3 = client1.create_project("Project 3").await.unwrap();
+
+    client1
+        .set_project_permission(project1, account2, Some("write"))
+        .await
+        .unwrap();
+    client1
+        .set_project_permission(project1, account3, Some("read"))
+        .await
+        .unwrap();
+
+    client1
+        .set_project_permission(project2, account2, Some("read"))
+        .await
+        .unwrap();
+    client1
+        .set_project_permission(project3, account2, Some("admin"))
+        .await
+        .unwrap();
+    client1
+        .set_project_permission(project3, account4, Some("read"))
+        .await
+        .unwrap();
+
+    let mut result = graphql(
+        url,
+        account1,
+        r#"
+            query($id: String!) {
+                project(id: $id) {
+                    name
+                    permissions {
+                        account {
+                            id
+                            name
+                        }
+                        permission
+                    }
+                }
+            }
+        "#,
+        Some(json!({ "id": project1 })),
+    )
+    .await
+    .unwrap();
+
+    result["project"]["permissions"]
+        .as_array_mut()
+        .unwrap()
+        .sort_by(|a, b| {
+            a["account"]["name"]
+                .as_str()
+                .unwrap()
+                .cmp(b["account"]["name"].as_str().unwrap())
+        });
+
+    assert_eq!(
+        result,
+        json!({
+            "project": {
+                "name": "Project 1",
+                "permissions": [
+                {
+                    "account": { "id": account1, "name": "Account 1" },
+                    "permission": "admin"
+                },
+                {
+                    "account": { "id": account2, "name": "Account 2" },
+                    "permission": "write"
+                },
+                {
+                    "account": { "id": account3, "name": "Account 3" },
+                    "permission": "read"
+                }
+                ]
+            }
+        })
+    );
+
+    let mut result = graphql(
+        url,
+        account2,
+        r#"
+            query($id: String!) {
+                account(id: $id) {
+                    permissions {
+                        project {
+                            id
+                            name
+                        }
+                        permission
+                    }
+                }
+            }
+        "#,
+        Some(json!({ "id": account2 })),
+    )
+    .await
+    .unwrap();
+
+    result["account"]["permissions"]
+        .as_array_mut()
+        .unwrap()
+        .sort_by(|a, b| {
+            a["project"]["name"]
+                .as_str()
+                .unwrap()
+                .cmp(b["project"]["name"].as_str().unwrap())
+        });
+
+    assert_eq!(
+        result,
+        json!({
+            "account": {
+                "permissions": [
+                {
+                    "project": { "id": project1, "name": "Project 1" },
+                    "permission": "write"
+                },
+                {
+                    "project": { "id": project2, "name": "Project 2" },
+                    "permission": "read"
+                },
+                {
+                    "project": { "id": project3, "name": "Project 3" },
+                    "permission": "admin"
+                }
+                ]
+            }
+        })
+    );
+
+    let account1_projects = Client::new(url, account1).list_projects().await.unwrap();
+    assert_eq!(
+        account1_projects,
+        json!([
+            { "id": project1, "name": "Project 1", "permission": "admin" },
+            { "id": project2, "name": "Project 2", "permission": "admin" },
+            { "id": project3, "name": "Project 3", "permission": "admin" }
+        ])
+    );
+
+    let account2_projects = Client::new(url, account2).list_projects().await.unwrap();
+    assert_eq!(
+        account2_projects,
+        json!([
+            { "id": project1, "name": "Project 1", "permission": "write" },
+            { "id": project2, "name": "Project 2", "permission": "read" },
+            { "id": project3, "name": "Project 3", "permission": "admin" }
+        ])
+    );
+
+    let account3_projects = Client::new(url, account3).list_projects().await.unwrap();
+    assert_eq!(
+        account3_projects,
+        json!([
+            { "id": project1, "name": "Project 1", "permission": "read" },
+        ])
+    );
+
+    let account4_projects = Client::new(url, account4).list_projects().await.unwrap();
+    assert_eq!(
+        account4_projects,
+        json!([
+            { "id": project3, "name": "Project 3", "permission": "read" }
+        ])
+    );
+}
+
+pub async fn create_account(url: &str, root_account_id: Uuid, name: &str) -> Uuid {
     let result = graphql(
         url,
         root_account_id,
@@ -155,7 +341,7 @@ pub async fn create_account(url: &str, root_account_id: Uuid) -> Uuid {
             }
         "#,
         Some(json!({
-            "name": "Test account",
+            "name": name,
             "email": "user@example.com",
         })),
     )

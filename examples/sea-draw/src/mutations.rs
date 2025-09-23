@@ -79,6 +79,10 @@ impl CustomMutations {
             .exec(&backend.db)
             .await?;
 
+        // Update the Access object so that the permission hooks called by seaography permit
+        // the caller to access fields of the result
+        access.add_permission(project.id, Permission::Admin);
+
         tracing::info!("Created project {}", project.id);
         Ok(project)
     }

@@ -1,4 +1,3 @@
-use crate::entities::{Account, Object, Permission, Project, ProjectPermission};
 use sea_orm::{
     ColumnTrait, DatabaseConnection, DbErr, EntityTrait, Order, QueryFilter, QueryOrder,
     RelationTrait,
@@ -14,6 +13,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 use uuid::Uuid;
+
+use crate::{
+    backend::Backend,
+    entities::{Account, Object, Permission, Project, ProjectPermission},
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize)]
 #[sea_orm(table_name = "project_permissions")]
@@ -52,7 +56,7 @@ impl From<ProjectPermission> for ProjectPermissionSummary {
 #[derive(Clone, Debug, CustomOutputType)]
 pub struct PermissionAccount {
     pub id: Uuid,
-    pub name: Option<String>,
+    pub name: String,
 }
 
 #[CustomFields]
@@ -63,34 +67,32 @@ impl ProjectPermissionSummary {
     // in the graphql query to gain access to information they aren't supposed to see.
     pub async fn account(
         &self,
-        _ctx: &async_graphql::Context<'_>,
+        ctx: &async_graphql::Context<'_>,
     ) -> async_graphql::Result<PermissionAccount> {
-        todo!()
-        // let repo = ctx.data::<Repo>()?;
-        // let account = repo
-        //     .find_by_id::<Account>(self.account_id)
-        //     .await?
-        //     .ok_or("account not found")?;
+        let backend = ctx.data::<Backend>()?;
+        let account = crate::entities::accounts::Entity::find_by_id(self.account_id)
+            .one(&backend.db)
+            .await?
+            .ok_or("account not found")?;
 
-        // Ok(PermissionAccount {
-        //     id: account.id,
-        //     name: account.name,
-        // })
+        Ok(PermissionAccount {
+            id: account.id,
+            name: account.name,
+        })
     }
 
     // No need to hide information here - if the user can see the permissions for a project,
     // they at least have read access to the project itself.
     pub async fn project(
         &self,
-        _ctx: &async_graphql::Context<'_>,
+        ctx: &async_graphql::Context<'_>,
     ) -> async_graphql::Result<Project> {
-        todo!()
-        // let repo = ctx.data::<Repo>()?;
-        // let project = repo
-        //     .find_by_id::<Project>(self.project_id)
-        //     .await?
-        //     .ok_or("project not found")?;
-        // Ok(project)
+        let backend = ctx.data::<Backend>()?;
+        let project = crate::entities::projects::Entity::find_by_id(self.project_id)
+            .one(&backend.db)
+            .await?
+            .ok_or("project not found")?;
+        Ok(project)
     }
 }
 
