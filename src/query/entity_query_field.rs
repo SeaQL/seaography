@@ -47,7 +47,7 @@ impl std::default::Default for EntityQueryFieldConfig {
                 .into()
             },
             pagination: "pagination".into(),
-            combine_is_null_is_not_null: false,
+            combine_is_null_is_not_null: true,
             use_ilike: false,
         }
     }

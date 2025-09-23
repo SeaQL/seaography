@@ -8,10 +8,6 @@ use seaography::{
 lazy_static::lazy_static! {
     static ref CONTEXT : BuilderContext = {
         BuilderContext {
-            entity_query_field: EntityQueryFieldConfig {
-                combine_is_null_is_not_null: true,
-                ..Default::default()
-            },
             pagination_input: PaginationInputConfig{
               default_limit: Some(3),
               max_limit: Some(10),

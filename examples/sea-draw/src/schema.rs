@@ -92,7 +92,6 @@ lazy_static::lazy_static! {
                 basic_type_suffix: "Basic".into(),
             },
             entity_query_field: EntityQueryFieldConfig {
-                combine_is_null_is_not_null: true,
                 use_ilike: true,
                 ..Default::default()
             },

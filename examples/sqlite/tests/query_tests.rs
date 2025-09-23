@@ -1143,7 +1143,7 @@ async fn filter_is_null() {
                 r#"
                 {
                   address(
-                    filters: { address: { contains: "Lane" }, postalCode: { is_not_null: "" } }
+                    filters: { address: { contains: "Lane" }, postalCode: { is_null: false } }
                     pagination: { page: { page: 0, limit: 2 } }
                   ) {
                     nodes {
