@@ -75,8 +75,6 @@ macro_rules! impl_scalar_type {
 
 impl_scalar_type!(String);
 
-impl_scalar_type!(serde_json::Value);
-
 #[cfg(feature = "with-chrono")]
 impl_scalar_type!(sea_orm::entity::prelude::ChronoDate);
 
@@ -115,3 +113,32 @@ impl_scalar_type!(sea_orm::entity::prelude::BigDecimal);
 
 #[cfg(feature = "with-uuid")]
 impl_scalar_type!(sea_orm::entity::prelude::Uuid);
+
+impl CustomInputType for serde_json::Value {
+    fn gql_input_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
+        TypeRef::named_nn("Json")
+    }
+
+    fn parse_value(
+        _context: &'static BuilderContext,
+        value: Option<ValueAccessor<'_>>,
+    ) -> SeaResult<Self> {
+        match value {
+            None => Err(SeaographyError::AsyncGraphQLError("Value expected".into())),
+            Some(value) => Ok(value.deserialize()?),
+        }
+    }
+}
+
+impl CustomOutputType for serde_json::Value {
+    fn gql_output_type_ref(_ctx: &'static BuilderContext) -> TypeRef {
+        TypeRef::named_nn("Json")
+    }
+
+    fn gql_field_value(self, _ctx: &'static BuilderContext) -> Option<FieldValue<'static>> {
+        // TODO check that this can't fail
+        Some(FieldValue::value(
+            async_graphql::Value::from_json(self).unwrap(),
+        ))
+    }
+}
