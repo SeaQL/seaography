@@ -47,7 +47,7 @@ pub fn schema_builder(
         ]
     );
 
-    // // if `opt-in-custom-types` is enabled, add the following:
+    // // if `strict-custom-types` is enabled, add the following:
     // seaography::impl_custom_output_type_for_entities!([actor, ..]);
 
     seaography::register_custom_inputs!(

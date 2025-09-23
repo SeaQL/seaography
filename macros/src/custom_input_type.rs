@@ -1,19 +1,7 @@
-#![allow(unused_variables)]
-#![allow(dead_code)]
-#![allow(unused_mut)]
-#![allow(unused_assignments)]
-#![allow(unused_imports)]
-#![allow(unused_macros)]
-#![allow(non_upper_case_globals)]
-
 use darling::FromDeriveInput;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{
-    Data, DataEnum, DataStruct, DeriveInput, Error, Field, Fields, FnArg, Ident, ImplItem,
-    ItemImpl, PathArguments, ReturnType, Signature, Type, TypeReference, parse_macro_input,
-    spanned::Spanned,
-};
+use syn::{Data, DataEnum, DataStruct, DeriveInput, Error, Field, Fields, Ident};
 
 use crate::{
     Args,
@@ -90,7 +78,7 @@ fn derive_custom_input_type_struct(
     let imports = quote!(
         use seaography::CustomInputType;
     );
-    #[cfg(not(feature = "opt-in-custom-types"))]
+    #[cfg(not(feature = "strict-custom-types"))]
     let imports = quote! {
         #imports
         use seaography::{GqlScalarValueType, GqlModelType, GqlModelHolderType};
