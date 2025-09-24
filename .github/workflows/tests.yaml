@@ -38,9 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: rustfmt, clippy
       - run: cargo fmt --all -- --check
       - working-directory: ./examples/sea-draw
@@ -52,6 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install sea-orm-cli
         uses: baptiste0928/cargo-install@v3
         with:
@@ -113,6 +114,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install sea-orm-cli
         uses: baptiste0928/cargo-install@v3
         with:
@@ -174,6 +177,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install sea-orm-cli
         uses: baptiste0928/cargo-install@v3
         with:
@@ -224,20 +229,8 @@ jobs:
       - name: Integration tests
         working-directory: ./examples/postgres
         run: cargo test
-  integration-sqlite-sea-draw:
-    name: SQLite integration tests (sea-draw)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Build sea-draw
-        working-directory: ./examples/sea-draw
-        run: cargo build
-      - name: Run sea-draw integration tests
-        working-directory: ./examples/sea-draw
-        run: ./integration_test_sqlite.sh
-  integration-postgres-sea-draw:
-    name: Postgres integration tests (sea-draw)
+  integration-sea-draw:
+    name: sea-draw Integration tests
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -257,6 +250,9 @@ jobs:
       - name: Build sea-draw
         working-directory: ./examples/sea-draw
         run: cargo build
-      - name: Run sea-draw integration tests
+      - name: Run SQLite integration tests
+        working-directory: ./examples/sea-draw
+        run: ./integration_test_sqlite.sh
+      - name: Run Postgres integration tests
         working-directory: ./examples/sea-draw
         run: ./integration_test_postgres.sh

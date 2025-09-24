@@ -578,7 +578,9 @@ pub fn converted_type_to_sea_orm_array_type(
     }
 }
 
-#[allow(unused_variables)] // some conversions behind feature flags need extra params here.
+// usage behind feature flags
+#[allow(clippy::only_used_in_recursion)]
+#[allow(unused_variables)]
 pub fn converted_value_to_sea_orm_value(
     column_type: &ConvertedType,
     value: &ValueAccessor,
