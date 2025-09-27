@@ -15,7 +15,7 @@ where
     if let Some(filters) = filters {
         let filters = filters.object()?;
 
-        recursive_prepare_condition::<T>(context, filters)
+        recursive_prepare_condition::<T>(context, &filters)
     } else {
         Ok(Condition::all())
     }
@@ -24,7 +24,7 @@ where
 /// used to prepare recursively the query filtering condition
 pub fn recursive_prepare_condition<T>(
     context: &'static BuilderContext,
-    filters: ObjectAccessor,
+    filters: &ObjectAccessor,
 ) -> SeaResult<Condition>
 where
     T: EntityTrait,
@@ -56,7 +56,7 @@ where
             Condition::all(),
             |condition, filters: ValueAccessor| -> SeaResult<Condition> {
                 let filters = filters.object()?;
-                Ok(condition.add(recursive_prepare_condition::<T>(context, filters)?))
+                Ok(condition.add(recursive_prepare_condition::<T>(context, &filters)?))
             },
         )?;
 
@@ -72,7 +72,7 @@ where
             Condition::any(),
             |condition, filters: ValueAccessor| -> SeaResult<Condition> {
                 let filters = filters.object()?;
-                Ok(condition.add(recursive_prepare_condition::<T>(context, filters)?))
+                Ok(condition.add(recursive_prepare_condition::<T>(context, &filters)?))
             },
         )?;
 

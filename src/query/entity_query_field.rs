@@ -3,10 +3,10 @@ use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter};
 
 use crate::{
-    apply_order, apply_pagination, get_filter_conditions, guard_error, pluralize_unique,
-    BuilderContext, ConnectionObjectBuilder, DatabaseContext, EntityColumnId, EntityObjectBuilder,
-    FilterInputBuilder, GuardAction, OperationType, OrderInputBuilder, PaginationInput,
-    PaginationInputBuilder, UserContext,
+    apply_order, apply_pagination, get_filter_conditions, get_having_conditions, guard_error,
+    pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext, EntityColumnId,
+    EntityObjectBuilder, FilterInputBuilder, GuardAction, HavingInputBuilder, OperationType,
+    OrderInputBuilder, PaginationInput, PaginationInputBuilder, UserContext,
 };
 
 /// The configuration structure for EntityQueryFieldBuilder
@@ -15,6 +15,8 @@ pub struct EntityQueryFieldConfig {
     pub type_name: crate::SimpleNamingFn,
     /// name for 'filters' field
     pub filters: String,
+    /// name for 'having' field
+    pub having: String,
     /// name for 'orderBy' field
     pub order_by: String,
     /// name for 'pagination' field
@@ -38,6 +40,7 @@ impl std::default::Default for EntityQueryFieldConfig {
                 }
             }),
             filters: "filters".into(),
+            having: "having".into(),
             order_by: {
                 if cfg!(feature = "field-snake-case") {
                     "order_by"
@@ -163,6 +166,9 @@ impl EntityQueryFieldBuilder {
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
         };
+        let having_input_builder = HavingInputBuilder {
+            context: self.context,
+        };
         let order_input_builder = OrderInputBuilder {
             context: self.context,
         };
@@ -192,6 +198,8 @@ impl EntityQueryFieldBuilder {
 
                 let filters = ctx.args.get(&context.entity_query_field.filters);
                 let filters = get_filter_conditions::<T>(context, filters)?;
+                let having = ctx.args.get(&context.entity_query_field.having);
+                let filters = get_having_conditions::<T>(context, &ctx, filters, having)?;
                 let order_by = ctx.args.get(&context.entity_query_field.order_by);
                 let order_by = OrderInputBuilder { context }.parse_object::<T>(order_by)?;
                 let pagination = ctx.args.get(&context.entity_query_field.pagination);
@@ -217,6 +225,10 @@ impl EntityQueryFieldBuilder {
         .argument(InputValue::new(
             &self.context.entity_query_field.filters,
             TypeRef::named(filter_input_builder.type_name(&object_name_)),
+        ))
+        .argument(InputValue::new(
+            &self.context.entity_query_field.having,
+            TypeRef::named(having_input_builder.type_name(&object_name_)),
         ))
         .argument(InputValue::new(
             &self.context.entity_query_field.order_by,

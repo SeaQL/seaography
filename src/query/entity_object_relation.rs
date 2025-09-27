@@ -21,6 +21,27 @@ pub struct EntityObjectRelationBuilder {
 }
 
 impl EntityObjectRelationBuilder {
+    /// to be called by SeaORM
+    pub fn get_relation_name<T, R>(&self, name: &str, relation_definition: RelationDef) -> String
+    where
+        T: EntityTrait,
+        R: EntityTrait,
+    {
+        self.get_relation_name_for(name, &relation_definition)
+    }
+
+    fn get_relation_name_for(&self, name: &str, relation_definition: &RelationDef) -> String {
+        let name_pp = &if cfg!(feature = "field-snake-case") {
+            name.to_snake_case()
+        } else {
+            name.to_lower_camel_case()
+        };
+        pluralize_unique(
+            name_pp,
+            matches!(relation_definition.rel_type, sea_orm::RelationType::HasMany),
+        )
+    }
+
     /// used to get a GraphQL field for an SeaORM entity relationship
     pub fn get_relation<T, R>(&self, name: &str, relation_definition: RelationDef) -> Field
     where
@@ -30,16 +51,7 @@ impl EntityObjectRelationBuilder {
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
-        let name_pp = &if cfg!(feature = "field-snake-case") {
-            name.to_snake_case()
-        } else {
-            name.to_lower_camel_case()
-        };
-        let name = pluralize_unique(
-            name_pp,
-            matches!(relation_definition.rel_type, sea_orm::RelationType::HasMany),
-        );
-
+        let name = self.get_relation_name_for(name, &relation_definition);
         let context: &'static BuilderContext = self.context;
         let entity_object_builder = EntityObjectBuilder { context };
         let connection_object_builder = ConnectionObjectBuilder { context };

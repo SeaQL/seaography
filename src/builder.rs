@@ -13,9 +13,10 @@ use crate::{
     CustomUnion, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
     EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
     EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
-    FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
-    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
-    PaginationInputBuilder,
+    FilterTypesMapHelper, HavingInputBuilder, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
+    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder, RelatedEntityFilter,
+    RelatedEntityFilterField,
 };
 
 type MetadataHashMap = std::collections::HashMap<String, serde_json::Value>;
@@ -108,8 +109,11 @@ impl Builder {
     }
 
     /// used to register a new entity to the Builder context
-    pub fn register_entity<T>(&mut self, relations: Vec<Field>)
-    where
+    pub fn register_entity<T>(
+        &mut self,
+        relations: Vec<Field>,
+        related_entity_filter: &RelatedEntityFilter<T>,
+    ) where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
@@ -131,18 +135,24 @@ impl Builder {
         };
         let connection = connection_object_builder.to_object::<T>();
 
-        self.outputs.extend(vec![entity_object, edge, connection]);
+        self.outputs.extend([entity_object, edge, connection]);
 
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
         };
         let filter = filter_input_builder.to_object::<T>();
 
+        let having_input_builder = HavingInputBuilder {
+            context: self.context,
+        };
+        let having = having_input_builder.to_object::<T>(related_entity_filter);
+
         let order_input_builder = OrderInputBuilder {
             context: self.context,
         };
         let order = order_input_builder.to_object::<T>();
-        self.inputs.extend(vec![filter, order]);
+
+        self.inputs.extend([filter, having, order]);
 
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
@@ -208,7 +218,7 @@ impl Builder {
         let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
         let entity_update_input_object = entity_input_builder.update_input_object::<T>();
         self.inputs
-            .extend(vec![entity_insert_input_object, entity_update_input_object]);
+            .extend([entity_insert_input_object, entity_update_input_object]);
 
         // create one mutation
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
@@ -268,6 +278,17 @@ impl Builder {
             OneToManyLoader::<T>::new(self.connection.clone()),
             spawner,
         ));
+        self
+    }
+
+    pub fn register_related_entity_filter<T>(
+        mut self,
+        related_entity_filter: RelatedEntityFilter<T>,
+    ) -> Self
+    where
+        T: EntityTrait,
+    {
+        self.schema = self.schema.data(related_entity_filter);
         self
     }
 
@@ -562,10 +583,14 @@ impl Builder {
 }
 
 pub trait RelationBuilder {
-    fn get_relation(
+    fn get_relation_name(&self, context: &'static BuilderContext) -> String;
+
+    fn get_relation(&self, context: &'static BuilderContext) -> async_graphql::dynamic::Field;
+
+    fn get_related_entity_filter(
         &self,
-        context: &'static crate::BuilderContext,
-    ) -> async_graphql::dynamic::Field;
+        context: &'static BuilderContext,
+    ) -> RelatedEntityFilterField;
 }
 
 #[macro_export]
@@ -638,15 +663,20 @@ macro_rules! impl_custom_output_type_for_entity {
 #[macro_export]
 macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
-        $builder.register_entity::<$module_path::Entity>(
+        let relations =
             <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
                 .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
-                .collect(),
-        );
+                .collect();
+        let related_entity_filter =
+            seaography::RelatedEntityFilter::<$module_path::Entity>::build::<$module_path::RelatedEntity>($builder.context);
+
+        $builder.register_entity::<$module_path::Entity>(relations, &related_entity_filter);
         $builder =
             $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
         $builder =
             $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
+        $builder =
+            $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
         $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
     };
 }

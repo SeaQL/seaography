@@ -1179,3 +1179,134 @@ async fn filter_is_null() {
         "#,
     );
 }
+
+#[tokio::test]
+async fn film_having_actor() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    having: { actor: { firstName: { eq: "BOB" } } }
+                    orderBy: { filmId: ASC }
+                    pagination: { page: { page: 0, limit: 2 } }
+                  ) {
+                    nodes {
+                      filmId
+                      title
+                      actor {
+                        nodes {
+                          firstName
+                          lastName
+                        }
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 2,
+                "title": "ACE GOLDFINGER",
+                "actor": {
+                  "nodes": [
+                    {
+                      "firstName": "BOB",
+                      "lastName": "FAWCETT"
+                    },
+                    {
+                      "firstName": "MINNIE",
+                      "lastName": "ZELLWEGER"
+                    },
+                    {
+                      "firstName": "SEAN",
+                      "lastName": "GUINESS"
+                    },
+                    {
+                      "firstName": "CHRIS",
+                      "lastName": "DEPP"
+                    }
+                  ]
+                }
+              },
+              {
+                "filmId": 3,
+                "title": "ADAPTATION HOLES",
+                "actor": {
+                  "nodes": [
+                    {
+                      "firstName": "NICK",
+                      "lastName": "WAHLBERG"
+                    },
+                    {
+                      "firstName": "BOB",
+                      "lastName": "FAWCETT"
+                    },
+                    {
+                      "firstName": "CAMERON",
+                      "lastName": "STREEP"
+                    },
+                    {
+                      "firstName": "RAY",
+                      "lastName": "JOHANSSON"
+                    },
+                    {
+                      "firstName": "JULIANNE",
+                      "lastName": "DENCH"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn country_having_city() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  country(
+                    having: { city: { city: { eq: "London" } } }
+                    orderBy: { countryId: ASC }
+                    pagination: { page: { page: 0, limit: 10 } }
+                  ) {
+                    nodes {
+                      country
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "country": {
+            "nodes": [
+              {
+                "country": "Canada"
+              },
+              {
+                "country": "United Kingdom"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}

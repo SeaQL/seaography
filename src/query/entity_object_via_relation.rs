@@ -5,7 +5,7 @@ use async_graphql::{
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
     ColumnTrait, Condition, DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter,
-    QueryTrait, Related,
+    QueryTrait, Related, RelationDef,
 };
 
 use crate::{
@@ -23,29 +23,39 @@ pub struct EntityObjectViaRelationBuilder {
 }
 
 impl EntityObjectViaRelationBuilder {
+    /// to be called by SeaORM
+    pub fn get_relation_name<T, R>(&self, name: &str) -> String
+    where
+        T: EntityTrait + Related<R>,
+        R: EntityTrait,
+    {
+        let to_relation_definition = <T as Related<R>>::to();
+        self.get_relation_name_for(name, &to_relation_definition)
+    }
+
+    fn get_relation_name_for(&self, name: &str, relation_definition: &RelationDef) -> String {
+        let name_pp = if cfg!(feature = "field-snake-case") {
+            name.to_snake_case()
+        } else {
+            name.to_lower_camel_case()
+        };
+        pluralize_unique(
+            &name_pp,
+            matches!(relation_definition.rel_type, sea_orm::RelationType::HasMany),
+        )
+    }
+
     /// used to get a GraphQL field for an SeaORM entity related trait
     pub fn get_relation<T, R>(&self, name: &str) -> Field
     where
-        T: Related<R>,
-        T: EntityTrait,
+        T: EntityTrait + Related<R>,
         R: EntityTrait,
         <R as sea_orm::EntityTrait>::Model: Sync,
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
         let to_relation_definition = <T as Related<R>>::to();
-        let name_pp = if cfg!(feature = "field-snake-case") {
-            name.to_snake_case()
-        } else {
-            name.to_lower_camel_case()
-        };
-        let name = pluralize_unique(
-            &name_pp,
-            matches!(
-                to_relation_definition.rel_type,
-                sea_orm::RelationType::HasMany
-            ),
-        );
+        let name = self.get_relation_name_for(name, &to_relation_definition);
         let context: &'static BuilderContext = self.context;
         let (via_relation_definition, is_via_relation) = match <T as Related<R>>::via() {
             Some(def) => (def, true),

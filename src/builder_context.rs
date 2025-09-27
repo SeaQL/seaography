@@ -2,9 +2,9 @@ use crate::{
     ActiveEnumConfig, ActiveEnumFilterInputConfig, ConnectionObjectConfig, CursorInputConfig,
     EdgeObjectConfig, EntityCreateBatchMutationConfig, EntityCreateOneMutationConfig,
     EntityDeleteMutationConfig, EntityInputConfig, EntityObjectConfig, EntityQueryFieldConfig,
-    EntityUpdateMutationConfig, FilterInputConfig, OffsetInputConfig, OrderByEnumConfig,
-    OrderInputConfig, PageInfoObjectConfig, PageInputConfig, PaginationInfoObjectConfig,
-    PaginationInputConfig,
+    EntityUpdateMutationConfig, FilterInputConfig, HavingInputConfig, OffsetInputConfig,
+    OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
+    PaginationInfoObjectConfig, PaginationInputConfig,
 };
 
 pub mod entity_column_id;
@@ -39,6 +39,7 @@ pub struct BuilderContext {
     pub order_input: OrderInputConfig,
 
     pub filter_input: FilterInputConfig,
+    pub having_input: HavingInputConfig,
     pub active_enum_filter_input: ActiveEnumFilterInputConfig,
 
     pub page_info_object: PageInfoObjectConfig,

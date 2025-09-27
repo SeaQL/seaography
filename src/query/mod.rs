@@ -13,6 +13,9 @@ pub use pagination::*;
 pub mod filtering;
 pub use filtering::*;
 
+pub mod having;
+pub use having::*;
+
 pub mod entity_object_relation;
 pub use entity_object_relation::*;
 

@@ -20,6 +20,9 @@ pub use order_input::*;
 pub mod filter_input;
 pub use filter_input::*;
 
+pub mod having_input;
+pub use having_input::*;
+
 pub mod entity_input;
 pub use entity_input::*;
 
