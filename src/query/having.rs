@@ -137,6 +137,12 @@ impl RelatedEntityFilterField {
             filter_condition_fn: Box::new(move |context, filter| -> SeaResult<Option<Expr>> {
                 let mut condition = recursive_prepare_condition::<R>(context, filter)?;
                 if !condition.is_empty() {
+                    // WHERE EXISTS(
+                    // SELECT 1 FROM "actor"
+                    // INNER JOIN "film_actor" ON "film_actor"."actor_id" = "actor"."actor_id" <- junction table, if applicable
+                    // WHERE film_actor.film_id = film.film_id <- join condition
+                    // AND actor.first_name = 'BOB' <- filter condition
+                    // )
                     condition = condition.add(if let Some(via) = via.clone() {
                         via
                     } else {
