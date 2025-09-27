@@ -39,8 +39,7 @@ pub fn parse_enum_variants(ast: &DeriveInput, data: &DataEnum) -> Result<EnumVar
                     return Err(Error::new(
                         unnamed.span(),
                         format!(
-                            "Variant {} must contain a single unnamed field of type type {}",
-                            variant_name, variant_name
+                            "Variant {variant_name} must contain a single unnamed field of type type {variant_name}"
                         ),
                     ));
                 };
@@ -48,8 +47,7 @@ pub fn parse_enum_variants(ast: &DeriveInput, data: &DataEnum) -> Result<EnumVar
                     return Err(Error::new(
                         unnamed.span(),
                         format!(
-                            "Variant {} must contain a single unnamed field of type type {}",
-                            variant_name, variant_name
+                            "Variant {variant_name} must contain a single unnamed field of type type {variant_name}"
                         ),
                     ));
                 }

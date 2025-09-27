@@ -16,7 +16,7 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
             let name: TokenStream = match &args.input_type_name {
                 Some(name) => quote! { #name },
                 None => {
-                    let name = format!("{}Input", ident);
+                    let name = format!("{ident}Input");
                     quote! { #name }
                 }
             };

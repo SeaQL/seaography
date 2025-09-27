@@ -101,7 +101,7 @@ where
                     Ok(res)
                 }
                 value => Err(SeaographyError::AsyncGraphQLError(
-                    format!("Expected a list, got {:?}", value).into(),
+                    format!("Expected a list, got {value:?}").into(),
                 )),
             },
         }

@@ -489,8 +489,7 @@ fn check_limit(
         if requested_limit > max_limit {
             return Err(sea_orm::DbErr::Query(sea_orm::RuntimeErr::Internal(
                 format!(
-                    "Requested pagination limit ({}) exceeds maximum allowed ({})",
-                    requested_limit, max_limit
+                    "Requested pagination limit ({requested_limit}) exceeds maximum allowed ({max_limit})"
                 ),
             )));
         }

@@ -84,7 +84,7 @@ where
         value
             .ok_or_else(|| {
                 let type_name = entity_object_builder.type_name::<M::Entity>();
-                async_graphql::Error::new(format!("internal: field \"{}\" not found", type_name))
+                async_graphql::Error::new(format!("internal: field \"{type_name}\" not found"))
             })?
             .list()?
             .iter()
