@@ -340,12 +340,16 @@ macro_rules! register_entity {
                 temp
             };
         )?
+        let related_entity_filter =
+            seaography::RelatedEntityFilter::<$module_path::Entity>::build::<$module_path::RelatedEntity>($builder.context);
 
-        $builder.register_entity::<$module_path::Entity>(fields);
+        $builder.register_entity::<$module_path::Entity>(fields, &related_entity_filter);
         $builder =
             $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
         $builder =
             $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
+        $builder =
+            $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
         // Avoid using the default mutations, since we do updates and deletions on a per-row basis,
         // generate ids on the server side at creation time, set created_at/updated_at fields
         // on the server side to ensure they're accurate, implement soft deletes, and perform

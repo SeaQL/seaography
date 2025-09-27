@@ -1190,6 +1190,7 @@ async fn film_having_actor() {
                 r#"
                 {
                   film(
+                    filters: { filmId: { ne: 2 } }
                     having: { actor: { firstName: { eq: "BOB" } } }
                     orderBy: { filmId: ASC }
                     pagination: { page: { page: 0, limit: 2 } }
@@ -1214,30 +1215,6 @@ async fn film_having_actor() {
           "film": {
             "nodes": [
               {
-                "filmId": 2,
-                "title": "ACE GOLDFINGER",
-                "actor": {
-                  "nodes": [
-                    {
-                      "firstName": "BOB",
-                      "lastName": "FAWCETT"
-                    },
-                    {
-                      "firstName": "MINNIE",
-                      "lastName": "ZELLWEGER"
-                    },
-                    {
-                      "firstName": "SEAN",
-                      "lastName": "GUINESS"
-                    },
-                    {
-                      "firstName": "CHRIS",
-                      "lastName": "DEPP"
-                    }
-                  ]
-                }
-              },
-              {
                 "filmId": 3,
                 "title": "ADAPTATION HOLES",
                 "actor": {
@@ -1261,6 +1238,54 @@ async fn film_having_actor() {
                     {
                       "firstName": "JULIANNE",
                       "lastName": "DENCH"
+                    }
+                  ]
+                }
+              },
+              {
+                "filmId": 144,
+                "title": "CHINATOWN GLADIATOR",
+                "actor": {
+                  "nodes": [
+                    {
+                      "firstName": "UMA",
+                      "lastName": "WOOD"
+                    },
+                    {
+                      "firstName": "DAN",
+                      "lastName": "TORN"
+                    },
+                    {
+                      "firstName": "BOB",
+                      "lastName": "FAWCETT"
+                    },
+                    {
+                      "firstName": "JUDE",
+                      "lastName": "CRUISE"
+                    },
+                    {
+                      "firstName": "JESSICA",
+                      "lastName": "BAILEY"
+                    },
+                    {
+                      "firstName": "SEAN",
+                      "lastName": "WILLIAMS"
+                    },
+                    {
+                      "firstName": "PENELOPE",
+                      "lastName": "MONROE"
+                    },
+                    {
+                      "firstName": "GEOFFREY",
+                      "lastName": "HESTON"
+                    },
+                    {
+                      "firstName": "JEFF",
+                      "lastName": "SILVERSTONE"
+                    },
+                    {
+                      "firstName": "JAYNE",
+                      "lastName": "SILVERSTONE"
                     }
                   ]
                 }
