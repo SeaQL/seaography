@@ -1,6 +1,6 @@
 [package]
 name = "sea-draw"
-version = "0.1.0"
+version = "2.0.0-rc.2"
 edition = "2024"
 
 [dependencies]
@@ -30,7 +30,7 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 
 [dependencies.seaography]
 path = "../../"
-version = "~2.0.0-rc" # seaography version
+version = "~2.0.0-rc.2" # seaography version
 features = [
     "macros",
     "field-pluralize",
