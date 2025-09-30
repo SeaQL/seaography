@@ -9,4 +9,8 @@ cd cli
 cargo publish
 cd ..
 
+cd macros
+cargo publish
+cd ..
+
 cargo publish

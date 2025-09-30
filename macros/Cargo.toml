@@ -2,6 +2,15 @@
 name = "seaography-macros"
 version = "2.0.0-rc.2"
 edition = "2024"
+rust-version = "1.85"
+authors = ["Chris Tsang <chris.2y3@outlook.com>"]
+description = "Macros for Seaography"
+license = "MIT OR Apache-2.0"
+homepage = "https://www.sea-ql.org/Seaography"
+documentation = "https://docs.rs/seaography"
+repository = "https://github.com/SeaQL/seaography"
+keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
+categories = ["database"]
 
 [lib]
 proc-macro = true
