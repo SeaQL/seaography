@@ -12,6 +12,12 @@ sed -i 's/^version.*$/version = "'$1'"/' Cargo.toml
 sed -i 's/^seaography-generator [^,]*,/seaography-generator = { version = "~'$1'",/' Cargo.toml
 cd ..
 
+# Bump `seaography-macros` version
+cd macros
+sed -i 's/^version.*$/version = "'$1'"/' Cargo.toml
+sed -i 's/^seaography-macros [^,]*,/seaography-macros = { version = "~'$1'",/' ../Cargo.toml
+cd ..
+
 # Bump `seaography` version
 sed -i 's/^version.*$/version = "'$1'"/' Cargo.toml
 git commit -am "$1"
