@@ -4,8 +4,8 @@ name = "seaography-postgres-example"
 version = "2.0.0-rc.2"
 
 [dependencies]
-poem = { version = "3.0" }
-async-graphql-poem = { version = "7.0" }
+axum = { version = "0.7" }
+async-graphql-axum = { version = "7.0" }
 dotenv = "0.15.0"
 sea-orm = { version = "~2.0.0-rc", features = ["sqlx-postgres", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }

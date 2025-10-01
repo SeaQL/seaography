@@ -1,6 +1,5 @@
-use async_graphql;
 use sea_orm::entity::prelude::{DateTimeUtc, Decimal};
-use seaography::{CustomFields, CustomInputType, CustomOutputType};
+use seaography::{async_graphql, CustomFields, CustomInputType, CustomOutputType};
 
 #[derive(Clone, CustomInputType)]
 pub struct RentalRequest {

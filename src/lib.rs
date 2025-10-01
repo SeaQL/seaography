@@ -64,8 +64,8 @@
 //! ### Install
 //!
 //! ```sh
-//! cargo install sea-orm-cli@^1.1 # used to generate entities
-//! cargo install seaography-cli@^1.1
+//! cargo install sea-orm-cli@^2.0.0-rc # used to generate entities
+//! cargo install seaography-cli@^2.0.0-rc
 //! ```
 //!
 //! ### MySQL

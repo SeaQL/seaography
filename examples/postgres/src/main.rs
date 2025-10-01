@@ -1,10 +1,15 @@
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql_poem::GraphQL;
+use async_graphql_axum::GraphQL;
+use axum::{
+    response::{self, IntoResponse},
+    routing::get,
+    Router,
+};
 use dotenv::dotenv;
-use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
 use sea_orm::Database;
 use seaography::{async_graphql, lazy_static};
 use std::env;
+use tokio::net::TcpListener;
 
 lazy_static::lazy_static! {
     static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
@@ -20,9 +25,8 @@ lazy_static::lazy_static! {
         });
 }
 
-#[handler]
 async fn graphql_playground() -> impl IntoResponse {
-    Html(playground_source(GraphQLPlaygroundConfig::new(&ENDPOINT)))
+    response::Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
 }
 
 #[tokio::main]
@@ -38,13 +42,12 @@ async fn main() {
     let schema =
         seaography_postgres_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();
-    let app = Route::new().at(
+    let app = Router::new().route(
         &*ENDPOINT,
-        get(graphql_playground).post(GraphQL::new(schema)),
+        get(graphql_playground).post_service(GraphQL::new(schema)),
     );
     println!("Visit GraphQL Playground at http://{}", *URL);
-    Server::new(TcpListener::bind(&*URL))
-        .run(app)
+    axum::serve(TcpListener::bind(&*URL).await.unwrap(), app)
         .await
-        .expect("Fail to start web server");
+        .unwrap();
 }

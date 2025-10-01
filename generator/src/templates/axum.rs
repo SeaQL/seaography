@@ -37,7 +37,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 });
         }
 
-        async fn graphiql() -> impl IntoResponse {
+        async fn graphql_playground() -> impl IntoResponse {
             response::Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
         }
 
@@ -52,7 +52,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 .await
                 .expect("Fail to initialize database connection");
             let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
-            let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
+            let app = Router::new().route("/", get(graphql_playground).post_service(GraphQL::new(schema)));
             println!("Visit GraphQL Playground at http://{}", *URL);
             axum::serve(TcpListener::bind(&*URL).await.unwrap(), app)
                 .await

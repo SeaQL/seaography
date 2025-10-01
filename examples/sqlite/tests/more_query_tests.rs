@@ -1,8 +1,7 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::{
-    async_graphql, lazy_static, BuilderContext, EntityQueryFieldConfig, PaginationInputConfig,
-    TypesMapConfig,
+    async_graphql, lazy_static, BuilderContext, PaginationInputConfig, TypesMapConfig,
 };
 
 lazy_static::lazy_static! {

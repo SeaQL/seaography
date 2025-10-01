@@ -4,8 +4,8 @@ name = "seaography-mysql-example"
 version = "2.0.0-rc.2"
 
 [dependencies]
-axum = { version = "0.7" }
-async-graphql-axum = { version = "7.0" }
+actix-web = { version = "4.5", default-features = false, features = ["macros"] }
+async-graphql-actix-web = { version = "7.0" }
 dotenv = "0.15.0"
 sea-orm = { version = "~2.0.0-rc", features = ["sqlx-mysql", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }

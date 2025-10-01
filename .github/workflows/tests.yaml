@@ -82,7 +82,7 @@ jobs:
           args: >
             --package seaography-cli -- ./examples/sqlite
             ./examples/sqlite/src/entities sqlite://sakila.db
-            seaography-sqlite-example -f actix
+            seaography-sqlite-example -f poem
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
@@ -146,7 +146,7 @@ jobs:
           args: >
             --package seaography-cli -- ./examples/mysql
             ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila
-            seaography-mysql-example -f axum
+            seaography-mysql-example -f actix
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
@@ -216,7 +216,7 @@ jobs:
             --package seaography-cli -- ./examples/postgres
             ./examples/postgres/src/entities
             postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
-            seaography-postgres-example -f poem
+            seaography-postgres-example -f axum
       - name: Depends on local seaography
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
