@@ -38,8 +38,8 @@
 //!
 //! It's easy to integrate Seaography with any web framework, but we ship with the following examples out-of-the-box:
 //!
-//! + [Actix](https://github.com/SeaQL/seaography/tree/1.1.x/examples/sqlite), [Axum](https://github.com/SeaQL/seaography/tree/1.1.x/examples/mysql), [Poem](https://github.com/SeaQL/seaography/tree/1.1.x/examples/postgres)
-//! + [Loco (SeaORM Pro)](https://github.com/SeaQL/sea-orm-pro)
+//! + [Actix](https://github.com/SeaQL/seaography/tree/1.1.x/examples/mysql), [Axum](https://github.com/SeaQL/seaography/tree/1.1.x/examples/postgres), [Poem](https://github.com/SeaQL/seaography/tree/1.1.x/examples/sqlite)
+//! + [Loco (SeaORM)](https://github.com/SeaQL/sea-orm/tree/master/examples/loco_seaography), [Loco (SeaORM Pro)](https://github.com/SeaQL/sea-orm-pro)
 //!
 //! ## Features
 //!
