@@ -677,7 +677,25 @@ macro_rules! register_entity {
             $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
         $builder =
             $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
-        $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
+    };
+    ($builder:expr, $module_path:ident, mutation: $mutation:expr) => {
+        let relations =
+            <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
+                .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
+                .collect();
+        let related_entity_filter =
+            seaography::RelatedEntityFilter::<$module_path::Entity>::build::<$module_path::RelatedEntity>($builder.context);
+
+        $builder.register_entity::<$module_path::Entity>(relations, &related_entity_filter);
+        $builder =
+            $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
+        $builder =
+            $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
+        $builder =
+            $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
+        if $mutation {
+            $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
+        }
     };
 }
 
