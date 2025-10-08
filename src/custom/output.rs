@@ -5,6 +5,8 @@ use crate::{
 use async_graphql::dynamic::{FieldValue, Object, TypeRef};
 #[cfg(feature = "macros")]
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+pub use seaography_macros::{ConvertOutput, CustomOutputType};
+
 /// ```
 /// use seaography::CustomOutputType;
 ///
@@ -26,8 +28,6 @@ use async_graphql::dynamic::{FieldValue, Object, TypeRef};
 ///     pub size: i32,
 /// }
 /// ```
-pub use seaography_macros::{ConvertOutput, CustomOutputType};
-
 pub trait CustomOutputType {
     fn gql_output_type_ref(ctx: &'static BuilderContext) -> TypeRef;
     fn gql_field_value(self, ctx: &'static BuilderContext) -> Option<FieldValue<'static>>;

@@ -5,6 +5,8 @@ use async_graphql::{
 };
 #[cfg(feature = "macros")]
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+pub use seaography_macros::CustomInputType;
+
 /// ```
 /// use seaography::CustomInputType;
 ///
@@ -22,8 +24,6 @@ use async_graphql::{
 ///     pub county: Option<String>,
 /// }
 /// ```
-pub use seaography_macros::CustomInputType;
-
 pub trait CustomInputType: Sized {
     fn gql_input_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 

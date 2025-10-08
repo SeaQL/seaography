@@ -108,7 +108,8 @@ impl Builder {
         }
     }
 
-    /// used to register a new entity to the Builder context
+    /// Register a SeaORM Entity to the schema.
+    /// With all the edge, connection and filter objects.
     pub fn register_entity<T>(
         &mut self,
         relations: Vec<Field>,
@@ -171,8 +172,8 @@ impl Builder {
         self.metadata.insert(T::default().to_string(), metadata);
     }
 
-    /// register a custom entity that only has the model for input / ouput.
-    /// no query / mutation will be added. intended for use in custom operations.
+    /// Register a SeaORM entity to use the Model for input / ouput.
+    /// No query / mutation will be added. Intended for use in custom operations.
     pub fn register_custom_entity<T>(&mut self)
     where
         T: EntityTrait,
@@ -292,7 +293,7 @@ impl Builder {
         self
     }
 
-    /// used to register a new enumeration to the builder context
+    /// Used to register an SeaORM ActiveEnum to the schema
     pub fn register_enumeration<A>(&mut self)
     where
         A: ActiveEnum,
@@ -336,6 +337,7 @@ impl Builder {
         self.inputs.push(T::input_object(self.context));
     }
 
+    /// Register a simple object as custom output
     pub fn register_custom_output<T>(&mut self)
     where
         T: CustomOutputObject,
@@ -343,6 +345,7 @@ impl Builder {
         self.outputs.push(T::basic_object(self.context));
     }
 
+    /// Register a custom output object without custom fields
     pub fn register_complex_custom_output<T>(&mut self)
     where
         T: CustomOutputObject + CustomFields,
@@ -438,7 +441,8 @@ impl Builder {
         self.queries.push(field);
     }
 
-    /// used to consume the builder context and generate a ready to be completed GraphQL schema
+    /// Consume the builder context and generate a ready to be completed GraphQL schema.
+    /// You can extend the schema, or attach additional data to it before finish().
     pub fn schema_builder(mut self) -> SchemaBuilder {
         #[cfg(feature = "schema-meta")]
         self.register_schema_meta();
@@ -661,6 +665,8 @@ macro_rules! impl_custom_output_type_for_entity {
 }
 
 #[macro_export]
+/// Includes mutations by default. Can skip mutations by
+/// `seaography::register_entity!(builder, my_entity, mutation: false);`.
 macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
         seaography::register_entity!($builder, $module_path, mutation: true);

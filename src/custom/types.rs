@@ -7,6 +7,8 @@ use async_graphql::dynamic::{Enum, Field, FieldValue, TypeRef, Union, ValueAcces
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 #[cfg(feature = "macros")]
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+pub use seaography_macros::{CustomEnum, CustomFields};
+
 /// ```
 /// use seaography::{async_graphql, CustomFields, CustomInputType};
 /// use async_graphql::Context;
@@ -43,12 +45,20 @@ use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 ///     }
 /// }
 /// ```
-pub use seaography_macros::{CustomEnum, CustomFields};
-
 pub trait CustomFields {
     fn to_fields(context: &'static BuilderContext) -> Vec<Field>;
 }
 
+/// ```
+/// use seaography::CustomEnum;
+///
+/// #[derive(CustomEnum)]
+/// pub enum Status {
+///     Available,
+///     BackOrdering,
+///     Unavailable,
+/// }
+/// ```
 pub trait CustomEnum {
     fn to_enum() -> Enum;
 }
