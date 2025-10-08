@@ -6,6 +6,43 @@ use crate::{
 use async_graphql::dynamic::{Enum, Field, FieldValue, TypeRef, Union, ValueAccessor};
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};
 #[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+/// ```
+/// use seaography::{async_graphql, CustomFields, CustomInputType};
+/// use async_graphql::Context;
+///
+/// pub struct Operations;
+///
+/// #[CustomFields]
+/// impl Operations {
+///     async fn foo(_ctx: &Context<'_>, username: String) -> async_graphql::Result<String> {
+///         Ok(format!("Hello, {}!", username))
+///     }
+///
+///     async fn bar(_ctx: &Context<'_>, x: i32, y: i32) -> async_graphql::Result<i32> {
+///         Ok(x + y)
+///     }
+/// }
+///
+/// #[derive(Clone, CustomInputType)]
+/// pub struct Circle {
+///     pub center: Point,
+///     pub radius: f64,
+/// }
+///
+/// #[derive(Clone, Copy, CustomInputType)]
+/// pub struct Point {
+///     pub x: f64,
+///     pub y: f64,
+/// }
+///
+/// #[CustomFields]
+/// impl Circle {
+///     pub async fn area(&self) -> async_graphql::Result<f64> {
+///         Ok(std::f64::consts::PI * self.radius * self.radius)
+///     }
+/// }
+/// ```
 pub use seaography_macros::{CustomEnum, CustomFields};
 
 pub trait CustomFields {

@@ -301,6 +301,7 @@ pub mod rbac;
 pub use rbac::*;
 
 #[cfg(feature = "schema-meta")]
+#[cfg_attr(docsrs, doc(cfg(feature = "schema-meta")))]
 pub mod schema;
 
 pub type SimpleNamingFn = Box<dyn Fn(&str) -> String + Sync + Send>;

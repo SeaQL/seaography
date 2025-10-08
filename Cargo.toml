@@ -18,6 +18,10 @@ repository = "https://github.com/SeaQL/seaography"
 keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
+[package.metadata.docs.rs]
+features = ["default"]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [dependencies]
 async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 sea-orm = { version = "~2.0.0-rc", default-features = false, features = ["seaography", "with-json"] }

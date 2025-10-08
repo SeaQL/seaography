@@ -4,6 +4,24 @@ use async_graphql::{
     Upload,
 };
 #[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+/// ```
+/// use seaography::CustomInputType;
+///
+/// #[derive(Clone, CustomInputType)]
+/// pub struct RentalRequest {
+///     pub customer: String,
+///     pub film: String,
+///     pub location: Option<Location>,
+///     pub membership_id: i32,
+/// }
+///
+/// #[derive(Clone, CustomInputType)]
+/// pub struct Location {
+///     pub city: String,
+///     pub county: Option<String>,
+/// }
+/// ```
 pub use seaography_macros::CustomInputType;
 
 pub trait CustomInputType: Sized {

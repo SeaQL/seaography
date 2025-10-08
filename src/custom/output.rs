@@ -4,6 +4,28 @@ use crate::{
 };
 use async_graphql::dynamic::{FieldValue, Object, TypeRef};
 #[cfg(feature = "macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "macros")))]
+/// ```
+/// use seaography::CustomOutputType;
+///
+/// #[derive(Clone, CustomOutputType)]
+/// pub struct PurchaseOrder {
+///     pub po_number: String,
+///     pub lineitems: Vec<Lineitem>,
+/// }
+///
+/// #[derive(Clone, CustomOutputType)]
+/// pub struct Lineitem {
+///     pub product: String,
+///     pub quantity: f64,
+///     pub size: Option<ProductSize>,
+/// }
+///
+/// #[derive(Clone, CustomOutputType)]
+/// pub struct ProductSize {
+///     pub size: i32,
+/// }
+/// ```
 pub use seaography_macros::{ConvertOutput, CustomOutputType};
 
 pub trait CustomOutputType {
