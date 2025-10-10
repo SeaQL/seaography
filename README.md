@@ -235,7 +235,7 @@ Find all inactive customers, include their address, and their payments with amou
 }
 ```
 
-### Filter using enumeration
+### Filter using Postgres enum
 ```graphql
 {
   film(
@@ -244,6 +244,7 @@ Find all inactive customers, include their address, and their payments with amou
   ) {
     nodes {
       filmId
+      title
       rating
     }
   }

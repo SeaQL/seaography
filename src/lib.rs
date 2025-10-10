@@ -235,7 +235,7 @@
 //! }
 //! ```
 //!
-//! ### Filter using enumeration
+//! ### Filter using Postgres enum
 //! ```graphql
 //! {
 //!   film(
@@ -244,6 +244,7 @@
 //!   ) {
 //!     nodes {
 //!       filmId
+//!       title
 //!       rating
 //!     }
 //!   }
