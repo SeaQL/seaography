@@ -16,3 +16,22 @@ pub mod payment;
 pub mod rental;
 pub mod staff;
 pub mod store;
+
+seaography::register_entity_modules!([
+    actor,
+    address,
+    category,
+    city,
+    country,
+    customer,
+    film,
+    film_actor,
+    film_category,
+    film_text,
+    inventory,
+    language,
+    payment,
+    rental,
+    staff,
+    store,
+]);

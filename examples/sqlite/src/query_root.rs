@@ -1,13 +1,15 @@
 use crate::entities::*;
 use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
+use seaography::{async_graphql, lazy_static::lazy_static, Builder, BuilderContext};
 
 mod mutations;
 mod queries;
 mod types;
 
-lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
+lazy_static! {
+    static ref CONTEXT: BuilderContext = BuilderContext::default();
+}
 
 pub fn schema(
     database: DatabaseConnection,
@@ -24,28 +26,7 @@ pub fn schema_builder(
     complexity: Option<usize>,
 ) -> SchemaBuilder {
     let mut builder = Builder::new(context, database.clone());
-
-    seaography::register_entities!(
-        builder,
-        [
-            actor,
-            address,
-            category,
-            city,
-            country,
-            customer,
-            film,
-            film_actor,
-            film_category,
-            film_text,
-            inventory,
-            language,
-            payment,
-            rental,
-            staff,
-            store,
-        ]
-    );
+    builder = register_entity_modules(builder);
 
     // // if `strict-custom-types` is enabled, add the following:
     // seaography::impl_custom_output_type_for_entities!([actor, ..]);
