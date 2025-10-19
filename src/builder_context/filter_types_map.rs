@@ -291,7 +291,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 ColumnType::Uuid => Some(FilterType::Text),
-                ColumnType::Custom(name) => Some(FilterType::Custom(name.to_string())),
+                ColumnType::Custom(_) => None,
                 ColumnType::Enum { name, variants: _ } => {
                     Some(FilterType::Enumeration(name.to_string()))
                 }

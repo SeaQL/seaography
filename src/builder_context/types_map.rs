@@ -360,7 +360,7 @@ impl TypesMapHelper {
                     );
                     iden_type.map(|it| TypeRef::List(Box::new(it)))
                 }
-                ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Custom(_) => None,
                 _ => None,
             },
         }
