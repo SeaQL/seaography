@@ -10,7 +10,14 @@ pub struct Args {
     /// SeaORM entities folder
     pub entities: String,
 
-    /// Database URL to write in .env
+    /// Database URL
+    #[arg(
+        short = 'u',
+        long,
+        env = "DATABASE_URL",
+        help = "Database URL",
+        hide_env_values = true
+    )]
     pub database_url: String,
 
     /// Crate name for generated project
