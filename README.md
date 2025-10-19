@@ -76,7 +76,7 @@ Then regenerate example project like below, or simply do `cargo run`.
 ```sh
 cd examples/mysql
 sea-orm-cli generate entity -o src/entities -u mysql://user:pw@127.0.0.1/sakila --seaography
-seaography-cli ./ src/entities mysql://user:pw@127.0.0.1/sakila seaography-mysql-example
+seaography-cli -o ./ -e src/entities -u mysql://user:pw@127.0.0.1/sakila seaography-mysql-example
 cargo run
 ```
 
@@ -88,7 +88,7 @@ Then regenerate example project like below, or simply do `cargo run`.
 ```sh
 cd examples/postgres
 sea-orm-cli generate entity -o src/entities -u postgres://user:pw@localhost/sakila --seaography
-seaography-cli ./ src/entities postgres://user:pw@localhost/sakila seaography-postgres-example
+seaography-cli -o ./ -e src/entities -u postgres://user:pw@localhost/sakila seaography-postgres-example
 cargo run
 ```
 
@@ -99,7 +99,7 @@ cargo run
 ```sh
 cd examples/sqlite
 sea-orm-cli generate entity -o src/entities -u sqlite://sakila.db --seaography
-seaography-cli ./ src/entities sqlite://sakila.db seaography-sqlite-example
+seaography-cli -o ./ -e src/entities -u sqlite://sakila.db seaography-sqlite-example
 cargo run
 ```
 

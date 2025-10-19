@@ -80,8 +80,10 @@ jobs:
         with:
           command: run
           args: >
-            --package seaography-cli -- ./examples/sqlite
-            ./examples/sqlite/src/entities sqlite://sakila.db
+            --package seaography-cli --
+            -o ./examples/sqlite
+            -e ./examples/sqlite/src/entities
+            -u sqlite://sakila.db
             seaography-sqlite-example -f poem
       - name: Depends on local seaography
         run: >-
@@ -144,8 +146,10 @@ jobs:
         with:
           command: run
           args: >
-            --package seaography-cli -- ./examples/mysql
-            ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila
+            --package seaography-cli --
+            -o ./examples/mysql
+            -e ./examples/mysql/src/entities
+            -u mysql://sea:sea@127.0.0.1/sakila
             seaography-mysql-example -f actix
       - name: Depends on local seaography
         run: >-
@@ -213,9 +217,10 @@ jobs:
         with:
           command: run
           args: >
-            --package seaography-cli -- ./examples/postgres
-            ./examples/postgres/src/entities
-            postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
+            --package seaography-cli --
+            -o ./examples/postgres
+            -e ./examples/postgres/src/entities
+            -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
             seaography-postgres-example -f axum
       - name: Depends on local seaography
         run: >-

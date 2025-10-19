@@ -4,13 +4,17 @@ use seaography_generator::write_project;
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    /// Project destination folder
-    pub destination: String,
+    #[arg(
+        short = 'o',
+        long,
+        default_value = "./",
+        help = "Project output directory"
+    )]
+    pub output_dir: String,
 
-    /// SeaORM entities folder
+    #[arg(short = 'e', long, help = "Entities directory")]
     pub entities: String,
 
-    /// Database URL
     #[arg(
         short = 'u',
         long,
@@ -94,7 +98,7 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
 async fn main() {
     let args = Args::parse();
 
-    let root_path = std::path::Path::new(&args.destination);
+    let root_path = std::path::Path::new(&args.output_dir);
 
     let entities_path = std::path::Path::new(&args.entities);
 
