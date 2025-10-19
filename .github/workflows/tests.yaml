@@ -155,8 +155,6 @@ jobs:
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
           ./examples/mysql/Cargo.toml
-      - name: Fix Nullable not implemented for Vec<String> and tsvector
-        run: 'sed -i "24,28d" ./examples/mysql/src/entities/film.rs'
       - name: Build example
         working-directory: ./examples/mysql
         run: cargo build
@@ -226,8 +224,6 @@ jobs:
         run: >-
           sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
           ./examples/postgres/Cargo.toml
-      - name: Fix Nullable not implemented for Vec<String> and tsvector
-        run: 'sed -i "26,27d" ./examples/postgres/src/entities/film.rs'
       - name: Build example
         working-directory: ./examples/postgres
         run: cargo build
