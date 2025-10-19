@@ -5,6 +5,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub store_id: i32,
+    #[sea_orm(unique)]
     pub manager_staff_id: i16,
     pub address_id: i16,
     pub last_update: DateTime,

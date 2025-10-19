@@ -8,13 +8,14 @@ pub struct Model {
     pub first_name: String,
     pub last_name: String,
     pub address_id: i16,
+    pub reports_to_id: Option<i32>,
     pub email: Option<String>,
     pub store_id: i16,
     pub active: bool,
     pub username: String,
     pub password: Option<String>,
     pub last_update: DateTime,
-    #[sea_orm(column_type = "Binary(255)", nullable)]
+    #[sea_orm(column_type = "VarBinary(StringLen::None)", nullable)]
     pub picture: Option<Vec<u8>>,
 }
 
@@ -32,6 +33,14 @@ pub enum Relation {
     Payment,
     #[sea_orm(has_many = "super::rental::Entity")]
     Rental,
+    #[sea_orm(
+        belongs_to = "Entity",
+        from = "Column::ReportsToId",
+        to = "Column::StaffId",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    SelfRef,
     #[sea_orm(
         belongs_to = "super::store::Entity",
         from = "Column::StoreId",
@@ -76,6 +85,10 @@ pub enum RelatedEntity {
     Payment,
     #[sea_orm(entity = "super::rental::Entity")]
     Rental,
+    #[sea_orm(entity = "Entity", def = "Relation::SelfRef.def()")]
+    SelfRef,
     #[sea_orm(entity = "super::store::Entity")]
     Store,
+    #[sea_orm(entity = "Entity", def = "Relation::SelfRef.def().rev()")]
+    SelfRefReverse,
 }

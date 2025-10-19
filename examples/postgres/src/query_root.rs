@@ -1,9 +1,11 @@
 use crate::entities::*;
 use async_graphql::dynamic::*;
 use sea_orm::DatabaseConnection;
-use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
+use seaography::{async_graphql, lazy_static::lazy_static, Builder, BuilderContext};
 
-lazy_static::lazy_static! { static ref CONTEXT : BuilderContext = BuilderContext :: default () ; }
+lazy_static! {
+    static ref CONTEXT: BuilderContext = BuilderContext::default();
+}
 
 pub fn schema(
     database: DatabaseConnection,
@@ -20,27 +22,8 @@ pub fn schema_builder(
     complexity: Option<usize>,
 ) -> SchemaBuilder {
     let mut builder = Builder::new(context, database.clone());
-    seaography::register_entities!(
-        builder,
-        [
-            actor,
-            address,
-            category,
-            city,
-            country,
-            customer,
-            film,
-            film_actor,
-            film_category,
-            inventory,
-            language,
-            payment,
-            rental,
-            staff,
-            store,
-        ]
-    );
-    builder.register_enumeration::<crate::entities::sea_orm_active_enums::MpaaRating>();
+    builder = register_entity_modules(builder);
+    builder = register_active_enums(builder);
     builder
         .set_depth_limit(depth)
         .set_complexity_limit(complexity)

@@ -16,3 +16,22 @@ pub mod rental;
 pub mod sea_orm_active_enums;
 pub mod staff;
 pub mod store;
+
+seaography::register_entity_modules!([
+    actor,
+    address,
+    category,
+    city,
+    country,
+    customer,
+    film,
+    film_actor,
+    film_category,
+    inventory,
+    language,
+    payment,
+    rental,
+    staff,
+    store,
+]);
+seaography::register_active_enums!([sea_orm_active_enums::MpaaRating,]);
