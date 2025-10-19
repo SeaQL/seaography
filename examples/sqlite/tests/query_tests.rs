@@ -1335,3 +1335,48 @@ async fn country_having_city() {
         "#,
     )
 }
+
+#[tokio::test]
+async fn film_filter_or() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: {
+                      or: [{ title: { contains: "LIFE" } }, { title: { contains: "DOG" } }]
+                    }
+                  ) {
+                    nodes {
+                      title
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "title": "ANGELS LIFE"
+              },
+              {
+                "title": "ARABIA DOGMA"
+              },
+              {
+                "title": "DOGMA FAMILY"
+              },
+              {
+                "title": "LIFE TWISTED"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
