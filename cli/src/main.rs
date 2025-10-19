@@ -109,8 +109,8 @@ async fn main() {
     let db_url = database_url.as_str();
 
     write_project(
-        &root_path,
-        &entities_path,
+        root_path,
+        entities_path,
         db_url,
         &args.crate_name,
         sql_library,
