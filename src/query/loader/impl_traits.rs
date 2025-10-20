@@ -87,11 +87,9 @@ where
     T: sea_orm::EntityTrait,
 {
     fn eq(&self, other: &Self) -> bool {
-        self.filters.eq(&other.filters)
-            && std::cmp::PartialEq::eq(
-                &format!("{:?}", self.columns),
-                &format!("{:?}", other.columns),
-            )
+        self.rel_def.eq(&other.rel_def)
+            && self.via_def.eq(&other.via_def)
+            && self.filters.eq(&other.filters)
             && std::cmp::PartialEq::eq(
                 &format!("{:?}", self.order_by),
                 &format!("{:?}", other.order_by),
@@ -106,33 +104,14 @@ where
     T: sea_orm::EntityTrait,
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.rel_def.hash(state);
+        self.via_def.hash(state);
         format!("{:?}", self.filters).hash(state);
-        format!("{:?}", self.columns).hash(state);
         format!("{:?}", self.order_by).hash(state);
     }
 }
 
-impl<T> PartialEq for HashableColumn<T>
-where
-    T: sea_orm::EntityTrait,
-{
-    fn eq(&self, other: &Self) -> bool {
-        std::cmp::PartialEq::eq(&format!("{:?}", self.0), &format!("{:?}", other.0))
-    }
-}
-
-impl<T> Eq for HashableColumn<T> where T: sea_orm::EntityTrait {}
-
-impl<T> Hash for HashableColumn<T>
-where
-    T: sea_orm::EntityTrait,
-{
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        format!("{:?}", self.0).hash(state);
-    }
-}
-
-pub struct ValueTupleIter<'a> {
+struct ValueTupleIter<'a> {
     key: &'a ValueTuple,
     index: usize,
 }
@@ -171,23 +150,5 @@ impl<'a> Iterator for ValueTupleIter<'a> {
         };
         self.index += 1;
         result
-    }
-}
-
-pub fn collect_key(mut it: impl Iterator<Item = Value>) -> ValueTuple {
-    match (it.next(), it.next(), it.next(), it.next()) {
-        (Some(a), None, _, _) => ValueTuple::One(a),
-        (Some(a), Some(b), None, _) => ValueTuple::Two(a, b),
-        (Some(a), Some(b), Some(c), None) => ValueTuple::Three(a, b, c),
-        (Some(a), Some(b), Some(c), Some(d)) => {
-            // collect remaining into vec
-            let mut v = vec![a, b, c, d];
-            v.extend(it);
-            ValueTuple::Many(v)
-        }
-        (None, _, _, _) => {
-            // empty iterator
-            ValueTuple::Many(Vec::new())
-        }
     }
 }

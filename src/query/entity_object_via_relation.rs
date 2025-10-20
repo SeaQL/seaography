@@ -4,16 +4,16 @@ use async_graphql::{
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    sea_query::ValueTuple, ColumnTrait, Condition, DatabaseConnection, EntityTrait, Identity,
-    ModelTrait, QueryFilter, QueryTrait, Related, RelationDef,
+    DatabaseConnection, EntityTrait, 
+    QueryFilter, QueryTrait, Related, RelationDef,
 };
 
 use crate::{
-    apply_memory_pagination, apply_order, apply_pagination, get_filter_conditions, guard_error,
-    pluralize_unique, BuilderContext, ConnectionObjectBuilder, DatabaseContext,
-    EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex,
-    OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder, PaginationInputBuilder,
-    UserContext,
+    apply_memory_pagination, get_filter_conditions, guard_error,
+    loader_impl, pluralize_unique, BuilderContext, Connection, ConnectionObjectBuilder,
+    DatabaseContext, EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey,
+    KeyComplex, OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder,
+    PaginationInputBuilder, UserContext,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
@@ -54,13 +54,14 @@ impl EntityObjectViaRelationBuilder {
         <<T as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
         <<R as sea_orm::EntityTrait>::Column as std::str::FromStr>::Err: core::fmt::Debug,
     {
-        let to_relation_definition = <T as Related<R>>::to();
-        let name = self.get_relation_name_for(name, &to_relation_definition);
+        let to_rel_def = <T as Related<R>>::to();
+        let name = self.get_relation_name_for(name, &to_rel_def);
         let context: &'static BuilderContext = self.context;
-        let (via_relation_definition, is_via_relation) = match <T as Related<R>>::via() {
-            Some(def) => (def, true),
-            None => (<T as Related<R>>::to(), false),
+        let (via_rel_def, is_via_relation) = match <T as Related<R>>::via() {
+            Some(rel_def) => (rel_def, true),
+            None => (to_rel_def.clone(), false),
         };
+        let via_rel_def_is_owner = via_rel_def.is_owner;
 
         let entity_object_builder = EntityObjectBuilder { context };
         let connection_object_builder = ConnectionObjectBuilder { context };
@@ -72,28 +73,13 @@ impl EntityObjectViaRelationBuilder {
         let object_name_ = object_name.clone();
         let hooks = &self.context.hooks;
 
-        let from_col = match via_relation_definition.from_col.clone() {
-            Identity::Unary(iden) => <T::Column as std::str::FromStr>::from_str(&iden.inner())
-                .unwrap_or_else(|_| {
-                    panic!("Illegal from_col: {:?}", via_relation_definition.from_col)
-                }),
-            _ => todo!("Unsupported composite key"),
-        };
-
-        let to_col = match to_relation_definition.to_col.clone() {
-            Identity::Unary(iden) => <R::Column as std::str::FromStr>::from_str(&iden.inner())
-                .unwrap_or_else(|_| {
-                    panic!("Illegal from_col: {:?}", to_relation_definition.to_col)
-                }),
-            _ => todo!("Unsupported composite key"),
-        };
-
         let field_name = name.clone();
-        let field = match via_relation_definition.is_owner {
+        let field = match via_rel_def.is_owner {
             false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
                 let object_name = object_name.clone();
                 let parent_name = parent_name.clone();
                 let field_name = field_name.clone();
+                let to_rel_def = to_rel_def.clone();
                 FieldFuture::new(async move {
                     if let GuardAction::Block(reason) =
                         hooks.entity_guard(&ctx, &object_name, OperationType::Read)
@@ -115,11 +101,7 @@ impl EntityObjectViaRelationBuilder {
 
                     let loader = ctx.data_unchecked::<DataLoader<OneToOneLoader<R>>>();
 
-                    let mut stmt = if <T as Related<R>>::via().is_some() {
-                        <T as Related<R>>::find_related()
-                    } else {
-                        R::find()
-                    };
+                    let mut stmt = R::find();
                     if let Some(filter) =
                         hooks.entity_filter(&ctx, &object_name, OperationType::Read)
                     {
@@ -136,12 +118,15 @@ impl EntityObjectViaRelationBuilder {
                     let filters = get_filter_conditions::<R>(context, filters)?;
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
                     let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
+
                     let key = KeyComplex::<R> {
-                        key: ValueTuple::One(parent.get(from_col)),
+                        key: loader_impl::extract_key::<T::Model>(&to_rel_def.from_col, parent)?,
                         meta: HashableGroupKey::<R> {
                             stmt,
-                            columns: vec![to_col],
-                            filters: Some(filters),
+                            junction_fields: Vec::new(),
+                            rel_def: to_rel_def,
+                            via_def: None,
+                            filters,
                             order_by,
                         },
                     };
@@ -162,6 +147,8 @@ impl EntityObjectViaRelationBuilder {
                     let object_name = object_name.clone();
                     let parent_name = parent_name.clone();
                     let field_name = field_name.clone();
+                    let to_rel_def = to_rel_def.clone();
+                    let via_rel_def = via_rel_def.clone();
                     FieldFuture::new(async move {
                         if let GuardAction::Block(reason) =
                             hooks.entity_guard(&ctx, &object_name, OperationType::Read)
@@ -184,11 +171,7 @@ impl EntityObjectViaRelationBuilder {
                             )));
                         };
 
-                        let mut stmt = if <T as Related<R>>::via().is_some() {
-                            <T as Related<R>>::find_related()
-                        } else {
-                            R::find()
-                        };
+                        let mut stmt = R::find();
                         if let Some(filter) =
                             hooks.entity_filter(&ctx, &object_name, OperationType::Read)
                         {
@@ -209,32 +192,48 @@ impl EntityObjectViaRelationBuilder {
                             .data::<DatabaseConnection>()?
                             .restricted(ctx.data_opt::<UserContext>())?;
 
-                        let connection = if is_via_relation {
-                            // TODO optimize query
-                            let condition = Condition::all().add(from_col.eq(parent.get(from_col)));
+                        db.user_can_run(stmt.as_query())?;
 
-                            let stmt = stmt.filter(condition.add(filters));
-                            let stmt = apply_order(stmt, order_by);
-                            apply_pagination::<R, _>(context, db, stmt, pagination).await?
-                        } else {
-                            let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
+                        let loader = ctx.data_unchecked::<DataLoader<OneToManyLoader<R>>>();
 
-                            db.user_can_run(stmt.as_query())?;
-
-                            let key = KeyComplex::<R> {
-                                key: ValueTuple::One(parent.get(from_col)),
+                        let key = if is_via_relation {
+                            KeyComplex::<R> {
+                                key: loader_impl::extract_key::<T::Model>(
+                                    &via_rel_def.from_col,
+                                    parent,
+                                )?,
                                 meta: HashableGroupKey::<R> {
                                     stmt,
-                                    columns: vec![to_col],
-                                    filters: Some(filters),
+                                    junction_fields: loader_impl::extract_col_type::<T::Model>(
+                                        &via_rel_def.from_col,
+                                        &via_rel_def.to_col,
+                                    )?,
+                                    rel_def: to_rel_def,
+                                    via_def: Some(via_rel_def),
+                                    filters,
                                     order_by,
                                 },
-                            };
-
-                            let values = loader.load_one(key).await?;
-
-                            apply_memory_pagination(context, values, pagination)?
+                            }
+                        } else {
+                            KeyComplex::<R> {
+                                key: loader_impl::extract_key::<T::Model>(
+                                    &to_rel_def.from_col,
+                                    parent,
+                                )?,
+                                meta: HashableGroupKey::<R> {
+                                    stmt,
+                                    junction_fields: Vec::new(),
+                                    rel_def: to_rel_def,
+                                    via_def: None,
+                                    filters,
+                                    order_by,
+                                },
+                            }
                         };
+                        let values = loader.load_one(key).await?;
+
+                        let connection: Connection<R> =
+                            apply_memory_pagination(context, values, pagination)?;
 
                         Ok(Some(FieldValue::owned_any(connection)))
                     })
@@ -242,7 +241,7 @@ impl EntityObjectViaRelationBuilder {
             ),
         };
 
-        match via_relation_definition.is_owner {
+        match via_rel_def_is_owner {
             false => field,
             true => field
                 .argument(InputValue::new(
