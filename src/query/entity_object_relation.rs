@@ -4,7 +4,8 @@ use async_graphql::{
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, QueryTrait, RelationDef,
+    sea_query::ValueTuple, DatabaseConnection, EntityTrait, Identity, ModelTrait, QueryFilter,
+    QueryTrait, RelationDef,
 };
 
 use crate::{
@@ -63,23 +64,17 @@ impl EntityObjectRelationBuilder {
         let object_name_ = object_name.clone();
         let hooks = &self.context.hooks;
 
-        let from_col = <T::Column as std::str::FromStr>::from_str(
-            relation_definition
-                .from_col
-                .to_string()
-                .to_snake_case()
-                .as_str(),
-        )
-        .unwrap_or_else(|_| panic!("Illegal from_col: {:?}", relation_definition.from_col));
+        let from_col = match relation_definition.from_col.clone() {
+            Identity::Unary(iden) => <T::Column as std::str::FromStr>::from_str(&iden.inner())
+                .unwrap_or_else(|_| panic!("Illegal from_col: {:?}", relation_definition.from_col)),
+            _ => todo!("Unsupported composite key"),
+        };
 
-        let to_col = <R::Column as std::str::FromStr>::from_str(
-            relation_definition
-                .to_col
-                .to_string()
-                .to_snake_case()
-                .as_str(),
-        )
-        .unwrap_or_else(|_| panic!("Illegal to_col: {:?}", relation_definition.to_col));
+        let to_col = match relation_definition.to_col.clone() {
+            Identity::Unary(iden) => <R::Column as std::str::FromStr>::from_str(&iden.inner())
+                .unwrap_or_else(|_| panic!("Illegal to_col: {:?}", relation_definition.to_col)),
+            _ => todo!("Unsupported composite key"),
+        };
 
         let field_name = name.clone();
         let field = match relation_definition.is_owner {
@@ -126,7 +121,7 @@ impl EntityObjectRelationBuilder {
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
                     let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
                     let key = KeyComplex::<R> {
-                        key: vec![parent.get(from_col)],
+                        key: ValueTuple::One(parent.get(from_col)),
                         meta: HashableGroupKey::<R> {
                             stmt,
                             columns: vec![to_col],
@@ -191,7 +186,7 @@ impl EntityObjectRelationBuilder {
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
                         let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
                         let key = KeyComplex::<R> {
-                            key: vec![parent.get(from_col)],
+                            key: ValueTuple::One(parent.get(from_col)),
                             meta: HashableGroupKey::<R> {
                                 stmt,
                                 columns: vec![to_col],
