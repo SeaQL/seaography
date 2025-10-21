@@ -215,10 +215,10 @@ async fn test_entity_metadata() {
                     "name": "mpaa_rating",
                     "variants": [
                       "G",
-                      "NC-17",
                       "PG",
                       "PG-13",
-                      "R"
+                      "R",
+                      "NC-17"
                     ]
                   }
                 }

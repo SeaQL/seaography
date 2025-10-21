@@ -202,7 +202,8 @@ jobs:
       - name: Additional Integration tests
         working-directory: ./examples/postgres
         run: |
-          cargo test --test pg_query_tests entity_metadata_tests
+          cargo test --test pg_query_tests
+          cargo test --test entity_metadata_tests
           rm tests/pg_query_tests.rs tests/entity_metadata_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/postgres/src
@@ -221,9 +222,9 @@ jobs:
             -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
             seaography-postgres-example -f axum
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/postgres/Cargo.toml
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/postgres/Cargo.toml
       - name: Build example
         working-directory: ./examples/postgres
         run: cargo build
