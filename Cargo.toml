@@ -3,7 +3,7 @@ members = [".", "cli", "generator", "macros"]
 
 [package]
 name = "seaography"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 edition = "2021"
 rust-version = "1.70"
 authors = [
@@ -25,7 +25,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
 sea-orm = { version = "~2.0.0-rc", default-features = false, features = ["seaography", "with-json"] }
-seaography-macros = { version = "~2.0.0-rc.2", path = "macros", optional = true }
+seaography-macros = { version = "~2.0.0-rc.3", path = "macros", optional = true }
 itertools = { version = "0.12.0" }
 heck = { version = "0.4.1" }
 thiserror = { version = "1.0.44" }
