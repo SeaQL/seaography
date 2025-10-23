@@ -67,10 +67,6 @@ pub trait CustomUnion {
     fn to_union() -> Union;
 }
 
-pub trait CustomOperation {
-    fn to_fields() -> Vec<Field>;
-}
-
 pub trait GqlScalarValueType: Sized {
     fn gql_type_ref(ctx: &'static BuilderContext) -> TypeRef;
 

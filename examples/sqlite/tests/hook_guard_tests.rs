@@ -75,7 +75,6 @@ struct Permissions {
     staff: BTreeSet<i16>,
 }
 
-#[derive(Clone)]
 struct MyHooks;
 
 impl Log {
