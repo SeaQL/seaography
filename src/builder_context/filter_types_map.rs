@@ -4,8 +4,8 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, ExprTrait};
 
 use crate::{
-    prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext,
-    EntityObjectBuilder, SeaResult, TypesMapConfig, TypesMapHelper,
+    prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext, EntityColumnId,
+    EntityObjectBuilder, SeaResult, SeaographyError, TypesMapConfig, TypesMapHelper,
 };
 
 type FnFilterCondition =
@@ -14,9 +14,9 @@ type FnFilterCondition =
 /// The configuration for FilterTypesMapHelper
 pub struct FilterTypesMapConfig {
     /// used to map entity_name.column_name to a custom filter type
-    pub overwrites: BTreeMap<String, Option<FilterType>>,
+    pub overwrites: BTreeMap<EntityColumnId, Option<FilterType>>,
     /// used to map entity_name.column_name to a custom condition function
-    pub condition_functions: BTreeMap<String, FnFilterCondition>,
+    pub condition_functions: BTreeMap<EntityColumnId, FnFilterCondition>,
 
     // basic filters
     pub string_filter_info: FilterInfo,
@@ -235,20 +235,9 @@ impl FilterTypesMapHelper {
     where
         T: EntityTrait,
     {
-        let entity_object_builder = EntityObjectBuilder {
-            context: self.context,
-        };
+        let entity_column_id = EntityColumnId::of::<T>(column);
 
-        let entity_name = entity_object_builder.type_name::<T>();
-        let column_name = entity_object_builder.column_name::<T>(column);
-
-        // used to honor overwrites
-        if let Some(ty) = self
-            .context
-            .filter_types
-            .overwrites
-            .get(&format!("{entity_name}.{column_name}"))
-        {
+        if let Some(ty) = self.context.filter_types.overwrites.get(&entity_column_id) {
             return ty.clone();
         }
 
@@ -572,23 +561,19 @@ impl FilterTypesMapHelper {
                     return prepare_enumeration_condition::<T>(filter, column, condition)
                 }
                 FilterType::Custom(_) => {
-                    let entity_object_builder = EntityObjectBuilder {
-                        context: self.context,
-                    };
-
-                    let entity_name = entity_object_builder.type_name::<T>();
-                    let column_name = entity_object_builder.column_name::<T>(column);
+                    let entity_column_id = EntityColumnId::of::<T>(column);
 
                     if let Some(filter_condition_fn) = self
                         .context
                         .filter_types
                         .condition_functions
-                        .get(&format!("{entity_name}.{column_name}"))
+                        .get(&entity_column_id)
                     {
                         return filter_condition_fn(condition, filter);
                     } else {
-                        // FIXME: add log warning to console
-                        return Ok(condition);
+                        return Err(SeaographyError::CustomFilterError(
+                            entity_column_id.to_string(),
+                        ));
                     }
                 }
                 FilterType::Array(Some(filter_type)) => match *filter_type {
