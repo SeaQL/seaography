@@ -23,14 +23,14 @@ lazy_static! {
         });
 }
 
-async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
-}
-
 async fn graphql_playground() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT))))
+}
+
+async fn graphql_handler(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
+    schema.execute(req.into_inner()).await.into()
 }
 
 #[actix_web::main]
@@ -50,12 +50,12 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(Data::new(schema.clone()))
-            .service(web::resource("/").guard(guard::Post()).to(index))
             .service(
                 web::resource("/")
                     .guard(guard::Get())
                     .to(graphql_playground),
             )
+            .service(web::resource("/").guard(guard::Post()).to(graphql_handler))
     })
     .bind("127.0.0.1:8000")?
     .run()
