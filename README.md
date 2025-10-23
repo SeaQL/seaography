@@ -2,9 +2,8 @@
 
   <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280" alt="Seaography logo"/>
 
-  <p>
-    <strong>🧭 A GraphQL framework for SeaORM</strong>
-  </p>
+  <p><strong>🧭 A GraphQL framework for Rust</strong></p>
+  <p>Quick to start, type‑safe, powerful and extensible</p>
 
   [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
   [![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
@@ -14,16 +13,17 @@
 
 # Seaography
 
-Seaography is a GraphQL framework that bridges async-graphql and SeaORM, instantly turning your database into a fully functional GraphQL API in Rust.
-It leverages async‑graphql's dynamic schema capabilities, resulting in minimal generated code and faster compile times compared to static schemas.
-With extensive configuration options, you can easily tailor the generated GraphQL schema to your application's needs.
+Seaography is a **GraphQL framework for Rust** that bridges [SeaORM](https://www.sea-ql.org/SeaORM/) and [async-graphql](https://github.com/async-graphql/async-graphql),
+turning your database schema into a fully-typed GraphQL API with minimal effort.
+By leveraging async-graphql's dynamic schema engine, Seaography avoids the heavy code generation of static approaches, resulting in faster compile times.
+The generated schema stays in sync with your SeaORM entities, while still giving you full control to extend and customize it.
 
-Seaography enables you to focus on your application logic instead of boilerplate.
-With Seaography, you can:
+With Seaography you can focus on application logic instead of boilerplate. It enables you to:
 
-+ Turn a set of SeaORM entities into a complete GraphQL schema
-+ Use derive macros to craft custom input / output objects, queries and mutations, mix-and-match them with SeaORM models
-+ Generate web servers with the included CLI - ready to compile and run
++ Expose a complete GraphQL schema directly from your SeaORM entities, including filters, pagination, and nested relations
++ Use derive macros to define custom input/output objects, queries, and mutations, and seamlessly mix them with SeaORM models
++ Generate ready-to-run GraphQL servers via the included CLI, supporting different web frameworks out of the box
++ Implement role-based access control (RBAC), guards, and lifecycle hooks for fine-grained authorization and business logic
 
 ## Supported technologies
 
@@ -36,7 +36,7 @@ Seaography is built on top of SeaORM, so it supports:
 
 ### Web framework
 
-It's easy to integrate Seaography with any web framework, but we ship with the following examples out-of-the-box:
+It's easy to integrate Seaography with any web framework, and we ship with the following examples out-of-the-box:
 
 + [Actix](https://github.com/SeaQL/seaography/tree/1.1.x/examples/mysql), [Axum](https://github.com/SeaQL/seaography/tree/1.1.x/examples/postgres), [Poem](https://github.com/SeaQL/seaography/tree/1.1.x/examples/sqlite)
 + [Loco (SeaORM)](https://github.com/SeaQL/sea-orm/tree/master/examples/loco_seaography), [Loco (SeaORM Pro)](https://github.com/SeaQL/sea-orm-pro)
@@ -47,6 +47,7 @@ It's easy to integrate Seaography with any web framework, but we ship with the f
 * Relational query (1-to-1, 1-to-N, M-to-N)
 * Pagination for queries and relations
 * Filtering with operators (e.g. gt, lt, eq)
+* Filter by related entities
 * Order by any column
 * Mutations (create, update, delete)
 * Field guards on entity / column to restrict access
@@ -235,7 +236,7 @@ Find all inactive customers, include their address, and their payments with amou
 }
 ```
 
-### Filter using Postgres enum
+### Filter using MySQL / Postgres enum
 ```graphql
 {
   film(
