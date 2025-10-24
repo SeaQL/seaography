@@ -569,34 +569,43 @@ async fn test_self_ref() {
             .await,
         r#"
             {
-                "staff": {
+              "staff": {
                 "nodes": [
-                    {
+                  {
                     "firstName": "Mike",
                     "reportsToId": null,
                     "selfRefReverse": {
-                        "nodes": [
-                        {
-                            "staffId": 2,
-                            "firstName": "Jon"
-                        }
-                        ]
+                      "nodes": [
+                        {"staffId": 2, "firstName": "Jon"},
+                        {"staffId": 3, "firstName": "Emily"}
+                      ]
                     },
                     "selfRef": null
-                    },
-                    {
+                  },
+                  {
                     "firstName": "Jon",
                     "reportsToId": 1,
                     "selfRefReverse": {
-                        "nodes": []
+                      "nodes": []
                     },
                     "selfRef": {
-                        "staffId": 1,
-                        "firstName": "Mike"
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  },
+                  {
+                    "firstName": "Emily",
+                    "reportsToId": 1,
+                    "selfRefReverse": {
+                      "nodes": []
+                    },
+                    "selfRef": {
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  }
                 ]
-                }
+              }
             }
             "#,
     )
