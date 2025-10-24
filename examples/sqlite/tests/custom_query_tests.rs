@@ -267,9 +267,7 @@ async fn option_entity_object_relation_owner() {
         json!({
             "staff_by_id": {
                 "selfRefReverse": {
-                    "nodes": [{
-                        "firstName": "Jon"
-                    }]
+                    "nodes": [{"firstName": "Jon"}, {"firstName": "Emily"}]
                 }
             }
         })

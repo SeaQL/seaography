@@ -8,8 +8,10 @@ async fn schema() -> Schema {
 }
 
 fn assert_eq(a: Response, b: &str) {
+    let json = a.data.into_json().unwrap();
+    println!("{}", serde_json::to_string(&json).unwrap());
     assert_eq!(
-        a.data.into_json().unwrap(),
+        json,
         serde_json::from_str::<serde_json::Value>(b).unwrap()
     )
 }
@@ -470,34 +472,43 @@ async fn test_self_ref() {
             .await,
         r#"
             {
-                "staff": {
+              "staff": {
                 "nodes": [
-                    {
+                  {
                     "firstName": "Mike",
                     "reportsToId": null,
                     "selfRefReverse": {
-                        "nodes": [
-                        {
-                            "staffId": 2,
-                            "firstName": "Jon"
-                        }
-                        ]
+                      "nodes": [
+                        {"staffId": 2, "firstName": "Jon"},
+                        {"staffId": 3, "firstName": "Emily"}
+                      ]
                     },
                     "selfRef": null
-                    },
-                    {
+                  },
+                  {
                     "firstName": "Jon",
                     "reportsToId": 1,
                     "selfRefReverse": {
-                        "nodes": []
+                      "nodes": []
                     },
                     "selfRef": {
-                        "staffId": 1,
-                        "firstName": "Mike"
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  },
+                  {
+                    "firstName": "Emily",
+                    "reportsToId": 1,
+                    "selfRefReverse": {
+                      "nodes": []
+                    },
+                    "selfRef": {
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  }
                 ]
-                }
+              }
             }
             "#,
     )

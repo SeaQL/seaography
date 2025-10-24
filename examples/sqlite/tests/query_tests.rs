@@ -569,34 +569,43 @@ async fn test_self_ref() {
             .await,
         r#"
             {
-                "staff": {
+              "staff": {
                 "nodes": [
-                    {
+                  {
                     "firstName": "Mike",
                     "reportsToId": null,
                     "selfRefReverse": {
-                        "nodes": [
-                        {
-                            "staffId": 2,
-                            "firstName": "Jon"
-                        }
-                        ]
+                      "nodes": [
+                        {"staffId": 2, "firstName": "Jon"},
+                        {"staffId": 3, "firstName": "Emily"}
+                      ]
                     },
                     "selfRef": null
-                    },
-                    {
+                  },
+                  {
                     "firstName": "Jon",
                     "reportsToId": 1,
                     "selfRefReverse": {
-                        "nodes": []
+                      "nodes": []
                     },
                     "selfRef": {
-                        "staffId": 1,
-                        "firstName": "Mike"
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  },
+                  {
+                    "firstName": "Emily",
+                    "reportsToId": 1,
+                    "selfRefReverse": {
+                      "nodes": []
+                    },
+                    "selfRef": {
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  }
                 ]
-                }
+              }
             }
             "#,
     )
@@ -1373,6 +1382,237 @@ async fn film_filter_or() {
               },
               {
                 "title": "LIFE TWISTED"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn city_with_address() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  city(filters: { cityId: { is_in: [1, 2, 3] } }) {
+                    nodes {
+                      cityId
+                      city
+                      address {
+                        nodes {
+                          addressId
+                          address
+                        }
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "city": {
+            "nodes": [
+              {
+                "cityId": 1,
+                "city": "A Corua (La Corua)",
+                "address": {
+                  "nodes": [
+                    {
+                      "addressId": 56,
+                      "address": "939 Probolinggo Loop"
+                    }
+                  ]
+                }
+              },
+              {
+                "cityId": 2,
+                "city": "Abha",
+                "address": {
+                  "nodes": [
+                    {
+                      "addressId": 105,
+                      "address": "733 Mandaluyong Place"
+                    }
+                  ]
+                }
+              },
+              {
+                "cityId": 3,
+                "city": "Abu Dhabi",
+                "address": {
+                  "nodes": [
+                    {
+                      "addressId": 457,
+                      "address": "535 Ahmadnagar Manor"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  address(filters: { addressId: { is_in: [1, 2, 3] } }) {
+                    nodes {
+                      addressId
+                      address
+                      city {
+                        cityId
+                        city
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "address": {
+            "nodes": [
+              {
+                "addressId": 1,
+                "address": "47 MySakila Drive",
+                "city": {
+                  "cityId": 300,
+                  "city": "Lethbridge"
+                }
+              },
+              {
+                "addressId": 2,
+                "address": "28 MySQL Boulevard",
+                "city": {
+                  "cityId": 576,
+                  "city": "Woodridge"
+                }
+              },
+              {
+                "addressId": 3,
+                "address": "23 Workhaven Lane",
+                "city": {
+                  "cityId": 300,
+                  "city": "Lethbridge"
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn actor_to_film() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  actor(filters: { actorId: { eq: 35 } }) {
+                    nodes {
+                      actorId
+                      firstName
+                      lastName
+                      film {
+                        nodes {
+                          filmId
+                          title
+                        }
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "actor": {
+            "nodes": [
+              {
+                "actorId": 35,
+                "firstName": "JUDY",
+                "lastName": "DEAN",
+                "film": {
+                  "nodes": [
+                    {
+                      "filmId": 10,
+                      "title": "ALADDIN CALENDAR"
+                    },
+                    {
+                      "filmId": 35,
+                      "title": "ARACHNOPHOBIA ROLLERCOASTER"
+                    },
+                    {
+                      "filmId": 52,
+                      "title": "BALLROOM MOCKINGBIRD"
+                    },
+                    {
+                      "filmId": 201,
+                      "title": "CYCLONE FAMILY"
+                    },
+                    {
+                      "filmId": 256,
+                      "title": "DROP WATERFRONT"
+                    },
+                    {
+                      "filmId": 389,
+                      "title": "GUNFIGHTER MUSSOLINI"
+                    },
+                    {
+                      "filmId": 589,
+                      "title": "MODERN DORADO"
+                    },
+                    {
+                      "filmId": 612,
+                      "title": "MUSSOLINI SPOILERS"
+                    },
+                    {
+                      "filmId": 615,
+                      "title": "NASH CHOCOLAT"
+                    },
+                    {
+                      "filmId": 707,
+                      "title": "QUEST MUSSOLINI"
+                    },
+                    {
+                      "filmId": 732,
+                      "title": "RINGS HEARTBREAKERS"
+                    },
+                    {
+                      "filmId": 738,
+                      "title": "ROCKETEER MOTHER"
+                    },
+                    {
+                      "filmId": 748,
+                      "title": "RUGRATS SHAKESPEARE"
+                    },
+                    {
+                      "filmId": 817,
+                      "title": "SOLDIERS EVOLUTION"
+                    },
+                    {
+                      "filmId": 914,
+                      "title": "TROUBLE DATE"
+                    }
+                  ]
+                }
               }
             ]
           }

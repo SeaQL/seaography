@@ -4,14 +4,15 @@ use async_graphql::{
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
 use sea_orm::{
-    DatabaseConnection, EntityTrait, Iden, ModelTrait, QueryFilter, QueryTrait, RelationDef,
+    DatabaseConnection, EntityTrait, QueryFilter,
+    QueryTrait, RelationDef,
 };
 
 use crate::{
-    apply_memory_pagination, get_filter_conditions, guard_error, pluralize_unique, BuilderContext,
-    Connection, ConnectionObjectBuilder, DatabaseContext, EntityObjectBuilder, FilterInputBuilder,
-    GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader, OperationType,
-    OrderInputBuilder, PaginationInputBuilder, UserContext,
+    apply_memory_pagination, get_filter_conditions, guard_error, loader_impl, pluralize_unique,
+    BuilderContext, Connection, ConnectionObjectBuilder, DatabaseContext, EntityObjectBuilder,
+    FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader,
+    OperationType, OrderInputBuilder, PaginationInputBuilder, UserContext,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity relationship
@@ -62,24 +63,7 @@ impl EntityObjectRelationBuilder {
         let object_name: String = entity_object_builder.type_name::<R>();
         let object_name_ = object_name.clone();
         let hooks = &self.context.hooks;
-
-        let from_col = <T::Column as std::str::FromStr>::from_str(
-            relation_definition
-                .from_col
-                .to_string()
-                .to_snake_case()
-                .as_str(),
-        )
-        .unwrap_or_else(|_| panic!("Illegal from_col: {:?}", relation_definition.from_col));
-
-        let to_col = <R::Column as std::str::FromStr>::from_str(
-            relation_definition
-                .to_col
-                .to_string()
-                .to_snake_case()
-                .as_str(),
-        )
-        .unwrap_or_else(|_| panic!("Illegal to_col: {:?}", relation_definition.to_col));
+        let relation_definition_is_owner = relation_definition.is_owner;
 
         let field_name = name.clone();
         let field = match relation_definition.is_owner {
@@ -87,6 +71,7 @@ impl EntityObjectRelationBuilder {
                 let object_name = object_name.clone();
                 let parent_name = parent_name.clone();
                 let field_name = field_name.clone();
+                let relation_definition = relation_definition.clone();
                 FieldFuture::new(async move {
                     if let GuardAction::Block(reason) =
                         hooks.entity_guard(&ctx, &object_name, OperationType::Read)
@@ -125,12 +110,18 @@ impl EntityObjectRelationBuilder {
                     let filters = get_filter_conditions::<R>(context, filters)?;
                     let order_by = ctx.args.get(&context.entity_query_field.order_by);
                     let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
+
                     let key = KeyComplex::<R> {
-                        key: vec![parent.get(from_col)],
+                        key: loader_impl::extract_key::<T::Model>(
+                            &relation_definition.from_col,
+                            parent,
+                        )?,
                         meta: HashableGroupKey::<R> {
                             stmt,
-                            columns: vec![to_col],
-                            filters: Some(filters),
+                            junction_fields: Vec::new(),
+                            rel_def: relation_definition,
+                            via_def: None,
+                            filters,
                             order_by,
                         },
                     };
@@ -151,6 +142,7 @@ impl EntityObjectRelationBuilder {
                     let object_name = object_name.clone();
                     let parent_name = parent_name.clone();
                     let field_name = field_name.clone();
+                    let relation_definition = relation_definition.clone();
                     let context: &'static BuilderContext = context;
                     FieldFuture::new(async move {
                         if let GuardAction::Block(reason) =
@@ -190,12 +182,18 @@ impl EntityObjectRelationBuilder {
                         let filters = get_filter_conditions::<R>(context, filters)?;
                         let order_by = ctx.args.get(&context.entity_query_field.order_by);
                         let order_by = OrderInputBuilder { context }.parse_object::<R>(order_by)?;
+
                         let key = KeyComplex::<R> {
-                            key: vec![parent.get(from_col)],
+                            key: loader_impl::extract_key::<T::Model>(
+                                &relation_definition.from_col,
+                                parent,
+                            )?,
                             meta: HashableGroupKey::<R> {
                                 stmt,
-                                columns: vec![to_col],
-                                filters: Some(filters),
+                                junction_fields: Vec::new(),
+                                rel_def: relation_definition,
+                                via_def: None,
+                                filters,
                                 order_by,
                             },
                         };
@@ -215,7 +213,7 @@ impl EntityObjectRelationBuilder {
             ),
         };
 
-        match relation_definition.is_owner {
+        match relation_definition_is_owner {
             false => field,
             true => field
                 .argument(InputValue::new(

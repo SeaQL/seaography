@@ -472,6 +472,7 @@ async fn entity_object_relation_owner1() {
     let mut permissions = Permissions::default();
     permissions.staff.insert(1);
     permissions.staff.insert(2);
+    permissions.staff.insert(3);
     let (schema, log) = schema(permissions).await;
     let query = entity_object_relation_owner_query();
     let vars = Variables::from_json(json!({ "staffId": 1 }));
@@ -483,9 +484,7 @@ async fn entity_object_relation_owner1() {
             "staff": {
                 "nodes": [{
                     "selfRefReverse": {
-                        "nodes": [{
-                            "firstName": "Jon"
-                        }]
+                        "nodes": [{"firstName": "Jon"}, {"firstName": "Emily"}]
                     }
                 }]
             }
@@ -498,6 +497,7 @@ async fn entity_object_relation_owner1() {
             HookCall::entity_guard("Staff", OperationType::Read),
             HookCall::field_guard("Staff", Some(1), "selfRefReverse", OperationType::Read),
             HookCall::field_guard("Staff", Some(2), "firstName", OperationType::Read),
+            HookCall::field_guard("Staff", Some(3), "firstName", OperationType::Read),
         ]
     );
 }
