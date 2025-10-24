@@ -13,6 +13,8 @@
 
 # Seaography
 
+## Introduction
+
 Seaography is a **GraphQL framework for Rust** that bridges [SeaORM](https://www.sea-ql.org/SeaORM/) and [async-graphql](https://github.com/async-graphql/async-graphql),
 turning your database schema into a fully-typed GraphQL API with minimal effort.
 By leveraging async-graphql's dynamic schema engine, Seaography avoids the heavy code generation of static approaches, resulting in faster compile times.
@@ -23,7 +25,7 @@ With Seaography you can focus on application logic instead of boilerplate. It en
 + Expose a complete GraphQL schema directly from your SeaORM entities, including filters, pagination, and nested relations
 + Use derive macros to define custom input/output objects, queries, and mutations, and seamlessly mix them with SeaORM models
 + Generate ready-to-run GraphQL servers via the included CLI, supporting different web frameworks out of the box
-+ Implement role-based access control (RBAC), guards, and lifecycle hooks for fine-grained authorization and business logic
++ Use RBAC, guards, and lifecycle hooks to implement authorization and custom business logic
 
 ## Supported technologies
 
@@ -41,24 +43,32 @@ It's easy to integrate Seaography with any web framework, and we ship with the f
 + [Actix](https://github.com/SeaQL/seaography/tree/1.1.x/examples/mysql), [Axum](https://github.com/SeaQL/seaography/tree/1.1.x/examples/postgres), [Poem](https://github.com/SeaQL/seaography/tree/1.1.x/examples/sqlite)
 + [Loco (SeaORM)](https://github.com/SeaQL/sea-orm/tree/master/examples/loco_seaography), [Loco (SeaORM Pro)](https://github.com/SeaQL/sea-orm-pro)
 
-## Features
-
-* Rich types support (e.g. DateTime, Decimal)
-* Relational query (1-to-1, 1-to-N, M-to-N)
-* Pagination for queries and relations
-* Filtering with operators (e.g. gt, lt, eq)
-* Filter by related entities
-* Order by any column
-* Mutations (create, update, delete)
-* Field guards on entity / column to restrict access
-* Choose between camel or snake case, and singular or plural field names
-
-## SeaORM Version Compatibility
+### SeaORM Version Compatibility
 
 |                        Seaography                        |                         SeaORM                        |
 |----------------------------------------------------------|-------------------------------------------------------|
 | [2.0](https://crates.io/crates/seaography/2.0.0-rc)      | [2.0](https://crates.io/crates/sea-orm/2.0.0-rc)      |
 | [1.1](https://crates.io/crates/seaography/1.1.4)         | [1.1](https://crates.io/crates/sea-orm/1.1.13)        |
+
+## Features
+
+* Rich types support (e.g. DateTime, Decimal)
+* Relational query (1-to-1, 1-to-N, M-to-N)
+* Offset-based and cursor-based pagination
+* Filtering with operators (e.g. gt, lt, eq)
+* Filter by related entities
+* Order by any column
+* Mutations (create, update, delete)
+* Guards and Filters on entity to restrict access
+* Choose between camel or snake case field names
+
+### Extensible
+
+Seaography is also completely extensible. It offers:
+
+* Extensive configuration options in schema builder
+* Lifecycle hooks for custom resolver logic
+* Add custom queries & mutations with derive macros
 
 ## Quick start - ready to serve in 3 minutes!
 
