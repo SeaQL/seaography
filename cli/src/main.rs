@@ -94,7 +94,7 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
     Ok(url)
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     let args = Args::parse();
 
