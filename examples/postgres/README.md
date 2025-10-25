@@ -6,6 +6,7 @@
 psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE "sakila"'
 psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql
 psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
+psql -q postgres://sea:sea@localhost/sakila < sakila-patch.sql
 ```
 
 ```sh

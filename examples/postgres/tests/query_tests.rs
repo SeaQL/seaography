@@ -841,6 +841,7 @@ async fn enumeration_filter() {
                   film(
                     filters: { rating: { eq: NC17 } }
                     pagination: { page: { page: 1, limit: 5 } }
+                    orderBy: { filmId: ASC }
                   ) {
                     nodes {
                       filmId
