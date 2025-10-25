@@ -5,8 +5,8 @@ use sea_orm::{
 };
 
 use crate::{
-    decode_cursor, encode_cursor, map_cursor_values, BuilderContext, Connection, Edge, PageInfo,
-    PageInput, PaginationInfo, PaginationInput,
+    decode_cursor, encode_cursor, BuilderContext, Connection, Edge, PageInfo, PageInput,
+    PaginationInfo, PaginationInput,
 };
 
 /// used to parse pagination input object and apply it to statement
@@ -64,9 +64,7 @@ where
         let mut stmt = apply_stmt_cursor_by(stmt)?;
 
         if let Some(cursor) = cursor_object.cursor {
-            let values = decode_cursor(&cursor)?;
-
-            let cursor_values: sea_orm::sea_query::value::ValueTuple = map_cursor_values(values)?;
+            let cursor_values = decode_cursor(&cursor)?;
 
             stmt.after(cursor_values);
         }
@@ -79,11 +77,7 @@ where
             let last_node = data.last();
 
             if let Some(node) = last_node {
-                let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                    .map(|variant| node.get(variant.into_column()))
-                    .collect();
-
-                let values = map_cursor_values(values)?;
+                let values = node.get_primary_key_value();
 
                 let next_data = next_stmt.first(1).after(values).all(db).await?;
 
@@ -99,11 +93,7 @@ where
             let first_node = data.first();
 
             if let Some(node) = first_node {
-                let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                    .map(|variant| node.get(variant.into_column()))
-                    .collect();
-
-                let values = map_cursor_values(values)?;
+                let values = node.get_primary_key_value();
 
                 let previous_data = previous_stmt.first(1).before(values).all(db).await?;
 
@@ -116,9 +106,7 @@ where
         let edges: Vec<Edge<T>> = data
             .into_iter()
             .map(|node| {
-                let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                    .map(|variant| node.get(variant.into_column()))
-                    .collect();
+                let values = node.get_primary_key_value();
 
                 let cursor: String = encode_cursor(values);
 
@@ -151,9 +139,7 @@ where
         let edges: Vec<Edge<T>> = data
             .into_iter()
             .map(|node| {
-                let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                    .map(|variant| node.get(variant.into_column()))
-                    .collect();
+                let values = node.get_primary_key_value();
 
                 let cursor: String = encode_cursor(values);
 
@@ -192,9 +178,7 @@ where
         let edges: Vec<Edge<T>> = data
             .into_iter()
             .map(|node| {
-                let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                    .map(|variant| node.get(variant.into_column()))
-                    .collect();
+                let values = node.get_primary_key_value();
 
                 let cursor: String = encode_cursor(values);
 
@@ -239,9 +223,7 @@ where
         let edges: Vec<Edge<T>> = data
             .into_iter()
             .map(|node| {
-                let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                    .map(|variant| node.get(variant.into_column()))
-                    .collect();
+                let values = node.get_primary_key_value();
 
                 let cursor: String = encode_cursor(values);
 
@@ -288,9 +270,7 @@ where
             let edges: Vec<Edge<T>> = data
                 .into_iter()
                 .map(|node| {
-                    let values: Vec<sea_orm::Value> = T::PrimaryKey::iter()
-                        .map(|variant| node.get(variant.into_column()))
-                        .collect();
+                    let values = node.get_primary_key_value();
 
                     let cursor: String = encode_cursor(values);
 

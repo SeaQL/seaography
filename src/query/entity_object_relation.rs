@@ -3,10 +3,7 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
-use sea_orm::{
-    DatabaseConnection, EntityTrait, QueryFilter,
-    QueryTrait, RelationDef,
-};
+use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, QueryTrait, RelationDef};
 
 use crate::{
     apply_memory_pagination, get_filter_conditions, guard_error, loader_impl, pluralize_unique,

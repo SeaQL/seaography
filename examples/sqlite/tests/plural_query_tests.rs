@@ -10,10 +10,7 @@ async fn schema() -> Schema {
 fn assert_eq(a: Response, b: &str) {
     let json = a.data.into_json().unwrap();
     println!("{}", serde_json::to_string(&json).unwrap());
-    assert_eq!(
-        json,
-        serde_json::from_str::<serde_json::Value>(b).unwrap()
-    )
+    assert_eq!(json, serde_json::from_str::<serde_json::Value>(b).unwrap())
 }
 
 #[tokio::test]

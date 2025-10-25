@@ -1,12 +1,11 @@
 use async_graphql::dynamic::FieldValue;
 use itertools::Itertools;
-use sea_orm::sea_query::value::ValueTuple;
+use sea_orm::{sea_query::ValueTuple, DynIden, Identity};
 use std::any::Any;
 
 /// used to encode the primary key values of a SeaORM entity to a String
-pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
-    values
-        .iter()
+pub fn encode_cursor(values: ValueTuple) -> String {
+    ValueTupleIter::new(&values)
         .map(|value| -> String {
             match value {
                 sea_orm::Value::TinyInt(value) => {
@@ -106,31 +105,40 @@ pub enum DecodeMode {
     Data,
 }
 
-pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> Result<ValueTuple, sea_orm::DbErr> {
-    if values.is_empty() {
-        Err(sea_orm::DbErr::Type("Missing cursor value".into()))
-    } else if values.len() == 1 {
-        Ok(ValueTuple::One(values[0].clone()))
-    } else if values.len() == 2 {
-        Ok(ValueTuple::Two(values[0].clone(), values[1].clone()))
-    } else if values.len() == 3 {
-        Ok(ValueTuple::Three(
-            values[0].clone(),
-            values[1].clone(),
-            values[2].clone(),
-        ))
-    } else {
-        Err(sea_orm::DbErr::Type(
-            "seaography does not support cursors values with size greater than 3".into(),
-        ))
+#[derive(Default)]
+struct ValueTupleBuilder(Option<ValueTuple>);
+
+impl ValueTupleBuilder {
+    fn push(&mut self, value: sea_orm::Value) {
+        match self.0.take() {
+            None => {
+                self.0 = Some(ValueTuple::One(value));
+            }
+            Some(ValueTuple::One(a)) => {
+                self.0 = Some(ValueTuple::Two(a, value));
+            }
+            Some(ValueTuple::Two(a, b)) => {
+                self.0 = Some(ValueTuple::Three(a, b, value));
+            }
+            Some(ValueTuple::Three(a, b, c)) => {
+                self.0 = Some(ValueTuple::Many(vec![a, b, c, value]));
+            }
+            Some(ValueTuple::Many(mut items)) => {
+                items.push(value);
+                self.0 = Some(ValueTuple::Many(items));
+            }
+            Some(_) => {
+                unimplemented!();
+            }
+        }
     }
 }
 
 /// used to decode a String to a vector of SeaORM values
-pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
+pub fn decode_cursor(s: &str) -> Result<ValueTuple, sea_orm::DbErr> {
     let chars = s.chars();
 
-    let mut values: Vec<sea_orm::Value> = vec![];
+    let mut values = ValueTupleBuilder::default();
 
     let mut type_indicator = String::new();
     let mut length_indicator = String::new();
@@ -280,7 +288,9 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::DbErr> {
         }
     }
 
-    Ok(values)
+    values
+        .0
+        .ok_or_else(|| sea_orm::DbErr::Type("Missing cursor value".into()))
 }
 
 #[cfg(feature = "field-pluralize")]
@@ -319,5 +329,88 @@ pub fn try_downcast_ref<'a, T: Any>(value: &'a FieldValue<'a>) -> async_graphql:
             std::any::type_name::<T>()
         )
         .into()),
+    }
+}
+
+pub(crate) struct IdenIter<'a> {
+    identity: &'a Identity,
+    index: usize,
+}
+
+impl<'a> IdenIter<'a> {
+    pub fn new(identity: &'a Identity) -> Self {
+        Self { identity, index: 0 }
+    }
+}
+
+impl<'a> Iterator for IdenIter<'a> {
+    type Item = &'a DynIden;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = match self.identity {
+            Identity::Unary(iden1) => {
+                if self.index == 0 {
+                    Some(iden1)
+                } else {
+                    None
+                }
+            }
+            Identity::Binary(iden1, iden2) => match self.index {
+                0 => Some(iden1),
+                1 => Some(iden2),
+                _ => None,
+            },
+            Identity::Ternary(iden1, iden2, iden3) => match self.index {
+                0 => Some(iden1),
+                1 => Some(iden2),
+                2 => Some(iden3),
+                _ => None,
+            },
+            Identity::Many(vec) => vec.get(self.index),
+        };
+        self.index += 1;
+        result
+    }
+}
+
+pub(crate) struct ValueTupleIter<'a> {
+    value: &'a ValueTuple,
+    index: usize,
+}
+
+impl<'a> ValueTupleIter<'a> {
+    pub fn new(value: &'a ValueTuple) -> Self {
+        Self { value, index: 0 }
+    }
+}
+
+impl<'a> Iterator for ValueTupleIter<'a> {
+    type Item = &'a sea_orm::Value;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = match self.value {
+            ValueTuple::One(a) => {
+                if self.index == 0 {
+                    Some(a)
+                } else {
+                    None
+                }
+            }
+            ValueTuple::Two(a, b) => match self.index {
+                0 => Some(a),
+                1 => Some(b),
+                _ => None,
+            },
+            ValueTuple::Three(a, b, c) => match self.index {
+                0 => Some(a),
+                1 => Some(b),
+                2 => Some(c),
+                _ => None,
+            },
+            ValueTuple::Many(vec) => vec.get(self.index),
+            _ => unimplemented!(),
+        };
+        self.index += 1;
+        result
     }
 }

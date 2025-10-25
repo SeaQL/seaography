@@ -3,17 +3,13 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
-use sea_orm::{
-    DatabaseConnection, EntityTrait, 
-    QueryFilter, QueryTrait, Related, RelationDef,
-};
+use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, QueryTrait, Related, RelationDef};
 
 use crate::{
-    apply_memory_pagination, get_filter_conditions, guard_error,
-    loader_impl, pluralize_unique, BuilderContext, Connection, ConnectionObjectBuilder,
-    DatabaseContext, EntityObjectBuilder, FilterInputBuilder, GuardAction, HashableGroupKey,
-    KeyComplex, OneToManyLoader, OneToOneLoader, OperationType, OrderInputBuilder,
-    PaginationInputBuilder, UserContext,
+    apply_memory_pagination, get_filter_conditions, guard_error, loader_impl, pluralize_unique,
+    BuilderContext, Connection, ConnectionObjectBuilder, DatabaseContext, EntityObjectBuilder,
+    FilterInputBuilder, GuardAction, HashableGroupKey, KeyComplex, OneToManyLoader, OneToOneLoader,
+    OperationType, OrderInputBuilder, PaginationInputBuilder, UserContext,
 };
 
 /// This builder produces a GraphQL field for an SeaORM entity related trait
