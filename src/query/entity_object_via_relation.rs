@@ -3,7 +3,9 @@ use async_graphql::{
     dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase};
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, QueryTrait, Related, RelationDef};
+use sea_orm::{
+    DatabaseConnection, EntityTrait, QueryFilter, QueryTrait, Related, RelationDef, RelationType,
+};
 
 use crate::{
     apply_memory_pagination, get_filter_conditions, guard_error, loader_impl, pluralize_unique,
@@ -70,8 +72,10 @@ impl EntityObjectViaRelationBuilder {
         let hooks = &self.context.hooks;
 
         let field_name = name.clone();
-        let field = match via_rel_def.is_owner {
-            false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
+        let field = if !via_rel_def.is_owner
+            || (!is_via_relation && to_rel_def.rel_type == RelationType::HasOne)
+        {
+            Field::new(name, TypeRef::named(&object_name), move |ctx| {
                 let object_name = object_name.clone();
                 let parent_name = parent_name.clone();
                 let field_name = field_name.clone();
@@ -135,8 +139,9 @@ impl EntityObjectViaRelationBuilder {
                         Ok(None)
                     }
                 })
-            }),
-            true => Field::new(
+            })
+        } else {
+            Field::new(
                 name,
                 TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
                 move |ctx| {
@@ -234,7 +239,7 @@ impl EntityObjectViaRelationBuilder {
                         Ok(Some(FieldValue::owned_any(connection)))
                     })
                 },
-            ),
+            )
         };
 
         match via_rel_def_is_owner {

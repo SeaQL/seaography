@@ -63,8 +63,8 @@ impl EntityObjectRelationBuilder {
         let relation_definition_is_owner = relation_definition.is_owner;
 
         let field_name = name.clone();
-        let field = match relation_definition.is_owner {
-            false => Field::new(name, TypeRef::named(&object_name), move |ctx| {
+        let field = if !relation_definition.is_owner {
+            Field::new(name, TypeRef::named(&object_name), move |ctx| {
                 let object_name = object_name.clone();
                 let parent_name = parent_name.clone();
                 let field_name = field_name.clone();
@@ -131,8 +131,9 @@ impl EntityObjectRelationBuilder {
                         Ok(None)
                     }
                 })
-            }),
-            true => Field::new(
+            })
+        } else {
+            Field::new(
                 name,
                 TypeRef::named_nn(connection_object_builder.type_name(&object_name)),
                 move |ctx| {
@@ -207,7 +208,7 @@ impl EntityObjectRelationBuilder {
                         Ok(Some(FieldValue::owned_any(connection)))
                     })
                 },
-            ),
+            )
         };
 
         match relation_definition_is_owner {
