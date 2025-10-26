@@ -57,5 +57,6 @@ impl FilterInputBuilder {
         object
             .field(InputValue::new("and", TypeRef::named_nn_list(&filter_name)))
             .field(InputValue::new("or", TypeRef::named_nn_list(&filter_name)))
+            .field(InputValue::new("not", TypeRef::named(&filter_name)))
     }
 }

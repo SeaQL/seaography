@@ -25,6 +25,7 @@ pub async fn client_test(
 
     test_permissions(&url, root_account_id).await;
     test_entities(&url, root_account_id).await;
+    test_boolean_operators(&url, root_account_id).await;
 
     tracing::info!("All tests completed successfully!");
 
@@ -327,6 +328,112 @@ async fn test_permissions(url: &str, root_account_id: Uuid) {
             { "id": project3, "name": "Project 3", "permission": "read" }
         ])
     );
+}
+
+#[instrument(skip_all)]
+async fn test_boolean_operators(url: &str, root_account_id: Uuid) {
+    let account_id = create_account(url, root_account_id, "Account 1").await;
+    let client = Client::new(url, account_id);
+    let project_id = client.create_project("Project 1").await.unwrap();
+
+    for (name, width, height) in [
+        ("Drawing 0", 300, 100),
+        ("Drawing 1", 400, 110),
+        ("Drawing 2", 500, 120),
+        ("Drawing 3", 600, 130),
+        ("Drawing 4", 700, 140),
+        ("Drawing 5", 300, 150),
+        ("Drawing 6", 400, 160),
+        ("Drawing 7", 500, 170),
+        ("Drawing 8", 600, 180),
+        ("Drawing 9", 700, 190),
+    ] {
+        client
+            .create_drawing(project_id, name, width, height)
+            .await
+            .unwrap();
+    }
+
+    // not
+    let query = r#"{ drawings(order_by: { name: ASC }, filters: {
+        not: { width: { gt: 400 } }
+    }) { nodes { name width height } } }"#;
+    let result = graphql(url, account_id, query, None).await.unwrap();
+    let expected1 = json!({
+        "drawings": {
+            "nodes": [
+                { "name": "Drawing 0", "width": 300, "height": 100},
+                { "name": "Drawing 1", "width": 400, "height": 110},
+                { "name": "Drawing 5", "width": 300, "height": 150},
+                { "name": "Drawing 6", "width": 400, "height": 160}
+            ]
+        }
+    });
+    assert_eq!(result, expected1);
+
+    // and
+    let expected2 = json!({
+        "drawings": {
+            "nodes": [
+                { "name": "Drawing 2", "width": 500, "height": 120 },
+                { "name": "Drawing 3", "width": 600, "height": 130 },
+                { "name": "Drawing 4", "width": 700, "height": 140 },
+                { "name": "Drawing 7", "width": 500, "height": 170 }
+            ]
+        }
+    });
+
+    let query = r#"{ drawings(order_by: { name: ASC }, filters: {
+        and: [
+            { width: { gte: 500 } }
+            { height: { lte: 170 } }
+        ]
+    }) { nodes { name width height } } }"#;
+    let result = graphql(url, account_id, query, None).await.unwrap();
+    assert_eq!(result, expected2);
+
+    // and + not
+    // Same as above but with conditions inverted
+    let query = r#"{ drawings(order_by: { name: ASC }, filters: {
+        and: [
+            { not: { width: { lt: 500 } } }
+            { not: { height: { gt: 170 } } }
+        ]
+    }) { nodes { name width height } } }"#;
+    let result = graphql(url, account_id, query, None).await.unwrap();
+    assert_eq!(result, expected2);
+
+    let expected3 = json!({
+        "drawings": {
+            "nodes": [
+                { "name": "Drawing 0", "width": 300, "height": 100 },
+                { "name": "Drawing 1", "width": 400, "height": 110 },
+                { "name": "Drawing 4", "width": 700, "height": 140 },
+                { "name": "Drawing 9", "width": 700, "height": 190 }
+            ]
+        }
+    });
+
+    // or
+    let query = r#"{ drawings(order_by: { name: ASC }, filters: {
+        or: [
+            { width: { gte: 700 } }
+            { height: { lte: 110 } }
+        ]
+    }) { nodes { name width height } } }"#;
+    let result = graphql(url, account_id, query, None).await.unwrap();
+    assert_eq!(result, expected3);
+
+    // or + not
+    // Same as above but with conditions inverted
+    let query = r#"{ drawings(order_by: { name: ASC }, filters: {
+        or: [
+            { not: { width: { lt: 700 } } }
+            { not: { height: { gt: 110 } } }
+        ]
+    }) { nodes { name width height } } }"#;
+    let result = graphql(url, account_id, query, None).await.unwrap();
+    assert_eq!(result, expected3);
 }
 
 pub async fn create_account(url: &str, root_account_id: Uuid, name: &str) -> Uuid {
