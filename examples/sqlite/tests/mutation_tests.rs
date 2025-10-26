@@ -9,6 +9,7 @@ async fn main() {
     test_create_batch_mutation().await;
     test_update_mutation().await;
     test_delete_mutation().await;
+    test_add_original_language_to_film().await;
 }
 
 async fn schema() -> Schema {
@@ -597,6 +598,79 @@ async fn test_delete_mutation() {
                 }
               ]
             }
+        }
+        "#,
+    );
+}
+
+async fn test_add_original_language_to_film() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    filmUpdate(
+                      data: { originalLanguageId: 5 }
+                      filter: { filmId: { eq: 500 } }
+                    ) {
+                      filmId
+                      title
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmUpdate": [
+              {
+                "filmId": 500,
+                "title": "KISS GLORY"
+              }
+            ]
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(filters: { filmId: { eq: 500 } }) {
+                    nodes {
+                      filmId
+                      title
+                      language1 {
+                        name
+                      }
+                      language2 {
+                        name
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 500,
+                "title": "KISS GLORY",
+                "language1": {
+                  "name": "English"
+                },
+                "language2": {
+                  "name": "French"
+                }
+              }
+            ]
+          }
         }
         "#,
     );
