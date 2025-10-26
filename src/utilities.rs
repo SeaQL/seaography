@@ -127,9 +127,6 @@ impl ValueTupleBuilder {
                 items.push(value);
                 self.0 = Some(ValueTuple::Many(items));
             }
-            Some(_) => {
-                unimplemented!();
-            }
         }
     }
 }
@@ -408,7 +405,6 @@ impl<'a> Iterator for ValueTupleIter<'a> {
                 _ => None,
             },
             ValueTuple::Many(vec) => vec.get(self.index),
-            _ => unimplemented!(),
         };
         self.index += 1;
         result

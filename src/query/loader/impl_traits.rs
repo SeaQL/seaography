@@ -146,7 +146,6 @@ impl<'a> Iterator for ValueTupleIter<'a> {
                 _ => None,
             },
             ValueTuple::Many(vec) => vec.get(self.index),
-            _ => unreachable!(),
         };
         self.index += 1;
         result
