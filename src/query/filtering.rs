@@ -81,5 +81,12 @@ where
         condition
     };
 
+    let condition = if let Some(not) = filters.get("not") {
+        let nested_condition = recursive_prepare_condition::<T>(context, not.object()?)?;
+        condition.add(nested_condition.not())
+    } else {
+        condition
+    };
+
     Ok(condition)
 }
