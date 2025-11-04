@@ -3,7 +3,7 @@
   <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280" alt="Seaography logo"/>
 
   <p><strong>🧭 A GraphQL framework for Rust</strong></p>
-  <p>Quick to start, type‑safe, powerful and extensible</p>
+  <p>The quickest way to launch a GraphQL backend</p>
 
   [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
   [![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
@@ -15,7 +15,7 @@
 
 ## Introduction
 
-Seaography is a **GraphQL framework for Rust** that bridges [SeaORM](https://www.sea-ql.org/SeaORM/) and [async-graphql](https://github.com/async-graphql/async-graphql),
+Seaography is a **powerful and extensible GraphQL framework for Rust** that bridges [SeaORM](https://www.sea-ql.org/SeaORM/) and [async-graphql](https://github.com/async-graphql/async-graphql),
 turning your database schema into a fully-typed GraphQL API with minimal effort.
 By leveraging async-graphql's dynamic schema engine, Seaography avoids the heavy code generation of static approaches, resulting in faster compile times.
 The generated schema stays in sync with your SeaORM entities, while still giving you full control to extend and customize it.
