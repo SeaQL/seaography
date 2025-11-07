@@ -312,8 +312,8 @@ async fn test_cursor_pagination() {
             "pageInfo": {
               "hasPreviousPage": false,
               "hasNextPage": true,
-              "startCursor": "Int[3]:342",
-              "endCursor": "Int[4]:5550"
+              "startCursor": "BigInt[3]:342",
+              "endCursor": "BigInt[4]:5550"
             }
           }
         }
@@ -461,8 +461,8 @@ async fn test_cursor_pagination_prev() {
                 "pageInfo": {
                 "hasPreviousPage": true,
                 "hasNextPage": true,
-                "startCursor": "Int[4]:6409",
-                "endCursor": "Int[4]:9803"
+                "startCursor": "BigInt[4]:6409",
+                "endCursor": "BigInt[4]:9803"
                 }
             }
             }
@@ -529,8 +529,8 @@ async fn test_cursor_pagination_no_next() {
                 "pageInfo": {
                 "hasPreviousPage": true,
                 "hasNextPage": false,
-                "startCursor": "Int[5]:15821",
-                "endCursor": "Int[5]:15850"
+                "startCursor": "BigInt[5]:15821",
+                "endCursor": "BigInt[5]:15850"
                 }
             }
             }
@@ -622,7 +622,7 @@ async fn related_queries_filters() {
                 {
                     customer(
                       filters: { active: { eq: 0 } }
-                      pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                      pagination: { cursor: { limit: 3, cursor: "BigInt[3]:271" } }
                     ) {
                       nodes {
                         customerId
@@ -712,7 +712,7 @@ async fn related_queries_filters() {
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": true,
-              "endCursor": "Int[3]:406"
+              "endCursor": "BigInt[3]:406"
             }
           }
         }
@@ -824,7 +824,7 @@ async fn related_queries_pagination() {
                 {
                   customer(
                     filters: { active: { eq: 0 } }
-                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                    pagination: { cursor: { limit: 3, cursor: "BigInt[3]:271" } }
                   ) {
                     nodes {
                       customerId
@@ -942,7 +942,7 @@ async fn related_queries_pagination() {
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": true,
-              "endCursor": "Int[3]:406"
+              "endCursor": "BigInt[3]:406"
             }
           }
         }

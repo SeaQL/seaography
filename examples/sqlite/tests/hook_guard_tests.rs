@@ -71,7 +71,7 @@ struct Log {
 
 #[derive(Default, Clone)]
 struct Permissions {
-    actors: BTreeSet<i32>,
+    actors: BTreeSet<i64>,
     staff: BTreeSet<i16>,
 }
 
