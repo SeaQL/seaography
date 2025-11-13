@@ -5,6 +5,11 @@ use serde::Deserialize;
 
 #[tokio::test]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_test_writer()
+        .init();
+
     test_simple_insert_one().await;
     test_complex_insert_one().await;
     test_create_batch_mutation().await;

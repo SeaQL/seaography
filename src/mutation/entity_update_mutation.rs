@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
-    TransactionTrait,
+    ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
+    QueryFilter, QueryTrait, TransactionTrait,
 };
 
 use crate::{
@@ -137,18 +137,25 @@ impl EntityUpdateMutationBuilder {
                         input_object,
                     )?;
 
-                    let mut stmt = T::update_many().set(active_model);
-                    if let Some(filter) =
-                        hooks.entity_filter(&ctx, &object_name, OperationType::Update)
-                    {
-                        stmt = stmt.filter(filter);
-                    }
-                    stmt.filter(filter_condition.clone())
-                        .exec(&transaction)
-                        .await?;
+                    let entity_filter =
+                        hooks.entity_filter(&ctx, &object_name, OperationType::Update);
 
-                    let result: Vec<T::Model> =
-                        T::find().filter(filter_condition).all(&transaction).await?;
+                    let stmt = T::update_many()
+                        .set(active_model)
+                        .apply_if(entity_filter.clone(), |q, f| q.filter(f))
+                        .filter(filter_condition.clone());
+
+                    let result: Vec<T::Model> = if db.support_returning() {
+                        stmt.exec_with_returning(&transaction).await?
+                    } else {
+                        stmt.exec(&transaction).await?;
+
+                        T::find()
+                            .apply_if(entity_filter, |q, f| q.filter(f))
+                            .filter(filter_condition)
+                            .all(&transaction)
+                            .await?
+                    };
 
                     transaction.commit().await?;
 
