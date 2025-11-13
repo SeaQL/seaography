@@ -82,9 +82,9 @@ jobs:
             ./examples/sqlite/src/entities sqlite://sakila.db
             seaography-sqlite-example -f actix
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/sqlite/Cargo.toml
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/sqlite/Cargo.toml
       - name: Build example
         working-directory: ./examples/sqlite
         run: cargo build
