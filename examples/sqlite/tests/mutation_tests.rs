@@ -1,6 +1,7 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
+use serde::Deserialize;
 
 #[tokio::test]
 async fn main() {
@@ -26,6 +27,16 @@ fn assert_eq(a: Response, b: &str) {
 
 async fn test_simple_insert_one() {
     let schema = schema().await;
+
+    schema
+        .execute(
+            r#"
+            mutation {
+              filmActorDelete(filter: { lastUpdate: { gt: "2022-11-14 10:30:12 UTC" } })
+            }
+            "#,
+        )
+        .await;
 
     assert_eq(
         schema
@@ -109,15 +120,45 @@ async fn test_simple_insert_one() {
 async fn test_complex_insert_one() {
     let schema = schema().await;
 
-    assert_eq(
-        schema
-            .execute(
-                r#"
+    schema
+        .execute(
+            r#"
+            mutation {
+              rentalDelete(
+                filter: {
+                  rentalDate: { eq: "2030-01-25 21:50:05 UTC" }
+                  inventoryId: { eq: 4452 }
+                  customerId: { eq: 319 }
+                }
+              )
+            }
+            "#,
+        )
+        .await;
+
+    #[derive(Deserialize)]
+    struct QueryResult {
+        rental: RentalQuery,
+    }
+
+    #[derive(Deserialize)]
+    struct RentalQuery {
+        nodes: Vec<RentalId>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct RentalId {
+        rental_id: i32,
+    }
+
+    let response = schema
+        .execute(
+            r#"
                 {
-                    rental(filters: { rentalId: { eq: 16050 } }) {
+                    rental(orderBy: { rentalId: DESC }) {
                       nodes {
                         rentalId
-                        rentalDate
                         inventoryId
                         customerId
                         returnDate
@@ -126,100 +167,131 @@ async fn test_complex_insert_one() {
                     }
                 }
                 "#,
-            )
-            .await,
-        r#"
-        {
-            "rental": {
-              "nodes": [
-              ]
-            }
-        }
+        )
+        .await
+        .data
+        .into_json()
+        .unwrap();
+
+    let result: QueryResult = serde_json::from_value(response).unwrap();
+    let max_id = result
+        .rental
+        .nodes
+        .iter()
+        .map(|r| r.rental_id)
+        .max()
+        .unwrap_or_default();
+    let rental_id = max_id + 1;
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct CreateResult {
+        rental_create_one: RentalObject,
+    }
+
+    #[derive(Debug, Deserialize, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    struct RentalObject {
+        rental_id: i32,
+        inventory_id: i32,
+        customer_id: i32,
+        staff_id: i32,
+        return_date: String,
+    }
+
+    let response = schema
+        .execute(format!(
+            r#"
+            mutation {{
+              rentalCreateOne(
+                data: {{
+                  rentalId: {rental_id}
+                  rentalDate: "2030-01-25 21:50:05 UTC"
+                  inventoryId: 4452
+                  customerId: 319
+                  returnDate: "2030-01-12 21:50:05 UTC"
+                  staffId: 1
+                  lastUpdate: "2030-01-01 21:50:05 UTC"
+                }}
+              ) {{
+                rentalId
+                inventoryId
+                customerId
+                returnDate
+                staffId
+              }}
+            }}
             "#,
+        ))
+        .await
+        .data
+        .into_json()
+        .unwrap();
+
+    let result: CreateResult = serde_json::from_value(response).unwrap();
+    let rental = result.rental_create_one;
+    assert_eq!(rental.rental_id, rental_id);
+    assert_eq!(
+        rental,
+        RentalObject {
+            rental_id,
+            inventory_id: 4452,
+            customer_id: 319,
+            staff_id: 1,
+            return_date: "2030-01-12 21:50:05 UTC".into(),
+        }
     );
 
     assert_eq(
         schema
-            .execute(
+            .execute(format!(
                 r#"
-                mutation {
-                    rentalCreateOne(
-                      data: {
-                        rentalId: 16050
-                        rentalDate: "2030-01-01 11:11:11 UTC"
-                        inventoryId: 4452
-                        customerId: 319
-                        returnDate: "2030-01-01 11:11:11 UTC"
-                        staffId: 1
-                        lastUpdate: "2030-01-01 11:11:11 UTC"
-                      }
-                    ) {
+                {{
+                  rental(filters: {{ rentalId: {{ eq: {rental_id} }} }}) {{
+                    nodes {{
                       rentalId
-                      rentalDate
                       inventoryId
                       customerId
-                      returnDate
                       staffId
-                    }
-                }
-
-                "#,
-            )
+                      returnDate
+                    }}
+                  }}
+                }}
+                "#
+            ))
             .await,
-        r#"
-            {
-                "rentalCreateOne": {
-                    "rentalId": 16050,
-                    "rentalDate": "2030-01-01 11:11:11 UTC",
-                    "inventoryId": 4452,
-                    "customerId": 319,
-                    "returnDate": "2030-01-01 11:11:11 UTC",
-                    "staffId": 1
-                }
-            }
-            "#,
-    );
-
-    assert_eq(
-        schema
-            .execute(
-                r#"
-                {
-                    rental(filters: { rentalId: { eq: 16050 } }) {
-                      nodes {
-                        rentalId
-                        rentalDate
-                        inventoryId
-                        customerId
-                        returnDate
-                        staffId
-                      }
-                    }
-                }
-                "#,
-            )
-            .await,
-        r#"
-        {
-            "rental": {
-              "nodes": [
-                {
-                  "rentalId": 16050,
-                  "rentalDate": "2030-01-01 11:11:11 UTC",
-                  "inventoryId": 4452,
-                  "customerId": 319,
-                  "returnDate": "2030-01-01 11:11:11 UTC",
-                  "staffId": 1
-                }
-              ]
-            }
-        }
-            "#,
+        &format!(
+            r#"
+        {{
+          "rental": {{
+            "nodes": [
+              {{
+                "rentalId": {rental_id},
+                "inventoryId": 4452,
+                "customerId": 319,
+                "staffId": 1,
+                "returnDate": "2030-01-12 21:50:05 UTC"
+              }}
+            ]
+          }}
+        }}
+        "#
+        ),
     );
 }
 
 async fn test_create_batch_mutation() {
     let schema = schema().await;
+
+    schema
+        .execute(
+            r#"
+            mutation {
+              filmTextDelete(filter: { })
+            }
+            "#,
+        )
+        .await;
 
     assert_eq(
         schema
@@ -318,6 +390,16 @@ async fn test_create_batch_mutation() {
             }
             "#,
     );
+
+    schema
+        .execute(
+            r#"
+            mutation {
+              filmTextDelete(filter: { })
+            }
+            "#,
+        )
+        .await;
 }
 
 async fn test_update_mutation() {
@@ -328,12 +410,12 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 {
-                    country(pagination: { page: { limit: 10, page: 0 } }) {
-                        nodes {
-                            country
-                            countryId
-                        }
+                  country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                    nodes {
+                      country
+                      countryId
                     }
+                  }
                 }
                 "#,
             )
@@ -365,22 +447,6 @@ async fn test_update_mutation() {
                 {
                   "country": "Argentina",
                   "countryId": 6
-                },
-                {
-                  "country": "Armenia",
-                  "countryId": 7
-                },
-                {
-                  "country": "Australia",
-                  "countryId": 8
-                },
-                {
-                  "country": "Austria",
-                  "countryId": 9
-                },
-                {
-                  "country": "Azerbaijan",
-                  "countryId": 10
                 }
               ]
             }
@@ -393,13 +459,13 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 mutation {
-                    countryUpdate(
-                      data: { country: "[DELETED]" }
-                      filter: { countryId: { lt: 6 } }
-                    ) {
-                      countryId
-                      country
-                    }
+                  countryUpdate(
+                    data: { country: "[DELETED]" }
+                    filter: { countryId: { lt: 6 } }
+                  ) {
+                    countryId
+                    country
+                  }
                 }
                 "#,
             )
@@ -437,12 +503,12 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 {
-                    country(pagination: { page: { limit: 10, page: 0 } }) {
-                        nodes {
-                            country
-                            countryId
-                        }
+                  country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                    nodes {
+                      country
+                      countryId
                     }
+                  }
                 }
                 "#,
             )
@@ -474,28 +540,48 @@ async fn test_update_mutation() {
                 {
                   "country": "Argentina",
                   "countryId": 6
-                },
-                {
-                  "country": "Armenia",
-                  "countryId": 7
-                },
-                {
-                  "country": "Australia",
-                  "countryId": 8
-                },
-                {
-                  "country": "Austria",
-                  "countryId": 9
-                },
-                {
-                  "country": "Azerbaijan",
-                  "countryId": 10
                 }
               ]
             }
         }
         "#,
     );
+
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Afghanistan" } filter: { countryId: { eq: 1 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Algeria" } filter: { countryId: { eq: 2 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "American Samoa" } filter: { countryId: { eq: 3 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Angola" } filter: { countryId: { eq: 4 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Anguilla" } filter: { countryId: { eq: 5 } }) { country }
+            }"#,
+        )
+        .await;
 }
 
 async fn test_delete_mutation() {
@@ -561,16 +647,12 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 mutation {
-                    filmTextDelete(filter: { filmId: { gte: 7 } })
+                  filmTextDelete(filter: { filmId: { gte: 7 } })
                 }
                 "#,
             )
             .await,
-        r#"
-            {
-                "filmTextDelete": 2
-            }
-            "#,
+        r#"{ "filmTextDelete": 2 }"#,
     );
 
     assert_eq(
@@ -601,10 +683,62 @@ async fn test_delete_mutation() {
         }
         "#,
     );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  filmTextDelete(filter: { filmId: { eq: 6 } })
+                }
+                "#,
+            )
+            .await,
+        r#"{ "filmTextDelete": 1 }"#,
+    );
 }
 
 async fn test_add_original_language_to_film() {
     let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(filters: { filmId: { eq: 500 } }) {
+                    nodes {
+                      filmId
+                      title
+                      language1 {
+                        name
+                      }
+                      language2 {
+                        name
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 500,
+                "title": "KISS GLORY",
+                "language1": {
+                  "name": "English"
+                },
+                "language2": null
+              }
+            ]
+          }
+        }
+        "#,
+    );
 
     assert_eq(
         schema
@@ -668,6 +802,73 @@ async fn test_add_original_language_to_film() {
                 "language2": {
                   "name": "French"
                 }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                    filmUpdate(
+                      data: { originalLanguageId: null }
+                      filter: { filmId: { eq: 500 } }
+                    ) {
+                      filmId
+                      title
+                    }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "filmUpdate": [
+              {
+                "filmId": 500,
+                "title": "KISS GLORY"
+              }
+            ]
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(filters: { filmId: { eq: 500 } }) {
+                    nodes {
+                      filmId
+                      title
+                      language1 {
+                        name
+                      }
+                      language2 {
+                        name
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 500,
+                "title": "KISS GLORY",
+                "language1": {
+                  "name": "English"
+                },
+                "language2": null
               }
             ]
           }
