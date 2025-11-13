@@ -86,9 +86,9 @@ jobs:
             -u sqlite://sakila.db
             seaography-sqlite-example -f poem
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/sqlite/Cargo.toml
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/sqlite/Cargo.toml
       - name: Build example
         working-directory: ./examples/sqlite
         run: cargo build
@@ -152,9 +152,9 @@ jobs:
             -u mysql://sea:sea@127.0.0.1/sakila
             seaography-mysql-example -f actix
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/mysql/Cargo.toml
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/mysql/Cargo.toml
       - name: Build example
         working-directory: ./examples/mysql
         run: cargo build
