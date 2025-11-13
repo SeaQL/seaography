@@ -1,4 +1,4 @@
-use async_graphql::dynamic::*;
+use async_graphql::{dynamic::*, Response};
 use sea_orm::{ColumnTrait, Condition, Database};
 use seaography::{
     async_graphql, lazy_static, BuilderContext, LifecycleHooks, LifecycleHooksInterface,
@@ -30,6 +30,7 @@ impl LifecycleHooksInterface for MyHooks {
             "Inventory" => Some(Condition::all().add(inventory::Column::StoreId.eq(2))),
             "Staff" => Some(Condition::all().add(staff::Column::StoreId.eq(2))),
             "Store" | "Stores" => Some(Condition::all().add(store::Column::StoreId.eq(2))),
+            "Country" => Some(Condition::all().add(country::Column::CountryId.eq(5))),
             _ => None,
         }
     }
@@ -40,6 +41,13 @@ async fn schema() -> Schema {
     seaography_sqlite_example::query_root::schema_builder(&CONTEXT, database, None, None)
         .finish()
         .unwrap()
+}
+
+fn assert_eq(a: Response, b: &str) {
+    assert_eq!(
+        a.data.into_json().unwrap(),
+        serde_json::from_str::<serde_json::Value>(b).unwrap()
+    )
 }
 
 #[tokio::test]
@@ -204,4 +212,109 @@ async fn only_store_2() {
             }
         }),
     );
+}
+
+#[tokio::test]
+#[cfg(not(feature = "field-pluralize"))]
+async fn test_update_mutation_with_filter() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_test_writer()
+        .init();
+
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                    nodes {
+                      country
+                      countryId
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "country": {
+              "nodes": [
+                {
+                  "country": "Anguilla",
+                  "countryId": 5
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                mutation {
+                  countryUpdate(
+                    data: { country: "[DELETED]" }
+                    filter: { countryId: { lt: 6 } }
+                  ) {
+                    countryId
+                    country
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "countryUpdate": [
+              {
+                "countryId": 5,
+                "country": "[DELETED]"
+              }
+            ]
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                    nodes {
+                      country
+                      countryId
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+            "country": {
+              "nodes": [
+                {
+                  "country": "[DELETED]",
+                  "countryId": 5
+                }
+              ]
+            }
+        }
+        "#,
+    );
+
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Anguilla" } filter: { countryId: { eq: 5 } }) { country }
+            }"#,
+        )
+        .await;
 }
