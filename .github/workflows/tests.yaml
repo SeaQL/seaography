@@ -57,7 +57,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
-          version: 2.0.0-rc.17
+          version: 2.0.0-rc.18
       - name: Additional Integration tests
         working-directory: ./examples/sqlite
         run: |
