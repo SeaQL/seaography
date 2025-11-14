@@ -18,7 +18,7 @@ features = ["sqlx-sqlite", "runtime-tokio-native-tls", "seaography"]
 [dependencies.seaography]
 path = "../../"
 version = "~2.0.0-rc.4" # seaography version
-features = ["with-decimal", "with-chrono"]
+features = ["graphql-playground", "with-decimal", "with-chrono"]
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }
