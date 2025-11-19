@@ -7,7 +7,6 @@ pub fn apply_order<T>(
 ) -> Select<T>
 where
     T: EntityTrait,
-    <T as EntityTrait>::Model: Sync,
 {
     order_by
         .into_iter()

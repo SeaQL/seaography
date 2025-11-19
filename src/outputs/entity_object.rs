@@ -1,7 +1,14 @@
-use async_graphql::dynamic::{Field, FieldFuture, Object};
-use async_graphql::{Error, Value};
+use async_graphql::{
+    dynamic::{Field, FieldFuture, Object, ObjectAccessor},
+    Value,
+};
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
-use sea_orm::{ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable,
+    ModelTrait, TryIntoModel,
+};
+
+use crate::{guard_error, EntityColumnId, OperationType, SeaResult, SeaographyError};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -34,6 +41,7 @@ impl std::default::Default for EntityObjectConfig {
 use crate::{format_variant, BuilderContext, GuardAction, TypesMapHelper};
 
 /// This builder produces the GraphQL object of a SeaORM entity
+#[derive(Copy, Clone)]
 pub struct EntityObjectBuilder {
     pub context: &'static BuilderContext,
 }
@@ -43,7 +51,6 @@ impl EntityObjectBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
         self.context.entity_object.type_name.as_ref()(&name)
@@ -53,7 +60,6 @@ impl EntityObjectBuilder {
     pub fn basic_type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let name: String = <T as EntityName>::table_name(&T::default()).into();
         format!(
@@ -67,7 +73,6 @@ impl EntityObjectBuilder {
     pub fn column_name<T>(&self, column: &T::Column) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_name = self.type_name::<T>();
         let column_name: String = column.as_str().into();
@@ -86,7 +91,7 @@ impl EntityObjectBuilder {
     }
 
     /// used to get the GraphQL basic object of a SeaORM entity
-    pub fn basic_to_object<T>(&self) -> Object
+    pub fn to_basic_object<T>(&self) -> Object
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -102,103 +107,142 @@ impl EntityObjectBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
-        let entity_name = self.type_name::<T>();
+        let object_name = object_name.to_owned();
 
         let types_map_helper = TypesMapHelper {
             context: self.context,
         };
 
-        T::Column::iter().fold(Object::new(object_name), |object, column: T::Column| {
-            let column_name = self.column_name::<T>(&column);
+        T::Column::iter().fold(
+            Object::new(&object_name),
+            move |object, column: T::Column| {
+                let object_name = object_name.clone();
+                let column_name = self.column_name::<T>(&column);
+                let entity_column_id = EntityColumnId::of::<T>(&column);
 
-            let column_def = column.def();
-            let enum_type_name = column.enum_type_name();
-
-            let graphql_type = match types_map_helper.sea_orm_column_type_to_graphql_type(
-                column_def.get_column_type(),
-                !column_def.is_null(),
-                enum_type_name,
-            ) {
-                Some(type_name) => type_name,
-                None => return object,
-            };
-
-            // This isn't the most beautiful flag: it's indicating whether the leaf type is an
-            // enum, rather than the type itself. Ideally we'd only calculate this for the leaf
-            // type itself. Could be a good candidate for refactor as this code evolves to support
-            // more container types. For example, this at the very least should be recursive on
-            // Array types such that arrays of arrays of enums would be resolved correctly.
-            let is_enum: bool = match column_def.get_column_type() {
-                ColumnType::Enum { .. } => true,
-                #[cfg(feature = "with-postgres-array")]
-                ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
-                _ => false,
-            };
-
-            let guard = self
-                .context
-                .guards
-                .field_guards
-                .get(&format!("{}.{}", &object_name, &column_name));
-
-            let conversion_fn = self
-                .context
-                .types
-                .output_conversions
-                .get(&format!("{entity_name}.{column_name}"));
-
-            let field = Field::new(column_name, graphql_type, move |ctx| {
-                let guard_flag = if let Some(guard) = guard {
-                    (*guard)(&ctx)
-                } else {
-                    GuardAction::Allow
+                let column_def = column.def();
+                let graphql_type = match types_map_helper.output_type_for_column::<T>(
+                    &column,
+                    &entity_column_id,
+                    !column_def.is_null(),
+                ) {
+                    Some(type_name) => type_name,
+                    None => return object,
                 };
 
-                if let GuardAction::Block(reason) = guard_flag {
-                    return FieldFuture::new(async move {
-                        match reason {
-                            Some(reason) => {
-                                Err::<Option<()>, async_graphql::Error>(Error::new(reason))
-                            }
-                            None => Err::<Option<()>, async_graphql::Error>(Error::new(
-                                "Field guard triggered.",
-                            )),
-                        }
-                    });
+                if column_def.seaography().ignore {
+                    return object;
                 }
 
-                // convert SeaQL value to GraphQL value
-                // FIXME: move to types_map file
-                let object = ctx
-                    .parent_value
-                    .try_downcast_ref::<T::Model>()
-                    .expect("Something went wrong when trying to downcast entity object.");
+                // This isn't the most beautiful flag: it's indicating whether the leaf type is an
+                // enum, rather than the type itself. Ideally we'd only calculate this for the leaf
+                // type itself. Could be a good candidate for refactor as this code evolves to support
+                // more container types. For example, this at the very least should be recursive on
+                // Array types such that arrays of arrays of enums would be resolved correctly.
+                let is_enum: bool = match column_def.get_column_type() {
+                    ColumnType::Enum { .. } => true,
+                    #[cfg(feature = "with-postgres-array")]
+                    ColumnType::Array(inner) => matches!(inner.as_ref(), ColumnType::Enum { .. }),
+                    _ => false,
+                };
 
-                if let Some(conversion_fn) = conversion_fn {
-                    let result = conversion_fn(&object.get(column));
-                    return FieldFuture::new(async move {
-                        match result {
-                            Ok(value) => Ok(Some(value)),
-                            // FIXME: proper error reporting
-                            Err(_) => Ok(None),
+                let conversion_fn = self
+                    .context
+                    .types
+                    .column_options
+                    .get(&entity_column_id)
+                    .and_then(|options| options.output_conversion.as_ref());
+
+                let hooks = &self.context.hooks;
+                let context = self.context;
+
+                let field = Field::new(column_name.clone(), graphql_type, move |ctx| {
+                    if let GuardAction::Block(reason) =
+                        hooks.field_guard(&ctx, &object_name, &column_name, OperationType::Read)
+                    {
+                        return FieldFuture::new(async move {
+                            Err::<Option<()>, _>(guard_error(reason, "Field guard triggered."))
+                        });
+                    }
+
+                    // convert SeaQL value to GraphQL value
+                    let object = match ctx.parent_value.try_downcast_ref::<T::Model>() {
+                        Ok(object) => object,
+                        Err(_) => {
+                            let object_name = object_name.clone();
+                            return FieldFuture::new(async move {
+                                Err::<Option<()>, _>(async_graphql::Error::new(format!(
+                                    "Failed to downcast object to {object_name}"
+                                )))
+                            });
                         }
-                    });
-                }
+                    };
 
-                FieldFuture::new(async move {
-                    Ok(sea_query_value_to_graphql_value(
+                    if let Some(conversion_fn) = conversion_fn {
+                        let result = conversion_fn(&object.get(column));
+                        return FieldFuture::new(async move { result });
+                    }
+
+                    FieldFuture::from_value(sea_query_value_to_graphql_value(
+                        context,
                         object.get(column),
                         is_enum,
                     ))
-                })
-            });
+                });
 
-            object.field(field)
+                object.field(field)
+            },
+        )
+    }
+
+    pub fn parse_object<M>(&self, object: &ObjectAccessor) -> SeaResult<M>
+    where
+        M: ModelTrait + Sync,
+        <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel: TryIntoModel<M>,
+    {
+        let entity_object_builder = EntityObjectBuilder {
+            context: self.context,
+        };
+        let types_map_helper = TypesMapHelper {
+            context: self.context,
+        };
+
+        let mut active_model = <<M as ModelTrait>::Entity as EntityTrait>::ActiveModel::default();
+
+        for column in <<M as ModelTrait>::Entity as EntityTrait>::Column::iter() {
+            let column_name =
+                entity_object_builder.column_name::<<M as ModelTrait>::Entity>(&column);
+
+            let value = match object.get(&column_name) {
+                Some(value) => value,
+                None => continue,
+            };
+
+            let value = types_map_helper
+                .async_graphql_value_to_sea_orm_value::<<M as ModelTrait>::Entity>(
+                    &column, &value,
+                )?;
+
+            active_model.try_set(column, value).map_err(|e| {
+                let entity_name = entity_object_builder.type_name::<<M as ModelTrait>::Entity>();
+                SeaographyError::TypeConversionError(
+                    e.to_string(),
+                    format!("{entity_name} - {column_name}"),
+                )
+            })?;
+        }
+
+        active_model.try_into_model().map_err(|e| {
+            SeaographyError::TypeConversionError(
+                self.type_name::<<M as ModelTrait>::Entity>(),
+                e.to_string(),
+            )
         })
     }
 }
 
-fn sea_query_value_to_graphql_value(
+pub(crate) fn sea_query_value_to_graphql_value(
+    _context: &'static BuilderContext,
     sea_query_value: sea_orm::sea_query::Value,
     is_enum: bool,
 ) -> Option<Value> {
@@ -228,7 +272,8 @@ fn sea_query_value_to_graphql_value(
             Value::List(
                 it.into_iter()
                     .map(|item| {
-                        sea_query_value_to_graphql_value(item, is_enum).unwrap_or(Value::Null)
+                        sea_query_value_to_graphql_value(_context, item, is_enum)
+                            .unwrap_or(Value::Null)
                     })
                     .collect(),
             )
@@ -236,7 +281,12 @@ fn sea_query_value_to_graphql_value(
 
         #[cfg(feature = "with-json")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
-        sea_orm::sea_query::Value::Json(value) => value.map(|it| Value::from(it.to_string())),
+        sea_orm::sea_query::Value::Json(value) => {
+            value.map(|it| match Value::from_json(it.clone()) {
+                Ok(v) => v,
+                Err(_) => Value::from(it.to_string()),
+            })
+        }
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
@@ -254,21 +304,33 @@ fn sea_query_value_to_graphql_value(
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::ChronoDateTimeUtc(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.to_rfc3339()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::ChronoDateTimeLocal(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.to_rfc3339()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-chrono")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-chrono")))]
-        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::ChronoDateTimeWithTimeZone(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.to_rfc3339()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
@@ -286,9 +348,14 @@ fn sea_query_value_to_graphql_value(
 
         #[cfg(feature = "with-time")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-time")))]
-        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => {
-            value.map(|it| Value::from(it.to_string()))
-        }
+        sea_orm::sea_query::Value::TimeDateTimeWithTimeZone(value) => value.map(|it| {
+            Value::from(if _context.types.timestamp_rfc3339 {
+                it.format(&time::format_description::well_known::Rfc3339)
+                    .unwrap()
+            } else {
+                it.to_string()
+            })
+        }),
 
         #[cfg(feature = "with-uuid")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-uuid")))]
@@ -309,6 +376,6 @@ fn sea_query_value_to_graphql_value(
         // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
         // sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
         #[allow(unreachable_patterns)]
-        _ => panic!("Cannot convert SeaORM value"),
+        _ => None,
     }
 }

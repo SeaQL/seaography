@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
-use sea_orm::{EntityTrait, Iterable};
+use sea_orm::{ColumnTrait, EntityTrait, Iterable};
 
-use crate::{BuilderContext, EntityObjectBuilder, FilterTypesMapHelper};
+use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, FilterTypesMapHelper};
 
 /// The configuration structure for FilterInputBuilder
 pub struct FilterInputConfig {
@@ -28,14 +28,14 @@ impl FilterInputBuilder {
     /// used to get the filter input object name
     /// object_name is the name of the SeaORM Entity GraphQL object
     pub fn type_name(&self, object_name: &str) -> String {
-        self.context.filter_input.type_name.as_ref()(object_name)
+        let object_name = pluralize_unique(object_name, false);
+        self.context.filter_input.type_name.as_ref()(&object_name)
     }
 
     /// used to produce the filter input object of a SeaORM entity
     pub fn to_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let filter_types_map_helper = FilterTypesMapHelper {
             context: self.context,
@@ -48,6 +48,9 @@ impl FilterInputBuilder {
         let filter_name = self.type_name(&entity_name);
 
         let object = T::Column::iter().fold(InputObject::new(&filter_name), |object, column| {
+            if column.def().seaography().ignore {
+                return object;
+            }
             match filter_types_map_helper.get_column_filter_input_value::<T>(&column) {
                 Some(field) => object.field(field),
                 None => object,
@@ -57,5 +60,6 @@ impl FilterInputBuilder {
         object
             .field(InputValue::new("and", TypeRef::named_nn_list(&filter_name)))
             .field(InputValue::new("or", TypeRef::named_nn_list(&filter_name)))
+            .field(InputValue::new("not", TypeRef::named(&filter_name)))
     }
 }

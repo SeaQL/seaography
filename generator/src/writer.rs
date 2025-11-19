@@ -5,7 +5,7 @@ use quote::quote;
 
 use crate::{util::add_line_break, WebFrameworkEnum};
 
-pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
+pub fn generate_query_root(entities_path: &Path) -> TokenStream {
     let mut entities_paths: Vec<_> = std::fs::read_dir(entities_path)
         .unwrap()
         .filter(|r| r.is_ok())
@@ -25,13 +25,14 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
         .collect();
     entities_paths.sort();
 
+
     quote! {
         use crate::entities::*;
         use async_graphql::dynamic::*;
         use sea_orm::DatabaseConnection;
-        use seaography::{async_graphql, lazy_static, Builder, BuilderContext};
+        use seaography::{async_graphql, lazy_static::lazy_static, Builder, BuilderContext};
 
-        lazy_static::lazy_static! {
+        lazy_static! {
             static ref CONTEXT: BuilderContext = BuilderContext::default();
         }
 
@@ -44,24 +45,19 @@ pub fn generate_query_root<P: AsRef<Path>>(entities_path: &P) -> TokenStream {
             let  builder = register_entity_modules(builder);
             let  builder = register_active_enums(builder);
 
-
             builder
                 .set_depth_limit(depth)
                 .set_complexity_limit(complexity)
                 .schema_builder()
                 .data(database)
-                .finish()
         }
     }
 }
 
-pub fn write_query_root<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
-    src_path: &P,
-    entities_path: &T,
-) -> Result<(), crate::error::Error> {
+pub fn write_query_root(src_path: &Path, entities_path: &Path) -> Result<(), crate::error::Error> {
     let tokens = generate_query_root(entities_path);
 
-    let file_name = src_path.as_ref().join("query_root.rs");
+    let file_name = src_path.join("query_root.rs");
 
     std::fs::write(file_name, add_line_break(tokens))?;
 
@@ -71,13 +67,13 @@ pub fn write_query_root<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
 ///
 /// Used to generate project/Cargo.toml file content
 ///
-pub fn write_cargo_toml<P: AsRef<std::path::Path>>(
-    path: &P,
+pub fn write_cargo_toml(
+    path: &Path,
     crate_name: &str,
     sql_library: &str,
     framework: WebFrameworkEnum,
 ) -> std::io::Result<()> {
-    let file_path = path.as_ref().join("Cargo.toml");
+    let file_path = path.join("Cargo.toml");
 
     let ver = env!("CARGO_PKG_VERSION");
 
@@ -116,8 +112,8 @@ pub fn write_lib<P: AsRef<std::path::Path>>(path: &P) -> std::io::Result<()> {
 ///
 /// Used to generate project/.env file content
 ///
-pub fn write_env<P: AsRef<std::path::Path>>(
-    path: &P,
+pub fn write_env(
+    path: &Path,
     db_url: &str,
     depth_limit: Option<usize>,
     complexity_limit: Option<usize>,
@@ -126,13 +122,13 @@ pub fn write_env<P: AsRef<std::path::Path>>(
     let complexity_limit = complexity_limit.map_or("".into(), |value| value.to_string());
 
     let tokens = [
-        format!(r#"DATABASE_URL="{}""#, db_url),
-        format!(r#"# COMPLEXITY_LIMIT={}"#, depth_limit),
-        format!(r#"# DEPTH_LIMIT={}"#, complexity_limit),
+        format!(r#"DATABASE_URL="{db_url}""#),
+        format!(r#"# COMPLEXITY_LIMIT={complexity_limit}"#),
+        format!(r#"# DEPTH_LIMIT={depth_limit}"#),
     ]
     .join("\n");
 
-    let file_name = path.as_ref().join(".env");
+    let file_name = path.join(".env");
 
     std::fs::write(file_name, tokens)?;
 

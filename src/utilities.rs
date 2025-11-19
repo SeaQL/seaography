@@ -1,9 +1,11 @@
+use async_graphql::dynamic::FieldValue;
 use itertools::Itertools;
+use sea_orm::{sea_query::ValueTuple, DynIden, Identity};
+use std::any::Any;
 
 /// used to encode the primary key values of a SeaORM entity to a String
-pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
-    values
-        .iter()
+pub fn encode_cursor(values: ValueTuple) -> String {
+    ValueTupleIter::new(&values)
         .map(|value| -> String {
             match value {
                 sea_orm::Value::TinyInt(value) => {
@@ -72,7 +74,6 @@ pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
                 }
                 sea_orm::Value::String(value) => {
                     if let Some(value) = value {
-                        let value = value.as_ref();
                         format!("String[{}]:{}", value.len(), value)
                     } else {
                         "String[-1]:".into()
@@ -81,7 +82,7 @@ pub fn encode_cursor(values: Vec<sea_orm::Value>) -> String {
                 #[cfg(feature = "with-uuid")]
                 sea_orm::Value::Uuid(value) => {
                     if let Some(value) = value {
-                        let value = value.as_ref().to_string();
+                        let value = value.to_string();
                         format!("Uuid[{}]:{}", value.len(), value)
                     } else {
                         "Uuid[-1]:".into()
@@ -104,27 +105,37 @@ pub enum DecodeMode {
     Data,
 }
 
-pub fn map_cursor_values(values: Vec<sea_orm::Value>) -> sea_orm::sea_query::value::ValueTuple {
-    if values.len() == 1 {
-        sea_orm::sea_query::value::ValueTuple::One(values[0].clone())
-    } else if values.len() == 2 {
-        sea_orm::sea_query::value::ValueTuple::Two(values[0].clone(), values[1].clone())
-    } else if values.len() == 3 {
-        sea_orm::sea_query::value::ValueTuple::Three(
-            values[0].clone(),
-            values[1].clone(),
-            values[2].clone(),
-        )
-    } else {
-        panic!("seaography does not support cursors values with size greater than 3")
+#[derive(Default)]
+struct ValueTupleBuilder(Option<ValueTuple>);
+
+impl ValueTupleBuilder {
+    fn push(&mut self, value: sea_orm::Value) {
+        match self.0.take() {
+            None => {
+                self.0 = Some(ValueTuple::One(value));
+            }
+            Some(ValueTuple::One(a)) => {
+                self.0 = Some(ValueTuple::Two(a, value));
+            }
+            Some(ValueTuple::Two(a, b)) => {
+                self.0 = Some(ValueTuple::Three(a, b, value));
+            }
+            Some(ValueTuple::Three(a, b, c)) => {
+                self.0 = Some(ValueTuple::Many(vec![a, b, c, value]));
+            }
+            Some(ValueTuple::Many(mut items)) => {
+                items.push(value);
+                self.0 = Some(ValueTuple::Many(items));
+            }
+        }
     }
 }
 
 /// used to decode a String to a vector of SeaORM values
-pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbErr> {
+pub fn decode_cursor(s: &str) -> Result<ValueTuple, sea_orm::DbErr> {
     let chars = s.chars();
 
-    let mut values: Vec<sea_orm::Value> = vec![];
+    let mut values = ValueTupleBuilder::default();
 
     let mut type_indicator = String::new();
     let mut length_indicator = String::new();
@@ -146,7 +157,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
             DecodeMode::Length => {
                 if char.eq(&']') {
                     mode = DecodeMode::ColonSkip;
-                    length = length_indicator.parse::<i64>().unwrap();
+                    length = length_indicator.parse::<i64>().map_err(parse_int_err)?;
                 } else {
                     length_indicator.push(char);
                 }
@@ -167,28 +178,36 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::TinyInt(None)
                             } else {
-                                sea_orm::Value::TinyInt(Some(data_buffer.parse::<i8>().unwrap()))
+                                sea_orm::Value::TinyInt(Some(
+                                    data_buffer.parse::<i8>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "SmallInt" => {
                             if length.eq(&-1) {
                                 sea_orm::Value::SmallInt(None)
                             } else {
-                                sea_orm::Value::SmallInt(Some(data_buffer.parse::<i16>().unwrap()))
+                                sea_orm::Value::SmallInt(Some(
+                                    data_buffer.parse::<i16>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "Int" => {
                             if length.eq(&-1) {
                                 sea_orm::Value::Int(None)
                             } else {
-                                sea_orm::Value::Int(Some(data_buffer.parse::<i32>().unwrap()))
+                                sea_orm::Value::Int(Some(
+                                    data_buffer.parse::<i32>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "BigInt" => {
                             if length.eq(&-1) {
                                 sea_orm::Value::BigInt(None)
                             } else {
-                                sea_orm::Value::BigInt(Some(data_buffer.parse::<i64>().unwrap()))
+                                sea_orm::Value::BigInt(Some(
+                                    data_buffer.parse::<i64>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "TinyUnsigned" => {
@@ -196,7 +215,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::TinyUnsigned(None)
                             } else {
                                 sea_orm::Value::TinyUnsigned(Some(
-                                    data_buffer.parse::<u8>().unwrap(),
+                                    data_buffer.parse::<u8>().map_err(parse_int_err)?,
                                 ))
                             }
                         }
@@ -205,7 +224,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::SmallUnsigned(None)
                             } else {
                                 sea_orm::Value::SmallUnsigned(Some(
-                                    data_buffer.parse::<u16>().unwrap(),
+                                    data_buffer.parse::<u16>().map_err(parse_int_err)?,
                                 ))
                             }
                         }
@@ -213,7 +232,9 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::Unsigned(None)
                             } else {
-                                sea_orm::Value::Unsigned(Some(data_buffer.parse::<u32>().unwrap()))
+                                sea_orm::Value::Unsigned(Some(
+                                    data_buffer.parse::<u32>().map_err(parse_int_err)?,
+                                ))
                             }
                         }
                         "BigUnsigned" => {
@@ -221,7 +242,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                                 sea_orm::Value::BigUnsigned(None)
                             } else {
                                 sea_orm::Value::BigUnsigned(Some(
-                                    data_buffer.parse::<u64>().unwrap(),
+                                    data_buffer.parse::<u64>().map_err(parse_int_err)?,
                                 ))
                             }
                         }
@@ -229,9 +250,7 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::String(None)
                             } else {
-                                sea_orm::Value::String(Some(Box::new(
-                                    data_buffer.parse::<String>().unwrap(),
-                                )))
+                                sea_orm::Value::String(Some(data_buffer))
                             }
                         }
                         #[cfg(feature = "with-uuid")]
@@ -239,14 +258,17 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
                             if length.eq(&-1) {
                                 sea_orm::Value::Uuid(None)
                             } else {
-                                sea_orm::Value::Uuid(Some(Box::new(
-                                    data_buffer.parse::<sea_orm::prelude::Uuid>().unwrap(),
-                                )))
+                                sea_orm::Value::Uuid(Some(
+                                    data_buffer.parse::<sea_orm::prelude::Uuid>().map_err(|e| {
+                                        sea_orm::DbErr::Type(format!("Failed to parse UUID: {e}"))
+                                    })?,
+                                ))
                             }
                         }
-                        _ => {
-                            // FIXME: missing value types
-                            panic!("cannot encode current type")
+                        ty => {
+                            return Err(sea_orm::DbErr::Type(format!(
+                                "Unsupported type {ty} in cursor"
+                            )));
                         }
                     };
 
@@ -263,5 +285,128 @@ pub fn decode_cursor(s: &str) -> Result<Vec<sea_orm::Value>, sea_orm::error::DbE
         }
     }
 
-    Ok(values)
+    values
+        .0
+        .ok_or_else(|| sea_orm::DbErr::Type("Missing cursor value".into()))
+}
+
+#[cfg(feature = "field-pluralize")]
+/// Returns unique names for singular and plural names,
+/// so they can be used in different endpoints.
+/// Right now a _single suffix is appended to the singular noun.
+pub fn pluralize_unique(word: &str, plural: bool) -> String {
+    use pluralizer::pluralize;
+    let name_single = pluralize(word, 1, false);
+    let name_plural = pluralize(word, 2, false);
+
+    if plural {
+        name_plural
+    } else if name_single == name_plural {
+        format!("{}_single", name_single)
+    } else {
+        name_single
+    }
+}
+
+#[cfg(not(feature = "field-pluralize"))]
+pub fn pluralize_unique(word: &str, _plural: bool) -> String {
+    word.into()
+}
+
+fn parse_int_err(err: std::num::ParseIntError) -> sea_orm::DbErr {
+    sea_orm::DbErr::Type(format!("Failed to parse integer: {err}"))
+}
+
+pub fn try_downcast_ref<'a, T: Any>(value: &'a FieldValue<'a>) -> async_graphql::Result<&'a T> {
+    match value.downcast_ref::<T>() {
+        Some(obj) => Ok(obj),
+        None => Err(format!(
+            "Cannot downcast {:?} to {}",
+            value,
+            std::any::type_name::<T>()
+        )
+        .into()),
+    }
+}
+
+pub(crate) struct IdenIter<'a> {
+    identity: &'a Identity,
+    index: usize,
+}
+
+impl<'a> IdenIter<'a> {
+    pub fn new(identity: &'a Identity) -> Self {
+        Self { identity, index: 0 }
+    }
+}
+
+impl<'a> Iterator for IdenIter<'a> {
+    type Item = &'a DynIden;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = match self.identity {
+            Identity::Unary(iden1) => {
+                if self.index == 0 {
+                    Some(iden1)
+                } else {
+                    None
+                }
+            }
+            Identity::Binary(iden1, iden2) => match self.index {
+                0 => Some(iden1),
+                1 => Some(iden2),
+                _ => None,
+            },
+            Identity::Ternary(iden1, iden2, iden3) => match self.index {
+                0 => Some(iden1),
+                1 => Some(iden2),
+                2 => Some(iden3),
+                _ => None,
+            },
+            Identity::Many(vec) => vec.get(self.index),
+        };
+        self.index += 1;
+        result
+    }
+}
+
+pub(crate) struct ValueTupleIter<'a> {
+    value: &'a ValueTuple,
+    index: usize,
+}
+
+impl<'a> ValueTupleIter<'a> {
+    pub fn new(value: &'a ValueTuple) -> Self {
+        Self { value, index: 0 }
+    }
+}
+
+impl<'a> Iterator for ValueTupleIter<'a> {
+    type Item = &'a sea_orm::Value;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = match self.value {
+            ValueTuple::One(a) => {
+                if self.index == 0 {
+                    Some(a)
+                } else {
+                    None
+                }
+            }
+            ValueTuple::Two(a, b) => match self.index {
+                0 => Some(a),
+                1 => Some(b),
+                _ => None,
+            },
+            ValueTuple::Three(a, b, c) => match self.index {
+                0 => Some(a),
+                1 => Some(b),
+                2 => Some(c),
+                _ => None,
+            },
+            ValueTuple::Many(vec) => vec.get(self.index),
+        };
+        self.index += 1;
+        result
+    }
 }

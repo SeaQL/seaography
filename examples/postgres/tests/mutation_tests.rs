@@ -1,9 +1,15 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
+use serde::Deserialize;
 
 #[tokio::test]
 async fn main() {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_test_writer()
+        .init();
+
     test_simple_insert_one().await;
     test_complex_insert_one().await;
     test_create_batch_mutation().await;
@@ -11,16 +17,14 @@ async fn main() {
     test_delete_mutation().await;
 }
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("postgres://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
-    let schema = seaography_postgres_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_postgres_example::query_root::schema(database, None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -28,7 +32,17 @@ pub fn assert_eq(a: Response, b: &str) {
 }
 
 async fn test_simple_insert_one() {
-    let schema = get_schema().await;
+    let schema = schema().await;
+
+    schema
+        .execute(
+            r#"
+            mutation {
+              filmActorDelete(filter: { lastUpdate: { gt: "2022-11-14 10:30:12" } })
+            }
+            "#,
+        )
+        .await;
 
     assert_eq(
         schema
@@ -110,14 +124,45 @@ async fn test_simple_insert_one() {
 }
 
 async fn test_complex_insert_one() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
-    assert_eq(
-        schema
-            .execute(
-                r#"
+    schema
+        .execute(
+            r#"
+            mutation {
+              rentalDelete(
+                filter: {
+                  rentalDate: { eq: "2030-01-25 21:50:05" }
+                  inventoryId: { eq: 4452 }
+                  customerId: { eq: 319 }
+                }
+              )
+            }
+            "#,
+        )
+        .await;
+
+    #[derive(Deserialize)]
+    struct QueryResult {
+        rental: RentalQuery,
+    }
+
+    #[derive(Deserialize)]
+    struct RentalQuery {
+        nodes: Vec<RentalId>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct RentalId {
+        rental_id: i32,
+    }
+
+    let response = schema
+        .execute(
+            r#"
                 {
-                    rental(filters: { rentalId: { eq: 16050 } }) {
+                    rental(orderBy: { rentalId: DESC }) {
                       nodes {
                         rentalId
                         inventoryId
@@ -128,141 +173,176 @@ async fn test_complex_insert_one() {
                     }
                 }
                 "#,
-            )
-            .await,
-        r#"
-        {
-            "rental": {
-              "nodes": [
-              ]
-            }
+        )
+        .await
+        .data
+        .into_json()
+        .unwrap();
+
+    let result: QueryResult = serde_json::from_value(response).unwrap();
+    let max_id = result
+        .rental
+        .nodes
+        .iter()
+        .map(|r| r.rental_id)
+        .max()
+        .unwrap_or_default();
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct CreateResult {
+        rental_create_one: RentalObject,
+    }
+
+    #[derive(Debug, Deserialize, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    struct RentalObject {
+        rental_id: i32,
+        inventory_id: i32,
+        customer_id: i32,
+        staff_id: i32,
+        return_date: String,
+    }
+
+    let response = schema
+        .execute(
+            r#"
+                mutation {
+                  rentalCreateOne(
+                    data: {
+                      rentalDate: "2030-01-25 21:50:05"
+                      inventoryId: 4452
+                      customerId: 319
+                      returnDate: "2030-01-12 21:50:05"
+                      staffId: 1
+                      lastUpdate: "2030-01-01 21:50:05"
+                    }
+                  ) {
+                    rentalId
+                    inventoryId
+                    customerId
+                    returnDate
+                    staffId
+                  }
+                }
+                "#,
+        )
+        .await
+        .data
+        .into_json()
+        .unwrap();
+
+    let result: CreateResult = serde_json::from_value(response).unwrap();
+    let rental = result.rental_create_one;
+    let rental_id = rental.rental_id;
+    assert!(rental.rental_id > max_id);
+    assert_eq!(
+        rental,
+        RentalObject {
+            rental_id,
+            inventory_id: 4452,
+            customer_id: 319,
+            staff_id: 1,
+            return_date: "2030-01-12 21:50:05".into(),
         }
-            "#,
     );
 
     assert_eq(
         schema
-            .execute(
+            .execute(format!(
                 r#"
-                mutation {
-                    rentalCreateOne(
-                      data: {
-                        rentalId: 16050
-                        rentalDate: "2030-01-25 21:50:05"
-                        inventoryId: 4452
-                        customerId: 319
-                        returnDate: "2030-01-12 21:50:05"
-                        staffId: 1
-                        lastUpdate: "2030-01-01 21:50:05"
-                      }
-                    ) {
+                {{
+                  rental(filters: {{ rentalId: {{ eq: {rental_id} }} }}) {{
+                    nodes {{
                       rentalId
                       inventoryId
                       customerId
-                      returnDate
                       staffId
-                    }
-                }
-                "#,
-            )
+                      returnDate
+                    }}
+                  }}
+                }}
+                "#
+            ))
             .await,
-        r#"
-            {
-                "rentalCreateOne": {
-                    "rentalId": 16050,
-                    "inventoryId": 4452,
-                    "customerId": 319,
-                    "returnDate": "2030-01-12 21:50:05",
-                    "staffId": 1
-                }
-            }
-            "#,
-    );
-
-    assert_eq(
-        schema
-            .execute(
-                r#"
-                {
-                    rental(filters: { rentalId: { eq: 16050 } }) {
-                      nodes {
-                        rentalId
-                        inventoryId
-                        customerId
-                        returnDate
-                        staffId
-                      }
-                    }
-                }
-                "#,
-            )
-            .await,
-        r#"
-        {
-            "rental": {
-              "nodes": [
-                {
-                  "rentalId": 16050,
-                  "inventoryId": 4452,
-                  "customerId": 319,
-                  "returnDate": "2030-01-12 21:50:05",
-                  "staffId": 1
-                }
-              ]
-            }
-        }
-        "#,
+        &format!(
+            r#"
+        {{
+          "rental": {{
+            "nodes": [
+              {{
+                "rentalId": {rental_id},
+                "inventoryId": 4452,
+                "customerId": 319,
+                "staffId": 1,
+                "returnDate": "2030-01-12 21:50:05"
+              }}
+            ]
+          }}
+        }}
+        "#
+        ),
     );
 }
 
 async fn test_create_batch_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
+
+    schema
+        .execute(
+            r#"
+            mutation {
+              languageDelete(filter: { languageId: { gt: 6 } })
+            }
+            "#,
+        )
+        .await;
 
     assert_eq(
         schema
             .execute(
                 r#"
                 {
-                    language(filters: { languageId: { lte: 8 } }, orderBy: { languageId: ASC }) {
-                      nodes {
-                        languageId
-                        name
-                      }
+                  language(orderBy: { languageId: ASC }) {
+                    nodes {
+                      languageId
+                      name
                     }
+                  }
                 }
                 "#,
             )
             .await,
         r#"
             {
-                "language": {
-                    "nodes": [
-                        {
-                        "languageId": 1,
-                        "name": "English             "
-                        },
-                        {
-                        "languageId": 2,
-                        "name": "Italian             "
-                        },
-                        {
-                        "languageId": 3,
-                        "name": "Japanese            "
-                        },
-                        {
-                        "languageId": 4,
-                        "name": "Mandarin            "
-                        },
-                        {
-                        "languageId": 5,
-                        "name": "French              "
-                        },
-                        {
-                        "languageId": 6,
-                        "name": "German              "
-                        }
-                    ]
-                }
+              "language": {
+                "nodes": [
+                  {
+                    "languageId": 1,
+                    "name": "English             "
+                  },
+                  {
+                    "languageId": 2,
+                    "name": "Italian             "
+                  },
+                  {
+                    "languageId": 3,
+                    "name": "Japanese            "
+                  },
+                  {
+                    "languageId": 4,
+                    "name": "Mandarin            "
+                  },
+                  {
+                    "languageId": 5,
+                    "name": "French              "
+                  },
+                  {
+                    "languageId": 6,
+                    "name": "German              "
+                  }
+                ]
+              }
             }
             "#,
     );
@@ -272,28 +352,28 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 mutation {
-                    languageCreateBatch(
-                      data: [
-                        { languageId: 1, name: "Swedish", lastUpdate: "2030-01-12 21:50:05" }
-                        { languageId: 1, name: "Danish", lastUpdate: "2030-01-12 21:50:05" }
-                      ]
-                    ) {
-                      name
-                    }
+                  languageCreateBatch(
+                    data: [
+                      { name: "Swedish", lastUpdate: "2030-01-12 21:50:05" }
+                      { name: "Danish", lastUpdate: "2030-01-12 21:50:05" }
+                    ]
+                  ) {
+                    name
+                  }
                 }
                 "#,
             )
             .await,
         r#"
             {
-                "languageCreateBatch": [
+              "languageCreateBatch": [
                 {
-                    "name": "Swedish             "
+                  "name": "Swedish             "
                 },
                 {
-                    "name": "Danish              "
+                  "name": "Danish              "
                 }
-                ]
+              ]
             }
             "#,
     );
@@ -303,11 +383,11 @@ async fn test_create_batch_mutation() {
             .execute(
                 r#"
                 {
-                    language(filters: { languageId: { lte: 8 } }, orderBy: { languageId: ASC }) {
-                      nodes {
-                        name
-                      }
+                  language(orderBy: { languageId: ASC }) {
+                    nodes {
+                      name
                     }
+                  }
                 }
                 "#,
             )
@@ -345,23 +425,58 @@ async fn test_create_batch_mutation() {
             }
         }
         "#,
-    )
-}
+    );
 
-async fn test_update_mutation() {
-    let schema = get_schema().await;
+    schema
+        .execute(
+            r#"
+            mutation {
+              languageDelete(filter: { name: { is_in: ["Swedish", "Danish"] } })
+            }
+            "#,
+        )
+        .await;
 
     assert_eq(
         schema
             .execute(
                 r#"
                 {
-                    country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
-                      nodes {
-                        country
-                        countryId
-                      }
+                  language(filters: { languageId: { gt: 6 } }) {
+                    nodes {
+                      languageId
+                      name
                     }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+            {
+              "language": {
+                "nodes": [
+                ]
+              }
+            }
+            "#,
+    );
+}
+
+async fn test_update_mutation() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                    nodes {
+                      country
+                      countryId
+                    }
+                  }
                 }
                 "#,
             )
@@ -405,13 +520,13 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 mutation {
-                    countryUpdate(
-                      data: { country: "[DELETED]" }
-                      filter: { countryId: { lt: 6 } }
-                    ) {
-                      countryId
-                      country
-                    }
+                  countryUpdate(
+                    data: { country: "[DELETED]" }
+                    filter: { countryId: { lt: 6 } }
+                  ) {
+                    countryId
+                    country
+                  }
                 }
                 "#,
             )
@@ -449,12 +564,12 @@ async fn test_update_mutation() {
             .execute(
                 r#"
                 {
-                    country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
-                      nodes {
-                        country
-                        countryId
-                      }
+                  country(filters: { countryId: { lt: 7 } }, orderBy: { countryId: ASC }) {
+                    nodes {
+                      country
+                      countryId
                     }
+                  }
                 }
                 "#,
             )
@@ -492,21 +607,57 @@ async fn test_update_mutation() {
         }
         "#,
     );
+
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Afghanistan" } filter: { countryId: { eq: 1 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Algeria" } filter: { countryId: { eq: 2 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "American Samoa" } filter: { countryId: { eq: 3 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Angola" } filter: { countryId: { eq: 4 } }) { country }
+            }"#,
+        )
+        .await;
+    schema
+        .execute(
+            r#"mutation {
+              countryUpdate(data: { country: "Anguilla" } filter: { countryId: { eq: 5 } }) { country }
+            }"#,
+        )
+        .await;
 }
 
 async fn test_delete_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
             .execute(
                 r#"
                 {
-                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
-                      nodes {
-                        languageId
-                      }
+                  language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
+                    nodes {
+                      languageId
                     }
+                  }
                 }
                 "#,
             )
@@ -525,15 +676,15 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 mutation {
-                    languageCreateBatch(
-                      data: [
-                        { languageId: 9, name: "9", lastUpdate: "2030-01-12 21:50:05" }
-                        { languageId: 10, name: "10", lastUpdate: "2030-01-12 21:50:05" }
-                        { languageId: 11, name: "11", lastUpdate: "2030-01-12 21:50:05" }
-                      ]
-                    ) {
-                      languageId
-                    }
+                  languageCreateBatch(
+                    data: [
+                      { name: "9", lastUpdate: "2030-01-12 21:50:05" }
+                      { name: "10", lastUpdate: "2030-01-12 21:50:05" }
+                      { name: "11", lastUpdate: "2030-01-12 21:50:05" }
+                    ]
+                  ) {
+                    name
+                  }
                 }
                 "#,
             )
@@ -542,13 +693,13 @@ async fn test_delete_mutation() {
         {
             "languageCreateBatch": [
               {
-                "languageId": 9
+                "name": "9                   "
               },
               {
-                "languageId": 10
+                "name": "10                  "
               },
               {
-                "languageId": 11
+                "name": "11                  "
               }
             ]
         }
@@ -560,11 +711,11 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 {
-                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
-                      nodes {
-                        languageId
-                      }
+                  language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
+                    nodes {
+                      name
                     }
+                  }
                 }
                 "#,
             )
@@ -574,13 +725,13 @@ async fn test_delete_mutation() {
             "language": {
               "nodes": [
                 {
-                  "languageId": 9
+                  "name": "9                   "
                 },
                 {
-                  "languageId": 10
+                  "name": "10                  "
                 },
                 {
-                  "languageId": 11
+                  "name": "11                  "
                 }
               ]
             }
@@ -593,14 +744,14 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 mutation {
-                    languageDelete(filter: { languageId: { gte: 10 } })
+                  languageDelete(filter: { languageId: { gt: 6 } })
                 }
                 "#,
             )
             .await,
         r#"
             {
-                "languageDelete": 2
+              "languageDelete": 3
             }
             "#,
     );
@@ -610,24 +761,21 @@ async fn test_delete_mutation() {
             .execute(
                 r#"
                 {
-                    language(filters: { languageId: { gte: 9 } }, orderBy: { languageId: ASC }) {
-                      nodes {
-                        languageId
-                      }
+                  language(filters: { languageId: { gt: 6 } }, orderBy: { languageId: ASC }) {
+                    nodes {
+                      languageId
                     }
+                  }
                 }
                 "#,
             )
             .await,
         r#"
         {
-            "language": {
-              "nodes": [
-                {
-                  "languageId": 9
-                }
-              ]
-            }
+          "language": {
+            "nodes": [
+            ]
+          }
         }
         "#,
     );

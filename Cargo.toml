@@ -1,13 +1,16 @@
 [workspace]
-members = [".", "cli", "generator"]
+members = [".", "cli", "generator", "macros"]
 
 [package]
 name = "seaography"
-version = "1.1.4"
+version = "2.0.0-rc.4"
 edition = "2021"
 rust-version = "1.70"
-authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
-description = "🧭 A GraphQL framework and code generator for SeaORM"
+authors = [
+    "Panagiotis Karatakis <panagiotiskaratakis@gmail.com>",
+    "Chris Tsang <chris.2y3@outlook.com>",
+]
+description = "🧭 A GraphQL framework for SeaORM"
 license = "MIT OR Apache-2.0"
 homepage = "https://www.sea-ql.org/Seaography"
 documentation = "https://docs.rs/seaography"
@@ -15,30 +18,43 @@ repository = "https://github.com/SeaQL/seaography"
 keywords = ["async", "graphql", "mysql", "postgres", "sqlite"]
 categories = ["database"]
 
+[package.metadata.docs.rs]
+features = ["default"]
+rustdoc-args = ["--cfg", "docsrs"]
+
 [dependencies]
-async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
-sea-orm = { version = "~1.1.5", default-features = false, features = ["seaography", "with-json"] }
+async-graphql = { version = "7.0", default-features = false, features = ["dataloader", "dynamic-schema"] }
+sea-orm = { version = "~2.0.0-rc", default-features = false, features = ["seaography", "with-json"] }
+seaography-macros = { version = "~2.0.0-rc.4", path = "macros", optional = true }
 itertools = { version = "0.12.0" }
 heck = { version = "0.4.1" }
 thiserror = { version = "1.0.44" }
 fnv = { version = "1.0.7" }
 lazy_static = { version = "1.5" }
+serde = { version = "1.0", optional = true }
 serde_json = { version = "1.0" }
+pluralizer = { version = "0.5", optional = true }
+time = { version = "0.3", features = ["formatting"], optional = true }
 
 [features]
-default = ["field-camel-case"]
+default = ["field-camel-case", "schema-meta"]
+macros = ["seaography-macros"]
+schema-meta = ["macros", "serde/derive", "with-postgres-array"]
+rbac = ["sea-orm/rbac"]
 with-json = ["sea-orm/with-json"]
 with-chrono = ["sea-orm/with-chrono", "async-graphql/chrono"]
-with-time = ["sea-orm/with-time", "async-graphql/time"]
-with-uuid = ["sea-orm/with-uuid"]
+with-time = ["sea-orm/with-time", "async-graphql/time", "time"]
+with-uuid = ["sea-orm/with-uuid", "async-graphql/uuid"]
 with-decimal = ["sea-orm/with-rust_decimal", "async-graphql/decimal"]
 with-bigdecimal = ["sea-orm/with-bigdecimal", "async-graphql/bigdecimal"]
 with-postgres-array = ["sea-orm/postgres-array"]
 # with-ipnetwork = ["sea-orm/with-ipnetwork"]
 # with-mac_address = ["sea-orm/with-mac_address"]
+graphql-playground = ["async-graphql/playground"]
 field-snake-case = []
 field-camel-case = []
+field-pluralize = ["pluralizer"]
+strict-custom-types = ["seaography-macros/strict-custom-types"]
 
 # [patch.crates-io]
-# sea-orm = { git = "https://github.com/SeaQL/sea-orm" }
-# sea-orm-migration = { git = "https://github.com/SeaQL/sea-orm" }
+# sea-orm = { git = "https://github.com/SeaQL/sea-orm", branch = "master" }

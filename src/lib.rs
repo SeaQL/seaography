@@ -2,9 +2,8 @@
 //!
 //!   <img src="https://raw.githubusercontent.com/SeaQL/seaography/main/docs/Seaography.png" width="280" alt="Seaography logo"/>
 //!
-//!   <p>
-//!     <strong>🧭 A GraphQL framework and code generator for SeaORM</strong>
-//!   </p>
+//!   <p><strong>🧭 A GraphQL framework for Rust</strong></p>
+//!   <p>The quickest way to launch a GraphQL backend</p>
 //!
 //!   [![crate](https://img.shields.io/crates/v/seaography.svg)](https://crates.io/crates/seaography)
 //!   [![docs](https://docs.rs/seaography/badge.svg)](https://docs.rs/seaography)
@@ -14,55 +13,108 @@
 //!
 //! # Seaography
 //!
-//! #### Seaography is a GraphQL framework for building GraphQL resolvers using SeaORM entities. It ships with a CLI tool that can generate ready-to-compile Rust GraphQL servers from existing MySQL, Postgres and SQLite databases.
+//! ## Introduction
 //!
-//! ## Benefits
+//! Seaography is a **powerful and extensible GraphQL framework for Rust** that bridges [SeaORM](https://www.sea-ql.org/SeaORM/) and [async-graphql](https://github.com/async-graphql/async-graphql),
+//! turning your database schema into a fully-typed GraphQL API with minimal effort.
+//! By leveraging async-graphql's dynamic schema engine, Seaography avoids the heavy code generation of static approaches, resulting in faster compile times.
+//! The generated schema stays in sync with your SeaORM entities, while still giving you full control to extend and customize it.  
 //!
-//! * Quick and easy to get started
-//! * Generates readable code
-//! * Extensible project structure
-//! * Based on popular async libraries: [async-graphql](https://github.com/async-graphql/async-graphql) and [SeaORM](https://github.com/SeaQL/sea-orm)
+//! With Seaography you can focus on application logic instead of boilerplate. It enables you to:
 //!
-//! ## Features
+//! + Expose a complete GraphQL schema directly from your SeaORM entities, including filters, pagination, and nested relations
+//! + Use derive macros to define custom input/output objects, queries, and mutations, and seamlessly mix them with SeaORM models
+//! + Generate ready-to-run GraphQL servers via the included CLI, supporting different web frameworks out of the box
+//! + Use RBAC, guards, and lifecycle hooks to implement authorization and custom business logic
 //!
-//! * Relational query (1-to-1, 1-to-N)
-//! * Pagination for queries and relations (1-N)
-//! * Filtering with operators (e.g. gt, lt, eq)
-//! * Order by any column
-//! * Guard fields, queries or relations
-//! * Rename fields
-//! * Mutations (create, update, delete)
+//! ## Supported technologies
 //!
-//! (Right now there is no mutation, but it's on our plan!)
+//! ### Databases
 //!
-//! ## SeaORM Version Compatibility
+//! Seaography is built on top of SeaORM, so it supports:
+//!
+//! + MySQL, PostgreSQL and SQLite
+//! + SQL Server (via [SeaORM X](https://www.sea-ql.org/SeaORM-X/))
+//!
+//! ### Web framework
+//!
+//! It's easy to integrate Seaography with any web framework, and we ship with the following examples out-of-the-box:
+//!
+//! + [Actix](https://github.com/SeaQL/seaography/tree/1.1.x/examples/mysql), [Axum](https://github.com/SeaQL/seaography/tree/1.1.x/examples/postgres), [Poem](https://github.com/SeaQL/seaography/tree/1.1.x/examples/sqlite)
+//! + [Loco (SeaORM)](https://github.com/SeaQL/sea-orm/tree/master/examples/loco_seaography), [Loco (SeaORM Pro)](https://github.com/SeaQL/sea-orm-pro)
+//!
+//! ### SeaORM Version Compatibility
 //!
 //! |                        Seaography                        |                         SeaORM                        |
 //! |----------------------------------------------------------|-------------------------------------------------------|
-//! | [1.1](https://crates.io/crates/seaography/1.1.1)         | [1.1](https://crates.io/crates/sea-orm/1.1.2)         |
-//! | [1.0](https://crates.io/crates/seaography/1.0.0)         | [1.0](https://crates.io/crates/sea-orm/1.0.0)         |
-//! | [0.12](https://crates.io/crates/seaography/0.12.0)       | [0.12](https://crates.io/crates/sea-orm/0.12.14)      |
-//! | [0.3](https://crates.io/crates/seaography/0.3.0)         | [0.10](https://crates.io/crates/sea-orm/0.10.7)       |
+//! | [2.0](https://crates.io/crates/seaography/2.0.0-rc)      | [2.0](https://crates.io/crates/sea-orm/2.0.0-rc)      |
+//! | [1.1](https://crates.io/crates/seaography/1.1.4)         | [1.1](https://crates.io/crates/sea-orm/1.1.13)        |
+//!
+//! ## Features
+//!
+//! * Rich types support (e.g. DateTime, Decimal)
+//! * Relational query (1-to-1, 1-to-N, M-to-N)
+//! * Offset-based and cursor-based pagination
+//! * Filtering with operators (e.g. gt, lt, eq)
+//! * Filter by related entities
+//! * Order by any column
+//! * Mutations (create, update, delete)
+//! * Guards and Filters on entity to restrict access
+//! * Choose between camel or snake case field names
+//!
+//! ### Extensible
+//!
+//! Seaography is also completely extensible. It offers:
+//!
+//! * Extensive configuration options in schema builder
+//! * Lifecycle hooks for custom resolver logic
+//! * Add custom queries & mutations with derive macros
 //!
 //! ## Quick start - ready to serve in 3 minutes!
 //!
 //! ### Install
 //!
 //! ```sh
-//! cargo install sea-orm-cli@^1.0.0 # used to generate entities
-//! cargo install seaography-cli@^1.0.0
+//! cargo install sea-orm-cli@^2.0.0-rc # used to generate entities
+//! cargo install seaography-cli@^2.0.0-rc
 //! ```
 //!
 //! ### MySQL
 //!
 //! Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/mysql/sakila-schema.sql) sample database.
+//! Then regenerate example project like below, or simply do `cargo run`.
 //!
 //! ```sh
 //! cd examples/mysql
 //! sea-orm-cli generate entity -o src/entities -u mysql://user:pw@127.0.0.1/sakila --seaography
-//! seaography-cli ./ src/entities mysql://user:pw@127.0.0.1/sakila seaography-mysql-example
+//! seaography-cli -o ./ -e src/entities -u mysql://user:pw@127.0.0.1/sakila seaography-mysql-example
 //! cargo run
 //! ```
+//!
+//! ### Postgres
+//!
+//! Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/postgres/sakila-schema.sql) sample database.
+//! Then regenerate example project like below, or simply do `cargo run`.
+//!
+//! ```sh
+//! cd examples/postgres
+//! sea-orm-cli generate entity -o src/entities -u postgres://user:pw@localhost/sakila --seaography
+//! seaography-cli -o ./ -e src/entities -u postgres://user:pw@localhost/sakila seaography-postgres-example
+//! cargo run
+//! ```
+//!
+//! ### SQLite
+//!
+//! `sakila.db` is shipped with this repository. You don't have to setup anything, simply do `cargo run`.
+//!
+//! ```sh
+//! cd examples/sqlite
+//! sea-orm-cli generate entity -o src/entities -u sqlite://sakila.db --seaography
+//! seaography-cli -o ./ -e src/entities -u sqlite://sakila.db seaography-sqlite-example
+//! cargo run
+//! ```
+//!
+//! ## Quick Demo
 //!
 //! Go to http://localhost:8000/ and try out the following queries:
 //!
@@ -194,7 +246,7 @@
 //! }
 //! ```
 //!
-//! ### Filter using enumeration
+//! ### Filter using MySQL / Postgres enum
 //! ```graphql
 //! {
 //!   film(
@@ -203,37 +255,26 @@
 //!   ) {
 //!     nodes {
 //!       filmId
+//!       title
 //!       rating
 //!     }
 //!   }
 //! }
 //! ```
 //!
-//! ### Postgres
-//!
-//! Setup the [sakila](https://github.com/SeaQL/seaography/blob/main/examples/postgres/sakila-schema.sql) sample database.
-//!
-//! ```sh
-//! cd examples/postgres
-//! sea-orm-cli generate entity -o src/entities -u postgres://user:pw@localhost/sakila --seaography
-//! seaography-cli ./ src/entities postgres://user:pw@localhost/sakila seaography-postgres-example
-//! cargo run
-//! ```
-//!
-//! ### SQLite
-//!
-//! ```sh
-//! cd examples/sqlite
-//! sea-orm-cli generate entity -o src/entities -u sqlite://sakila.db --seaography
-//! seaography-cli ./ src/entities sqlite://sakila.db seaography-sqlite-example
-//! cargo run
-//! ```
-//!
 //! ## Contribution
 //!
-//! Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+//! Unless you explicitly state otherwise, any contribution intentionally submitted
+//! for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+//! dual licensed as above, without any additional terms or conditions.
 //!
-//! Seaography is a community driven project. We welcome you to participate, contribute and together build for Rust's future.
+//! We invite you to participate, contribute and together help build Rust's future.
+//!
+//! ## Mascot
+//!
+//! A friend of Ferris, Terres the hermit crab is the official mascot of SeaORM. His hobby is collecting shells.
+//!
+//! <img alt="Terres" src="https://www.sea-ql.org/SeaORM/img/Terres.png" width="400"/>
 
 pub use heck;
 pub use itertools;
@@ -256,6 +297,9 @@ pub use query::*;
 pub mod mutation;
 pub use mutation::*;
 
+mod custom;
+pub use custom::*;
+
 pub mod builder_context;
 pub use builder_context::*;
 
@@ -264,6 +308,13 @@ pub use builder::*;
 
 pub mod error;
 pub use error::*;
+
+pub mod rbac;
+pub use rbac::*;
+
+#[cfg(feature = "schema-meta")]
+#[cfg_attr(docsrs, doc(cfg(feature = "schema-meta")))]
+pub mod schema;
 
 pub type SimpleNamingFn = Box<dyn Fn(&str) -> String + Sync + Send>;
 pub type ComplexNamingFn = Box<dyn Fn(&str, &str) -> String + Sync + Send>;

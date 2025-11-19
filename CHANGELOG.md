@@ -5,34 +5,286 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.0.0 - pending
+
+### New Features
+
+* Filter by related entity
+```graphql
+{
+  country(having: { city: { city: { eq: "London" } } }) {
+    nodes {
+      country
+      city {
+        nodes {
+          city
+        }
+      }
+    }
+  }
+}
+```
+
+## 1.1.5 - pending
+
+### New Features
+
+* Macros for custom queries and mutations https://github.com/SeaQL/seaography/pull/193
+```rust
+#[CustomFields]
+impl Operations {
+    async fn foo(_ctx: &Context<'_>, username: String) -> async_graphql::Result<String> {
+        Ok(format!("Hello, {}!", username))
+    }
+
+    async fn bar(_ctx: &Context<'_>, x: i32, y: i32) -> async_graphql::Result<i32> {
+        Ok(x + y)
+    }
+
+    async fn login(ctx: &Context<'_>) -> async_graphql::Result<customer::Model> {
+        use sea_orm::EntityTrait;
+
+        let db = ctx.data::<DatabaseConnection>().unwrap();
+        Ok(customer::Entity::find()
+            .one(db)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound("Customer not found".to_owned()))?)
+    }
+}
+```
+* Support pagination in custom query https://github.com/SeaQL/seaography/pull/194
+```rust
+#[CustomFields]
+impl Operations {
+    async fn customer_of_store2(
+        ctx: &Context<'_>,
+        pagination: PaginationInput,
+    ) -> async_graphql::Result<Connection<customer::Entity>> {
+        let db = ctx.data::<DatabaseConnection>()?;
+        let query = customer::Entity::find().filter(customer::Column::StoreId.eq(2));
+        let connection = apply_pagination(&CONTEXT, db, query, pagination).await?;
+
+        Ok(connection)
+    }
+}
+```
+* Introduce lifecycle hooks https://github.com/SeaQL/seaography/pull/196
+```rust
+lazy_static::lazy_static! {
+    static ref CONTEXT : BuilderContext = {
+        BuilderContext {
+            hooks: LifecycleHooks::new(MyHooks),
+            ..Default::default()
+        }
+    };
+}
+
+#[derive(Clone)]
+struct MyHooks;
+
+impl LifecycleHooksInterface for MyHooks {
+    fn entity_guard(
+        &self, ctx: &ResolverContext, entity: &str, action: OperationType,
+    ) -> GuardAction {
+        ctx.data::<Log>()
+            .unwrap()
+            .record(HookCall::entity_guard(entity, action));
+        match entity {
+            "FilmCategory" => GuardAction::Block(None),
+            _ => GuardAction::Allow,
+        }
+    }
+
+    fn field_guard(
+        &self, ctx: &ResolverContext, entity: &str, field: &str, action: OperationType,
+    ) -> GuardAction {
+        ..
+    }
+}
+```
+* Add Entity filter to hooks https://github.com/SeaQL/seaography/pull/197
+```rust
+lazy_static::lazy_static! {
+    static ref CONTEXT : BuilderContext = {
+        BuilderContext {
+            hooks: LifecycleHooks::new(MyHooks),
+            ..Default::default()
+        }
+    };
+}
+
+struct MyHooks;
+
+impl LifecycleHooksInterface for MyHooks {
+    fn entity_filter(
+        &self, _ctx: &ResolverContext, entity: &str, _action: OperationType,
+    ) -> Option<Condition> {
+        match entity {
+            "Store" | "Stores" => Some(Condition::all().add(store::Column::StoreId.eq(2))),
+            "Customer" | "Customers" => Some(Condition::all().add(customer::Column::StoreId.eq(2))),
+            _ => None,
+        }
+    }
+}
+```
+* Custom input type and derive macro https://github.com/SeaQL/seaography/pull/203
+```rust
+#[derive(Clone, CustomInputType)]
+pub struct RentalRequest {
+    pub customer: String,
+    pub film: String,
+    pub location: Option<Location>,
+}
+
+#[derive(Clone, CustomInputType)]
+pub struct Location {
+    pub city: String,
+    pub county: Option<String>,
+}
+
+#[CustomFields]
+impl Operations {
+    async fn rental_request(
+        _ctx: &Context<'_>, rental_request: RentalRequest
+    ) -> async_graphql::Result<String> { .. }
+}
+```
+* Custom output type and derive macro https://github.com/SeaQL/seaography/pull/220
+```rust
+#[derive(Clone, CustomOutputType)]
+pub struct PurchaseOrder {
+    pub po_number: String,
+    pub lineitems: Vec<Lineitem>,
+}
+
+#[derive(Clone, CustomOutputType)]
+pub struct Lineitem {
+    pub product: String,
+    pub quantity: Decimal,
+    pub size: Option<ProductSize>,
+}
+
+#[CustomFields]
+impl Operations {
+    async fn purchase_order(
+        _ctx: &Context<'_>, po_number: String
+    ) -> async_graphql::Result<PurchaseOrder> { .. }
+}
+```
+* Support singular / plural field names https://github.com/SeaQL/seaography/pull/202
+```graphql
+{
+  staff { # plural
+    nodes {
+      firstName
+      lastName
+      reportsToId
+    }
+  }
+}
+
+{
+  stores {
+    nodes {
+      storeId
+      staff_single { # singular with _single suffix because of name collision
+        firstName
+        lastName
+      }
+    }
+  }
+}
+```
+* Add Postgres array filter (e.g. `array_contains`) https://github.com/SeaQL/seaography/pull/199
+```graphql
+{
+  film(filters: {
+    title: { contains: "LIFE" }
+    specialFeatures: { array_contains: ["Trailers"] }
+  }) {
+    nodes {
+      filmId
+      title
+      specialFeatures
+    }
+  }
+}
+```
+* query filter: combine `is_null` and `is_not_null` https://github.com/SeaQL/seaography/pull/210
+```rust
+lazy_static::lazy_static! {
+    static ref CONTEXT : BuilderContext = {
+        BuilderContext {
+            entity_query_field: EntityQueryFieldConfig {
+                combine_is_null_is_not_null: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    };
+}
+```
+```graphql
+{
+  address(
+    filters: {
+      address: { contains: "Lane" }
+      postalCode: { is_null: false } # this replaces is_not_null
+    }
+    pagination: { page: { page: 0, limit: 2 } }
+  ) {
+    nodes {
+      address
+      postalCode
+    }
+  }
+}
+```
+* Add case insensitive equals (`ci_eq`) and like (`ilike`)
+* Add options for default and max pagination limit (#223)
+
+### Enhancements
+
+* Cleanup unwraps https://github.com/SeaQL/seaography/pull/204
+* Use `try_set` inplace of `set` (avoid panics)
+* Add `field_guard()` hooks for related entities https://github.com/SeaQL/seaography/pull/213
+* Allow GraphQL types to be specified per column (#219)
+* Add support for custom subscription fields https://github.com/SeaQL/seaography/pull/214
+* Expose JSON as scalar (#222)
+
+### Bug Fixes
+
+* Fix cursor being null https://github.com/SeaQL/seaography/pull/215
+* Fix singular queries without `with-uuid` https://github.com/SeaQL/seaography/pull/218
+
 ## 1.1.4 - 2025-02-14
 
 ### New Features
 
-- Added a new GraphQL query, `_sea_orm_entity_metadata`, to query SeaORM schema metadata https://github.com/SeaQL/seaography/pull/185
+* Added a new GraphQL query, `_sea_orm_entity_metadata`, to query SeaORM schema metadata https://github.com/SeaQL/seaography/pull/185
 
 ## 1.1.3 - 2025-01-10
 
 ### New Features
 
-- Re-export `async_graphql` and `lazy_static` https://github.com/SeaQL/seaography/pull/183
-- Set schema query depth and complexity https://github.com/SeaQL/seaography/pull/184
+* Re-export `async_graphql` and `lazy_static` https://github.com/SeaQL/seaography/pull/183
+* Set schema query depth and complexity https://github.com/SeaQL/seaography/pull/184
 
 ## 1.1.2 - 2024-12-10
 
 ### Bug Fixes
 
-- Added entity guard for delete mutation https://github.com/SeaQL/seaography/pull/163
+* Added entity guard for delete mutation https://github.com/SeaQL/seaography/pull/163
 
 ## 1.1.1 - 2024-12-02
 
 ### New Features
 
-- Added `register_active_enums!()` macros to register active enums https://github.com/SeaQL/seaography/pull/181
+* Added `register_active_enums!()` macros to register active enums https://github.com/SeaQL/seaography/pull/181
 
 ### Bug Fixes
 
-- Handle String based active enum https://github.com/SeaQL/seaography/pull/181
+* Handle String based active enum https://github.com/SeaQL/seaography/pull/181
 
 ## 1.1.0 - 2024-10-17
 

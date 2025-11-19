@@ -1,17 +1,15 @@
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql_axum::GraphQL;
-use axum::{
-    response::{self, IntoResponse},
-    routing::get,
-    Router,
+use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
+use async_graphql::{
+    dynamic::*,
+    http::{playground_source, GraphQLPlaygroundConfig},
 };
+use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;
 use sea_orm::Database;
-use seaography::{async_graphql, lazy_static};
+use seaography::{async_graphql, lazy_static::lazy_static};
 use std::env;
-use tokio::net::TcpListener;
 
-lazy_static::lazy_static! {
+lazy_static! {
     static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
     static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
     static ref DATABASE_URL: String =
@@ -25,12 +23,18 @@ lazy_static::lazy_static! {
         });
 }
 
-async fn graphiql() -> impl IntoResponse {
-    response::Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
+async fn graphql_playground() -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT))))
 }
 
-#[tokio::main]
-async fn main() {
+async fn graphql_handler(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
+    schema.execute(req.into_inner()).await.into()
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     dotenv().ok();
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -42,9 +46,18 @@ async fn main() {
     let schema =
         seaography_mysql_example::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();
-    let app = Router::new().route("/", get(graphiql).post_service(GraphQL::new(schema)));
     println!("Visit GraphQL Playground at http://{}", *URL);
-    axum::serve(TcpListener::bind(&*URL).await.unwrap(), app)
-        .await
-        .unwrap();
+    HttpServer::new(move || {
+        App::new()
+            .app_data(Data::new(schema.clone()))
+            .service(
+                web::resource("/")
+                    .guard(guard::Get())
+                    .to(graphql_playground),
+            )
+            .service(web::resource("/").guard(guard::Post()).to(graphql_handler))
+    })
+    .bind("127.0.0.1:8000")?
+    .run()
+    .await
 }

@@ -1,15 +1,13 @@
 use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
-use seaography::async_graphql;
+use seaography::{async_graphql, DatabaseContext};
 
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("sqlite://sakila.db").await.unwrap();
-    let schema = seaography_sqlite_example::query_root::schema(database, None, None).unwrap();
-
-    schema
+    seaography_sqlite_example::query_root::schema(database.unrestricted(), None, None).unwrap()
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
@@ -18,7 +16,7 @@ pub fn assert_eq(a: Response, b: &str) {
 
 #[tokio::test]
 async fn test_simple_query() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -65,7 +63,7 @@ async fn test_simple_query() {
 
 #[tokio::test]
 async fn test_simple_query_with_filter() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -105,7 +103,7 @@ async fn test_simple_query_with_filter() {
 
 #[tokio::test]
 async fn test_filter_with_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -153,27 +151,59 @@ async fn test_filter_with_pagination() {
 }
 
 #[tokio::test]
+async fn test_pagination_error() {
+    let schema = schema().await;
+
+    let response = schema
+        .execute(
+            r#"
+            {
+              customer(
+                pagination: { page: { page: 2, limit: 0 } }
+              ) {
+                nodes {
+                  customerId
+                }
+                paginationInfo {
+                  pages
+                  current
+                }
+              }
+            }
+            "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+
+    assert_eq!(
+        response.errors[0].message,
+        "Query Error: Requested pagination limit must be greater than 0"
+    );
+}
+
+#[tokio::test]
 async fn test_complex_filter_with_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
             .execute(
                 r#"
                 {
-                    payment(
-                      filters: { amount: { gt: "11.1" } }
-                      pagination: { page: { limit: 2, page: 3 } }
-                    ) {
-                      nodes {
-                        paymentId
-                        amount
-                      }
-                      paginationInfo {
-                        pages
-                        current
-                      }
+                  payment(
+                    filters: { amount: { gt: "11.1" } }
+                    pagination: { page: { limit: 2, page: 3 } }
+                  ) {
+                    nodes {
+                      paymentId
+                      amount
                     }
+                    paginationInfo {
+                      pages
+                      current
+                    }
+                  }
                 }
                 "#,
             )
@@ -203,7 +233,130 @@ async fn test_complex_filter_with_pagination() {
 
 #[tokio::test]
 async fn test_cursor_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
+
+    let graphql_query = r#"
+        {
+          payment(
+              filters: { amount: { gt: "11" } }
+              pagination: { cursor: { limit: 5 } }
+          ) {
+            edges {
+              node {
+                paymentId
+                amount
+                customer {
+                  firstName
+                }
+              }
+            }
+            pageInfo {
+              hasPreviousPage
+              hasNextPage
+              startCursor
+              endCursor
+            }
+          }
+        }
+        "#;
+    let expected_output = r#"
+        {
+          "payment": {
+            "edges": [
+              {
+                "node": {
+                  "paymentId": 342,
+                  "amount": "11.99",
+                    "customer": {
+                      "firstName": "KAREN"
+                    }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 3146,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VICTORIA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5280,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "VANESSA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5281,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ALMA"
+                  }
+                }
+              },
+              {
+                "node": {
+                  "paymentId": 5550,
+                  "amount": "11.99",
+                  "customer": {
+                    "firstName": "ROSEMARY"
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasPreviousPage": false,
+              "hasNextPage": true,
+              "startCursor": "BigInt[3]:342",
+              "endCursor": "BigInt[4]:5550"
+            }
+          }
+        }
+        "#;
+
+    assert_eq(schema.execute(graphql_query).await, expected_output);
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+        {
+          payment(
+              filters: { amount: { gt: "11" } }
+              pagination: { cursor: { cursor: null, limit: 5 } }
+          ) {
+            edges {
+              node {
+                paymentId
+                amount
+                customer {
+                  firstName
+                }
+              }
+            }
+            pageInfo {
+              hasPreviousPage
+              hasNextPage
+              startCursor
+              endCursor
+            }
+          }
+        }
+        "#,
+            )
+            .await,
+        expected_output,
+    );
+}
+
+#[tokio::test]
+async fn test_cursor_pagination_error() {
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -211,94 +364,38 @@ async fn test_cursor_pagination() {
                 r#"
                 {
                     payment(
-                        filters: { amount: { gt: "11" } }
-                        pagination: { cursor: { limit: 5 } }
+                        pagination: { cursor: { limit: -5 } }
                     ) {
-                        edges {
-                        node {
-                            paymentId
-                            amount
-                            customer {
-                            firstName
-                            }
-                        }
-                        }
-                        pageInfo {
-                        hasPreviousPage
-                        hasNextPage
-                        startCursor
-                        endCursor
-                        }
-                    }
+                    edges { node { paymentId } }
+                  }
                 }
                 "#,
             )
             .await,
-        r#"
-            {
-            "payment": {
-                "edges": [
+        r#"null"#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
                 {
-                    "node": {
-                    "paymentId": 342,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "KAREN"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 3146,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "VICTORIA"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 5280,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "VANESSA"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 5281,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "ALMA"
-                    }
-                    }
-                },
-                {
-                    "node": {
-                    "paymentId": 5550,
-                    "amount": "11.99",
-                    "customer": {
-                        "firstName": "ROSEMARY"
-                    }
-                    }
+                    payment(
+                        pagination: 1
+                    ) {
+                    edges { node { paymentId } }
+                  }
                 }
-                ],
-                "pageInfo": {
-                "hasPreviousPage": false,
-                "hasNextPage": true,
-                "startCursor": "Int[3]:342",
-                "endCursor": "Int[4]:5550"
-                }
-            }
-            }
-            "#,
-    )
+                "#,
+            )
+            .await,
+        r#"null"#,
+    );
 }
 
 #[tokio::test]
 async fn test_cursor_pagination_prev() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -364,8 +461,8 @@ async fn test_cursor_pagination_prev() {
                 "pageInfo": {
                 "hasPreviousPage": true,
                 "hasNextPage": true,
-                "startCursor": "Int[4]:6409",
-                "endCursor": "Int[4]:9803"
+                "startCursor": "BigInt[4]:6409",
+                "endCursor": "BigInt[4]:9803"
                 }
             }
             }
@@ -375,7 +472,7 @@ async fn test_cursor_pagination_prev() {
 
 #[tokio::test]
 async fn test_cursor_pagination_no_next() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -432,8 +529,8 @@ async fn test_cursor_pagination_no_next() {
                 "pageInfo": {
                 "hasPreviousPage": true,
                 "hasNextPage": false,
-                "startCursor": "Int[5]:15821",
-                "endCursor": "Int[5]:15850"
+                "startCursor": "BigInt[5]:15821",
+                "endCursor": "BigInt[5]:15850"
                 }
             }
             }
@@ -443,7 +540,7 @@ async fn test_cursor_pagination_no_next() {
 
 #[tokio::test]
 async fn test_self_ref() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -472,34 +569,43 @@ async fn test_self_ref() {
             .await,
         r#"
             {
-                "staff": {
+              "staff": {
                 "nodes": [
-                    {
+                  {
                     "firstName": "Mike",
                     "reportsToId": null,
                     "selfRefReverse": {
-                        "nodes": [
-                        {
-                            "staffId": 2,
-                            "firstName": "Jon"
-                        }
-                        ]
+                      "nodes": [
+                        {"staffId": 2, "firstName": "Jon"},
+                        {"staffId": 3, "firstName": "Emily"}
+                      ]
                     },
                     "selfRef": null
-                    },
-                    {
+                  },
+                  {
                     "firstName": "Jon",
                     "reportsToId": 1,
                     "selfRefReverse": {
-                        "nodes": []
+                      "nodes": []
                     },
                     "selfRef": {
-                        "staffId": 1,
-                        "firstName": "Mike"
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  },
+                  {
+                    "firstName": "Emily",
+                    "reportsToId": 1,
+                    "selfRefReverse": {
+                      "nodes": []
+                    },
+                    "selfRef": {
+                      "staffId": 1,
+                      "firstName": "Mike"
                     }
+                  }
                 ]
-                }
+              }
             }
             "#,
     )
@@ -507,7 +613,7 @@ async fn test_self_ref() {
 
 #[tokio::test]
 async fn related_queries_filters() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -516,7 +622,7 @@ async fn related_queries_filters() {
                 {
                     customer(
                       filters: { active: { eq: 0 } }
-                      pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                      pagination: { cursor: { limit: 3, cursor: "BigInt[3]:271" } }
                     ) {
                       nodes {
                         customerId
@@ -606,7 +712,7 @@ async fn related_queries_filters() {
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": true,
-              "endCursor": "Int[3]:406"
+              "endCursor": "BigInt[3]:406"
             }
           }
         }
@@ -709,7 +815,7 @@ async fn related_queries_filters() {
 
 #[tokio::test]
 async fn related_queries_pagination() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -718,7 +824,7 @@ async fn related_queries_pagination() {
                 {
                   customer(
                     filters: { active: { eq: 0 } }
-                    pagination: { cursor: { limit: 3, cursor: "Int[3]:271" } }
+                    pagination: { cursor: { limit: 3, cursor: "BigInt[3]:271" } }
                   ) {
                     nodes {
                       customerId
@@ -836,8 +942,679 @@ async fn related_queries_pagination() {
             "pageInfo": {
               "hasPreviousPage": true,
               "hasNextPage": true,
-              "endCursor": "Int[3]:406"
+              "endCursor": "BigInt[3]:406"
             }
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn filter_is_in() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      is_in: ["PETER", "MARY"]
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              },
+              {
+                "customerId": 341,
+                "firstName": "PETER",
+                "lastName": "MENARD"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn filter_ci_eq() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      eq: "MARY"
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      eq: "mary"
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  customer(filters: {
+                    firstName: {
+                      ci_eq: "mary"
+                    }
+                  }) {
+                    nodes {
+                      customerId
+                      firstName
+                      lastName
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "customer": {
+            "nodes": [
+              {
+                "customerId": 1,
+                "firstName": "MARY",
+                "lastName": "SMITH"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn filter_is_null() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  address(
+                    filters: { address: { contains: "Lane" } }
+                    pagination: { page: { page: 0, limit: 2 } }
+                  ) {
+                    nodes {
+                      addressId
+                      address
+                      address2
+                      postalCode
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "address": {
+            "nodes": [
+              {
+                "addressId": 3,
+                "address": "23 Workhaven Lane",
+                "address2": null,
+                "postalCode": null
+              },
+              {
+                "addressId": 19,
+                "address": "419 Iligan Lane",
+                "address2": null,
+                "postalCode": "72878"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  address(
+                    filters: { address: { contains: "Lane" }, postalCode: { is_null: false } }
+                    pagination: { page: { page: 0, limit: 2 } }
+                  ) {
+                    nodes {
+                      addressId
+                      address
+                      address2
+                      postalCode
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "address": {
+            "nodes": [
+              {
+                "addressId": 19,
+                "address": "419 Iligan Lane",
+                "address2": null,
+                "postalCode": "72878"
+              },
+              {
+                "addressId": 40,
+                "address": "334 Munger (Monghyr) Lane",
+                "address2": null,
+                "postalCode": "38145"
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn film_having_actor() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: { filmId: { ne: 2 } }
+                    having: { actor: { firstName: { eq: "BOB" } } }
+                    orderBy: { filmId: ASC }
+                    pagination: { page: { page: 0, limit: 2 } }
+                  ) {
+                    nodes {
+                      filmId
+                      title
+                      actor {
+                        nodes {
+                          firstName
+                          lastName
+                        }
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "filmId": 3,
+                "title": "ADAPTATION HOLES",
+                "actor": {
+                  "nodes": [
+                    {
+                      "firstName": "NICK",
+                      "lastName": "WAHLBERG"
+                    },
+                    {
+                      "firstName": "BOB",
+                      "lastName": "FAWCETT"
+                    },
+                    {
+                      "firstName": "CAMERON",
+                      "lastName": "STREEP"
+                    },
+                    {
+                      "firstName": "RAY",
+                      "lastName": "JOHANSSON"
+                    },
+                    {
+                      "firstName": "JULIANNE",
+                      "lastName": "DENCH"
+                    }
+                  ]
+                }
+              },
+              {
+                "filmId": 144,
+                "title": "CHINATOWN GLADIATOR",
+                "actor": {
+                  "nodes": [
+                    {
+                      "firstName": "UMA",
+                      "lastName": "WOOD"
+                    },
+                    {
+                      "firstName": "DAN",
+                      "lastName": "TORN"
+                    },
+                    {
+                      "firstName": "BOB",
+                      "lastName": "FAWCETT"
+                    },
+                    {
+                      "firstName": "JUDE",
+                      "lastName": "CRUISE"
+                    },
+                    {
+                      "firstName": "JESSICA",
+                      "lastName": "BAILEY"
+                    },
+                    {
+                      "firstName": "SEAN",
+                      "lastName": "WILLIAMS"
+                    },
+                    {
+                      "firstName": "PENELOPE",
+                      "lastName": "MONROE"
+                    },
+                    {
+                      "firstName": "GEOFFREY",
+                      "lastName": "HESTON"
+                    },
+                    {
+                      "firstName": "JEFF",
+                      "lastName": "SILVERSTONE"
+                    },
+                    {
+                      "firstName": "JAYNE",
+                      "lastName": "SILVERSTONE"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn country_having_city() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  country(
+                    having: { city: { city: { eq: "London" } } }
+                    orderBy: { countryId: ASC }
+                    pagination: { page: { page: 0, limit: 10 } }
+                  ) {
+                    nodes {
+                      country
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "country": {
+            "nodes": [
+              {
+                "country": "Canada"
+              },
+              {
+                "country": "United Kingdom"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn film_filter_or() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  film(
+                    filters: {
+                      or: [{ title: { contains: "LIFE" } }, { title: { contains: "DOG" } }]
+                    }
+                  ) {
+                    nodes {
+                      title
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "film": {
+            "nodes": [
+              {
+                "title": "ANGELS LIFE"
+              },
+              {
+                "title": "ARABIA DOGMA"
+              },
+              {
+                "title": "DOGMA FAMILY"
+              },
+              {
+                "title": "LIFE TWISTED"
+              }
+            ]
+          }
+        }
+        "#,
+    )
+}
+
+#[tokio::test]
+async fn city_with_address() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  city(filters: { cityId: { is_in: [1, 2, 3] } }) {
+                    nodes {
+                      cityId
+                      city
+                      address {
+                        nodes {
+                          addressId
+                          address
+                        }
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "city": {
+            "nodes": [
+              {
+                "cityId": 1,
+                "city": "A Corua (La Corua)",
+                "address": {
+                  "nodes": [
+                    {
+                      "addressId": 56,
+                      "address": "939 Probolinggo Loop"
+                    }
+                  ]
+                }
+              },
+              {
+                "cityId": 2,
+                "city": "Abha",
+                "address": {
+                  "nodes": [
+                    {
+                      "addressId": 105,
+                      "address": "733 Mandaluyong Place"
+                    }
+                  ]
+                }
+              },
+              {
+                "cityId": 3,
+                "city": "Abu Dhabi",
+                "address": {
+                  "nodes": [
+                    {
+                      "addressId": 457,
+                      "address": "535 Ahmadnagar Manor"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  address(filters: { addressId: { is_in: [1, 2, 3] } }) {
+                    nodes {
+                      addressId
+                      address
+                      city {
+                        cityId
+                        city
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "address": {
+            "nodes": [
+              {
+                "addressId": 1,
+                "address": "47 MySakila Drive",
+                "city": {
+                  "cityId": 300,
+                  "city": "Lethbridge"
+                }
+              },
+              {
+                "addressId": 2,
+                "address": "28 MySQL Boulevard",
+                "city": {
+                  "cityId": 576,
+                  "city": "Woodridge"
+                }
+              },
+              {
+                "addressId": 3,
+                "address": "23 Workhaven Lane",
+                "city": {
+                  "cityId": 300,
+                  "city": "Lethbridge"
+                }
+              }
+            ]
+          }
+        }
+        "#,
+    );
+}
+
+#[tokio::test]
+async fn actor_to_film() {
+    let schema = schema().await;
+
+    assert_eq(
+        schema
+            .execute(
+                r#"
+                {
+                  actor(filters: { actorId: { eq: 35 } }) {
+                    nodes {
+                      actorId
+                      firstName
+                      lastName
+                      film {
+                        nodes {
+                          filmId
+                          title
+                        }
+                      }
+                    }
+                  }
+                }
+                "#,
+            )
+            .await,
+        r#"
+        {
+          "actor": {
+            "nodes": [
+              {
+                "actorId": 35,
+                "firstName": "JUDY",
+                "lastName": "DEAN",
+                "film": {
+                  "nodes": [
+                    {
+                      "filmId": 10,
+                      "title": "ALADDIN CALENDAR"
+                    },
+                    {
+                      "filmId": 35,
+                      "title": "ARACHNOPHOBIA ROLLERCOASTER"
+                    },
+                    {
+                      "filmId": 52,
+                      "title": "BALLROOM MOCKINGBIRD"
+                    },
+                    {
+                      "filmId": 201,
+                      "title": "CYCLONE FAMILY"
+                    },
+                    {
+                      "filmId": 256,
+                      "title": "DROP WATERFRONT"
+                    },
+                    {
+                      "filmId": 389,
+                      "title": "GUNFIGHTER MUSSOLINI"
+                    },
+                    {
+                      "filmId": 589,
+                      "title": "MODERN DORADO"
+                    },
+                    {
+                      "filmId": 612,
+                      "title": "MUSSOLINI SPOILERS"
+                    },
+                    {
+                      "filmId": 615,
+                      "title": "NASH CHOCOLAT"
+                    },
+                    {
+                      "filmId": 707,
+                      "title": "QUEST MUSSOLINI"
+                    },
+                    {
+                      "filmId": 732,
+                      "title": "RINGS HEARTBREAKERS"
+                    },
+                    {
+                      "filmId": 738,
+                      "title": "ROCKETEER MOTHER"
+                    },
+                    {
+                      "filmId": 748,
+                      "title": "RUGRATS SHAKESPEARE"
+                    },
+                    {
+                      "filmId": 817,
+                      "title": "SOLDIERS EVOLUTION"
+                    },
+                    {
+                      "filmId": 914,
+                      "title": "TROUBLE DATE"
+                    }
+                  ]
+                }
+              }
+            ]
           }
         }
         "#,

@@ -7,14 +7,17 @@ version = "0.1.0"
 actix-web = { version = "4.5", default-features = false, features = ["macros"] }
 async-graphql-actix-web = { version = "7.0" }
 dotenv = "0.15.0"
-sea-orm = { version = "~1.1.5", features = ["<seaography-sql-library>", "runtime-async-std-native-tls", "seaography"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
 
+[dependencies.sea-orm]
+version = "~2.0.0-rc"
+features = ["<seaography-sql-library>", "runtime-tokio-native-tls", "seaography"]
+
 [dependencies.seaography]
 version = "~<seaography-version>" # seaography version
-features = ["with-decimal", "with-chrono"]
+features = ["graphql-playground", "with-decimal", "with-chrono"]
 
 [dev-dependencies]
 serde_json = { version = "1.0.103" }

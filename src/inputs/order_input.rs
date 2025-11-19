@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
-use sea_orm::{EntityTrait, Iterable};
+use sea_orm::{ColumnTrait, EntityTrait, Iterable};
 
-use crate::{BuilderContext, EntityObjectBuilder};
+use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, SeaResult, SeaographyError};
 
 /// The configuration structure for OrderInputBuilder
 pub struct OrderInputConfig {
@@ -27,14 +27,14 @@ pub struct OrderInputBuilder {
 impl OrderInputBuilder {
     /// used to get type name
     pub fn type_name(&self, object_name: &str) -> String {
-        self.context.order_input.type_name.as_ref()(object_name)
+        let object_name = pluralize_unique(object_name, false);
+        self.context.order_input.type_name.as_ref()(&object_name)
     }
 
     /// used to get the OrderInput object of a SeaORM entity
     pub fn to_object<T>(&self) -> InputObject
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
@@ -44,6 +44,9 @@ impl OrderInputBuilder {
         let name = self.type_name(&object_name);
 
         T::Column::iter().fold(InputObject::new(name), |object, column| {
+            if column.def().seaography().ignore {
+                return object;
+            }
             object.field(InputValue::new(
                 entity_object_builder.column_name::<T>(&column),
                 TypeRef::named(&self.context.order_by_enum.type_name),
@@ -54,16 +57,15 @@ impl OrderInputBuilder {
     pub fn parse_object<T>(
         &self,
         value: Option<ValueAccessor<'_>>,
-    ) -> Vec<(T::Column, sea_orm::sea_query::Order)>
+    ) -> SeaResult<Vec<(T::Column, sea_orm::sea_query::Order)>>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         match value {
             Some(value) => {
                 let mut data = Vec::new();
 
-                let order_by = value.object().unwrap();
+                let order_by = value.object()?;
 
                 let entity_object = EntityObjectBuilder {
                     context: self.context,
@@ -74,7 +76,7 @@ impl OrderInputBuilder {
                     let order = order_by.get(&column_name);
 
                     if let Some(order) = order {
-                        let order = order.enum_name().unwrap();
+                        let order = order.enum_name()?;
 
                         let asc_variant = &self.context.order_by_enum.asc_variant;
                         let desc_variant = &self.context.order_by_enum.desc_variant;
@@ -84,14 +86,17 @@ impl OrderInputBuilder {
                         } else if order.eq(desc_variant) {
                             data.push((col, sea_orm::Order::Desc));
                         } else {
-                            panic!("Cannot map enumeration")
+                            return Err(SeaographyError::TypeConversionError(
+                                "order_by".to_owned(),
+                                order.to_owned(),
+                            ));
                         }
                     }
                 }
 
-                data
+                Ok(data)
             }
-            None => Vec::new(),
+            None => Ok(Vec::new()),
         }
     }
 }

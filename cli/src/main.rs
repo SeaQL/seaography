@@ -4,13 +4,24 @@ use seaography_generator::write_project;
 #[derive(clap::Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    /// Project destination folder
-    pub destination: String,
+    #[arg(
+        short = 'o',
+        long,
+        default_value = "./",
+        help = "Project output directory"
+    )]
+    pub output_dir: String,
 
-    /// SeaORM entities folder
+    #[arg(short = 'e', long, help = "Entities directory")]
     pub entities: String,
 
-    /// Database URL to write in .env
+    #[arg(
+        short = 'u',
+        long,
+        env = "DATABASE_URL",
+        help = "Database URL",
+        hide_env_values = true
+    )]
     pub database_url: String,
 
     /// Crate name for generated project
@@ -67,7 +78,7 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
         // information from a particular database
         let database_name = url
             .path_segments()
-            .unwrap_or_else(|| panic!("There is no database name as part of the url path: {}", url))
+            .unwrap_or_else(|| panic!("There is no database name as part of the url path: {url}"))
             .next()
             .unwrap();
 
@@ -83,11 +94,11 @@ pub fn parse_database_url(database_url: &str) -> Result<url::Url, url::ParseErro
     Ok(url)
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     let args = Args::parse();
 
-    let root_path = std::path::Path::new(&args.destination);
+    let root_path = std::path::Path::new(&args.output_dir);
 
     let entities_path = std::path::Path::new(&args.entities);
 
@@ -98,8 +109,8 @@ async fn main() {
     let db_url = database_url.as_str();
 
     write_project(
-        &root_path,
-        &entities_path,
+        root_path,
+        entities_path,
         db_url,
         &args.crate_name,
         sql_library,

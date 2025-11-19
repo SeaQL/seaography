@@ -1,36 +1,54 @@
-use std::{collections::BTreeMap, num::ParseIntError};
+use std::{collections::BTreeMap, num::ParseIntError, sync::Arc};
 
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
 use heck::ToUpperCamelCase;
 use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
 
-use crate::{ActiveEnumBuilder, BuilderContext, EntityObjectBuilder, SeaResult};
+use crate::{ActiveEnumBuilder, BuilderContext, EntityColumnId, SeaResult};
 
 pub type FnInputTypeConversion =
-    Box<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
-pub type FnOutputTypeConversion =
-    Box<dyn Fn(&sea_orm::sea_query::Value) -> SeaResult<async_graphql::Value> + Send + Sync>;
+    Arc<dyn Fn(&ValueAccessor) -> SeaResult<sea_orm::Value> + Send + Sync>;
+pub type FnOutputTypeConversion = Arc<
+    dyn Fn(
+            &sea_orm::sea_query::Value,
+        ) -> async_graphql::Result<Option<async_graphql::dynamic::FieldValue<'static>>>
+        + Send
+        + Sync,
+>;
+
+#[derive(Clone, Default)]
+#[non_exhaustive]
+pub struct ColumnOptions {
+    /// used to map entity_name.column_name to a custom Type
+    pub overwrite: Option<ConvertedType>,
+    /// used to map entity_name.column_name input to a custom parser
+    pub input_conversion: Option<FnInputTypeConversion>,
+    /// used to map entity_name.column_name output to a custom formatter
+    pub output_conversion: Option<FnOutputTypeConversion>,
+    /// used to override the type of this column in input objects
+    pub input_type: Option<TypeRef>,
+    /// used to override the type of this column in output objects
+    pub output_type: Option<TypeRef>,
+}
 
 /// Used to provide configuration for TypesMapHelper
 pub struct TypesMapConfig {
-    /// used to map entity_name.column_name to a custom Type
-    pub overwrites: BTreeMap<String, ConvertedType>,
-    /// used to map entity_name.column_name input to a custom parser
-    pub input_conversions: BTreeMap<String, FnInputTypeConversion>,
-    /// used to map entity_name.column_name output to a custom formatter
-    pub output_conversions: BTreeMap<String, FnOutputTypeConversion>,
+    // per-column options
+    pub column_options: BTreeMap<EntityColumnId, ColumnOptions>,
     /// used to configure default time library
     pub time_library: TimeLibrary,
     /// used to configure default decimal library
     pub decimal_library: DecimalLibrary,
+    /// expose JSON as scalar type using the following type name
+    pub json_type: String,
+    /// Use RFC3339 for timestamp format
+    pub timestamp_rfc3339: bool,
 }
 
 impl std::default::Default for TypesMapConfig {
     fn default() -> Self {
         Self {
-            overwrites: BTreeMap::new(),
-            input_conversions: BTreeMap::new(),
-            output_conversions: BTreeMap::new(),
+            column_options: BTreeMap::new(),
 
             #[cfg(all(not(feature = "with-time"), not(feature = "with-chrono")))]
             time_library: TimeLibrary::String,
@@ -45,6 +63,8 @@ impl std::default::Default for TypesMapConfig {
             decimal_library: DecimalLibrary::Decimal,
             #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
             decimal_library: DecimalLibrary::BigDecimal,
+            json_type: "Json".into(),
+            timestamp_rfc3339: false,
         }
     }
 }
@@ -59,29 +79,32 @@ impl TypesMapHelper {
     pub fn get_column_type<T>(&self, column: &T::Column) -> ConvertedType
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
-        let entity_object_builder = EntityObjectBuilder {
-            context: self.context,
-        };
-        let entity_name = entity_object_builder.type_name::<T>();
-        let column_name = entity_object_builder.column_name::<T>(column);
+        let entity_column_id = EntityColumnId::of::<T>(column);
 
-        self.get_column_type_helper(&entity_name, &column_name, column.def().get_column_type())
+        self.sea_orm_column_type_to_converted_type(
+            Some(&entity_column_id),
+            column.def().get_column_type(),
+        )
     }
 
     /// helper function used to determine the conversion type of a column type
-    fn get_column_type_helper(
+    pub fn sea_orm_column_type_to_converted_type(
         &self,
-        entity_name: &str,
-        column_name: &str,
+        entity_column_id: Option<&EntityColumnId>,
         column_type: &ColumnType,
     ) -> ConvertedType {
         let context = self.context;
-        let name = format!("{entity_name}.{column_name}");
 
-        if let Some(overwrite) = context.types.overwrites.get(&name) {
-            return overwrite.clone();
+        if let Some(entity_column_id) = entity_column_id.as_ref() {
+            if let Some(overwrite) = context
+                .types
+                .column_options
+                .get(entity_column_id)
+                .and_then(|options| options.overwrite.as_ref())
+            {
+                return overwrite.clone();
+            }
         }
 
         match column_type {
@@ -159,14 +182,9 @@ impl TypesMapHelper {
             ColumnType::Boolean => ConvertedType::Bool,
 
             #[cfg(not(feature = "with-json"))]
-            ColumnType::Json => ConvertedType::String,
+            ColumnType::Json | ColumnType::JsonBinary => ConvertedType::String,
             #[cfg(feature = "with-json")]
-            ColumnType::Json => ConvertedType::Json,
-
-            // FIXME: how should we map them JsonBinary type ?
-            // #[cfg(feature = "with-json")]
-            // ColumnType::JsonBinary => ConvertedType::Json,
-            ColumnType::JsonBinary => ConvertedType::String,
+            ColumnType::Json | ColumnType::JsonBinary => ConvertedType::Json,
 
             #[cfg(not(feature = "with-uuid"))]
             ColumnType::Uuid => ConvertedType::String,
@@ -182,8 +200,8 @@ impl TypesMapHelper {
             ColumnType::Array(_) => ConvertedType::String,
             #[cfg(feature = "with-postgres-array")]
             ColumnType::Array(ty) => {
-                let inner =
-                    self.get_column_type_helper(entity_name, &format!("{}.array", column_name), ty);
+                let array_ecid = entity_column_id.map(|ecid| ecid.with_array());
+                let inner = self.sea_orm_column_type_to_converted_type(array_ecid.as_ref(), ty);
                 ConvertedType::Array(Box::new(inner))
             }
 
@@ -196,7 +214,18 @@ impl TypesMapHelper {
             ColumnType::MacAddr => ConvertedType::String,
             // #[cfg(feature = "with-mac_address")]
             // ColumnType::MacAddr => ConvertedType::MacAddress,
-            _ => panic!("Type mapping is not implemented for '{entity_name}.{column_name}'"),
+            _ => match entity_column_id {
+                Some(entity_column_id) => {
+                    panic!(
+                        "Type mapping is not implemented for '{}.{}'",
+                        entity_column_id.entity_name(self.context),
+                        entity_column_id.column_name(self.context)
+                    );
+                }
+                None => {
+                    panic!("Type mapping is not implemented for unspecified entity/column");
+                }
+            },
         }
     }
 
@@ -208,19 +237,15 @@ impl TypesMapHelper {
     ) -> SeaResult<sea_orm::Value>
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
-        let entity_object_builder = EntityObjectBuilder {
-            context: self.context,
-        };
-        let entity_name = entity_object_builder.type_name::<T>();
-        let column_name = entity_object_builder.column_name::<T>(column);
+        let entity_column_id = EntityColumnId::of::<T>(column);
 
         if let Some(parser) = self
             .context
             .types
-            .input_conversions
-            .get(&format!("{entity_name}.{column_name}"))
+            .column_options
+            .get(&entity_column_id)
+            .and_then(|options| options.input_conversion.as_ref())
         {
             return parser.as_ref()(value);
         }
@@ -228,8 +253,8 @@ impl TypesMapHelper {
         converted_value_to_sea_orm_value(
             &self.get_column_type::<T>(column),
             value,
-            &entity_name,
-            &column_name,
+            &entity_column_id.entity_name(self.context),
+            &entity_column_id.column_name(self.context),
         )
     }
 
@@ -279,8 +304,13 @@ impl TypesMapHelper {
                 | ColumnType::VarBit(_)
                 | ColumnType::Blob => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Boolean => Some(TypeRef::named(TypeRef::BOOLEAN)),
-                // FIXME: support json type
-                ColumnType::Json | ColumnType::JsonBinary => None,
+                ColumnType::Json | ColumnType::JsonBinary => {
+                    if cfg!(feature = "with-json") {
+                        Some(TypeRef::named(self.context.types.json_type.clone()))
+                    } else {
+                        None
+                    }
+                }
                 ColumnType::Uuid => Some(TypeRef::named(TypeRef::STRING)),
                 ColumnType::Enum {
                     name: enum_name,
@@ -330,7 +360,7 @@ impl TypesMapHelper {
                     );
                     iden_type.map(|it| TypeRef::List(Box::new(it)))
                 }
-                ColumnType::Custom(_iden) => Some(TypeRef::named(TypeRef::STRING)),
+                ColumnType::Custom(_) => None,
                 _ => None,
             },
         }
@@ -341,6 +371,64 @@ impl TypesMapHelper {
                 ty
             }
         })
+    }
+
+    pub fn input_type_for_column<T>(
+        &self,
+        column: &T::Column,
+        entity_column_id: &EntityColumnId,
+        not_null: bool,
+    ) -> Option<TypeRef>
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        if let Some(type_ref) = self
+            .context
+            .types
+            .column_options
+            .get(entity_column_id)
+            .and_then(|options| options.input_type.as_ref())
+        {
+            Some(type_ref.clone())
+        } else {
+            let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
+            self.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                not_null,
+                enum_type_name,
+            )
+        }
+    }
+
+    pub fn output_type_for_column<T>(
+        &self,
+        column: &T::Column,
+        entity_column_id: &EntityColumnId,
+        not_null: bool,
+    ) -> Option<TypeRef>
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        if let Some(type_ref) = self
+            .context
+            .types
+            .column_options
+            .get(entity_column_id)
+            .and_then(|options| options.output_type.as_ref())
+        {
+            Some(type_ref.clone())
+        } else {
+            let column_def = column.def();
+            let enum_type_name = column.enum_type_name();
+            self.sea_orm_column_type_to_graphql_type(
+                column_def.get_column_type(),
+                not_null,
+                enum_type_name,
+            )
+        }
     }
 }
 
@@ -490,75 +578,64 @@ pub fn converted_type_to_sea_orm_array_type(
     }
 }
 
-#[allow(unused_variables)] // some conversions behind feature flags need extra params here.
+// usage behind feature flags
+#[allow(clippy::only_used_in_recursion)]
+#[allow(unused_variables)]
 pub fn converted_value_to_sea_orm_value(
     column_type: &ConvertedType,
     value: &ValueAccessor,
     entity_name: &str,
     column_name: &str,
 ) -> SeaResult<sea_orm::Value> {
-    let is_null = value.is_null();
+    if value.is_null() {
+        return converted_null_to_sea_orm_value(column_type);
+    }
     Ok(match column_type {
-        ConvertedType::Bool if is_null => sea_orm::Value::Bool(None),
         ConvertedType::Bool => value.boolean().map(|v| v.into())?,
-        ConvertedType::TinyInteger if is_null => sea_orm::Value::TinyInt(None),
         ConvertedType::TinyInteger => {
             let value: i8 = value.i64()?.try_into()?;
             sea_orm::Value::TinyInt(Some(value))
         }
-        ConvertedType::SmallInteger if is_null => sea_orm::Value::SmallInt(None),
         ConvertedType::SmallInteger => {
             let value: i16 = value.i64()?.try_into()?;
             sea_orm::Value::SmallInt(Some(value))
         }
-        ConvertedType::Integer if is_null => sea_orm::Value::Int(None),
         ConvertedType::Integer => {
             let value: i32 = value.i64()?.try_into()?;
             sea_orm::Value::Int(Some(value))
         }
-        ConvertedType::BigInteger if is_null => sea_orm::Value::BigInt(None),
         ConvertedType::BigInteger => {
             let value = value.i64()?;
             sea_orm::Value::BigInt(Some(value))
         }
-        ConvertedType::TinyUnsigned if is_null => sea_orm::Value::TinyUnsigned(None),
         ConvertedType::TinyUnsigned => {
             let value: u8 = value.u64()?.try_into()?;
             sea_orm::Value::TinyUnsigned(Some(value))
         }
-        ConvertedType::SmallUnsigned if is_null => sea_orm::Value::SmallUnsigned(None),
         ConvertedType::SmallUnsigned => {
             let value: u16 = value.u64()?.try_into()?;
             sea_orm::Value::SmallUnsigned(Some(value))
         }
-        ConvertedType::Unsigned if is_null => sea_orm::Value::Unsigned(None),
         ConvertedType::Unsigned => {
             let value: u32 = value.u64()?.try_into()?;
             sea_orm::Value::Unsigned(Some(value))
         }
-        ConvertedType::BigUnsigned if is_null => sea_orm::Value::BigUnsigned(None),
         ConvertedType::BigUnsigned => {
             let value = value.u64()?;
             sea_orm::Value::BigUnsigned(Some(value))
         }
-        ConvertedType::Float if is_null => sea_orm::Value::Float(None),
         ConvertedType::Float => {
             let value = value.f32()?;
             sea_orm::Value::Float(Some(value))
         }
-        ConvertedType::Double if is_null => sea_orm::Value::Double(None),
         ConvertedType::Double => {
             let value = value.f64()?;
             sea_orm::Value::Double(Some(value))
         }
-        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) if is_null => {
-            sea_orm::Value::String(None)
-        }
         ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
             let value = value.string()?;
-            sea_orm::Value::String(Some(Box::new(value.to_string())))
+            sea_orm::Value::String(Some(value.to_string()))
         }
-        ConvertedType::Char if is_null => sea_orm::Value::Char(None),
         ConvertedType::Char => {
             let value = value.string()?;
             let value: char = match value.chars().next() {
@@ -567,28 +644,24 @@ pub fn converted_value_to_sea_orm_value(
             };
             sea_orm::Value::Char(Some(value))
         }
-        ConvertedType::Bytes if is_null => sea_orm::Value::Bytes(None),
         ConvertedType::Bytes => {
             let value = decode_hex(value.string()?)?;
-            sea_orm::Value::Bytes(Some(Box::new(value)))
+            sea_orm::Value::Bytes(Some(value))
         }
-        #[cfg(feature = "with-json")]
-        ConvertedType::Json if is_null => sea_orm::Value::Json(None),
         #[cfg(feature = "with-json")]
         ConvertedType::Json => {
             use std::str::FromStr;
-
-            let value = sea_orm::entity::prelude::Json::from_str(value.string()?).map_err(|e| {
-                crate::SeaographyError::TypeConversionError(
-                    e.to_string(),
-                    format!("Json - {}.{}", entity_name, column_name),
-                )
-            })?;
-
-            sea_orm::Value::Json(Some(Box::new(value)))
+            let value = match value.string() {
+                Ok(s) => sea_orm::entity::prelude::Json::from_str(s).map_err(|e| {
+                    crate::SeaographyError::TypeConversionError(
+                        e.to_string(),
+                        format!("Json - {}.{}", entity_name, column_name),
+                    )
+                })?,
+                Err(_) => value.deserialize()?,
+            };
+            sea_orm::Value::Json(Some(value))
         }
-        #[cfg(feature = "with-chrono")]
-        ConvertedType::ChronoDate if is_null => sea_orm::Value::ChronoDate(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate => {
             let value =
@@ -600,10 +673,8 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoDate(Some(Box::new(value)))
+            sea_orm::Value::ChronoDate(Some(value))
         }
-        #[cfg(feature = "with-chrono")]
-        ConvertedType::ChronoTime if is_null => sea_orm::Value::ChronoTime(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoTime => {
             let value =
@@ -615,10 +686,8 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoTime(Some(Box::new(value)))
+            sea_orm::Value::ChronoTime(Some(value))
         }
-        #[cfg(feature = "with-chrono")]
-        ConvertedType::ChronoDateTime if is_null => sea_orm::Value::ChronoDateTime(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTime => {
             let value = sea_orm::entity::prelude::ChronoDateTime::parse_from_str(
@@ -632,10 +701,8 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::ChronoDateTime(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTime(Some(value))
         }
-        #[cfg(feature = "with-chrono")]
-        ConvertedType::ChronoDateTimeUtc if is_null => sea_orm::Value::ChronoDateTimeUtc(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeUtc => {
             use std::str::FromStr;
@@ -648,10 +715,8 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoDateTimeUtc(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTimeUtc(Some(value))
         }
-        #[cfg(feature = "with-chrono")]
-        ConvertedType::ChronoDateTimeLocal if is_null => sea_orm::Value::ChronoDateTimeLocal(None),
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeLocal => {
             use std::str::FromStr;
@@ -664,11 +729,7 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::ChronoDateTimeLocal(Some(Box::new(value)))
-        }
-        #[cfg(feature = "with-chrono")]
-        ConvertedType::ChronoDateTimeWithTimeZone if is_null => {
-            sea_orm::Value::ChronoDateTimeWithTimeZone(None)
+            sea_orm::Value::ChronoDateTimeLocal(Some(value))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDateTimeWithTimeZone => {
@@ -686,14 +747,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::ChronoDateTimeWithTimeZone(Some(Box::new(value)))
+            sea_orm::Value::ChronoDateTimeWithTimeZone(Some(value))
         }
         #[cfg(feature = "with-time")]
-        ConvertedType::TimeDate if is_null => sea_orm::Value::TimeDate(None),
-        #[cfg(feature = "with-time")]
         ConvertedType::TimeDate => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeDate::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATE,
@@ -705,14 +762,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeDate(Some(Box::new(value)))
+            sea_orm::Value::TimeDate(Some(value))
         }
         #[cfg(feature = "with-time")]
-        ConvertedType::TimeTime if is_null => sea_orm::Value::TimeTime(None),
-        #[cfg(feature = "with-time")]
         ConvertedType::TimeTime => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeTime::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_TIME,
@@ -724,14 +777,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeTime(Some(Box::new(value)))
+            sea_orm::Value::TimeTime(Some(value))
         }
         #[cfg(feature = "with-time")]
-        ConvertedType::TimeDateTime if is_null => sea_orm::Value::TimeDateTime(None),
-        #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTime => {
-            use std::str::FromStr;
-
             let value = sea_orm::entity::prelude::TimeDateTime::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATETIME,
@@ -743,15 +792,10 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeDateTime(Some(Box::new(value)))
-        }
-        #[cfg(feature = "with-time")]
-        ConvertedType::TimeDateTimeWithTimeZone if is_null => {
-            sea_orm::Value::TimeDateTimeWithTimeZone(None)
+            sea_orm::Value::TimeDateTime(Some(value))
         }
         #[cfg(feature = "with-time")]
         ConvertedType::TimeDateTimeWithTimeZone => {
-            use std::str::FromStr;
             let value = sea_orm::entity::prelude::TimeDateTimeWithTimeZone::parse(
                 value.string()?,
                 sea_orm::sea_query::value::time_format::FORMAT_DATETIME_TZ,
@@ -763,10 +807,8 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::TimeDateTimeWithTimeZone(Some(Box::new(value)))
+            sea_orm::Value::TimeDateTimeWithTimeZone(Some(value))
         }
-        #[cfg(feature = "with-uuid")]
-        ConvertedType::Uuid if is_null => sea_orm::Value::Uuid(None),
         #[cfg(feature = "with-uuid")]
         ConvertedType::Uuid => {
             use std::str::FromStr;
@@ -778,10 +820,8 @@ pub fn converted_value_to_sea_orm_value(
                 )
             })?;
 
-            sea_orm::Value::Uuid(Some(Box::new(value)))
+            sea_orm::Value::Uuid(Some(value))
         }
-        #[cfg(feature = "with-decimal")]
-        ConvertedType::Decimal if is_null => sea_orm::Value::Decimal(None),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => {
             use std::str::FromStr;
@@ -794,10 +834,8 @@ pub fn converted_value_to_sea_orm_value(
                     )
                 })?;
 
-            sea_orm::Value::Decimal(Some(Box::new(value)))
+            sea_orm::Value::Decimal(Some(value))
         }
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal if is_null => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => {
             use std::str::FromStr;
@@ -813,35 +851,84 @@ pub fn converted_value_to_sea_orm_value(
             sea_orm::Value::BigDecimal(Some(Box::new(value)))
         }
         #[cfg(feature = "with-postgres-array")]
-        ConvertedType::Array(ty) if is_null => {
-            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(&ty)?, None)
-        }
-        #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
             let list_value = value
                 .list()?
                 .iter()
-                .map(|value| {
-                    converted_value_to_sea_orm_value(&*ty, &value, entity_name, column_name)
-                })
+                .map(|value| converted_value_to_sea_orm_value(ty, &value, entity_name, column_name))
                 .collect::<SeaResult<Vec<sea_orm::Value>>>()?;
 
             sea_orm::Value::Array(
-                converted_type_to_sea_orm_array_type(&ty)?,
+                converted_type_to_sea_orm_array_type(ty)?,
                 Some(Box::new(list_value)),
             )
         } // FIXME: support ip type
           // #[cfg(feature = "with-ipnetwork")]
           // ConvertedType::IpNetwork => {
           //     let value = value.string()?;
-          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          //     sea_orm::Value::String(Some(value.to_string()))
           // }
           // FIXME: support mac type
           // #[cfg(feature = "with-mac_address")]
           // ConvertedType::MacAddress => {
           //     let value = value.string()?;
-          //     sea_orm::Value::String(Some(Box::new(value.to_string())))
+          //     sea_orm::Value::String(Some(value.to_string()))
           // }
+    })
+}
+
+pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult<sea_orm::Value> {
+    Ok(match column_type {
+        ConvertedType::Bool => sea_orm::Value::Bool(None),
+        ConvertedType::TinyInteger => sea_orm::Value::TinyInt(None),
+        ConvertedType::SmallInteger => sea_orm::Value::SmallInt(None),
+        ConvertedType::Integer => sea_orm::Value::Int(None),
+        ConvertedType::BigInteger => sea_orm::Value::BigInt(None),
+        ConvertedType::TinyUnsigned => sea_orm::Value::TinyUnsigned(None),
+        ConvertedType::SmallUnsigned => sea_orm::Value::SmallUnsigned(None),
+        ConvertedType::Unsigned => sea_orm::Value::Unsigned(None),
+        ConvertedType::BigUnsigned => sea_orm::Value::BigUnsigned(None),
+        ConvertedType::Float => sea_orm::Value::Float(None),
+        ConvertedType::Double => sea_orm::Value::Double(None),
+        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
+            sea_orm::Value::String(None)
+        }
+        ConvertedType::Char => sea_orm::Value::Char(None),
+        ConvertedType::Bytes => sea_orm::Value::Bytes(None),
+        #[cfg(feature = "with-json")]
+        ConvertedType::Json => sea_orm::Value::Json(None),
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDate => sea_orm::Value::ChronoDate(None),
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoTime => sea_orm::Value::ChronoTime(None),
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTime => sea_orm::Value::ChronoDateTime(None),
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeUtc => sea_orm::Value::ChronoDateTimeUtc(None),
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeLocal => sea_orm::Value::ChronoDateTimeLocal(None),
+        #[cfg(feature = "with-chrono")]
+        ConvertedType::ChronoDateTimeWithTimeZone => {
+            sea_orm::Value::ChronoDateTimeWithTimeZone(None)
+        }
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeDate => sea_orm::Value::TimeDate(None),
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeTime => sea_orm::Value::TimeTime(None),
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeDateTime => sea_orm::Value::TimeDateTime(None),
+        #[cfg(feature = "with-time")]
+        ConvertedType::TimeDateTimeWithTimeZone => sea_orm::Value::TimeDateTimeWithTimeZone(None),
+        #[cfg(feature = "with-uuid")]
+        ConvertedType::Uuid => sea_orm::Value::Uuid(None),
+        #[cfg(feature = "with-decimal")]
+        ConvertedType::Decimal => sea_orm::Value::Decimal(None),
+        #[cfg(feature = "with-bigdecimal")]
+        ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
+        #[cfg(feature = "with-postgres-array")]
+        ConvertedType::Array(ty) => {
+            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(ty)?, None)
+        }
     })
 }
 

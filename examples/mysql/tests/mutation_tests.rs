@@ -2,15 +2,7 @@ use async_graphql::{dynamic::*, Response};
 use sea_orm::Database;
 use seaography::async_graphql;
 
-async fn main() {
-    test_simple_insert_one().await;
-    test_complex_insert_one().await;
-    test_create_batch_mutation().await;
-    test_update_mutation().await;
-    test_delete_mutation().await;
-}
-
-pub async fn get_schema() -> Schema {
+async fn schema() -> Schema {
     let database = Database::connect("mysql://sea:sea@127.0.0.1/sakila")
         .await
         .unwrap();
@@ -19,15 +11,16 @@ pub async fn get_schema() -> Schema {
     schema
 }
 
-pub fn assert_eq(a: Response, b: &str) {
+fn assert_eq(a: Response, b: &str) {
     assert_eq!(
         a.data.into_json().unwrap(),
         serde_json::from_str::<serde_json::Value>(b).unwrap()
     )
 }
 
+#[tokio::test]
 async fn test_simple_insert_one() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -108,8 +101,9 @@ async fn test_simple_insert_one() {
     );
 }
 
+#[tokio::test]
 async fn test_complex_insert_one() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -214,8 +208,9 @@ async fn test_complex_insert_one() {
     );
 }
 
+#[tokio::test]
 async fn test_create_batch_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -358,8 +353,9 @@ async fn test_create_batch_mutation() {
     )
 }
 
+#[tokio::test]
 async fn test_update_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema
@@ -536,8 +532,9 @@ async fn test_update_mutation() {
     );
 }
 
+#[tokio::test]
 async fn test_delete_mutation() {
-    let schema = get_schema().await;
+    let schema = schema().await;
 
     assert_eq(
         schema

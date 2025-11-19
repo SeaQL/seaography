@@ -1,6 +1,6 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
 
-use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBuilder};
+use crate::{BuilderContext, CursorInputBuilder, OffsetInputBuilder, PageInputBuilder, SeaResult};
 
 use super::{CursorInput, OffsetInput, PageInput};
 
@@ -23,6 +23,19 @@ pub struct PaginationInputConfig {
     pub page: String,
     /// name for 'offset' field
     pub offset: String,
+    /// default limit for pagination
+    ///
+    /// If no default or maximum limit is specified, queries will return *all* matching rows.
+    ///
+    /// If both are specified, the lesser of the two will be used as the default. You should set
+    /// `default_limit` to be less than or equal to `max_limit`.
+    pub default_limit: Option<u64>,
+    /// maximum limit for pagination
+    ///
+    /// If set, requests including a pagination limit greater than this will be rejected.
+    /// If `default_limit` is _not_ set, but `max_limit` _is_, then the latter will effectively
+    /// be treated as the default.
+    pub max_limit: Option<u64>,
 }
 
 impl std::default::Default for PaginationInputConfig {
@@ -32,6 +45,8 @@ impl std::default::Default for PaginationInputConfig {
             cursor: "cursor".into(),
             page: "page".into(),
             offset: "offset".into(),
+            default_limit: None,
+            max_limit: None,
         }
     }
 }
@@ -65,17 +80,17 @@ impl PaginationInputBuilder {
     }
 
     /// used to parse query input to pagination information structure
-    pub fn parse_object(&self, value: Option<ValueAccessor<'_>>) -> PaginationInput {
+    pub fn parse_object(&self, value: Option<ValueAccessor<'_>>) -> SeaResult<PaginationInput> {
         if value.is_none() {
-            return PaginationInput {
+            return Ok(PaginationInput {
                 cursor: None,
                 offset: None,
                 page: None,
-            };
+            });
         }
 
-        let binding = value.unwrap();
-        let object = binding.object().unwrap();
+        let binding = value.expect("Checked not null");
+        let object = binding.object()?;
 
         let cursor_input_builder = CursorInputBuilder {
             context: self.context,
@@ -88,30 +103,30 @@ impl PaginationInputBuilder {
         };
 
         let cursor = if let Some(cursor) = object.get(&self.context.pagination_input.cursor) {
-            let object = cursor.object().unwrap();
-            Some(cursor_input_builder.parse_object(&object))
+            let object = cursor.object()?;
+            Some(cursor_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
         let page = if let Some(page) = object.get(&self.context.pagination_input.page) {
-            let object = page.object().unwrap();
-            Some(page_input_builder.parse_object(&object))
+            let object = page.object()?;
+            Some(page_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
         let offset = if let Some(offset) = object.get(&self.context.pagination_input.offset) {
-            let object = offset.object().unwrap();
-            Some(offset_input_builder.parse_object(&object))
+            let object = offset.object()?;
+            Some(offset_input_builder.parse_object(&object)?)
         } else {
             None
         };
 
-        PaginationInput {
+        Ok(PaginationInput {
             cursor,
             page,
             offset,
-        }
+        })
     }
 }

@@ -14,9 +14,9 @@ pub enum WebFrameworkEnum {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>(
-    root_path: &P,
-    entities_path: &T,
+pub async fn write_project(
+    root_path: &std::path::Path,
+    entities_path: &std::path::Path,
     db_url: &str,
     crate_name: &str,
     sql_library: &str,
@@ -26,7 +26,7 @@ pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>
 ) -> Result<()> {
     writer::write_cargo_toml(root_path, crate_name, sql_library, framework)?;
 
-    let src_path = &root_path.as_ref().join("src");
+    let src_path = &root_path.join("src");
 
     writer::write_query_root(src_path, entities_path)?;
     writer::write_lib(src_path)?;
@@ -37,7 +37,7 @@ pub async fn write_project<P: AsRef<std::path::Path>, T: AsRef<std::path::Path>>
         WebFrameworkEnum::Axum => crate::templates::axum::write_main(src_path, crate_name)?,
     }
 
-    writer::write_env(&root_path.as_ref(), db_url, depth_limit, complexity_limit)?;
+    writer::write_env(root_path, db_url, depth_limit, complexity_limit)?;
 
     std::process::Command::new("cargo")
         .arg("fmt")

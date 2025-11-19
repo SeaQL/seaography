@@ -10,6 +10,7 @@ name: tests
       - .github/ISSUE_TEMPLATE/**
     branches:
       - main
+      - 1.1.x
       - pr/**/ci
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}'
@@ -17,22 +18,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
 jobs:
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
   test:
     name: Test
     runs-on: ubuntu-latest
+    if: false # we don't actually have any unit tests
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -45,39 +34,39 @@ jobs:
           command: test
           args: '--workspace'
   fmt:
-    name: Rustfmt
+    name: Rustfmt & Clippy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          components: rustfmt
+          components: rustfmt, clippy
       - run: cargo fmt --all -- --check
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          components: clippy
+      - working-directory: ./examples/sea-draw
+        run: cargo fmt --all -- --check
       - run: cargo clippy --all -- -D warnings
   integration-sqlite:
     name: SQLite integration tests
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
-          version: 1.0.0
+          version: 2.0.0-rc.18
+      - name: Additional Integration tests
+        working-directory: ./examples/sqlite
+        run: |
+          cargo test --test custom_query_tests
+          cargo test --test custom_mutation_tests
+          cargo test --test query_tests --features=rbac
+          cargo test --test plural_query_tests --features=field-pluralize
+          cargo test --test entity_filter_tests --features=field-pluralize
+          rm tests/custom_mutation_tests.rs tests/custom_query_tests.rs tests/plural_query_tests.rs
       - name: Remove generated folder
         run: rm -rf ./examples/sqlite/src
       - name: Copy sample database
@@ -91,13 +80,15 @@ jobs:
         with:
           command: run
           args: >
-            --package seaography-cli -- ./examples/sqlite
-            ./examples/sqlite/src/entities sqlite://sakila.db
-            seaography-sqlite-example -f actix
+            --package seaography-cli --
+            -o ./examples/sqlite
+            -e ./examples/sqlite/src/entities
+            -u sqlite://sakila.db
+            seaography-sqlite-example -f poem
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/sqlite/Cargo.toml
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/sqlite/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/sqlite/Cargo.toml
       - name: Build example
         working-directory: ./examples/sqlite
         run: cargo build
@@ -107,9 +98,6 @@ jobs:
   integration-mysql:
     name: MySQL integration tests
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     services:
       mysql:
         image: 'mysql:8.0'
@@ -128,11 +116,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
-          version: 1.0.0
+          version: 2.0.0-rc.13
       - name: Remove generated folder
         run: rm -rf ./examples/mysql/src
       - name: Create DB
@@ -156,15 +146,15 @@ jobs:
         with:
           command: run
           args: >
-            --package seaography-cli -- ./examples/mysql
-            ./examples/mysql/src/entities mysql://sea:sea@127.0.0.1/sakila
-            seaography-mysql-example -f axum
+            --package seaography-cli --
+            -o ./examples/mysql
+            -e ./examples/mysql/src/entities
+            -u mysql://sea:sea@127.0.0.1/sakila
+            seaography-mysql-example -f actix
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/mysql/Cargo.toml
-      - name: Fix Nullable not implemented for Vec<String> and tsvector
-        run: 'sed -i "24,28d" ./examples/mysql/src/entities/film.rs'
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/mysql/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/mysql/Cargo.toml
       - name: Build example
         working-directory: ./examples/mysql
         run: cargo build
@@ -174,11 +164,8 @@ jobs:
   integration-postgres:
     name: Postgres integration tests
     runs-on: ubuntu-latest
-    needs:
-      - check
-      - test
     services:
-      mysql:
+      postgres:
         image: 'postgres:14.4'
         env:
           POSTGRES_HOST: 127.0.0.1
@@ -192,23 +179,34 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - name: Install sea-orm-cli
-        uses: baptiste0928/cargo-install@v2
+        uses: baptiste0928/cargo-install@v3
         with:
           crate: sea-orm-cli
-          version: 1.0.0
-      - name: Remove generated folder
-        run: rm -rf ./examples/postgres/src
+          version: 2.0.0-rc.13
       - name: Create DB
         run: >-
           psql -q postgres://sea:sea@localhost/postgres -c 'CREATE DATABASE
           "sakila"'
       - name: Import DB Schema
-        run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql'
         working-directory: ./examples/postgres
+        run: |
+          psql -q postgres://sea:sea@localhost/sakila < sakila-schema.sql
       - name: Import DB Data
-        run: 'psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql'
         working-directory: ./examples/postgres
+        run: |
+          psql -q postgres://sea:sea@localhost/sakila < sakila-data.sql
+          psql -q postgres://sea:sea@localhost/sakila < sakila-patch.sql
+      - name: Additional Integration tests
+        working-directory: ./examples/postgres
+        run: |
+          cargo test --test pg_query_tests
+          cargo test --test entity_metadata_tests
+          rm tests/pg_query_tests.rs tests/entity_metadata_tests.rs
+      - name: Remove generated folder
+        run: rm -rf ./examples/postgres/src
       - name: Generate entities
         run: >-
           sea-orm-cli generate entity -o ./examples/postgres/src/entities -u
@@ -218,19 +216,45 @@ jobs:
         with:
           command: run
           args: >
-            --package seaography-cli -- ./examples/postgres
-            ./examples/postgres/src/entities
-            postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
-            seaography-postgres-example -f poem
+            --package seaography-cli --
+            -o ./examples/postgres
+            -e ./examples/postgres/src/entities
+            -u postgres://sea:sea@127.0.0.1/sakila?currentSchema=public
+            seaography-postgres-example -f axum
       - name: Depends on local seaography
-        run: >-
-          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"'
-          ./examples/postgres/Cargo.toml
-      - name: Fix Nullable not implemented for Vec<String> and tsvector
-        run: 'sed -i "26,27d" ./examples/postgres/src/entities/film.rs'
+        run: |
+          sed -i '/^\[dependencies.seaography\]$/a \path = "..\/..\/"' ./examples/postgres/Cargo.toml
+          sed -i '/^\[dev.dependencies\]$/a \serde = { version = "1", features = ["derive"] }' ./examples/postgres/Cargo.toml
       - name: Build example
         working-directory: ./examples/postgres
         run: cargo build
       - name: Integration tests
         working-directory: ./examples/postgres
         run: cargo test
+  integration-sea-draw:
+    name: sea-draw Integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: 'postgres:14.4'
+        env:
+          POSTGRES_HOST: 127.0.0.1
+          POSTGRES_USER: sea
+          POSTGRES_PASSWORD: sea
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build sea-draw
+        working-directory: ./examples/sea-draw
+        run: cargo build
+      - name: Run SQLite integration tests
+        working-directory: ./examples/sea-draw
+        run: ./integration_test_sqlite.sh
+      - name: Run Postgres integration tests
+        working-directory: ./examples/sea-draw
+        run: ./integration_test_postgres.sh

@@ -4,8 +4,8 @@ use sea_orm::{
 };
 
 use crate::{
-    get_filter_conditions, BuilderContext, EntityObjectBuilder, EntityQueryFieldBuilder,
-    FilterInputBuilder, GuardAction,
+    get_filter_conditions, guard_error, BuilderContext, DatabaseContext, EntityObjectBuilder,
+    EntityQueryFieldBuilder, FilterInputBuilder, GuardAction, OperationType, UserContext,
 };
 
 /// The configuration structure of EntityDeleteMutationBuilder
@@ -43,7 +43,6 @@ impl EntityDeleteMutationBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
@@ -59,7 +58,6 @@ impl EntityDeleteMutationBuilder {
     pub fn to_field<T, A>(&self) -> Field
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
         A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
     {
@@ -70,35 +68,41 @@ impl EntityDeleteMutationBuilder {
             context: self.context,
         };
         let object_name: String = entity_object_builder.type_name::<T>();
+        let object_name_ = object_name.clone();
 
         let context = self.context;
-
-        let guard = self.context.guards.entity_guards.get(&object_name);
+        let hooks = &self.context.hooks;
 
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn(TypeRef::INT),
             move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return Err::<Option<_>, async_graphql::Error>(async_graphql::Error::new(
-                            reason.unwrap_or("Entity guard triggered.".into()),
-                        ));
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Delete)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = &ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
 
                     let filters = ctx.args.get(&context.entity_delete_mutation.filter_field);
-                    let filter_condition = get_filter_conditions::<T>(context, filters);
+                    let filter_condition = get_filter_conditions::<T>(context, filters)?;
 
-                    let res: DeleteResult =
-                        T::delete_many().filter(filter_condition).exec(db).await?;
+                    let mut stmt = T::delete_many();
+                    if let Some(filter) =
+                        hooks.entity_filter(&ctx, &object_name, OperationType::Delete)
+                    {
+                        stmt = stmt.filter(filter);
+                    }
+                    let res: DeleteResult = stmt.filter(filter_condition).exec(db).await?;
+
+                    hooks
+                        .entity_watch(&ctx, &object_name, OperationType::Delete)
+                        .await;
 
                     Ok(Some(async_graphql::Value::from(res.rows_affected)))
                 })
@@ -106,7 +110,7 @@ impl EntityDeleteMutationBuilder {
         )
         .argument(InputValue::new(
             &context.entity_delete_mutation.filter_field,
-            TypeRef::named(entity_filter_input_builder.type_name(&object_name)),
+            TypeRef::named(entity_filter_input_builder.type_name(&object_name_)),
         ))
     }
 }

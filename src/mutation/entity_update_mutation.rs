@@ -1,12 +1,13 @@
 use async_graphql::dynamic::{Field, FieldFuture, FieldValue, InputValue, TypeRef};
 use sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, IntoActiveModel, QueryFilter,
-    TransactionTrait,
+    ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
+    QueryFilter, QueryTrait, TransactionTrait,
 };
 
 use crate::{
-    get_filter_conditions, prepare_active_model, BuilderContext, EntityInputBuilder,
-    EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder, GuardAction,
+    get_filter_conditions, guard_error, prepare_active_model, BuilderContext, DatabaseContext,
+    EntityInputBuilder, EntityObjectBuilder, EntityQueryFieldBuilder, FilterInputBuilder,
+    GuardAction, OperationType, UserContext,
 };
 
 /// The configuration structure of EntityUpdateMutationBuilder
@@ -48,7 +49,6 @@ impl EntityUpdateMutationBuilder {
     pub fn type_name<T>(&self) -> String
     where
         T: EntityTrait,
-        <T as EntityTrait>::Model: Sync,
     {
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
@@ -78,69 +78,45 @@ impl EntityUpdateMutationBuilder {
             context: self.context,
         };
         let object_name: String = entity_object_builder.type_name::<T>();
+        let object_name_ = object_name.clone();
 
         let context = self.context;
-
-        let guard = self.context.guards.entity_guards.get(&object_name);
-        let field_guards = &self.context.guards.field_guards;
+        let hooks = &self.context.hooks;
 
         Field::new(
             self.type_name::<T>(),
             TypeRef::named_nn_list_nn(entity_object_builder.basic_type_name::<T>()),
             move |ctx| {
+                let object_name = object_name.clone();
                 FieldFuture::new(async move {
-                    let guard_flag = if let Some(guard) = guard {
-                        (*guard)(&ctx)
-                    } else {
-                        GuardAction::Allow
-                    };
-
-                    if let GuardAction::Block(reason) = guard_flag {
-                        return match reason {
-                            Some(reason) => Err::<Option<_>, async_graphql::Error>(
-                                async_graphql::Error::new(reason),
-                            ),
-                            None => Err::<Option<_>, async_graphql::Error>(
-                                async_graphql::Error::new("Entity guard triggered."),
-                            ),
-                        };
+                    if let GuardAction::Block(reason) =
+                        hooks.entity_guard(&ctx, &object_name, OperationType::Update)
+                    {
+                        return Err(guard_error(reason, "Entity guard triggered."));
                     }
 
-                    let db = ctx.data::<DatabaseConnection>()?;
+                    let db = ctx
+                        .data::<DatabaseConnection>()?
+                        .restricted(ctx.data_opt::<UserContext>())?;
+
                     let transaction = db.begin().await?;
 
                     let entity_input_builder = EntityInputBuilder { context };
                     let entity_object_builder = EntityObjectBuilder { context };
 
                     let filters = ctx.args.get(&context.entity_update_mutation.filter_field);
-                    let filter_condition = get_filter_conditions::<T>(context, filters);
+                    let filter_condition = get_filter_conditions::<T>(context, filters)?;
 
                     let value_accessor = ctx
                         .args
-                        .get(&context.entity_update_mutation.data_field)
-                        .unwrap();
+                        .try_get(&context.entity_update_mutation.data_field)?;
                     let input_object = &value_accessor.object()?;
 
                     for (column, _) in input_object.iter() {
-                        let field_guard = field_guards.get(&format!(
-                            "{}.{}",
-                            entity_object_builder.type_name::<T>(),
-                            column
-                        ));
-                        let field_guard_flag = if let Some(field_guard) = field_guard {
-                            (*field_guard)(&ctx)
-                        } else {
-                            GuardAction::Allow
-                        };
-                        if let GuardAction::Block(reason) = field_guard_flag {
-                            return match reason {
-                                Some(reason) => Err::<Option<_>, async_graphql::Error>(
-                                    async_graphql::Error::new(reason),
-                                ),
-                                None => Err::<Option<_>, async_graphql::Error>(
-                                    async_graphql::Error::new("Field guard triggered."),
-                                ),
-                            };
+                        if let GuardAction::Block(reason) =
+                            hooks.field_guard(&ctx, &object_name, column, OperationType::Update)
+                        {
+                            return Err(guard_error(reason, "Field guard triggered."));
                         }
                     }
 
@@ -150,16 +126,31 @@ impl EntityUpdateMutationBuilder {
                         input_object,
                     )?;
 
-                    T::update_many()
-                        .set(active_model)
-                        .filter(filter_condition.clone())
-                        .exec(&transaction)
-                        .await?;
+                    let entity_filter =
+                        hooks.entity_filter(&ctx, &object_name, OperationType::Update);
 
-                    let result: Vec<T::Model> =
-                        T::find().filter(filter_condition).all(&transaction).await?;
+                    let stmt = T::update_many()
+                        .set(active_model)
+                        .apply_if(entity_filter.clone(), |q, f| q.filter(f))
+                        .filter(filter_condition.clone());
+
+                    let result: Vec<T::Model> = if db.support_returning() {
+                        stmt.exec_with_returning(&transaction).await?
+                    } else {
+                        stmt.exec(&transaction).await?;
+
+                        T::find()
+                            .apply_if(entity_filter, |q, f| q.filter(f))
+                            .filter(filter_condition)
+                            .all(&transaction)
+                            .await?
+                    };
 
                     transaction.commit().await?;
+
+                    hooks
+                        .entity_watch(&ctx, &object_name, OperationType::Update)
+                        .await;
 
                     Ok(Some(FieldValue::list(
                         result.into_iter().map(FieldValue::owned_any),
@@ -173,7 +164,7 @@ impl EntityUpdateMutationBuilder {
         ))
         .argument(InputValue::new(
             &context.entity_update_mutation.filter_field,
-            TypeRef::named(entity_filter_input_builder.type_name(&object_name)),
+            TypeRef::named(entity_filter_input_builder.type_name(&object_name_)),
         ))
     }
 }

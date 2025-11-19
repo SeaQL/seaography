@@ -1,18 +1,25 @@
 use async_graphql::{
     dataloader::DataLoader,
-    dynamic::{Enum, Field, FieldFuture, InputObject, Object, Schema, SchemaBuilder, TypeRef},
+    dynamic::{
+        Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, Subscription,
+        SubscriptionField, TypeRef, Union,
+    },
 };
-use sea_orm::{ActiveEnum, ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel};
+use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
 use crate::{
     ActiveEnumBuilder, ActiveEnumFilterInputBuilder, BuilderContext, ConnectionObjectBuilder,
-    CursorInputBuilder, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
+    CursorInputBuilder, CustomEnum, CustomFields, CustomInputObject, CustomOutputObject,
+    CustomUnion, EdgeObjectBuilder, EntityCreateBatchMutationBuilder,
     EntityCreateOneMutationBuilder, EntityDeleteMutationBuilder, EntityInputBuilder,
     EntityObjectBuilder, EntityQueryFieldBuilder, EntityUpdateMutationBuilder, FilterInputBuilder,
-    FilterTypesMapHelper, OffsetInputBuilder, OneToManyLoader, OneToOneLoader, OrderByEnumBuilder,
-    OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder, PaginationInfoObjectBuilder,
-    PaginationInputBuilder,
+    FilterTypesMapHelper, HavingInputBuilder, OffsetInputBuilder, OneToManyLoader, OneToOneLoader,
+    OrderByEnumBuilder, OrderInputBuilder, PageInfoObjectBuilder, PageInputBuilder,
+    PaginationInfoObjectBuilder, PaginationInputBuilder, RelatedEntityFilter,
+    RelatedEntityFilterField,
 };
+
+type MetadataHashMap = std::collections::HashMap<String, serde_json::Value>;
 
 /// The Builder is used to create the Schema for GraphQL
 ///
@@ -20,6 +27,7 @@ use crate::{
 pub struct Builder {
     pub query: Object,
     pub mutation: Object,
+    pub subscription: Subscription,
     pub schema: SchemaBuilder,
 
     /// holds all output object types
@@ -31,14 +39,23 @@ pub struct Builder {
     /// holds all enumeration types
     pub enumerations: Vec<Enum>,
 
+    /// holds all union types
+    pub unions: Vec<Union>,
+
+    /// holds all scalar types
+    pub scalars: Vec<Scalar>,
+
     /// holds all entities queries
     pub queries: Vec<Field>,
 
     /// holds all entities mutations
     pub mutations: Vec<Field>,
 
+    /// holds all subscriptions
+    pub subscriptions: Vec<SubscriptionField>,
+
     /// holds all entities metadata
-    pub metadata: std::collections::HashMap<String, serde_json::Value>,
+    pub metadata: MetadataHashMap,
 
     /// holds a copy to the database connection
     pub connection: sea_orm::DatabaseConnection,
@@ -60,19 +77,29 @@ impl Builder {
         let mutation = Object::new("Mutation").field(Field::new(
             "_ping",
             TypeRef::named(TypeRef::STRING),
-            |_| FieldFuture::new(async move { Ok(Some(async_graphql::Value::from("pong"))) }),
+            |_| FieldFuture::from_value(Some(async_graphql::Value::from("pong"))),
         ));
-        let schema = Schema::build(query.type_name(), Some(mutation.type_name()), None);
+        let subscription = Subscription::new("Subscription");
+
+        let schema = Schema::build(
+            query.type_name(),
+            Some(mutation.type_name()),
+            Some(subscription.type_name()),
+        );
 
         Self {
             query,
             mutation,
+            subscription,
             schema,
             outputs: Vec::new(),
             inputs: Vec::new(),
             enumerations: Vec::new(),
+            unions: Vec::new(),
+            scalars: Vec::new(),
             queries: Vec::new(),
             mutations: Vec::new(),
+            subscriptions: Vec::new(),
             metadata: Default::default(),
             connection,
             context,
@@ -81,9 +108,13 @@ impl Builder {
         }
     }
 
-    /// used to register a new entity to the Builder context
-    pub fn register_entity<T>(&mut self, relations: Vec<Field>)
-    where
+    /// Register a SeaORM Entity to the schema.
+    /// With all the edge, connection and filter objects.
+    pub fn register_entity<T>(
+        &mut self,
+        relations: Vec<Field>,
+        related_entity_filter: &RelatedEntityFilter<T>,
+    ) where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
     {
@@ -105,24 +136,63 @@ impl Builder {
         };
         let connection = connection_object_builder.to_object::<T>();
 
-        self.outputs.extend(vec![entity_object, edge, connection]);
+        self.outputs.extend([entity_object, edge, connection]);
 
         let filter_input_builder = FilterInputBuilder {
             context: self.context,
         };
         let filter = filter_input_builder.to_object::<T>();
 
+        let having_input_builder = HavingInputBuilder {
+            context: self.context,
+        };
+        let having = having_input_builder.to_object::<T>(related_entity_filter);
+
         let order_input_builder = OrderInputBuilder {
             context: self.context,
         };
         let order = order_input_builder.to_object::<T>();
-        self.inputs.extend(vec![filter, order]);
+
+        self.inputs.extend([filter, having, order]);
 
         let entity_query_field_builder = EntityQueryFieldBuilder {
             context: self.context,
         };
-        let query = entity_query_field_builder.to_field::<T>();
-        self.queries.push(query);
+
+        if cfg!(feature = "field-pluralize") {
+            let query = entity_query_field_builder.to_singular_field::<T>();
+            self.queries.push(query);
+        }
+
+        let connection_query = entity_query_field_builder.to_field::<T>();
+        self.queries.push(connection_query);
+
+        let schema = sea_orm::Schema::new(self.connection.get_database_backend());
+        let metadata = schema.json_schema_from_entity(T::default());
+        self.metadata.insert(T::default().to_string(), metadata);
+    }
+
+    /// Register a SeaORM entity to use the Model for input / ouput.
+    /// No query / mutation will be added. Intended for use in custom operations.
+    pub fn register_custom_entity<T>(&mut self)
+    where
+        T: EntityTrait,
+        <T as EntityTrait>::Model: Sync,
+    {
+        let entity_object_builder = EntityObjectBuilder {
+            context: self.context,
+        };
+        let entity_object = entity_object_builder.to_object::<T>();
+        self.outputs.push(entity_object);
+
+        let basic_entity_object = entity_object_builder.to_basic_object::<T>();
+        self.outputs.push(basic_entity_object);
+
+        let entity_input_builder = EntityInputBuilder {
+            context: self.context,
+        };
+        let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
+        self.inputs.push(entity_insert_input_object);
 
         let schema = sea_orm::Schema::new(self.connection.get_database_backend());
         let metadata = schema.json_schema_from_entity(T::default());
@@ -139,7 +209,7 @@ impl Builder {
         let entity_object_builder = EntityObjectBuilder {
             context: self.context,
         };
-        let basic_entity_object = entity_object_builder.basic_to_object::<T>();
+        let basic_entity_object = entity_object_builder.to_basic_object::<T>();
         self.outputs.push(basic_entity_object);
 
         let entity_input_builder = EntityInputBuilder {
@@ -149,7 +219,7 @@ impl Builder {
         let entity_insert_input_object = entity_input_builder.insert_input_object::<T>();
         let entity_update_input_object = entity_input_builder.update_input_object::<T>();
         self.inputs
-            .extend(vec![entity_insert_input_object, entity_update_input_object]);
+            .extend([entity_insert_input_object, entity_update_input_object]);
 
         // create one mutation
         let entity_create_one_mutation_builder = EntityCreateOneMutationBuilder {
@@ -212,7 +282,18 @@ impl Builder {
         self
     }
 
-    /// used to register a new enumeration to the builder context
+    pub fn register_related_entity_filter<T>(
+        mut self,
+        related_entity_filter: RelatedEntityFilter<T>,
+    ) -> Self
+    where
+        T: EntityTrait,
+    {
+        self.schema = self.schema.data(related_entity_filter);
+        self
+    }
+
+    /// Used to register an SeaORM ActiveEnum to the schema
     pub fn register_enumeration<A>(&mut self)
     where
         A: ActiveEnum,
@@ -235,6 +316,79 @@ impl Builder {
             .push(filter_types_map_helper.generate_filter_input(&filter_info));
     }
 
+    pub fn register_custom_enum<T>(&mut self)
+    where
+        T: CustomEnum,
+    {
+        self.enumerations.push(T::to_enum());
+    }
+
+    pub fn register_custom_union<T>(&mut self)
+    where
+        T: CustomUnion,
+    {
+        self.unions.push(T::to_union());
+    }
+
+    pub fn register_custom_input<T>(&mut self)
+    where
+        T: CustomInputObject,
+    {
+        self.inputs.push(T::input_object(self.context));
+    }
+
+    /// Register a simple object as custom output
+    pub fn register_custom_output<T>(&mut self)
+    where
+        T: CustomOutputObject,
+    {
+        self.outputs.push(T::basic_object(self.context));
+    }
+
+    /// Register a custom output object without custom fields
+    pub fn register_complex_custom_output<T>(&mut self)
+    where
+        T: CustomOutputObject + CustomFields,
+    {
+        let object = T::to_fields(self.context)
+            .into_iter()
+            .fold(T::basic_object(self.context), |object, field| {
+                object.field(field)
+            });
+
+        self.outputs.push(object);
+    }
+
+    pub fn register_custom_object<T>(&mut self)
+    where
+        T: CustomInputObject + CustomOutputObject,
+    {
+        self.register_custom_input::<T>();
+        self.register_custom_output::<T>();
+    }
+
+    pub fn register_custom_query<T>(&mut self)
+    where
+        T: CustomFields,
+    {
+        self.queries.append(&mut T::to_fields(self.context));
+    }
+
+    pub fn register_custom_mutation<T>(&mut self)
+    where
+        T: CustomFields,
+    {
+        self.mutations.append(&mut T::to_fields(self.context));
+    }
+
+    pub fn register_subscription_field(&mut self, field: SubscriptionField) {
+        self.subscriptions.push(field);
+    }
+
+    pub fn register_scalar(&mut self, scalar: Scalar) {
+        self.scalars.push(scalar);
+    }
+
     pub fn set_depth_limit(mut self, depth: Option<usize>) -> Self {
         self.depth = depth;
         self
@@ -245,34 +399,36 @@ impl Builder {
         self
     }
 
-    /// used to consume the builder context and generate a ready to be completed GraphQL schema
-    pub fn schema_builder(self) -> SchemaBuilder {
-        let query = self.query;
-        let mutation = self.mutation;
-        let schema = self.schema;
+    #[cfg(feature = "schema-meta")]
+    fn register_schema_meta(&mut self) {
+        use crate::schema;
 
-        // register queries
-        let query = self
-            .queries
-            .into_iter()
-            .fold(query, |query, field| query.field(field));
+        self.register_custom_output::<schema::Table>();
+        self.register_custom_output::<schema::Column>();
+        self.register_custom_output::<schema::ColumnType>();
+        self.register_custom_output::<schema::Array>();
+        self.register_custom_output::<schema::Enumeration>();
+
+        use crate::CustomOutputType;
+        use async_graphql::dynamic::FieldValue;
 
         const TABLE_NAME: &str = "table_name";
+        let metadata_hashmap = std::mem::take(&mut self.metadata);
+
         let field = Field::new(
             "_sea_orm_entity_metadata",
-            TypeRef::named("String"),
+            crate::schema::Table::gql_output_type_ref(self.context),
             move |ctx| {
-                let metadata_hashmap = self.metadata.clone();
+                let metadata_hashmap = metadata_hashmap.clone();
                 FieldFuture::new(async move {
-                    let table_name = ctx
-                        .args
-                        .get(TABLE_NAME)
-                        .expect("table_name is required")
-                        .string()?;
+                    let table_name = ctx.args.try_get(TABLE_NAME)?.string()?;
                     if let Some(metadata) = metadata_hashmap.get(table_name) {
-                        Ok(Some(async_graphql::Value::from_json(metadata.to_owned())?))
+                        let table: crate::schema::Table = serde_json::from_value(metadata.clone())?;
+                        Ok(Some(FieldValue::owned_any(table)))
                     } else {
-                        Ok(None)
+                        Err(async_graphql::Error::new(format!(
+                            "table not found `{table_name}`"
+                        )))
                     }
                 })
             },
@@ -281,13 +437,41 @@ impl Builder {
             TABLE_NAME,
             TypeRef::named_nn(TypeRef::STRING),
         ));
-        let query = query.field(field);
+
+        self.queries.push(field);
+    }
+
+    /// Consume the builder context and generate a ready to be completed GraphQL schema.
+    /// You can extend the schema, or attach additional data to it before finish().
+    pub fn schema_builder(mut self) -> SchemaBuilder {
+        #[cfg(feature = "schema-meta")]
+        self.register_schema_meta();
+
+        let query = self.query;
+        let mutation = self.mutation;
+        let subscription = self.subscription;
+        let schema = self.schema;
+        let have_subscription = !self.subscriptions.is_empty();
+
+        // register queries
+        let query = self
+            .queries
+            .into_iter()
+            .fold(query, |query, field| query.field(field));
 
         // register mutations
         let mutation = self
             .mutations
             .into_iter()
             .fold(mutation, |mutation, field| mutation.field(field));
+
+        // register subscriptions
+        let subscription = self
+            .subscriptions
+            .into_iter()
+            .fold(subscription, |subscription, field| {
+                subscription.field(field)
+            });
 
         // register entities to schema
         let schema = self
@@ -307,6 +491,18 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, enumeration| schema.register(enumeration));
 
+        // register unions
+        let schema = self
+            .unions
+            .into_iter()
+            .fold(schema, |schema, enumeration| schema.register(enumeration));
+
+        // register scalars
+        let schema = self
+            .scalars
+            .into_iter()
+            .fold(schema, |schema, enumeration| schema.register(enumeration));
+
         // register input filters
         let filter_types_map_helper = FilterTypesMapHelper {
             context: self.context,
@@ -316,7 +512,10 @@ impl Builder {
             .into_iter()
             .fold(schema, |schema, cur| schema.register(cur));
 
+        let json_scalar = Scalar::new("Json");
+
         let schema = schema
+            .register(json_scalar)
             .register(
                 OrderByEnumBuilder {
                     context: self.context,
@@ -368,6 +567,12 @@ impl Builder {
             .register(query)
             .register(mutation);
 
+        let schema = if have_subscription {
+            schema.register(subscription)
+        } else {
+            schema
+        };
+
         let schema = if let Some(depth) = self.depth {
             schema.limit_depth(depth)
         } else {
@@ -382,25 +587,108 @@ impl Builder {
 }
 
 pub trait RelationBuilder {
-    fn get_relation(
+    fn get_relation_name(&self, context: &'static BuilderContext) -> String;
+
+    fn get_relation(&self, context: &'static BuilderContext) -> async_graphql::dynamic::Field;
+
+    fn get_related_entity_filter(
         &self,
-        context: &'static crate::BuilderContext,
-    ) -> async_graphql::dynamic::Field;
+        context: &'static BuilderContext,
+    ) -> RelatedEntityFilterField;
 }
 
 #[macro_export]
+macro_rules! impl_custom_type_for_enum {
+    ($name:ty) => {
+        impl seaography::CustomOutputType for $name {
+            fn gql_output_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                <$name as seaography::GqlScalarValueType>::gql_output_type_ref(ctx)
+            }
+
+            fn gql_field_value(
+                self,
+                ctx: &'static seaography::BuilderContext,
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                <$name as seaography::GqlScalarValueType>::gql_field_value(self, ctx)
+            }
+        }
+
+        impl seaography::CustomInputType for $name {
+            fn gql_input_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                <$name as seaography::GqlScalarValueType>::gql_input_type_ref(ctx)
+            }
+
+            fn parse_value(
+                context: &'static seaography::BuilderContext,
+                value: Option<async_graphql::dynamic::ValueAccessor<'_>>,
+            ) -> seaography::SeaResult<Self> {
+                match value {
+                    None => Err(seaography::SeaographyError::AsyncGraphQLError(
+                        "Value expected".into(),
+                    )),
+                    Some(v) => {
+                        let s = v.enum_name()?.to_string();
+                        match sea_orm::ActiveEnum::try_from_value(&s) {
+                            Ok(v) => Ok(v),
+                            Err(e) => Err(seaography::SeaographyError::AsyncGraphQLError(e.into())),
+                        }
+                    }
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_custom_output_type_for_entity {
+    ($name:ty) => {
+        #[allow(non_local_definitions)]
+        impl seaography::CustomOutputType for $name {
+            fn gql_output_type_ref(
+                ctx: &'static seaography::BuilderContext,
+            ) -> async_graphql::dynamic::TypeRef {
+                <$name as seaography::GqlModelType>::gql_output_type_ref(ctx)
+            }
+
+            fn gql_field_value(
+                self,
+                ctx: &'static seaography::BuilderContext,
+            ) -> Option<async_graphql::dynamic::FieldValue<'static>> {
+                <$name as seaography::GqlModelType>::gql_field_value(self, ctx)
+            }
+        }
+    };
+}
+
+#[macro_export]
+/// Includes mutations by default. Can skip mutations by
+/// `seaography::register_entity!(builder, my_entity, mutation: false);`.
 macro_rules! register_entity {
     ($builder:expr, $module_path:ident) => {
-        $builder.register_entity::<$module_path::Entity>(
+        seaography::register_entity!($builder, $module_path, mutation: true);
+    };
+    ($builder:expr, $module_path:ident, mutation: $mutation:expr) => {
+        let relations =
             <$module_path::RelatedEntity as sea_orm::Iterable>::iter()
                 .map(|rel| seaography::RelationBuilder::get_relation(&rel, $builder.context))
-                .collect(),
-        );
+                .collect();
+        let related_entity_filter =
+            seaography::RelatedEntityFilter::<$module_path::Entity>::build::<$module_path::RelatedEntity>($builder.context);
+
+        $builder.register_entity::<$module_path::Entity>(relations, &related_entity_filter);
         $builder =
             $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
         $builder =
             $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
-        $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
+        $builder =
+            $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
+        if $mutation {
+            $builder.register_entity_mutations::<$module_path::Entity, $module_path::ActiveModel>();
+        }
     };
 }
 
@@ -426,6 +714,14 @@ macro_rules! register_entities_without_relation {
 }
 
 #[macro_export]
+#[cfg(feature = "strict-custom-types")]
+macro_rules! impl_custom_output_type_for_entities {
+    ([$($module_paths:ident),+ $(,)?]) => {
+        $(seaography::impl_custom_output_type_for_entity!($module_paths::Model);)*
+    };
+}
+
+#[macro_export]
 macro_rules! register_entity_modules {
     ([$($module_paths:ident),+ $(,)?]) => {
         pub fn register_entity_modules(mut builder: seaography::builder::Builder) -> seaography::builder::Builder {
@@ -447,5 +743,54 @@ macro_rules! register_active_enums {
             $(builder.register_enumeration::<$enum_paths>();)*
             builder
         }
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_entities {
+    ($builder:expr, [$($entity:ident),+ $(,)?]) => {
+        $($builder.register_custom_entity::<$entity::Entity>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_inputs {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_input::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_outputs {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_output::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_unions {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_union::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_complex_custom_outputs {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_complex_custom_output::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_queries {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_query::<$ty>();)*
+    };
+}
+
+#[macro_export]
+macro_rules! register_custom_mutations {
+    ($builder:expr, [$($ty:path),+ $(,)?]) => {
+        $($builder.register_custom_mutation::<$ty>();)*
     };
 }

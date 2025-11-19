@@ -18,10 +18,10 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
         use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
         use dotenv::dotenv;
         use sea_orm::Database;
-        use seaography::{async_graphql, lazy_static};
+        use seaography::{async_graphql, lazy_static::lazy_static};
         use std::env;
 
-        lazy_static::lazy_static! {
+        lazy_static! {
             static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
             static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
             static ref DATABASE_URL: String =
@@ -35,14 +35,14 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
                 });
         }
 
-        async fn index(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
-            schema.execute(req.into_inner()).await.into()
-        }
-
         async fn graphql_playground() -> Result<HttpResponse> {
             Ok(HttpResponse::Ok()
                 .content_type("text/html; charset=utf-8")
                 .body(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT))))
+        }
+
+        async fn graphql_handler(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {
+            schema.execute(req.into_inner()).await.into()
         }
 
         #[actix_web::main]
@@ -60,8 +60,8 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             HttpServer::new(move || {
                 App::new()
                     .app_data(Data::new(schema.clone()))
-                    .service(web::resource("/").guard(guard::Post()).to(index))
                     .service(web::resource("/").guard(guard::Get()).to(graphql_playground))
+                    .service(web::resource("/").guard(guard::Post()).to(graphql_handler))
             })
             .bind("127.0.0.1:8000")?
             .run()

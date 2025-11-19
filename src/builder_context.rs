@@ -2,13 +2,19 @@ use crate::{
     ActiveEnumConfig, ActiveEnumFilterInputConfig, ConnectionObjectConfig, CursorInputConfig,
     EdgeObjectConfig, EntityCreateBatchMutationConfig, EntityCreateOneMutationConfig,
     EntityDeleteMutationConfig, EntityInputConfig, EntityObjectConfig, EntityQueryFieldConfig,
-    EntityUpdateMutationConfig, FilterInputConfig, OffsetInputConfig, OrderByEnumConfig,
-    OrderInputConfig, PageInfoObjectConfig, PageInputConfig, PaginationInfoObjectConfig,
-    PaginationInputConfig,
+    EntityUpdateMutationConfig, FilterInputConfig, HavingInputConfig, OffsetInputConfig,
+    OrderByEnumConfig, OrderInputConfig, PageInfoObjectConfig, PageInputConfig,
+    PaginationInfoObjectConfig, PaginationInputConfig,
 };
+
+pub mod entity_column_id;
+pub use entity_column_id::*;
 
 pub mod guards;
 pub use guards::*;
+
+pub mod hooks;
+pub use hooks::*;
 
 pub mod types_map;
 pub use types_map::*;
@@ -33,6 +39,7 @@ pub struct BuilderContext {
     pub order_input: OrderInputConfig,
 
     pub filter_input: FilterInputConfig,
+    pub having_input: HavingInputConfig,
     pub active_enum_filter_input: ActiveEnumFilterInputConfig,
 
     pub page_info_object: PageInfoObjectConfig,
@@ -49,9 +56,7 @@ pub struct BuilderContext {
 
     pub entity_input: EntityInputConfig,
 
-    pub guards: GuardsConfig,
+    pub hooks: LifecycleHooks,
     pub types: TypesMapConfig,
     pub filter_types: FilterTypesMapConfig,
-    // is_skipped function
-    // naming function
 }

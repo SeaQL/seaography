@@ -1,10 +1,10 @@
 [package]
 name = "seaography-generator"
-version = "1.1.4"
+version = "2.0.0-rc.4"
 edition = "2021"
 rust-version = "1.70"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
-description = "🧭 A GraphQL framework and code generator for SeaORM"
+description = "🧭 A GraphQL framework for SeaORM"
 license = "MIT OR Apache-2.0"
 homepage = "https://www.sea-ql.org/Seaography"
 documentation = "https://docs.rs/seaography"
@@ -18,5 +18,4 @@ proc-macro2 = "1.0.66"
 syn = { version = "2.0.27", features = ["full"] }
 heck = "0.4.1"
 itertools = "0.11.0"
-sea-query = { version = "~0.32.0", default-features = false }
 thiserror = "1.0.44"

@@ -10,15 +10,15 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
     let crate_name_token: TokenStream = crate_name.replace('-', "_").parse().unwrap();
 
     quote! {
-        use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-        use async_graphql_poem::GraphQL;
+        use async_graphql::{dynamic::Schema, http::{playground_source, GraphQLPlaygroundConfig}};
+        use async_graphql_poem::{GraphQLRequest, GraphQLResponse};
         use dotenv::dotenv;
-        use poem::{get, handler, listener::TcpListener, web::Html, IntoResponse, Route, Server};
+        use poem::{get, handler, listener::TcpListener, EndpointExt, IntoResponse, Route, Server, web::{Data, Html}};
         use sea_orm::Database;
-        use seaography::{async_graphql, lazy_static};
+        use seaography::{async_graphql, lazy_static::lazy_static};
         use std::env;
 
-        lazy_static::lazy_static! {
+        lazy_static! {
             static ref URL: String = env::var("URL").unwrap_or("localhost:8000".into());
             static ref ENDPOINT: String = env::var("ENDPOINT").unwrap_or("/".into());
             static ref DATABASE_URL: String =
@@ -37,6 +37,12 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             Html(playground_source(GraphQLPlaygroundConfig::new(&ENDPOINT)))
         }
 
+        #[handler]
+        async fn graphql_handler(schema: Data<&Schema>, req: GraphQLRequest) -> GraphQLResponse {
+            let req = req.0;
+            schema.execute(req).await.into()
+        }
+
         #[tokio::main]
         async fn main() {
             dotenv().ok();
@@ -50,7 +56,7 @@ pub fn generate_main(crate_name: &str) -> TokenStream {
             let schema = #crate_name_token::query_root::schema(database, *DEPTH_LIMIT, *COMPLEXITY_LIMIT).unwrap();
             let app = Route::new().at(
                 &*ENDPOINT,
-                get(graphql_playground).post(GraphQL::new(schema)),
+                get(graphql_playground).post(graphql_handler).data(schema),
             );
             println!("Visit GraphQL Playground at http://{}", *URL);
             Server::new(TcpListener::bind(&*URL))
