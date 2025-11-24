@@ -3,10 +3,7 @@ pub(crate) mod loader_impl;
 
 use loader_impl::*;
 
-use sea_orm::{
-    sea_query::{Value, ValueTuple},
-    EntityTrait, QueryFilter, RelationDef,
-};
+use sea_orm::{sea_query::ValueTuple, EntityTrait, QueryFilter, RelationDef};
 use std::{collections::HashMap, hash::Hash, marker::PhantomData};
 
 use crate::apply_order;

@@ -5,7 +5,8 @@ use std::any::Any;
 
 /// used to encode the primary key values of a SeaORM entity to a String
 pub fn encode_cursor(values: ValueTuple) -> String {
-    ValueTupleIter::new(&values)
+    values
+        .iter()
         .map(|value| -> String {
             match value {
                 sea_orm::Value::TinyInt(value) => {
@@ -364,47 +365,6 @@ impl<'a> Iterator for IdenIter<'a> {
                 _ => None,
             },
             Identity::Many(vec) => vec.get(self.index),
-        };
-        self.index += 1;
-        result
-    }
-}
-
-pub(crate) struct ValueTupleIter<'a> {
-    value: &'a ValueTuple,
-    index: usize,
-}
-
-impl<'a> ValueTupleIter<'a> {
-    pub fn new(value: &'a ValueTuple) -> Self {
-        Self { value, index: 0 }
-    }
-}
-
-impl<'a> Iterator for ValueTupleIter<'a> {
-    type Item = &'a sea_orm::Value;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let result = match self.value {
-            ValueTuple::One(a) => {
-                if self.index == 0 {
-                    Some(a)
-                } else {
-                    None
-                }
-            }
-            ValueTuple::Two(a, b) => match self.index {
-                0 => Some(a),
-                1 => Some(b),
-                _ => None,
-            },
-            ValueTuple::Three(a, b, c) => match self.index {
-                0 => Some(a),
-                1 => Some(b),
-                2 => Some(c),
-                _ => None,
-            },
-            ValueTuple::Many(vec) => vec.get(self.index),
         };
         self.index += 1;
         result

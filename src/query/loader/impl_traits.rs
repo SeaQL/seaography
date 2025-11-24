@@ -5,9 +5,10 @@ where
     T: sea_orm::EntityTrait,
 {
     fn eq(&self, other: &Self) -> bool {
-        ValueTupleIter::new(&self.key)
+        self.key
+            .iter()
             .map(map_key)
-            .eq(ValueTupleIter::new(&other.key).map(map_key))
+            .eq(other.key.iter().map(map_key))
             && self.meta.eq(&other.meta)
     }
 }
@@ -49,7 +50,7 @@ where
     T: sea_orm::EntityTrait,
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        for key in ValueTupleIter::new(&self.key) {
+        for key in self.key.iter() {
             match key {
                 sea_orm::Value::TinyInt(value) => {
                     let value: Option<i64> = value.map(|value| value as i64);
@@ -108,46 +109,5 @@ where
         self.via_def.hash(state);
         format!("{:?}", self.filters).hash(state);
         format!("{:?}", self.order_by).hash(state);
-    }
-}
-
-struct ValueTupleIter<'a> {
-    key: &'a ValueTuple,
-    index: usize,
-}
-
-impl<'a> ValueTupleIter<'a> {
-    pub fn new(key: &'a ValueTuple) -> Self {
-        Self { key, index: 0 }
-    }
-}
-
-impl<'a> Iterator for ValueTupleIter<'a> {
-    type Item = &'a Value;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let result = match self.key {
-            ValueTuple::One(iden1) => {
-                if self.index == 0 {
-                    Some(iden1)
-                } else {
-                    None
-                }
-            }
-            ValueTuple::Two(iden1, iden2) => match self.index {
-                0 => Some(iden1),
-                1 => Some(iden2),
-                _ => None,
-            },
-            ValueTuple::Three(iden1, iden2, iden3) => match self.index {
-                0 => Some(iden1),
-                1 => Some(iden2),
-                2 => Some(iden3),
-                _ => None,
-            },
-            ValueTuple::Many(vec) => vec.get(self.index),
-        };
-        self.index += 1;
-        result
     }
 }
