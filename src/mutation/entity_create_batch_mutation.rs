@@ -59,7 +59,7 @@ impl EntityCreateBatchMutationBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
-        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + Send + 'static,
     {
         let entity_input_builder = EntityInputBuilder {
             context: self.context,
@@ -110,11 +110,20 @@ impl EntityCreateBatchMutationBuilder {
                             }
                         }
 
-                        let active_model = prepare_active_model::<T, A>(
+                        let mut active_model = prepare_active_model::<T, A>(
                             &entity_input_builder,
                             &entity_object_builder,
                             input_object,
                         )?;
+                        if let GuardAction::Block(reason) = hooks.before_active_model_save(
+                            &ctx,
+                            &object_name,
+                            OperationType::Create,
+                            &mut active_model,
+                        ) {
+                            return Err(guard_error(reason, "Blocked by before_active_model_save."));
+                        }
+
                         let result = active_model.insert(&transaction).await?;
                         results.push(result);
                     }

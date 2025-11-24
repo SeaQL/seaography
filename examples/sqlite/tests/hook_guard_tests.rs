@@ -10,6 +10,7 @@ use seaography::{
 use seaography_sqlite_example::entities::*;
 use serde_json::json;
 use std::{
+    any::Any,
     collections::BTreeSet,
     sync::{Arc, Mutex},
 };
@@ -28,6 +29,7 @@ enum HookCall {
     EntityGuard(String, OperationType),
     EntityWatch(String, OperationType),
     FieldGuard(String, Option<i64>, String, OperationType),
+    BeforeActiveModelSave(String, OperationType),
 }
 
 fn id_from_entity(entity: &str, value: &FieldValue<'_>) -> Option<i64> {
@@ -62,6 +64,10 @@ impl HookCall {
     ) -> Self {
         HookCall::FieldGuard(entity.into(), id, field.into(), action)
     }
+
+    fn before_active_model_save(entity: &str, action: OperationType) -> Self {
+        HookCall::BeforeActiveModelSave(entity.into(), action)
+    }
 }
 
 #[derive(Default, Clone)]
@@ -83,13 +89,6 @@ impl Log {
     }
 
     fn calls(&self) -> Vec<HookCall> {
-        let mut calls = self.calls.lock().unwrap().clone();
-        // Sort the list of calls so the tests don't depend on the order of field resolution
-        calls.sort();
-        calls
-    }
-
-    fn calls_unsorted(&self) -> Vec<HookCall> {
         self.calls.lock().unwrap().clone()
     }
 }
@@ -164,6 +163,32 @@ impl LifecycleHooksInterface for MyHooks {
             }
             _ => GuardAction::Allow,
         }
+    }
+
+    fn before_active_model_save(
+        &self,
+        ctx: &ResolverContext,
+        entity: &str,
+        action: OperationType,
+        active_model: &mut dyn Any,
+    ) -> GuardAction {
+        ctx.data::<Log>()
+            .unwrap()
+            .record(HookCall::before_active_model_save(entity, action));
+
+        match entity {
+            "FilmText" => {
+                let active_model: &film_text::ActiveModel =
+                    active_model.downcast_ref().expect("Failed to downcast");
+                if active_model.film_id != sea_orm::Set(5) {
+                    // only allow inserting film_id = 5
+                    return GuardAction::Block(None);
+                }
+            }
+            _ => (),
+        }
+
+        GuardAction::Allow
     }
 }
 
@@ -262,20 +287,20 @@ async fn entity_guard() {
     assert_eq!(
         log.calls(),
         vec![
-            HookCall::entity_guard("FilmCategory", OperationType::Read),
             HookCall::entity_guard("Language", OperationType::Read),
             HookCall::field_guard("Language", None, "languageId", OperationType::Read),
-            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
-            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
-            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
-            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
+            HookCall::field_guard("Language", None, "name", OperationType::Read),
             HookCall::field_guard("Language", None, "languageId", OperationType::Read),
             HookCall::field_guard("Language", None, "name", OperationType::Read),
+            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
             HookCall::field_guard("Language", None, "name", OperationType::Read),
+            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
             HookCall::field_guard("Language", None, "name", OperationType::Read),
+            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
             HookCall::field_guard("Language", None, "name", OperationType::Read),
+            HookCall::field_guard("Language", None, "languageId", OperationType::Read),
             HookCall::field_guard("Language", None, "name", OperationType::Read),
-            HookCall::field_guard("Language", None, "name", OperationType::Read),
+            HookCall::entity_guard("FilmCategory", OperationType::Read),
         ]
     );
 }
@@ -309,8 +334,8 @@ async fn field_guard() {
         vec![
             HookCall::entity_guard("Language", OperationType::Read),
             HookCall::field_guard("Language", None, "languageId", OperationType::Read),
-            HookCall::field_guard("Language", None, "lastUpdate", OperationType::Read),
             HookCall::field_guard("Language", None, "name", OperationType::Read),
+            HookCall::field_guard("Language", None, "lastUpdate", OperationType::Read),
         ]
     );
 }
@@ -378,7 +403,7 @@ async fn entity_watch_mutation() {
     );
 
     assert_eq!(
-        log.calls_unsorted(),
+        log.calls(),
         vec![
             HookCall::entity_guard("Country", OperationType::Update),
             HookCall::field_guard("Country", None, "country", OperationType::Update),
@@ -641,8 +666,8 @@ async fn entity_object_relation_not_owner2() {
         vec![
             HookCall::entity_guard("Staff", OperationType::Read),
             HookCall::entity_guard("Staff", OperationType::Read),
-            HookCall::field_guard("Staff", Some(1), "firstName", OperationType::Read),
             HookCall::field_guard("Staff", Some(2), "selfRef", OperationType::Read),
+            HookCall::field_guard("Staff", Some(1), "firstName", OperationType::Read),
         ]
     );
 }
@@ -726,10 +751,10 @@ async fn entity_object_via_relation_owner1() {
     assert_eq!(
         log.calls(),
         vec![
-            HookCall::entity_guard("Rental", OperationType::Read),
             HookCall::entity_guard("Staff", OperationType::Read),
-            HookCall::field_guard("Rental", Some(4), "rentalId", OperationType::Read),
+            HookCall::entity_guard("Rental", OperationType::Read),
             HookCall::field_guard("Staff", Some(2), "rental", OperationType::Read),
+            HookCall::field_guard("Rental", Some(4), "rentalId", OperationType::Read),
         ]
     );
 }
@@ -805,4 +830,68 @@ async fn entity_object_via_relation_not_owner2() {
     assert_eq!(response.errors.len(), 1);
     assert_eq!(response.errors[0].message, "Read on Staff(1).store denied");
     assert_eq!(response.data.into_json().unwrap(), serde_json::Value::Null);
+}
+
+#[tokio::test]
+async fn before_active_model_save() {
+    let permissions = Permissions::default();
+    let (schema, log) = schema(permissions).await;
+
+    let response = schema
+        .execute(
+            r#"
+            mutation {
+              filmTextCreateOne(
+                data: { filmId: 5, title: "Title for 5", description: "Description of 5" }
+              ) {
+                filmId
+              }
+            }
+            "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 0);
+    assert_eq!(
+        log.calls(),
+        vec![
+            HookCall::entity_guard("FilmText", OperationType::Create),
+            HookCall::field_guard("FilmText", None, "filmId", OperationType::Create),
+            HookCall::field_guard("FilmText", None, "title", OperationType::Create),
+            HookCall::field_guard("FilmText", None, "description", OperationType::Create),
+            HookCall::before_active_model_save("FilmText", OperationType::Create),
+            HookCall::entity_watch("FilmText", OperationType::Create),
+            HookCall::field_guard("FilmTextBasic", None, "filmId", OperationType::Read),
+        ]
+    );
+
+    schema
+        .execute(
+            r#"
+            mutation {
+              filmTextDelete(filter: { })
+            }
+            "#,
+        )
+        .await;
+
+    let response = schema
+        .execute(
+            r#"
+            mutation {
+              filmTextCreateOne(
+                data: { filmId: 6, title: "Title for 6", description: "Description of 6" }
+              ) {
+                filmId
+              }
+            }
+            "#,
+        )
+        .await;
+
+    assert_eq!(response.errors.len(), 1);
+    assert_eq!(
+        response.errors[0].message,
+        "Blocked by before_active_model_save."
+    );
 }

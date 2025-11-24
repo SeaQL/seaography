@@ -1,7 +1,7 @@
 use super::GuardAction;
 use async_graphql::dynamic::ResolverContext;
 use sea_orm::{entity::prelude::async_trait, Condition};
-use std::ops::Deref;
+use std::{any::Any, ops::Deref};
 
 pub struct LifecycleHooks(pub(crate) Box<dyn LifecycleHooksInterface>);
 
@@ -41,6 +41,7 @@ pub trait LifecycleHooksInterface: Send + Sync {
     /// This happens after an Entity is mutated
     async fn entity_watch(&self, _ctx: &ResolverContext, _entity: &str, _action: OperationType) {}
 
+    /// This happens before an Entity is accessed, invoked on each field
     fn field_guard(
         &self,
         _ctx: &ResolverContext,
@@ -51,6 +52,7 @@ pub trait LifecycleHooksInterface: Send + Sync {
         GuardAction::Allow
     }
 
+    /// Apply custom filter to select, update and delete (but not insert)
     fn entity_filter(
         &self,
         _ctx: &ResolverContext,
@@ -58,6 +60,17 @@ pub trait LifecycleHooksInterface: Send + Sync {
         _action: OperationType,
     ) -> Option<Condition> {
         None
+    }
+
+    /// Inspect and modify an ActiveModel before save (only insert for now)
+    fn before_active_model_save(
+        &self,
+        _ctx: &ResolverContext,
+        _entity: &str,
+        _action: OperationType,
+        _active_model: &mut dyn Any,
+    ) -> GuardAction {
+        GuardAction::Allow
     }
 }
 

@@ -66,7 +66,7 @@ impl EntityUpdateMutationBuilder {
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
-        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + Send,
     {
         let entity_input_builder = EntityInputBuilder {
             context: self.context,

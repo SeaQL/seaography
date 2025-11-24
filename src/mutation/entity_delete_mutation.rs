@@ -59,7 +59,7 @@ impl EntityDeleteMutationBuilder {
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: IntoActiveModel<A>,
-        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + std::marker::Send,
+        A: ActiveModelTrait<Entity = T> + sea_orm::ActiveModelBehavior + Send,
     {
         let entity_filter_input_builder = FilterInputBuilder {
             context: self.context,
