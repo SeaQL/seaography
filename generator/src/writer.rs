@@ -3,11 +3,7 @@ use std::path::Path;
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::{
-    parser::{parse_entity, parse_enumerations, EntityDefinition},
-    util::add_line_break,
-    WebFrameworkEnum,
-};
+use crate::{util::add_line_break, WebFrameworkEnum};
 
 pub fn generate_query_root(entities_path: &Path) -> TokenStream {
     let mut entities_paths: Vec<_> = std::fs::read_dir(entities_path)
@@ -29,53 +25,6 @@ pub fn generate_query_root(entities_path: &Path) -> TokenStream {
         .collect();
     entities_paths.sort();
 
-    let entities: Vec<EntityDefinition> = entities_paths
-        .into_iter()
-        .map(|path| {
-            let file_name = path.file_name().unwrap().to_str().unwrap();
-            parse_entity(file_name.into())
-        })
-        .collect();
-
-    let _entities: Vec<TokenStream> = entities
-        .iter()
-        .map(|entity| {
-            let entity_path = &entity.name;
-
-            quote! {
-                #entity_path
-            }
-        })
-        .collect();
-
-    let enumerations = std::fs::read_dir(entities_path)
-        .unwrap()
-        .filter(|r| r.is_ok())
-        .map(|r| r.unwrap().path())
-        .find(|r| {
-            let name = r.file_stem();
-
-            if let Some(v) = name {
-                v.eq(std::ffi::OsStr::new("sea_orm_active_enums"))
-            } else {
-                false
-            }
-        });
-
-    let enumerations = if enumerations.is_some() {
-        let file_content =
-            std::fs::read_to_string(entities_path.join("sea_orm_active_enums.rs")).unwrap();
-
-        Some(parse_enumerations(file_content))
-    } else {
-        None
-    };
-
-    let enumerations = if enumerations.is_some() {
-        quote!(builder = register_active_enums(builder);)
-    } else {
-        quote!()
-    };
 
     quote! {
         use crate::entities::*;
@@ -92,20 +41,9 @@ pub fn generate_query_root(entities_path: &Path) -> TokenStream {
             depth: Option<usize>,
             complexity: Option<usize>,
         ) -> Result<Schema, SchemaError> {
-            schema_builder(&CONTEXT, database, depth, complexity).finish()
-        }
-
-        pub fn schema_builder(
-            context: &'static BuilderContext,
-            database: DatabaseConnection,
-            depth: Option<usize>,
-            complexity: Option<usize>,
-        ) -> SchemaBuilder {
-            let mut builder = Builder::new(context, database.clone());
-
-            builder = register_entity_modules(builder);
-
-            #enumerations
+            let  builder = Builder::new(&CONTEXT, database.clone());
+            let  builder = register_entity_modules(builder);
+            let  builder = register_active_enums(builder);
 
             builder
                 .set_depth_limit(depth)
