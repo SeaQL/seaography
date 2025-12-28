@@ -121,7 +121,10 @@ impl EntityCreateBatchMutationBuilder {
                             OperationType::Create,
                             &mut active_model,
                         ) {
-                            return Err(guard_error(reason, "Blocked by before_active_model_save."));
+                            return Err(guard_error(
+                                reason,
+                                "Blocked by before_active_model_save.",
+                            ));
                         }
 
                         let result = active_model.insert(&transaction).await?;

@@ -852,16 +852,22 @@ pub fn converted_value_to_sea_orm_value(
         }
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
-            let list_value = value
-                .list()?
-                .iter()
-                .map(|value| converted_value_to_sea_orm_value(ty, &value, entity_name, column_name))
-                .collect::<SeaResult<Vec<sea_orm::Value>>>()?;
+            let list_value = value.list()?;
 
-            sea_orm::Value::Array(
-                converted_type_to_sea_orm_array_type(ty)?,
-                Some(Box::new(list_value)),
-            )
+            if list_value.is_empty() {
+                sea_orm::Value::Array(sea_orm::sea_query::Array::Null(
+                    converted_type_to_sea_orm_array_type(ty)?,
+                ))
+            } else {
+                let list_value = list_value
+                    .iter()
+                    .map(|value| {
+                        converted_value_to_sea_orm_value(ty, &value, entity_name, column_name)
+                    })
+                    .collect::<SeaResult<Vec<sea_orm::Value>>>()?;
+
+                sea_orm::Value::Array(list_value.into())
+            }
         } // FIXME: support ip type
           // #[cfg(feature = "with-ipnetwork")]
           // ConvertedType::IpNetwork => {
@@ -926,9 +932,9 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult
         #[cfg(feature = "with-bigdecimal")]
         ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-postgres-array")]
-        ConvertedType::Array(ty) => {
-            sea_orm::Value::Array(converted_type_to_sea_orm_array_type(ty)?, None)
-        }
+        ConvertedType::Array(ty) => sea_orm::Value::Array(sea_orm::sea_query::Array::Null(
+            converted_type_to_sea_orm_array_type(ty)?,
+        )),
     })
 }
 

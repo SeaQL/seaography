@@ -466,6 +466,8 @@ async fn test_create_batch_mutation() {
 async fn test_update_mutation() {
     let schema = schema().await;
 
+    restore_country(&schema).await;
+
     assert_eq(
         schema
             .execute(
@@ -608,6 +610,10 @@ async fn test_update_mutation() {
         "#,
     );
 
+    restore_country(&schema).await;
+}
+
+async fn restore_country(schema: &Schema) {
     schema
         .execute(
             r#"mutation {
