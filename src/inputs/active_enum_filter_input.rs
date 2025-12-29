@@ -94,7 +94,7 @@ where
 
     let extract_variant = |input: &str| -> SeaResult<String> {
         let variant = variants.iter().find(|variant| {
-            let variant = format_variant(&variant.to_string());
+            let variant = format_variant(variant.as_ref());
             variant.eq(input)
         });
         Ok(variant
