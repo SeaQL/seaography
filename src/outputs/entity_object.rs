@@ -268,19 +268,16 @@ pub(crate) fn sea_query_value_to_graphql_value(
         sea_orm::Value::Bytes(value) => value.map(|it| Value::from(String::from_utf8_lossy(&it))),
 
         #[cfg(feature = "with-postgres-array")]
-        sea_orm::Value::Array(value) => match value {
-            sea_orm::sea_query::Array::Null(_) => None,
-            _ => Some(Value::List(
-                value
-                    .iter_value()
-                    .map(|item| match item {
-                        Some(v) => sea_query_value_to_graphql_value(_context, v, is_enum)
-                            .unwrap_or(Value::Null),
-                        None => Value::Null,
+        sea_orm::Value::Array(_array_value, value) => value.map(|it| {
+            Value::List(
+                it.into_iter()
+                    .map(|item| {
+                        sea_query_value_to_graphql_value(_context, item, is_enum)
+                            .unwrap_or(Value::Null)
                     })
                     .collect(),
-            )),
-        },
+            )
+        }),
 
         #[cfg(feature = "with-json")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
