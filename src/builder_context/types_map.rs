@@ -655,12 +655,12 @@ pub fn converted_value_to_sea_orm_value(
                 Ok(s) => sea_orm::entity::prelude::Json::from_str(s).map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("Json - {}.{}", entity_name, column_name),
+                        format!("Json - {entity_name}.{column_name}"),
                     )
                 })?,
                 Err(_) => value.deserialize()?,
             };
-            sea_orm::Value::Json(Some(value))
+            sea_orm::Value::Json(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate => {
@@ -669,7 +669,7 @@ pub fn converted_value_to_sea_orm_value(
                     .map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("ChronoDate - {}.{}", entity_name, column_name),
+                        format!("ChronoDate - {entity_name}.{column_name}"),
                     )
                 })?;
 
@@ -682,7 +682,7 @@ pub fn converted_value_to_sea_orm_value(
                     .map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("ChronoTime - {}.{}", entity_name, column_name),
+                        format!("ChronoTime - {entity_name}.{column_name}"),
                     )
                 })?;
 
@@ -697,7 +697,7 @@ pub fn converted_value_to_sea_orm_value(
             .map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!("ChronoDateTime - {}.{}", entity_name, column_name),
+                    format!("ChronoDateTime - {entity_name}.{column_name}"),
                 )
             })?;
 
@@ -711,7 +711,7 @@ pub fn converted_value_to_sea_orm_value(
                 .map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("ChronoDateTimeUtc - {}.{}", entity_name, column_name),
+                        format!("ChronoDateTimeUtc - {entity_name}.{column_name}"),
                     )
                 })?;
 
@@ -725,7 +725,7 @@ pub fn converted_value_to_sea_orm_value(
                 .map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("ChronoDateTimeLocal - {}.{}", entity_name, column_name),
+                        format!("ChronoDateTimeLocal - {entity_name}.{column_name}"),
                     )
                 })?;
 
@@ -740,10 +740,7 @@ pub fn converted_value_to_sea_orm_value(
             .map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!(
-                        "ChronoDateTimeWithTimeZone - {}.{}",
-                        entity_name, column_name
-                    ),
+                    format!("ChronoDateTimeWithTimeZone - {entity_name}.{column_name}",),
                 )
             })?;
 
@@ -758,7 +755,7 @@ pub fn converted_value_to_sea_orm_value(
             .map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!("TimeDate - {}.{}", entity_name, column_name),
+                    format!("TimeDate - {entity_name}.{column_name}"),
                 )
             })?;
 
@@ -773,7 +770,7 @@ pub fn converted_value_to_sea_orm_value(
             .map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!("TimeTime - {}.{}", entity_name, column_name),
+                    format!("TimeTime - {entity_name}.{column_name}"),
                 )
             })?;
 
@@ -788,7 +785,7 @@ pub fn converted_value_to_sea_orm_value(
             .map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!("TimeDateTime - {}.{}", entity_name, column_name),
+                    format!("TimeDateTime - {entity_name}.{column_name}"),
                 )
             })?;
 
@@ -803,7 +800,7 @@ pub fn converted_value_to_sea_orm_value(
             .map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!("TimeDateTimeWithTimeZone - {}.{}", entity_name, column_name),
+                    format!("TimeDateTimeWithTimeZone - {entity_name}.{column_name}"),
                 )
             })?;
 
@@ -816,7 +813,7 @@ pub fn converted_value_to_sea_orm_value(
             let value = sea_orm::entity::prelude::Uuid::from_str(value.string()?).map_err(|e| {
                 crate::SeaographyError::TypeConversionError(
                     e.to_string(),
-                    format!("Uuid - {}.{}", entity_name, column_name),
+                    format!("Uuid - {entity_name}.{column_name}"),
                 )
             })?;
 
@@ -830,7 +827,7 @@ pub fn converted_value_to_sea_orm_value(
                 sea_orm::entity::prelude::Decimal::from_str(value.string()?).map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("Decimal - {}.{}", entity_name, column_name),
+                        format!("Decimal - {entity_name}.{column_name}"),
                     )
                 })?;
 
@@ -844,7 +841,7 @@ pub fn converted_value_to_sea_orm_value(
                 sea_orm::entity::prelude::BigDecimal::from_str(value.string()?).map_err(|e| {
                     crate::SeaographyError::TypeConversionError(
                         e.to_string(),
-                        format!("BigDecimal - {}.{}", entity_name, column_name),
+                        format!("BigDecimal - {entity_name}.{column_name}"),
                     )
                 })?;
 

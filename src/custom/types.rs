@@ -127,18 +127,13 @@ where
         let column_type =
             types_map_helper.sea_orm_column_type_to_converted_type(None, &column_type);
 
-        if value.is_none() {
-            // this is Value::unwrap and should not panic
-            Ok(converted_null_to_sea_orm_value(&column_type)?.unwrap())
-        } else {
-            let value = converted_value_to_sea_orm_value(
-                &column_type,
-                &value.expect("Checked not null"),
-                "",
-                "",
-            )?;
+        if let Some(value) = value {
+            let value = converted_value_to_sea_orm_value(&column_type, &value, "", "")?;
             // this is Value::unwrap and should not panic
             Ok(value.unwrap())
+        } else {
+            // this is Value::unwrap and should not panic
+            Ok(converted_null_to_sea_orm_value(&column_type)?.unwrap())
         }
     }
 
