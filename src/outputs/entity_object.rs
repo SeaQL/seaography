@@ -282,7 +282,7 @@ pub(crate) fn sea_query_value_to_graphql_value(
         #[cfg(feature = "with-json")]
         #[cfg_attr(docsrs, doc(cfg(feature = "with-json")))]
         sea_orm::sea_query::Value::Json(value) => {
-            value.map(|it| match Value::from_json(it.clone()) {
+            value.map(|it| match Value::from_json((*it).clone()) {
                 Ok(v) => v,
                 Err(_) => Value::from(it.to_string()),
             })

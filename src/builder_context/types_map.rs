@@ -660,7 +660,7 @@ pub fn converted_value_to_sea_orm_value(
                 })?,
                 Err(_) => value.deserialize()?,
             };
-            sea_orm::Value::Json(Some(value))
+            sea_orm::Value::Json(Some(Box::new(value)))
         }
         #[cfg(feature = "with-chrono")]
         ConvertedType::ChronoDate => {

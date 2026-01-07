@@ -77,7 +77,7 @@ fn derive_convert_output_enum_containers(
             ) -> async_graphql::Result<Option<async_graphql::dynamic::FieldValue<'static>>> {
                 if let sea_orm::sea_query::value::Value::Json(opt_json) = value {
                     if let Some(json) = opt_json {
-                        match serde_json::from_value::<#orig_ident>(json.clone()) {
+                        match serde_json::from_value::<#orig_ident>((*json).clone()) {
                             Ok(obj) => match obj {
                                 #(#variant_matches)*
                             },
