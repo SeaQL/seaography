@@ -4,7 +4,7 @@ version = "2.0.0-rc.6"
 edition = "2024"
 
 [dependencies]
-async-graphql = { version = "7.0", features = ["decimal", "chrono", "dataloader", "dynamic-schema"] }
+async-graphql = { version = "7.0", features = ["dataloader", "dynamic-schema"] }
 async-graphql-axum = { version = "7" }
 axum = { version = "0.8.*", features = ["ws"] }
 clap = { version = "4.5", features = ["derive", "env"] }

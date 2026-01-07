@@ -30,27 +30,27 @@ impl Subscription {
         _ctx: ResolverContext<'_>,
         _id: Uuid,
     ) -> async_graphql::Result<impl Stream<Item = async_graphql::Result<FieldValue<'a>>>> {
-        Ok(async_graphql::async_stream::stream! {
-            yield Ok(FieldValue::owned_any("test".to_string()));
-
-            // while let Some(msg) = rx.recv().await {
-            //     tracing::info!(
-            //         chat_id = id.to_string(),
-            //         project_id = chat.project_id.to_string(),
-            //         account_id = access.account_id().to_string(),
-            //         message_id = msg.id.to_string(),
-            //         "Sending message for chat"
-            //     );
-            //     yield Ok(FieldValue::owned_any(msg));
-            // }
-
-            // multiplexer.remove_chat(id, listener_id);
-            // tracing::info!(
-            //     chat_id = id.to_string(),
-            //     project_id = chat.project_id.to_string(),
-            //     account_id = access.account_id().to_string(),
-            //     "Removed listener for chat"
-            // );
-        })
+        Ok(tokio_stream::once(Ok(FieldValue::owned_any(
+            "test".to_string(),
+        ))))
+        // Ok(async_graphql::async_stream::stream! {
+        //     while let Some(msg) = rx.recv().await {
+        //         tracing::info!(
+        //             chat_id = id.to_string(),
+        //             project_id = chat.project_id.to_string(),
+        //             account_id = access.account_id().to_string(),
+        //             message_id = msg.id.to_string(),
+        //             "Sending message for chat"
+        //         );
+        //         yield Ok(FieldValue::owned_any(msg));
+        //     }
+        //     multiplexer.remove_chat(id, listener_id);
+        //     tracing::info!(
+        //         chat_id = id.to_string(),
+        //         project_id = chat.project_id.to_string(),
+        //         account_id = access.account_id().to_string(),
+        //         "Removed listener for chat"
+        //     );
+        // })
     }
 }
