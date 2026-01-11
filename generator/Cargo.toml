@@ -1,6 +1,6 @@
 [package]
 name = "seaography-generator"
-version = "2.0.0-rc.6"
+version = "2.0.0-rc.8"
 edition = "2021"
 rust-version = "1.70"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
