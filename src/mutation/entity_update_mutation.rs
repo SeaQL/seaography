@@ -146,6 +146,10 @@ impl EntityUpdateMutationBuilder {
                             .await?
                     };
 
+                    for model in result.iter() {
+                        A::after_save(model.clone(), &transaction, false).await?;
+                    }
+
                     transaction.commit().await?;
 
                     hooks
