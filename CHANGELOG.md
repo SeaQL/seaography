@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 }
 ```
 
+### Bug Fixes
+
+* Trigger the `after_save` hook after update mutations
+
 ## 1.1.5 - pending
 
 ### New Features

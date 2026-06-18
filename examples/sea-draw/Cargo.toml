@@ -1,6 +1,6 @@
 [package]
 name = "sea-draw"
-version = "2.0.0-rc.8"
+version = "2.0.0-rc.9"
 edition = "2024"
 
 [dependencies]
@@ -15,7 +15,7 @@ reqwest = { version = "0.12", features = [
     "rustls-tls",
     "multipart",
 ], default-features = false }
-sea-orm = { version = "~2.0.0-rc", features = [
+sea-orm = { version = "~2.0.0-rc.40", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
     "runtime-tokio-native-tls",
@@ -30,7 +30,7 @@ tracing-subscriber = { version = "0.3.17", features = ["env-filter", "fmt"] }
 
 [dependencies.seaography]
 path = "../../"
-version = "~2.0.0-rc.8" # seaography version
+version = "~2.0.0-rc.9" # seaography version
 features = [
     "macros",
     "field-pluralize",
