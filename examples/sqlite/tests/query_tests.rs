@@ -961,7 +961,7 @@ async fn filter_is_in() {
                 {
                   customer(filters: {
                     firstName: {
-                      is_in: ["PETER", "MARY"]
+                      isIn: ["PETER", "MARY"]
                     }
                   }) {
                     nodes {
@@ -1071,7 +1071,7 @@ async fn filter_ci_eq() {
                 {
                   customer(filters: {
                     firstName: {
-                      ci_eq: "mary"
+                      ciEq: "mary"
                     }
                   }) {
                     nodes {
@@ -1152,7 +1152,7 @@ async fn filter_is_null() {
                 r#"
                 {
                   address(
-                    filters: { address: { contains: "Lane" }, postalCode: { is_null: false } }
+                    filters: { address: { contains: "Lane" }, postalCode: { isNull: false } }
                     pagination: { page: { page: 0, limit: 2 } }
                   ) {
                     nodes {
@@ -1399,7 +1399,7 @@ async fn city_with_address() {
             .execute(
                 r#"
                 {
-                  city(filters: { cityId: { is_in: [1, 2, 3] } }) {
+                  city(filters: { cityId: { isIn: [1, 2, 3] } }) {
                     nodes {
                       cityId
                       city
@@ -1466,7 +1466,7 @@ async fn city_with_address() {
             .execute(
                 r#"
                 {
-                  address(filters: { addressId: { is_in: [1, 2, 3] } }) {
+                  address(filters: { addressId: { isIn: [1, 2, 3] } }) {
                     nodes {
                       addressId
                       address

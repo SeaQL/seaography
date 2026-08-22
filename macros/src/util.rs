@@ -1,4 +1,13 @@
+use heck::{ToLowerCamelCase, ToSnakeCase};
 use syn::{DataEnum, DeriveInput, Error, Fields, Ident, Type, spanned::Spanned};
+
+pub fn graphql_name(name: impl AsRef<str>) -> String {
+    if cfg!(feature = "field-snake-case") {
+        name.as_ref().to_snake_case()
+    } else {
+        name.as_ref().to_lower_camel_case()
+    }
+}
 
 #[derive(Debug)]
 pub enum EnumVariants {

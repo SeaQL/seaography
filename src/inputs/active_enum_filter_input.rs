@@ -146,7 +146,7 @@ where
         condition
     };
 
-    let condition = match filter.get("is_in") {
+    let condition = match filter.get(FilterOperation::IsIn.graphql_field_name()) {
         Some(data) => {
             let mut values = Vec::new();
             for item in data.list()?.iter() {
@@ -158,7 +158,7 @@ where
         None => condition,
     };
 
-    let condition = match filter.get("is_not_in") {
+    let condition = match filter.get(FilterOperation::IsNotIn.graphql_field_name()) {
         Some(data) => {
             let mut values = Vec::new();
             for item in data.list()?.iter() {
@@ -170,7 +170,7 @@ where
         None => condition,
     };
 
-    let condition = match filter.get("is_null") {
+    let condition = match filter.get(FilterOperation::IsNull.graphql_field_name()) {
         Some(data) => {
             let data = data.boolean()?;
 

@@ -25,7 +25,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 async-graphql = { version = "~7.0.17", default-features = false, features = ["dataloader", "dynamic-schema"] }
 sea-orm = { version = "~2.0.0-rc.40", default-features = false, features = ["seaography", "with-json"] }
-seaography-macros = { version = "~2.0.0-rc.9", path = "macros", optional = true }
+seaography-macros = { version = "~2.0.0-rc.9", path = "macros", optional = true, default-features = false }
 itertools = { version = "0.12.0" }
 heck = { version = "0.4.1" }
 thiserror = { version = "1.0.44" }
@@ -51,8 +51,8 @@ with-postgres-array = ["sea-orm/postgres-array"]
 # with-ipnetwork = ["sea-orm/with-ipnetwork"]
 # with-mac_address = ["sea-orm/with-mac_address"]
 graphql-playground = ["async-graphql/playground"]
-field-snake-case = []
-field-camel-case = []
+field-snake-case = ["seaography-macros?/field-snake-case"]
+field-camel-case = ["seaography-macros?/field-camel-case"]
 field-pluralize = ["pluralizer"]
 strict-custom-types = ["seaography-macros/strict-custom-types"]
 

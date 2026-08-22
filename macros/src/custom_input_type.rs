@@ -5,7 +5,7 @@ use syn::{Data, DataEnum, DataStruct, DeriveInput, Error, Field, Fields, Ident};
 
 use crate::{
     Args,
-    util::{EnumVariants, parse_enum_variants},
+    util::{EnumVariants, graphql_name, parse_enum_variants},
 };
 
 pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
@@ -56,17 +56,19 @@ fn derive_custom_input_type_struct(
     for field in fields.iter() {
         let field_ident = &field.ident;
         let field_ty = &field.ty;
+        let graphql_field_name =
+            graphql_name(field_ident.as_ref().expect("named field").to_string());
 
         resolve_args.push(quote! {
             #field_ident: <#field_ty>::parse_value(
                 context,
-                input_object.get(stringify!(#field_ident))
+                input_object.get(#graphql_field_name)
             )?,
         });
 
         dynamic_fields.push(quote! {
             .field(async_graphql::dynamic::InputValue::new(
-                stringify!(#field_ident),
+                #graphql_field_name,
                 <#field_ty>::gql_input_type_ref(context),
             ))
         });

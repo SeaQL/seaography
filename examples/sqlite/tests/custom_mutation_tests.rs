@@ -57,7 +57,7 @@ async fn test_custom_mutation_with_custom_input() {
             .execute(
                 r#"
                 mutation {
-                  rental_request(rental_request: {
+                  rentalRequest(rentalRequest: {
                     customer: "Alice"
                     film: "Star Wars"
                     timestamp: "2025-01-01 02:03:05 UTC"
@@ -68,7 +68,7 @@ async fn test_custom_mutation_with_custom_input() {
             .await,
         r#"
         {
-          "rental_request": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars"
+          "rentalRequest": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars"
         }
         "#,
     );
@@ -78,7 +78,7 @@ async fn test_custom_mutation_with_custom_input() {
             .execute(
                 r#"
                 mutation {
-                  rental_request(rental_request: {
+                  rentalRequest(rentalRequest: {
                     customer: "Alice"
                     film: "Star Wars"
                     location: {
@@ -92,7 +92,7 @@ async fn test_custom_mutation_with_custom_input() {
             .await,
         r#"
         {
-          "rental_request": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars (at Riverside)"
+          "rentalRequest": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars (at Riverside)"
         }
         "#,
     );
@@ -102,7 +102,7 @@ async fn test_custom_mutation_with_custom_input() {
             .execute(
                 r#"
                 mutation {
-                  rental_request(rental_request: {
+                  rentalRequest(rentalRequest: {
                     customer: "Alice"
                     film: "Star Wars"
                     location: {
@@ -117,7 +117,7 @@ async fn test_custom_mutation_with_custom_input() {
             .await,
         r#"
         {
-          "rental_request": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars (at Riverside, West)"
+          "rentalRequest": "[2025-01-01T02:03:05+00:00] Alice wants to rent Star Wars (at Riverside, West)"
         }
         "#,
     );
@@ -132,7 +132,7 @@ async fn test_custom_mutation_with_optional_custom_input() {
             .execute(
                 r#"
                 mutation {
-                  maybe_rental_request {
+                  maybeRentalRequest {
                     rentalId
                   }
                 }
@@ -141,7 +141,7 @@ async fn test_custom_mutation_with_optional_custom_input() {
             .await,
         r#"
         {
-          "maybe_rental_request": null
+          "maybeRentalRequest": null
         }
         "#,
     );
@@ -151,7 +151,7 @@ async fn test_custom_mutation_with_optional_custom_input() {
             .execute(
                 r#"
                 mutation {
-                  maybe_rental_request(rental_request: {
+                  maybeRentalRequest(rentalRequest: {
                     customer: "Bob"
                     film: "Star Trek"
                     timestamp: "2022-11-14 10:30:10 UTC"
@@ -165,7 +165,7 @@ async fn test_custom_mutation_with_optional_custom_input() {
             .await,
         r#"
         {
-          "maybe_rental_request": {
+          "maybeRentalRequest": {
             "rentalId": 1,
             "lastUpdate": "2022-11-14 10:30:12 UTC"
           }
@@ -183,7 +183,7 @@ async fn test_custom_mutation_with_vec_custom_input() {
             .execute(
                 r#"
                 mutation {
-                  many_rental_request(rental_requests: [
+                  manyRentalRequest(rentalRequests: [
                     {
                       customer: "Alice"
                       film: "Star Wars"
@@ -201,7 +201,7 @@ async fn test_custom_mutation_with_vec_custom_input() {
             .await,
         r#"
         {
-          "many_rental_request": 2
+          "manyRentalRequest": 2
         }
         "#,
     );

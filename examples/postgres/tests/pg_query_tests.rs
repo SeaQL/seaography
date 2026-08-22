@@ -78,7 +78,7 @@ async fn test_film_query_by_array_contains() {
                 {
                   film(filters: {
                     title: { contains: "LIFE" }
-                    specialFeatures: { array_contains: ["Trailers"] }
+                    specialFeatures: { arrayContains: ["Trailers"] }
                   }) {
                     nodes {
                       filmId
@@ -119,7 +119,7 @@ async fn test_film_query_by_array_overlap() {
                 {
                   film(filters: {
                     title: { contains: "LIFE" }
-                    specialFeatures: { array_overlap: ["Commentaries", "Documentary"] }
+                    specialFeatures: { arrayOverlap: ["Commentaries", "Documentary"] }
                   }) {
                     nodes {
                       filmId
@@ -161,7 +161,7 @@ async fn test_film_query_by_json_eq() {
                 {
                   film(
                     filters: {
-                      filmId: { is_in: [1, 2, 3] }
+                      filmId: { isIn: [1, 2, 3] }
                     }
                     orderBy: { filmId: ASC }
                   ) {
@@ -213,7 +213,7 @@ async fn test_film_query_by_json_eq() {
                 {
                   film(
                     filters: {
-                      filmId: { is_in: [1, 2, 3] }
+                      filmId: { isIn: [1, 2, 3] }
                       metadata: { eq: { bar: "baz", foo: 123 } }
                     }
                   ) {
@@ -252,7 +252,7 @@ async fn test_film_query_by_json_eq() {
                 {
                   film(
                     filters: {
-                      filmId: { is_in: [1, 2, 3] }
+                      filmId: { isIn: [1, 2, 3] }
                       metadata: { ne: { bar: "baz", foo: 123 } }
                     }
                   ) {

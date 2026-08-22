@@ -23,4 +23,7 @@ heck = { version = "0.5", default-features = false }
 proc-macro2 = { version = "1", default-features = false }
 
 [features]
+default = ["field-camel-case"]
+field-snake-case = []
+field-camel-case = []
 strict-custom-types = []

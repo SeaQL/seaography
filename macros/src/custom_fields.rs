@@ -5,6 +5,8 @@ use syn::{
     TypeReference, spanned::Spanned,
 };
 
+use crate::util::graphql_name;
+
 pub fn expand(
     input: ItemImpl,
     annotated_item: proc_macro::TokenStream,
@@ -55,7 +57,7 @@ fn signature_to_field(
     is_member: bool,
 ) -> syn::Result<TokenStream> {
     let fn_ident: &Ident = &sig.ident;
-    let field_name = fn_ident;
+    let field_name = graphql_name(fn_ident.to_string());
     let return_type: TokenStream = return_type_to_type_ref(&sig.output)?;
     let mut arguments: Vec<TokenStream> = Vec::new();
     let mut resolve_args: Vec<TokenStream> = Vec::new();
@@ -100,29 +102,26 @@ fn signature_to_field(
             FnArg::Typed(typed_arg) => (&typed_arg.pat, &typed_arg.ty),
         };
 
+        let graphql_arg_name = graphql_name(quote!(#arg_name).to_string());
+
         arguments.push(quote! {
             .argument(
                 async_graphql::dynamic::InputValue::new(
-                    stringify!(#arg_name),
+                    #graphql_arg_name,
                     <#arg_type>::gql_input_type_ref(context),
                 )
             )
         });
 
-        let FnArg::Typed(typed_arg) = arg else {
-            return Err(Error::new(arg.span(), "arg cannot be self"));
-        };
-        let arg_pat = &typed_arg.pat;
-
         resolve_args.push(quote! {
             <#arg_type>::parse_value(
                 context,
-                ctx.args.get(stringify!(#arg_pat))
+                ctx.args.get(#graphql_arg_name)
             ).map_err(|e| seaography::SeaographyError::AsyncGraphQLError(
                 format!(
                     "Error decoding {} argument {}: {}",
-                    stringify!(#field_name),
-                    stringify!(#arg_pat),
+                    #field_name,
+                    #graphql_arg_name,
                     e,
                 ).into()
             ))?,
@@ -153,7 +152,7 @@ fn signature_to_field(
             #imports
 
             async_graphql::dynamic::Field::new(
-                stringify!(#field_name),
+                #field_name,
                 <#return_type>::gql_output_type_ref(context),
                 move |ctx| {
                     async_graphql::dynamic::FieldFuture::new(async move {

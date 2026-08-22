@@ -435,50 +435,51 @@ impl FilterTypesMapHelper {
         filter_info.supported_operations.iter().fold(
             InputObject::new(filter_info.type_name.to_string()),
             |object, cur| {
+                let field_name = cur.graphql_field_name();
                 let field = match cur {
                     FilterOperation::Equals => {
-                        InputValue::new("eq", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::NotEquals => {
-                        InputValue::new("ne", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::GreaterThan => {
-                        InputValue::new("gt", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::GreaterThanEquals => {
-                        InputValue::new("gte", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::LessThan => {
-                        InputValue::new("lt", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::LessThanEquals => {
-                        InputValue::new("lte", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::CaseInsensitiveEquals => {
-                        InputValue::new("ci_eq", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::IsIn => InputValue::new(
-                        "is_in",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::IsNotIn => InputValue::new(
-                        "is_not_in",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::IsNull => {
                         if !self.context.entity_query_field.combine_is_null_is_not_null {
                             InputValue::new(
-                                "is_null",
+                                field_name,
                                 TypeRef::named(filter_info.base_type.clone()),
                             )
                         } else {
-                            InputValue::new("is_null", TypeRef::named(TypeRef::BOOLEAN))
+                            InputValue::new(field_name, TypeRef::named(TypeRef::BOOLEAN))
                         }
                     }
                     FilterOperation::IsNotNull => {
                         if !self.context.entity_query_field.combine_is_null_is_not_null {
                             InputValue::new(
-                                "is_not_null",
+                                field_name,
                                 TypeRef::named(filter_info.base_type.clone()),
                             )
                         } else {
@@ -486,46 +487,48 @@ impl FilterTypesMapHelper {
                         }
                     }
                     FilterOperation::Contains => {
-                        InputValue::new("contains", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
-                    FilterOperation::StartsWith => InputValue::new(
-                        "starts_with",
-                        TypeRef::named(filter_info.base_type.clone()),
-                    ),
+                    FilterOperation::StartsWith => {
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
+                    }
                     FilterOperation::EndsWith => {
-                        InputValue::new("ends_with", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::Like => {
-                        InputValue::new("like", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::NotLike => {
-                        InputValue::new("not_like", TypeRef::named(filter_info.base_type.clone()))
+                        InputValue::new(field_name, TypeRef::named(filter_info.base_type.clone()))
                     }
                     FilterOperation::CaseInsensitiveLike => {
                         if self.context.entity_query_field.use_ilike {
-                            InputValue::new("ilike", TypeRef::named(filter_info.base_type.clone()))
+                            InputValue::new(
+                                field_name,
+                                TypeRef::named(filter_info.base_type.clone()),
+                            )
                         } else {
                             return object;
                         }
                     }
                     FilterOperation::Between => InputValue::new(
-                        "between",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::NotBetween => InputValue::new(
-                        "not_between",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::ArrayContains => InputValue::new(
-                        "array_contains",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::ArrayContained => InputValue::new(
-                        "array_contained",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                     FilterOperation::ArrayOverlap => InputValue::new(
-                        "array_overlap",
+                        field_name,
                         TypeRef::named_nn_list(filter_info.base_type.clone()),
                     ),
                 };
@@ -602,44 +605,45 @@ impl FilterTypesMapHelper {
         }
 
         for operation in filter_info.supported_operations.iter() {
+            let field_name = operation.graphql_field_name();
             match operation {
                 FilterOperation::Equals => {
-                    if let Some(value) = filter.get("eq") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.eq(value));
                     }
                 }
                 FilterOperation::NotEquals => {
-                    if let Some(value) = filter.get("ne") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.ne(value));
                     }
                 }
                 FilterOperation::GreaterThan => {
-                    if let Some(value) = filter.get("gt") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.gt(value));
                     }
                 }
                 FilterOperation::GreaterThanEquals => {
-                    if let Some(value) = filter.get("gte") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.gte(value));
                     }
                 }
                 FilterOperation::LessThan => {
-                    if let Some(value) = filter.get("lt") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.lt(value));
                     }
                 }
                 FilterOperation::LessThanEquals => {
-                    if let Some(value) = filter.get("lte") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition = condition.add(column.lte(value));
@@ -647,7 +651,7 @@ impl FilterTypesMapHelper {
                 }
                 FilterOperation::CaseInsensitiveEquals => {
                     use sea_orm::sea_query::{Expr, Func};
-                    if let Some(value) = filter.get("ci_eq") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         condition =
@@ -655,7 +659,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::IsIn => {
-                    if let Some(value) = filter.get("is_in") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = value
                             .list()?
                             .iter()
@@ -668,7 +672,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::IsNotIn => {
-                    if let Some(value) = filter.get("is_not_in") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = value
                             .list()?
                             .iter()
@@ -682,10 +686,10 @@ impl FilterTypesMapHelper {
                 }
                 FilterOperation::IsNull => {
                     if !self.context.entity_query_field.combine_is_null_is_not_null {
-                        if filter.get("is_null").is_some() {
+                        if filter.get(field_name).is_some() {
                             condition = condition.add(column.is_null());
                         }
-                    } else if let Some(value) = filter.get("is_null") {
+                    } else if let Some(value) = filter.get(field_name) {
                         if value.boolean()? {
                             condition = condition.add(column.is_null());
                         } else {
@@ -694,12 +698,12 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::IsNotNull => {
-                    if filter.get("is_not_null").is_some() {
+                    if filter.get(field_name).is_some() {
                         condition = condition.add(column.is_not_null());
                     }
                 }
                 FilterOperation::Contains => {
-                    if let Some(value) = filter.get("contains") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let s = match value {
@@ -710,7 +714,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::StartsWith => {
-                    if let Some(value) = filter.get("starts_with") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let s = match value {
@@ -721,7 +725,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::EndsWith => {
-                    if let Some(value) = filter.get("ends_with") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let s = match value {
@@ -732,7 +736,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::Like => {
-                    if let Some(value) = filter.get("like") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let s = match value {
@@ -743,7 +747,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::NotLike => {
-                    if let Some(value) = filter.get("not_like") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let s = match value {
@@ -755,7 +759,7 @@ impl FilterTypesMapHelper {
                 }
                 FilterOperation::CaseInsensitiveLike => {
                     use sea_orm::sea_query::{extension::postgres::PgExpr, Expr};
-                    if let Some(value) = filter.get("ilike") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let s = match value {
@@ -766,7 +770,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::Between => {
-                    if let Some(value) = filter.get("between") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = value
                             .list()?
                             .iter()
@@ -783,7 +787,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::NotBetween => {
-                    if let Some(value) = filter.get("not_between") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = value
                             .list()?
                             .iter()
@@ -800,7 +804,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::ArrayContains => {
-                    if let Some(value) = filter.get("array_contains") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let vec = extract_array_input(filter_info.base_type.as_str(), value);
@@ -810,7 +814,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::ArrayContained => {
-                    if let Some(value) = filter.get("array_contained") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let vec = extract_array_input(filter_info.base_type.as_str(), value);
@@ -820,7 +824,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::ArrayOverlap => {
-                    if let Some(value) = filter.get("array_overlap") {
+                    if let Some(value) = filter.get(field_name) {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;
                         let vec = extract_array_input(filter_info.base_type.as_str(), value);
@@ -881,6 +885,48 @@ pub enum FilterOperation {
     ArrayContains,
     ArrayContained,
     ArrayOverlap,
+}
+
+impl FilterOperation {
+    pub fn graphql_field_name(&self) -> &'static str {
+        let snake_case = cfg!(feature = "field-snake-case");
+        match self {
+            Self::Equals => "eq",
+            Self::NotEquals => "ne",
+            Self::GreaterThan => "gt",
+            Self::GreaterThanEquals => "gte",
+            Self::LessThan => "lt",
+            Self::LessThanEquals => "lte",
+            Self::CaseInsensitiveEquals if snake_case => "ci_eq",
+            Self::CaseInsensitiveEquals => "ciEq",
+            Self::IsIn if snake_case => "is_in",
+            Self::IsIn => "isIn",
+            Self::IsNotIn if snake_case => "is_not_in",
+            Self::IsNotIn => "isNotIn",
+            Self::IsNull if snake_case => "is_null",
+            Self::IsNull => "isNull",
+            Self::IsNotNull if snake_case => "is_not_null",
+            Self::IsNotNull => "isNotNull",
+            Self::Contains => "contains",
+            Self::StartsWith if snake_case => "starts_with",
+            Self::StartsWith => "startsWith",
+            Self::EndsWith if snake_case => "ends_with",
+            Self::EndsWith => "endsWith",
+            Self::Like => "like",
+            Self::NotLike if snake_case => "not_like",
+            Self::NotLike => "notLike",
+            Self::CaseInsensitiveLike => "ilike",
+            Self::Between => "between",
+            Self::NotBetween if snake_case => "not_between",
+            Self::NotBetween => "notBetween",
+            Self::ArrayContains if snake_case => "array_contains",
+            Self::ArrayContains => "arrayContains",
+            Self::ArrayContained if snake_case => "array_contained",
+            Self::ArrayContained => "arrayContained",
+            Self::ArrayOverlap if snake_case => "array_overlap",
+            Self::ArrayOverlap => "arrayOverlap",
+        }
+    }
 }
 
 #[cfg(feature = "with-postgres-array")]

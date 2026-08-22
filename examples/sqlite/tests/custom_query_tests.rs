@@ -25,7 +25,7 @@ async fn test_custom_query_with_pagination() {
             .execute(
                 r#"
                 {
-                  customer_of_store2(pagination: { page: { page: 0, limit: 2 } }) {
+                  customerOfStore2(pagination: { page: { page: 0, limit: 2 } }) {
                     nodes {
                       storeId
                       customerId
@@ -43,7 +43,7 @@ async fn test_custom_query_with_pagination() {
             .await,
         r#"
         {
-          "customer_of_store2": {
+          "customerOfStore2": {
             "nodes": [
               {
                 "storeId": 2,
@@ -72,7 +72,7 @@ async fn test_custom_query_with_pagination() {
             .execute(
                 r#"
                 {
-                  customer_of_store2(pagination: { page: { page: 1, limit: 1 } }) {
+                  customerOfStore2(pagination: { page: { page: 1, limit: 1 } }) {
                     nodes {
                       storeId
                       customerId
@@ -90,7 +90,7 @@ async fn test_custom_query_with_pagination() {
             .await,
         r#"
         {
-          "customer_of_store2": {
+          "customerOfStore2": {
             "nodes": [
               {
                 "storeId": 2,
@@ -118,7 +118,7 @@ async fn test_custom_query_many() {
             .execute(
                 r#"
                 {
-                  many_rental {
+                  manyRental {
                     rentalId
                   }
                 }
@@ -127,7 +127,7 @@ async fn test_custom_query_many() {
             .await,
         r#"
         {
-          "many_rental": [
+          "manyRental": [
             { "rentalId": 1 },
             { "rentalId": 2 },
             { "rentalId": 3 },
@@ -152,7 +152,7 @@ async fn test_custom_query_with_no_pagination() {
         .execute(
             r#"
             {
-                customer_of_store2 {
+                customerOfStore2 {
                 nodes {
                     storeId
                     customerId
@@ -179,6 +179,7 @@ async fn test_custom_query_with_no_pagination() {
     assert_eq!(parsed.customer_of_store2.pagination_info.current, 1);
 
     #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
     struct QueryResult {
         customer_of_store2: CustomerOfStore2,
     }
@@ -212,7 +213,7 @@ async fn option_entity_object() {
 
     let query = r#"
         query($staffId: Int!) {
-            staff_by_id(id: $staffId) {
+            staffById(id: $staffId) {
                 firstName
                 lastName
             }
@@ -225,7 +226,7 @@ async fn option_entity_object() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "firstName": "Jon",
                 "lastName": "Stephens",
             }
@@ -238,7 +239,7 @@ async fn option_entity_object() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": null
+            "staffById": null
         })
     );
 }
@@ -249,7 +250,7 @@ async fn option_entity_object_relation_owner() {
 
     let query = r#"
         query($staffId: Int!) {
-            staff_by_id(id: $staffId) {
+            staffById(id: $staffId) {
                 selfRefReverse {
                     nodes {
                         firstName
@@ -265,7 +266,7 @@ async fn option_entity_object_relation_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "selfRefReverse": {
                     "nodes": [{"firstName": "Jon"}, {"firstName": "Emily"}]
                 }
@@ -279,7 +280,7 @@ async fn option_entity_object_relation_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "selfRefReverse": {
                     "nodes": []
                 }
@@ -293,7 +294,7 @@ async fn option_entity_object_relation_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": null
+            "staffById": null
         })
     );
 }
@@ -304,7 +305,7 @@ async fn option_entity_object_relation_not_owner() {
 
     let query = r#"
         query($staffId: Int!) {
-            staff_by_id(id: $staffId) {
+            staffById(id: $staffId) {
                 selfRef {
                     firstName
                 }
@@ -318,7 +319,7 @@ async fn option_entity_object_relation_not_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "selfRef": null
             }
         })
@@ -330,7 +331,7 @@ async fn option_entity_object_relation_not_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "selfRef": {
                     "firstName": "Mike"
                 }
@@ -344,7 +345,7 @@ async fn option_entity_object_relation_not_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": null
+            "staffById": null
         })
     );
 }
@@ -355,7 +356,7 @@ async fn option_entity_object_via_relation_owner() {
 
     let query = r#"
         query($staffId: Int!) {
-            staff_by_id(id: $staffId) {
+            staffById(id: $staffId) {
                 rental(
                     orderBy: { rentalId: ASC },
                     pagination: { page: { page: 0, limit: 1 } }
@@ -374,7 +375,7 @@ async fn option_entity_object_via_relation_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "rental": {
                     "nodes": [{
                         "rentalId": 4
@@ -390,7 +391,7 @@ async fn option_entity_object_via_relation_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": null
+            "staffById": null
         })
     );
 }
@@ -401,7 +402,7 @@ async fn option_entity_object_via_relation_not_owner() {
 
     let query = r#"
         query($staffId: Int!) {
-            staff_by_id(id: $staffId) {
+            staffById(id: $staffId) {
                 store {
                     storeId
                 }
@@ -415,7 +416,7 @@ async fn option_entity_object_via_relation_not_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": {
+            "staffById": {
                 "store": {
                     "storeId": 1
                 }
@@ -429,7 +430,7 @@ async fn option_entity_object_via_relation_not_owner() {
     assert_eq!(
         response.data.into_json().unwrap(),
         json!({
-            "staff_by_id": null
+            "staffById": null
         })
     );
 }
@@ -443,8 +444,8 @@ async fn test_custom_query_with_custom_output() {
             .execute(
                 r#"
                 {
-                  purchase_order {
-                    po_number
+                  purchaseOrder {
+                    poNumber
                     lineitems {
                       product
                       quantity
@@ -459,8 +460,8 @@ async fn test_custom_query_with_custom_output() {
             .await,
         r#"
         {
-          "purchase_order": {
-            "po_number": "AB1234",
+          "purchaseOrder": {
+            "poNumber": "AB1234",
             "lineitems": [
               {
                 "product": "Towel",
@@ -490,7 +491,7 @@ async fn test_custom_union() {
             .execute(
                 r#"
                 {
-                  echo_shape(
+                  echoShape(
                     shape: {
                       Rectangle: {
                         origin: { x: 3, y: 12 },
@@ -511,7 +512,7 @@ async fn test_custom_union() {
             .await,
         r#"
         {
-          "echo_shape": {
+          "echoShape": {
             "__typename": "Rectangle",
             "area": 200.0,
             "origin": {
@@ -532,7 +533,7 @@ async fn test_custom_union() {
             .execute(
                 r#"
                 {
-                  echo_shape(
+                  echoShape(
                     shape: {
                       Circle: {
                         center: { x: 3, y: 12 },
@@ -553,7 +554,7 @@ async fn test_custom_union() {
             .await,
         r#"
         {
-          "echo_shape": {
+          "echoShape": {
             "__typename": "Circle",
             "area": 201.06192982974676,
             "center": {
@@ -571,7 +572,7 @@ async fn test_custom_union() {
             .execute(
                 r#"
                 {
-                  echo_shape(
+                  echoShape(
                     shape: {
                       Triangle: {
                         p1: { x: 0, y: 0 },
@@ -594,7 +595,7 @@ async fn test_custom_union() {
             .await,
         r#"
         {
-          "echo_shape": {
+          "echoShape": {
             "__typename": "Triangle",
             "area": 6.0,
             "p1": {

@@ -431,7 +431,7 @@ async fn test_create_batch_mutation() {
         .execute(
             r#"
             mutation {
-              languageDelete(filter: { name: { is_in: ["Swedish", "Danish"] } })
+              languageDelete(filter: { name: { isIn: ["Swedish", "Danish"] } })
             }
             "#,
         )

@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Bug Fixes
 
 * Trigger the `after_save` hook after update mutations
+* Apply `field-camel-case` and `field-snake-case` consistently to custom fields,
+  custom input and output fields, arguments, and filter operators
 
 ## 1.1.5 - pending
 
