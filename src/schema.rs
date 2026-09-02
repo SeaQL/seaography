@@ -114,7 +114,7 @@ mod test {
     #[test]
     fn test_deser_schema() {
         let table: Table = serde_json::from_str(
-            &r#"{
+            r#"{
           "columns": [
             {
               "name": "film_id",

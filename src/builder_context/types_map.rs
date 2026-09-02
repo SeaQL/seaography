@@ -57,12 +57,10 @@ impl std::default::Default for TypesMapConfig {
             #[cfg(all(not(feature = "with-time"), feature = "with-chrono"))]
             time_library: TimeLibrary::Chrono,
 
-            #[cfg(all(not(feature = "with-decimal"), not(feature = "with-bigdecimal")))]
+            #[cfg(not(feature = "with-decimal"))]
             decimal_library: DecimalLibrary::String,
             #[cfg(feature = "with-decimal")]
             decimal_library: DecimalLibrary::Decimal,
-            #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
-            decimal_library: DecimalLibrary::BigDecimal,
             json_type: "Json".into(),
             timestamp_rfc3339: false,
         }
@@ -134,8 +132,6 @@ impl TypesMapHelper {
                 DecimalLibrary::String => ConvertedType::String,
                 #[cfg(feature = "with-decimal")]
                 DecimalLibrary::Decimal => ConvertedType::Decimal,
-                #[cfg(feature = "with-bigdecimal")]
-                DecimalLibrary::BigDecimal => ConvertedType::BigDecimal,
             },
             ColumnType::DateTime => match context.types.time_library {
                 TimeLibrary::String => ConvertedType::String,
@@ -444,8 +440,6 @@ pub enum DecimalLibrary {
     String,
     #[cfg(feature = "with-decimal")]
     Decimal,
-    #[cfg(feature = "with-bigdecimal")]
-    BigDecimal,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
@@ -503,9 +497,6 @@ pub enum ConvertedType {
     #[cfg(feature = "with-decimal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-decimal")))]
     Decimal,
-    #[cfg(feature = "with-bigdecimal")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
-    BigDecimal,
     #[cfg(feature = "with-postgres-array")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-postgres-array")))]
     Array(Box<ConvertedType>),
@@ -569,8 +560,6 @@ pub fn converted_type_to_sea_orm_array_type(
         ConvertedType::Uuid => Ok(sea_orm::sea_query::value::ArrayType::String),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => Ok(sea_orm::sea_query::value::ArrayType::String),
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal => Ok(sea_orm::sea_query::value::ArrayType::String),
         // #[cfg(feature = "with-ipnetwork")]
         // ConvertedType::IpNetwork => Ok(sea_orm::sea_query::value::ArrayType::String),
         // #[cfg(feature = "with-mac_address")]
@@ -833,20 +822,6 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::Decimal(Some(value))
         }
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal => {
-            use std::str::FromStr;
-
-            let value =
-                sea_orm::entity::prelude::BigDecimal::from_str(value.string()?).map_err(|e| {
-                    crate::SeaographyError::TypeConversionError(
-                        e.to_string(),
-                        format!("BigDecimal - {entity_name}.{column_name}"),
-                    )
-                })?;
-
-            sea_orm::Value::BigDecimal(Some(Box::new(value)))
-        }
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
             let list_value = value
@@ -920,8 +895,6 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult
         ConvertedType::Uuid => sea_orm::Value::Uuid(None),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => sea_orm::Value::Decimal(None),
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
             sea_orm::Value::Array(converted_type_to_sea_orm_array_type(ty)?, None)

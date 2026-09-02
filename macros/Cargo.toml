@@ -1,8 +1,8 @@
 [package]
 name = "seaography-macros"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.94"
 authors = ["Chris Tsang <chris.2y3@outlook.com>"]
 description = "Macros for Seaography"
 license = "MIT OR Apache-2.0"
@@ -16,8 +16,13 @@ categories = ["database"]
 proc-macro = true
 
 [dependencies]
-darling = "0.21.1"
-syn = { version = "2", default-features = false, features = ["parsing", "proc-macro", "derive", "printing"] }
+darling = "0.24"
+syn = { version = "3", default-features = false, features = [
+    "parsing",
+    "proc-macro",
+    "derive",
+    "printing",
+] }
 quote = { version = "1", default-features = false }
 heck = { version = "0.5", default-features = false }
 proc-macro2 = { version = "1", default-features = false }

@@ -4,6 +4,7 @@ use async_graphql::{
         Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, Subscription,
         SubscriptionField, TypeRef, Union,
     },
+    runtime::TokioTimer,
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
@@ -254,14 +255,12 @@ impl Builder {
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
-        S: Fn(async_graphql::futures_util::future::BoxFuture<'static, ()>) -> R
-            + Send
-            + Sync
-            + 'static,
+        S: async_graphql::futures_util::task::Spawn + Send + Sync + 'static,
     {
         self.schema = self.schema.data(DataLoader::new(
             OneToOneLoader::<T>::new(self.connection.clone()),
             spawner,
+            TokioTimer::default(),
         ));
         self
     }
@@ -270,14 +269,12 @@ impl Builder {
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
-        S: Fn(async_graphql::futures_util::future::BoxFuture<'static, ()>) -> R
-            + Send
-            + Sync
-            + 'static,
+        S: async_graphql::futures_util::task::Spawn + Send + Sync + 'static,
     {
         self.schema = self.schema.data(DataLoader::new(
             OneToManyLoader::<T>::new(self.connection.clone()),
             spawner,
+            TokioTimer::default(),
         ));
         self
     }
