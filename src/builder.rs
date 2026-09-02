@@ -251,7 +251,7 @@ impl Builder {
         self.mutations.push(delete_mutation);
     }
 
-    pub fn register_entity_dataloader_one_to_one<T, R, S>(mut self, _entity: T, spawner: S) -> Self
+    pub fn register_entity_dataloader_one_to_one<T, S>(mut self, _entity: T, spawner: S) -> Self
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
@@ -265,7 +265,7 @@ impl Builder {
         self
     }
 
-    pub fn register_entity_dataloader_one_to_many<T, R, S>(mut self, _entity: T, spawner: S) -> Self
+    pub fn register_entity_dataloader_one_to_many<T, S>(mut self, _entity: T, spawner: S) -> Self
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
