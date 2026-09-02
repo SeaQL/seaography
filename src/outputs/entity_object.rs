@@ -364,10 +364,6 @@ pub(crate) fn sea_query_value_to_graphql_value(
         #[cfg(feature = "with-decimal")]
         sea_orm::sea_query::Value::Decimal(value) => value.map(|it| Value::from(it.to_string())),
 
-        #[cfg(feature = "with-bigdecimal")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
-        sea_orm::sea_query::Value::BigDecimal(value) => value.map(|it| Value::from(it.to_string())),
-
         // #[cfg(feature = "with-ipnetwork")]
         // #[cfg_attr(docsrs, doc(cfg(feature = "with-ipnetwork")))]
         // sea_orm::sea_query::Value::IpNetwork(value) => value.map(|it| Value::from(it.to_string())),

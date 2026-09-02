@@ -1,8 +1,8 @@
 [package]
 name = "seaography-cli"
-version = "2.0.0-rc.9"
-edition = "2021"
-rust-version = "1.70"
+version = "2.0.0-rc.10"
+edition = "2024"
+rust-version = "1.98"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
 description = "🧭 A GraphQL framework for Rust"
 license = "MIT OR Apache-2.0"
@@ -15,5 +15,5 @@ categories = ["database"]
 [dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 clap = { version = "4.3.19", features = ["env", "derive"] }
-seaography-generator = { version = "~2.0.0-rc.9", path = "../generator" }
+seaography-generator = { version = "~2.0.0-rc.10", path = "../generator" }
 url = "2.4.0"

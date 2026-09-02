@@ -1,8 +1,8 @@
 [package]
 name = "seaography-generator"
-version = "2.0.0-rc.9"
-edition = "2021"
-rust-version = "1.70"
+version = "2.0.0-rc.10"
+edition = "2024"
+rust-version = "1.98"
 authors = ["Panagiotis Karatakis <panagiotiskaratakis@gmail.com>"]
 description = "🧭 A GraphQL framework for SeaORM"
 license = "MIT OR Apache-2.0"
@@ -15,7 +15,7 @@ categories = ["database"]
 [dependencies]
 quote = "1.0.31"
 proc-macro2 = "1.0.66"
-syn = { version = "2.0.27", features = ["full"] }
-heck = "0.4.1"
-itertools = "0.11.0"
-thiserror = "1.0.44"
+syn = { version = "3", features = ["full"] }
+heck = "0.5"
+itertools = "0.15.0"
+thiserror = "2"

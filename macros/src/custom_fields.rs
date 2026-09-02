@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    Error, FnArg, Ident, ImplItem, ItemImpl, PathArguments, ReturnType, Signature, Type,
-    TypeReference, spanned::Spanned,
+    Error, FnArg, Ident, ImplItem, ItemImpl, PathArguments, ReceiverKind, ReturnType, Signature,
+    Type, TypeReference, spanned::Spanned,
 };
 
 pub fn expand(
@@ -65,7 +65,7 @@ fn signature_to_field(
     let mut have_self = false;
 
     if let Some(FnArg::Receiver(receiver)) = args.get(argno) {
-        if receiver.reference.is_none() {
+        if !matches!(receiver.kind, ReceiverKind::Reference(..)) {
             return Err(Error::new(
                 receiver.span(),
                 "self argument must be a reference; use &self",
