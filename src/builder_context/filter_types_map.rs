@@ -4,8 +4,8 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, ExprTrait};
 
 use crate::{
-    prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext, EntityColumnId,
-    EntityObjectBuilder, SeaResult, SeaographyError, TypesMapConfig, TypesMapHelper,
+    ActiveEnumFilterInputBuilder, BuilderContext, EntityColumnId, EntityObjectBuilder, SeaResult,
+    SeaographyError, TypesMapConfig, TypesMapHelper, prepare_enumeration_condition,
 };
 
 type FnFilterCondition =
@@ -290,7 +290,7 @@ impl FilterTypesMapHelper {
                 ColumnType::Cidr => Some(FilterType::Text),
                 ColumnType::Inet => Some(FilterType::Text),
                 ColumnType::MacAddr => Some(FilterType::Text),
-                _ => None,
+                _ => unimplemented!("cannot convert {:?} to filter", column_type),
             }
         }
 

@@ -2,7 +2,10 @@ use std::{collections::BTreeMap, num::ParseIntError, sync::Arc};
 
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
 use heck::ToUpperCamelCase;
-use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
+use sea_orm::{
+    ColumnTrait, ColumnType, EntityTrait,
+    sea_query::{EnumTypeName, OptionEnum},
+};
 
 use crate::{ActiveEnumBuilder, BuilderContext, EntityColumnId, SeaResult};
 
@@ -356,8 +359,10 @@ impl TypesMapHelper {
                     );
                     iden_type.map(|it| TypeRef::List(Box::new(it)))
                 }
-                ColumnType::Custom(_) => None,
-                _ => None,
+                ColumnType::Custom(_) => {
+                    unimplemented!("cannot convert Custom type to graphql type")
+                }
+                _ => unimplemented!("cannot convert {:?} to graphql type", ty),
             },
         }
         .map(|ty| {
@@ -621,9 +626,19 @@ pub fn converted_value_to_sea_orm_value(
             let value = value.f64()?;
             sea_orm::Value::Double(Some(value))
         }
-        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
+        ConvertedType::String | ConvertedType::Custom(_) => {
             let value = value.string()?;
             sea_orm::Value::String(Some(value.to_string()))
+        }
+        ConvertedType::Enum(type_name) => {
+            //FIXME: is enum_name the variant name or the types name?
+            let value = value.enum_name()?;
+            sea_orm::Value::Enum(OptionEnum::Some(Box::new(
+                sea_orm::sea_query::value::Enum {
+                    type_name: type_name.clone().into(),
+                    value: value.to_owned().into(),
+                },
+            )))
         }
         ConvertedType::Char => {
             let value = value.string()?;
@@ -862,8 +877,9 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult
         ConvertedType::BigUnsigned => sea_orm::Value::BigUnsigned(None),
         ConvertedType::Float => sea_orm::Value::Float(None),
         ConvertedType::Double => sea_orm::Value::Double(None),
-        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
-            sea_orm::Value::String(None)
+        ConvertedType::String | ConvertedType::Custom(_) => sea_orm::Value::String(None),
+        ConvertedType::Enum(type_name) => {
+            sea_orm::Value::Enum(OptionEnum::None(EnumTypeName::from(type_name.as_str())))
         }
         ConvertedType::Char => sea_orm::Value::Char(None),
         ConvertedType::Bytes => sea_orm::Value::Bytes(None),

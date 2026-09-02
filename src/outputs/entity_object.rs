@@ -1,11 +1,9 @@
 use async_graphql::{
-    dynamic::{Field, FieldFuture, Object, ObjectAccessor},
-    Value,
+    Name, Value, dynamic::{Field, FieldFuture, Object, ObjectAccessor},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable,
-    ModelTrait, TryIntoModel,
+    ActiveModelTrait, ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait, TryIntoModel, sea_query::OptionEnum,
 };
 
 use crate::{guard_error, EntityColumnId, OperationType, SeaResult, SeaographyError};
@@ -266,7 +264,11 @@ pub(crate) fn sea_query_value_to_graphql_value(
 
         #[allow(clippy::box_collection)]
         sea_orm::Value::Bytes(value) => value.map(|it| Value::from(String::from_utf8_lossy(&it))),
-
+        sea_orm::Value::Enum(value) => match value {
+            // even tho we create a "Name", the name actually means the "value" here
+            OptionEnum::Some(e) => Some(Value::Enum(Name::new(e.value))),
+            OptionEnum::None(_) => None,
+        },
         #[cfg(feature = "with-postgres-array")]
         sea_orm::Value::Array(_array_value, value) => value.map(|it| {
             Value::List(
@@ -371,7 +373,9 @@ pub(crate) fn sea_query_value_to_graphql_value(
         // #[cfg(feature = "with-mac_address")]
         // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
         // sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
-        #[allow(unreachable_patterns)]
-        _ => None,
+        #[expect(unused)]
+        _ => {
+            unimplemented!("cannot convert sea_query value to graphql value {sea_query_value:?}",)
+        }
     }
 }

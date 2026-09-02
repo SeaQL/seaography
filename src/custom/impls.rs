@@ -108,9 +108,6 @@ impl_scalar_type!(sea_orm::entity::prelude::TimeDateTimeWithTimeZone);
 #[cfg(feature = "with-decimal")]
 impl_scalar_type!(sea_orm::entity::prelude::Decimal);
 
-#[cfg(feature = "with-bigdecimal")]
-impl_scalar_type!(sea_orm::entity::prelude::BigDecimal);
-
 #[cfg(feature = "with-uuid")]
 impl_scalar_type!(sea_orm::entity::prelude::Uuid);
 
