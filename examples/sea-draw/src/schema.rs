@@ -345,9 +345,9 @@ macro_rules! register_entity {
 
         $builder.register_entity::<$module_path::Entity>(fields, &related_entity_filter);
         $builder =
-            $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
+            $builder.register_entity_dataloader_one_to_one($module_path::Entity, seaography::async_graphql::runtime::TokioSpawner::current());
         $builder =
-            $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
+            $builder.register_entity_dataloader_one_to_many($module_path::Entity, seaography::async_graphql::runtime::TokioSpawner::current());
         $builder =
             $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
         // Avoid using the default mutations, since we do updates and deletions on a per-row basis,
