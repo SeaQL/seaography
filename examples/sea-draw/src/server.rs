@@ -1,4 +1,4 @@
-use async_graphql::http::{GraphQLPlaygroundConfig, graphiql_source, playground_source};
+use async_graphql::http::GraphiQLSource;
 use axum::{Extension, Router, response, routing};
 use sea_orm::{Database, entity::prelude::Uuid};
 use std::net::{IpAddr, SocketAddr};
@@ -25,23 +25,19 @@ pub async fn server(
     tracing::info!("Starting GraphQL server");
     let schema = crate::schema::schema(backend.clone()).unwrap();
 
-    let graphql_endpoint_url = format!("http://{}:{}", address, port);
-    let subscription_endpoint = format!("http://{}:{}/ws", address, port);
-
     let app = Router::new()
         .route(
             "/",
-            routing::get(response::Html(playground_source(
-                GraphQLPlaygroundConfig::new(&address),
-            )))
+            routing::get(response::Html(
+                GraphiQLSource::default().endpoint("/").finish(),
+            ))
             .post(queries_and_mutations),
         )
         .route(
             "/graphiql",
-            routing::get(response::Html(graphiql_source(
-                &graphql_endpoint_url,
-                Some(&subscription_endpoint),
-            ))),
+            routing::get(response::Html(
+                GraphiQLSource::default().endpoint("/").finish(),
+            )),
         )
         // .route("/ws", routing::get(graphql_ws_handler))
         .layer(Extension(schema))

@@ -1,7 +1,4 @@
-use async_graphql::{
-    dynamic::Schema,
-    http::{playground_source, GraphQLPlaygroundConfig},
-};
+use async_graphql::{dynamic::Schema, http::GraphiQLSource};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::State,
@@ -30,7 +27,7 @@ lazy_static! {
 }
 
 async fn graphql_playground() -> impl IntoResponse {
-    response::Html(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT)))
+    response::Html(GraphiQLSource::default().endpoint(&ENDPOINT).finish())
 }
 
 async fn graphql_handler(State(schema): State<Schema>, req: GraphQLRequest) -> GraphQLResponse {
@@ -52,7 +49,7 @@ async fn main() {
         seaography_postgres_example::query_root::schema(db, *DEPTH_LIMIT, *COMPLEXITY_LIMIT)
             .unwrap();
     let app = Router::new()
-        .route(&*ENDPOINT, get(graphql_playground).post(graphql_handler))
+        .route(&ENDPOINT, get(graphql_playground).post(graphql_handler))
         .with_state(schema);
     println!("Visit GraphQL Playground at http://{}", *URL);
     axum::serve(TcpListener::bind(&*URL).await.unwrap(), app)

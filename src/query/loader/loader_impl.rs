@@ -1,10 +1,9 @@
 //! Mostly copied from SeaORM
 use crate::IdenIter;
 use sea_orm::{
-    dynamic,
-    sea_query::{ColumnRef, DynIden, Expr, ExprTrait, IntoColumnRef, TableRef, ValueTuple},
     Condition, ConnectionTrait, DbErr, EntityTrait, Identity, JoinType, ModelTrait, QueryFilter,
-    QuerySelect, RelationDef, Select,
+    QuerySelect, RelationDef, Select, dynamic,
+    sea_query::{ColumnRef, DynIden, Expr, ExprTrait, IntoColumnRef, TableRef, ValueTuple},
 };
 use std::{collections::HashMap, str::FromStr};
 

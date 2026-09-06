@@ -5,8 +5,8 @@ use sea_orm::{
 };
 
 use crate::{
-    decode_cursor, encode_cursor, BuilderContext, Connection, Edge, PageInfo, PageInput,
-    PaginationInfo, PaginationInput,
+    BuilderContext, Connection, Edge, PageInfo, PageInput, PaginationInfo, PaginationInput,
+    decode_cursor, encode_cursor,
 };
 
 /// used to parse pagination input object and apply it to statement
@@ -465,14 +465,14 @@ fn check_limit(
         )));
     }
 
-    if let Some(max_limit) = context.pagination_input.max_limit {
-        if requested_limit > max_limit {
-            return Err(sea_orm::DbErr::Query(sea_orm::RuntimeErr::Internal(
-                format!(
-                    "Requested pagination limit ({requested_limit}) exceeds maximum allowed ({max_limit})"
-                ),
-            )));
-        }
+    if let Some(max_limit) = context.pagination_input.max_limit
+        && requested_limit > max_limit
+    {
+        return Err(sea_orm::DbErr::Query(sea_orm::RuntimeErr::Internal(
+            format!(
+                "Requested pagination limit ({requested_limit}) exceeds maximum allowed ({max_limit})"
+            ),
+        )));
     }
 
     Ok(())

@@ -2,8 +2,8 @@ use async_graphql::dynamic::{Field, FieldFuture, FieldValue, Object, TypeRef};
 use sea_orm::EntityTrait;
 
 use crate::{
-    pluralize_unique, BuilderContext, Edge, EdgeObjectBuilder, EntityObjectBuilder, PageInfo,
-    PaginationInfo,
+    BuilderContext, Edge, EdgeObjectBuilder, EntityObjectBuilder, PageInfo, PaginationInfo,
+    pluralize_unique,
 };
 
 /// used to represent a GraphQL Connection node for any Type

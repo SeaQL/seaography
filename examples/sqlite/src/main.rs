@@ -1,7 +1,4 @@
-use async_graphql::{
-    dynamic::Schema,
-    http::{playground_source, GraphQLPlaygroundConfig},
-};
+use async_graphql::{dynamic::Schema, http::GraphiQLSource};
 use async_graphql_poem::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;
 use poem::{
@@ -30,7 +27,7 @@ lazy_static! {
 
 #[handler]
 async fn graphql_playground() -> impl IntoResponse {
-    Html(playground_source(GraphQLPlaygroundConfig::new(&ENDPOINT)))
+    Html(GraphiQLSource::default().endpoint(&ENDPOINT).finish())
 }
 
 #[handler]

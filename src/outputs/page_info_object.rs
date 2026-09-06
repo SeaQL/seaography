@@ -1,5 +1,5 @@
-use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
 use async_graphql::Value;
+use async_graphql::dynamic::{Field, FieldFuture, Object, TypeRef};
 
 use crate::BuilderContext;
 

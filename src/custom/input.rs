@@ -1,7 +1,7 @@
 use crate::{BuilderContext, PaginationInput, PaginationInputBuilder, SeaResult, SeaographyError};
 use async_graphql::{
-    dynamic::{InputObject, TypeRef, ValueAccessor},
     Upload,
+    dynamic::{InputObject, TypeRef, ValueAccessor},
 };
 #[cfg(feature = "macros")]
 #[cfg_attr(docsrs, doc(cfg(feature = "macros")))]

@@ -1,11 +1,14 @@
 [package]
 name = "sea-draw"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 edition = "2024"
 
 [dependencies]
-async-graphql = { version = "7.0", features = ["dataloader", "dynamic-schema"] }
-async-graphql-axum = { version = "7" }
+async-graphql = { version = "8.0.0-rc.5", features = [
+    "dataloader",
+    "dynamic-schema",
+] }
+async-graphql-axum = { version = "8.0.0-rc.5" }
 axum = { version = "0.8.*", features = ["ws"] }
 clap = { version = "4.5", features = ["derive", "env"] }
 dotenv = "0.15.0"
@@ -15,7 +18,7 @@ reqwest = { version = "0.12", features = [
     "rustls-tls",
     "multipart",
 ], default-features = false }
-sea-orm = { version = "~2.0.0-rc.40", features = [
+sea-orm = { version = "2", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
     "runtime-tokio-native-tls",

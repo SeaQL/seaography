@@ -36,10 +36,10 @@ fn id_from_entity(entity: &str, value: &FieldValue<'_>) -> Option<i64> {
     match entity {
         "Actor" => value
             .downcast_ref::<actor::Model>()
-            .map(|actor| actor.actor_id as i64),
+            .map(|actor| actor.actor_id),
         "Rental" => value
             .downcast_ref::<rental::Model>()
-            .map(|rental| rental.rental_id as i64),
+            .map(|rental| rental.rental_id),
         "Staff" => value
             .downcast_ref::<staff::Model>()
             .map(|staff| staff.staff_id as i64),
@@ -176,16 +176,13 @@ impl LifecycleHooksInterface for MyHooks {
             .unwrap()
             .record(HookCall::before_active_model_save(entity, action));
 
-        match entity {
-            "FilmText" => {
-                let active_model: &film_text::ActiveModel =
-                    active_model.downcast_ref().expect("Failed to downcast");
-                if active_model.film_id != sea_orm::Set(5) {
-                    // only allow inserting film_id = 5
-                    return GuardAction::Block(None);
-                }
+        if entity == "FilmText" {
+            let active_model: &film_text::ActiveModel =
+                active_model.downcast_ref().expect("Failed to downcast");
+            if active_model.film_id != sea_orm::Set(5) {
+                // only allow inserting film_id = 5
+                return GuardAction::Block(None);
             }
-            _ => (),
         }
 
         GuardAction::Allow

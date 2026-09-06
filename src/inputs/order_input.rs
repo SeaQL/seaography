@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef, ValueAccessor};
 use sea_orm::{ColumnTrait, EntityTrait, Iterable};
 
-use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, SeaResult, SeaographyError};
+use crate::{BuilderContext, EntityObjectBuilder, SeaResult, SeaographyError, pluralize_unique};
 
 /// The configuration structure for OrderInputBuilder
 pub struct OrderInputConfig {

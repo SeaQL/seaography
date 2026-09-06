@@ -4,8 +4,8 @@ use async_graphql::dynamic::{InputObject, InputValue, ObjectAccessor, TypeRef};
 use sea_orm::{ColumnTrait, ColumnType, Condition, EntityTrait, ExprTrait};
 
 use crate::{
-    prepare_enumeration_condition, ActiveEnumFilterInputBuilder, BuilderContext, EntityColumnId,
-    EntityObjectBuilder, SeaResult, SeaographyError, TypesMapConfig, TypesMapHelper,
+    ActiveEnumFilterInputBuilder, BuilderContext, EntityColumnId, EntityObjectBuilder, SeaResult,
+    SeaographyError, TypesMapConfig, TypesMapHelper, prepare_enumeration_condition,
 };
 
 type FnFilterCondition =
@@ -290,7 +290,7 @@ impl FilterTypesMapHelper {
                 ColumnType::Cidr => Some(FilterType::Text),
                 ColumnType::Inet => Some(FilterType::Text),
                 ColumnType::MacAddr => Some(FilterType::Text),
-                _ => None,
+                _ => unimplemented!("cannot convert {:?} to filter", column_type),
             }
         }
 
@@ -558,7 +558,7 @@ impl FilterTypesMapHelper {
                 FilterType::Id => &self.context.filter_types.id_filter_info,
                 FilterType::Json => &self.context.filter_types.json_filter_info,
                 FilterType::Enumeration(_) => {
-                    return prepare_enumeration_condition::<T>(filter, column, condition)
+                    return prepare_enumeration_condition::<T>(filter, column, condition);
                 }
                 FilterType::Custom(_) => {
                     let entity_column_id = EntityColumnId::of::<T>(column);
@@ -754,7 +754,7 @@ impl FilterTypesMapHelper {
                     }
                 }
                 FilterOperation::CaseInsensitiveLike => {
-                    use sea_orm::sea_query::{extension::postgres::PgExpr, Expr};
+                    use sea_orm::sea_query::{Expr, extension::postgres::PgExpr};
                     if let Some(value) = filter.get("ilike") {
                         let value = types_map_helper
                             .async_graphql_value_to_sea_orm_value::<T>(column, &value)?;

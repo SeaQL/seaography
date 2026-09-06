@@ -4,6 +4,7 @@ use async_graphql::{
         Enum, Field, FieldFuture, InputObject, Object, Scalar, Schema, SchemaBuilder, Subscription,
         SubscriptionField, TypeRef, Union,
     },
+    runtime::TokioTimer,
 };
 use sea_orm::{ActiveEnum, ActiveModelTrait, EntityTrait, IntoActiveModel};
 
@@ -250,34 +251,30 @@ impl Builder {
         self.mutations.push(delete_mutation);
     }
 
-    pub fn register_entity_dataloader_one_to_one<T, R, S>(mut self, _entity: T, spawner: S) -> Self
+    pub fn register_entity_dataloader_one_to_one<T, S>(mut self, _entity: T, spawner: S) -> Self
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
-        S: Fn(async_graphql::futures_util::future::BoxFuture<'static, ()>) -> R
-            + Send
-            + Sync
-            + 'static,
+        S: async_graphql::futures_util::task::Spawn + Send + Sync + 'static,
     {
         self.schema = self.schema.data(DataLoader::new(
             OneToOneLoader::<T>::new(self.connection.clone()),
             spawner,
+            TokioTimer::default(),
         ));
         self
     }
 
-    pub fn register_entity_dataloader_one_to_many<T, R, S>(mut self, _entity: T, spawner: S) -> Self
+    pub fn register_entity_dataloader_one_to_many<T, S>(mut self, _entity: T, spawner: S) -> Self
     where
         T: EntityTrait,
         <T as EntityTrait>::Model: Sync,
-        S: Fn(async_graphql::futures_util::future::BoxFuture<'static, ()>) -> R
-            + Send
-            + Sync
-            + 'static,
+        S: async_graphql::futures_util::task::Spawn + Send + Sync + 'static,
     {
         self.schema = self.schema.data(DataLoader::new(
             OneToManyLoader::<T>::new(self.connection.clone()),
             spawner,
+            TokioTimer::default(),
         ));
         self
     }
@@ -681,9 +678,9 @@ macro_rules! register_entity {
 
         $builder.register_entity::<$module_path::Entity>(relations, &related_entity_filter);
         $builder =
-            $builder.register_entity_dataloader_one_to_one($module_path::Entity, tokio::spawn);
+            $builder.register_entity_dataloader_one_to_one($module_path::Entity, seaography::async_graphql::runtime::TokioSpawner::current());
         $builder =
-            $builder.register_entity_dataloader_one_to_many($module_path::Entity, tokio::spawn);
+            $builder.register_entity_dataloader_one_to_many($module_path::Entity, seaography::async_graphql::runtime::TokioSpawner::current());
         $builder =
             $builder.register_related_entity_filter::<$module_path::Entity>(related_entity_filter);
         if $mutation {

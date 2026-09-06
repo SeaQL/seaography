@@ -2,7 +2,10 @@ use std::{collections::BTreeMap, num::ParseIntError, sync::Arc};
 
 use async_graphql::dynamic::{TypeRef, ValueAccessor};
 use heck::ToUpperCamelCase;
-use sea_orm::{ColumnTrait, ColumnType, EntityTrait};
+use sea_orm::{
+    ColumnTrait, ColumnType, EntityTrait,
+    sea_query::{EnumTypeName, OptionEnum},
+};
 
 use crate::{ActiveEnumBuilder, BuilderContext, EntityColumnId, SeaResult};
 
@@ -57,12 +60,10 @@ impl std::default::Default for TypesMapConfig {
             #[cfg(all(not(feature = "with-time"), feature = "with-chrono"))]
             time_library: TimeLibrary::Chrono,
 
-            #[cfg(all(not(feature = "with-decimal"), not(feature = "with-bigdecimal")))]
+            #[cfg(not(feature = "with-decimal"))]
             decimal_library: DecimalLibrary::String,
             #[cfg(feature = "with-decimal")]
             decimal_library: DecimalLibrary::Decimal,
-            #[cfg(all(not(feature = "with-decimal"), feature = "with-bigdecimal"))]
-            decimal_library: DecimalLibrary::BigDecimal,
             json_type: "Json".into(),
             timestamp_rfc3339: false,
         }
@@ -96,15 +97,14 @@ impl TypesMapHelper {
     ) -> ConvertedType {
         let context = self.context;
 
-        if let Some(entity_column_id) = entity_column_id.as_ref() {
-            if let Some(overwrite) = context
+        if let Some(entity_column_id) = entity_column_id.as_ref()
+            && let Some(overwrite) = context
                 .types
                 .column_options
                 .get(entity_column_id)
                 .and_then(|options| options.overwrite.as_ref())
-            {
-                return overwrite.clone();
-            }
+        {
+            return overwrite.clone();
         }
 
         match column_type {
@@ -134,8 +134,6 @@ impl TypesMapHelper {
                 DecimalLibrary::String => ConvertedType::String,
                 #[cfg(feature = "with-decimal")]
                 DecimalLibrary::Decimal => ConvertedType::Decimal,
-                #[cfg(feature = "with-bigdecimal")]
-                DecimalLibrary::BigDecimal => ConvertedType::BigDecimal,
             },
             ColumnType::DateTime => match context.types.time_library {
                 TimeLibrary::String => ConvertedType::String,
@@ -360,8 +358,10 @@ impl TypesMapHelper {
                     );
                     iden_type.map(|it| TypeRef::List(Box::new(it)))
                 }
-                ColumnType::Custom(_) => None,
-                _ => None,
+                ColumnType::Custom(_) => {
+                    unimplemented!("cannot convert Custom type to graphql type")
+                }
+                _ => unimplemented!("cannot convert {:?} to graphql type", ty),
             },
         }
         .map(|ty| {
@@ -444,8 +444,6 @@ pub enum DecimalLibrary {
     String,
     #[cfg(feature = "with-decimal")]
     Decimal,
-    #[cfg(feature = "with-bigdecimal")]
-    BigDecimal,
 }
 
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
@@ -503,9 +501,6 @@ pub enum ConvertedType {
     #[cfg(feature = "with-decimal")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-decimal")))]
     Decimal,
-    #[cfg(feature = "with-bigdecimal")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "with-bigdecimal")))]
-    BigDecimal,
     #[cfg(feature = "with-postgres-array")]
     #[cfg_attr(docsrs, doc(cfg(feature = "with-postgres-array")))]
     Array(Box<ConvertedType>),
@@ -569,8 +564,6 @@ pub fn converted_type_to_sea_orm_array_type(
         ConvertedType::Uuid => Ok(sea_orm::sea_query::value::ArrayType::String),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => Ok(sea_orm::sea_query::value::ArrayType::String),
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal => Ok(sea_orm::sea_query::value::ArrayType::String),
         // #[cfg(feature = "with-ipnetwork")]
         // ConvertedType::IpNetwork => Ok(sea_orm::sea_query::value::ArrayType::String),
         // #[cfg(feature = "with-mac_address")]
@@ -632,9 +625,19 @@ pub fn converted_value_to_sea_orm_value(
             let value = value.f64()?;
             sea_orm::Value::Double(Some(value))
         }
-        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
+        ConvertedType::String | ConvertedType::Custom(_) => {
             let value = value.string()?;
             sea_orm::Value::String(Some(value.to_string()))
+        }
+        ConvertedType::Enum(type_name) => {
+            //FIXME: is enum_name the variant name or the types name?
+            let value = value.enum_name()?;
+            sea_orm::Value::Enum(OptionEnum::Some(Box::new(
+                sea_orm::sea_query::value::Enum {
+                    type_name: type_name.clone().into(),
+                    value: value.to_owned().into(),
+                },
+            )))
         }
         ConvertedType::Char => {
             let value = value.string()?;
@@ -833,20 +836,6 @@ pub fn converted_value_to_sea_orm_value(
 
             sea_orm::Value::Decimal(Some(value))
         }
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal => {
-            use std::str::FromStr;
-
-            let value =
-                sea_orm::entity::prelude::BigDecimal::from_str(value.string()?).map_err(|e| {
-                    crate::SeaographyError::TypeConversionError(
-                        e.to_string(),
-                        format!("BigDecimal - {entity_name}.{column_name}"),
-                    )
-                })?;
-
-            sea_orm::Value::BigDecimal(Some(Box::new(value)))
-        }
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
             let list_value = value
@@ -887,8 +876,9 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult
         ConvertedType::BigUnsigned => sea_orm::Value::BigUnsigned(None),
         ConvertedType::Float => sea_orm::Value::Float(None),
         ConvertedType::Double => sea_orm::Value::Double(None),
-        ConvertedType::String | ConvertedType::Enum(_) | ConvertedType::Custom(_) => {
-            sea_orm::Value::String(None)
+        ConvertedType::String | ConvertedType::Custom(_) => sea_orm::Value::String(None),
+        ConvertedType::Enum(type_name) => {
+            sea_orm::Value::Enum(OptionEnum::None(EnumTypeName::from(type_name.as_str())))
         }
         ConvertedType::Char => sea_orm::Value::Char(None),
         ConvertedType::Bytes => sea_orm::Value::Bytes(None),
@@ -920,8 +910,6 @@ pub fn converted_null_to_sea_orm_value(column_type: &ConvertedType) -> SeaResult
         ConvertedType::Uuid => sea_orm::Value::Uuid(None),
         #[cfg(feature = "with-decimal")]
         ConvertedType::Decimal => sea_orm::Value::Decimal(None),
-        #[cfg(feature = "with-bigdecimal")]
-        ConvertedType::BigDecimal => sea_orm::Value::BigDecimal(None),
         #[cfg(feature = "with-postgres-array")]
         ConvertedType::Array(ty) => {
             sea_orm::Value::Array(converted_type_to_sea_orm_array_type(ty)?, None)
