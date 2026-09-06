@@ -97,15 +97,14 @@ impl TypesMapHelper {
     ) -> ConvertedType {
         let context = self.context;
 
-        if let Some(entity_column_id) = entity_column_id.as_ref() {
-            if let Some(overwrite) = context
+        if let Some(entity_column_id) = entity_column_id.as_ref()
+            && let Some(overwrite) = context
                 .types
                 .column_options
                 .get(entity_column_id)
                 .and_then(|options| options.overwrite.as_ref())
-            {
-                return overwrite.clone();
-            }
+        {
+            return overwrite.clone();
         }
 
         match column_type {

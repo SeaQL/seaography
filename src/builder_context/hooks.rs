@@ -145,10 +145,10 @@ impl LifecycleHooksInterface for MultiLifecycleHooks {
     ) -> Option<Condition> {
         let mut cond = Condition::all();
         for hook in &self.hooks {
-            if let Some(inner_cond) = hook.entity_filter(ctx, entity, action) {
-                if !inner_cond.is_empty() {
-                    cond = cond.add(inner_cond);
-                }
+            if let Some(inner_cond) = hook.entity_filter(ctx, entity, action)
+                && !inner_cond.is_empty()
+            {
+                cond = cond.add(inner_cond);
             }
         }
         if !cond.is_empty() { Some(cond) } else { None }

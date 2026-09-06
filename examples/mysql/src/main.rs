@@ -1,8 +1,5 @@
 use actix_web::{guard, web, web::Data, App, HttpResponse, HttpServer, Result};
-use async_graphql::{
-    dynamic::*,
-    http::{playground_source, GraphQLPlaygroundConfig},
-};
+use async_graphql::{dynamic::*, http::GraphiQLSource};
 use async_graphql_actix_web::{GraphQLRequest, GraphQLResponse};
 use dotenv::dotenv;
 use sea_orm::Database;
@@ -26,7 +23,7 @@ lazy_static! {
 async fn graphql_playground() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body(playground_source(GraphQLPlaygroundConfig::new(&*ENDPOINT))))
+        .body(GraphiQLSource::default().endpoint(&ENDPOINT).finish()))
 }
 
 async fn graphql_handler(schema: web::Data<Schema>, req: GraphQLRequest) -> GraphQLResponse {

@@ -1,24 +1,31 @@
 [package]
 edition = "2021"
 name = "seaography-postgres-example"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 
 [dependencies]
 axum = { version = "0.8" }
-async-graphql-axum = { version = "7.0" }
+async-graphql-axum = { version = "8.0.0-rc.5" }
 dotenv = "0.15.0"
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tracing = { version = "0.1.37" }
 tracing-subscriber = { version = "0.3.17" }
 
 [dependencies.sea-orm]
-version = "~2.0.0-rc.40"
+version = "2"
 features = ["sqlx-postgres", "runtime-tokio-native-tls", "seaography"]
 
 [dependencies.seaography]
 path = "../../"
-version = "~2.0.0-rc.9" # seaography version
-features = ["graphql-playground", "with-decimal", "with-chrono", "with-json", "with-postgres-array", "schema-meta"]
+version = "~2.0.0-rc.10" # seaography version
+features = [
+    "graphql-playground",
+    "with-decimal",
+    "with-chrono",
+    "with-json",
+    "with-postgres-array",
+    "schema-meta",
+]
 
 [dev-dependencies]
 serde = { version = "1", features = ["derive"] }

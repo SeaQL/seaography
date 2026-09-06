@@ -375,7 +375,7 @@ pub(crate) fn sea_query_value_to_graphql_value(
         // #[cfg(feature = "with-mac_address")]
         // #[cfg_attr(docsrs, doc(cfg(feature = "with-mac_address")))]
         // sea_orm::sea_query::Value::MacAddress(value) => value.map(|it| Value::from(it.to_string())),
-        #[expect(unused)]
+        #[allow(unused)]
         _ => {
             unimplemented!("cannot convert sea_query value to graphql value {sea_query_value:?}",)
         }
