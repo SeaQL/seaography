@@ -1,6 +1,6 @@
 use async_graphql::dynamic::FieldValue;
 use itertools::Itertools;
-use sea_orm::{sea_query::ValueTuple, DynIden, Identity};
+use sea_orm::{DynIden, Identity, sea_query::ValueTuple};
 use std::any::Any;
 
 /// used to encode the primary key values of a SeaORM entity to a String

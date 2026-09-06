@@ -1,6 +1,6 @@
 use super::GuardAction;
 use async_graphql::dynamic::ResolverContext;
-use sea_orm::{entity::prelude::async_trait, Condition};
+use sea_orm::{Condition, entity::prelude::async_trait};
 use std::{any::Any, ops::Deref};
 
 pub struct LifecycleHooks(pub(crate) Box<dyn LifecycleHooksInterface>);
@@ -151,10 +151,6 @@ impl LifecycleHooksInterface for MultiLifecycleHooks {
                 }
             }
         }
-        if !cond.is_empty() {
-            Some(cond)
-        } else {
-            None
-        }
+        if !cond.is_empty() { Some(cond) } else { None }
     }
 }

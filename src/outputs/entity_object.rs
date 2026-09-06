@@ -1,12 +1,14 @@
 use async_graphql::{
-    Name, Value, dynamic::{Field, FieldFuture, Object, ObjectAccessor},
+    Name, Value,
+    dynamic::{Field, FieldFuture, Object, ObjectAccessor},
 };
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable, ModelTrait, TryIntoModel, sea_query::OptionEnum,
+    ActiveModelTrait, ColumnTrait, ColumnType, EntityName, EntityTrait, IdenStatic, Iterable,
+    ModelTrait, TryIntoModel, sea_query::OptionEnum,
 };
 
-use crate::{guard_error, EntityColumnId, OperationType, SeaResult, SeaographyError};
+use crate::{EntityColumnId, OperationType, SeaResult, SeaographyError, guard_error};
 
 /// The configuration structure for EntityObjectBuilder
 pub struct EntityObjectConfig {
@@ -36,7 +38,7 @@ impl std::default::Default for EntityObjectConfig {
     }
 }
 
-use crate::{format_variant, BuilderContext, GuardAction, TypesMapHelper};
+use crate::{BuilderContext, GuardAction, TypesMapHelper, format_variant};
 
 /// This builder produces the GraphQL object of a SeaORM entity
 #[derive(Copy, Clone)]

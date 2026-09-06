@@ -1,7 +1,7 @@
 use crate::{
+    BuilderContext, Connection, EntityInputBuilder, EntityObjectBuilder, SeaResult, TypesMapHelper,
     converted_null_to_sea_orm_value, converted_value_to_sea_orm_value, pluralize_unique,
-    sea_query_value_to_graphql_value, BuilderContext, Connection, EntityInputBuilder,
-    EntityObjectBuilder, SeaResult, TypesMapHelper,
+    sea_query_value_to_graphql_value,
 };
 use async_graphql::dynamic::{Enum, Field, FieldValue, TypeRef, Union, ValueAccessor};
 use sea_orm::{EntityTrait, ModelTrait, TryIntoModel};

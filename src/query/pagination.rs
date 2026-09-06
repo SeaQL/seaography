@@ -5,8 +5,8 @@ use sea_orm::{
 };
 
 use crate::{
-    decode_cursor, encode_cursor, BuilderContext, Connection, Edge, PageInfo, PageInput,
-    PaginationInfo, PaginationInput,
+    BuilderContext, Connection, Edge, PageInfo, PageInput, PaginationInfo, PaginationInput,
+    decode_cursor, encode_cursor,
 };
 
 /// used to parse pagination input object and apply it to statement

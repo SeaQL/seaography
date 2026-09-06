@@ -1,7 +1,7 @@
 use async_graphql::dynamic::{InputObject, InputValue, TypeRef};
 use sea_orm::EntityTrait;
 
-use crate::{pluralize_unique, BuilderContext, EntityObjectBuilder, RelatedEntityFilter};
+use crate::{BuilderContext, EntityObjectBuilder, RelatedEntityFilter, pluralize_unique};
 
 /// The configuration structure for HavingInputBuilder
 pub struct HavingInputConfig {

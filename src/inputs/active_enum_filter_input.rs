@@ -5,8 +5,8 @@ use heck::ToUpperCamelCase;
 use sea_orm::{ActiveEnum, ColumnTrait, ColumnType, Condition, DynIden, EntityTrait};
 
 use crate::{
-    format_variant, ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult,
-    SeaographyError,
+    ActiveEnumBuilder, BuilderContext, FilterInfo, FilterOperation, SeaResult, SeaographyError,
+    format_variant,
 };
 
 /// The configuration structure for ActiveEnumFilterInputConfig
