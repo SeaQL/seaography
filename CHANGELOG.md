@@ -25,6 +25,37 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 }
 ```
 
+* Support renaming custom GraphQL fields
+```rust
+use seaography::{async_graphql, CustomFields, CustomInputType, CustomOutputType};
+
+#[derive(Clone, CustomInputType, CustomOutputType)]
+#[seaography(rename_all = "camelCase")]
+struct Post {
+    #[seaography(rename = "byline")]
+    author_name: String,
+    is_public: bool,
+}
+
+struct Queries;
+
+#[CustomFields(rename_all = "camelCase")]
+impl Queries {
+    async fn echo_post(post: Post) -> async_graphql::Result<Post> {
+        Ok(post)
+    }
+}
+```
+
+```graphql
+{
+  echoPost(post: { byline: "Alice", isPublic: true }) {
+    byline
+    isPublic
+  }
+}
+```
+
 ### Bug Fixes
 
 * Trigger the `after_save` hook after update mutations

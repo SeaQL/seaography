@@ -10,7 +10,10 @@ mod custom_enum;
 mod custom_fields;
 mod custom_input_type;
 mod custom_output_type;
+mod field_attrs;
 mod util;
+
+use field_attrs::RenameRule;
 
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(seaography))]
@@ -18,6 +21,7 @@ struct Args {
     input_type_name: Option<String>,
     output_type_name: Option<String>,
     enum_name: Option<String>,
+    rename_all: Option<RenameRule>,
 }
 
 #[proc_macro_derive(CustomEnum, attributes(seaography))]
@@ -50,9 +54,9 @@ pub fn derive_custom_output_type(input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
-pub fn CustomFields(_input: TokenStream, annotated_item: TokenStream) -> TokenStream {
-    let derive_input: ItemImpl = syn::parse(annotated_item.clone()).unwrap();
-    match custom_fields::expand(derive_input, annotated_item) {
+pub fn CustomFields(input: TokenStream, annotated_item: TokenStream) -> TokenStream {
+    let derive_input: ItemImpl = syn::parse(annotated_item).unwrap();
+    match custom_fields::expand(input.into(), derive_input) {
         Ok(token_stream) => token_stream.into(),
         Err(e) => e.to_compile_error().into(),
     }
