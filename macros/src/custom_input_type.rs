@@ -5,11 +5,12 @@ use syn::{Data, DataEnum, DataStruct, DeriveInput, Error, Field, Fields, Ident};
 
 use crate::{
     Args,
+    field_attrs::{RenameRule, graphql_field_name},
     util::{EnumVariants, parse_enum_variants},
 };
 
 pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
-    let args: Args = FromDeriveInput::from_derive_input(&derive_input).unwrap();
+    let args = Args::from_derive_input(&derive_input)?;
     let ident = &derive_input.ident;
     match &derive_input.data {
         Data::Struct(data_struct) => {
@@ -21,7 +22,7 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
                 }
             };
 
-            derive_custom_input_type_struct(&derive_input, data_struct, name)
+            derive_custom_input_type_struct(&derive_input, data_struct, name, args.rename_all)
         }
         Data::Enum(data_enum) => {
             let name: TokenStream = match &args.input_type_name {
@@ -42,6 +43,7 @@ fn derive_custom_input_type_struct(
     ast: &DeriveInput,
     data: &DataStruct,
     name: TokenStream,
+    rename_all: Option<RenameRule>,
 ) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
 
@@ -54,19 +56,20 @@ fn derive_custom_input_type_struct(
     let mut dynamic_fields: Vec<TokenStream> = Vec::new();
 
     for field in fields.iter() {
-        let field_ident = &field.ident;
+        let field_ident = field.ident.as_ref().unwrap();
+        let field_name = graphql_field_name(&field.attrs, field_ident, rename_all)?;
         let field_ty = &field.ty;
 
         resolve_args.push(quote! {
             #field_ident: <#field_ty>::parse_value(
                 context,
-                input_object.get(stringify!(#field_ident))
+                input_object.get(#field_name)
             )?,
         });
 
         dynamic_fields.push(quote! {
             .field(async_graphql::dynamic::InputValue::new(
-                stringify!(#field_ident),
+                #field_name,
                 <#field_ty>::gql_input_type_ref(context),
             ))
         });

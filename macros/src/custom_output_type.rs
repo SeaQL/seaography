@@ -5,11 +5,12 @@ use syn::{Data, DataEnum, DataStruct, DeriveInput, Error, Fields, Ident};
 
 use crate::{
     Args,
+    field_attrs::{RenameRule, graphql_field_name},
     util::{EnumVariants, parse_enum_variants},
 };
 
 pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
-    let args: Args = FromDeriveInput::from_derive_input(&derive_input).unwrap();
+    let args = Args::from_derive_input(&derive_input)?;
     let orig_ident = &derive_input.ident;
     let name: TokenStream = match &args.output_type_name {
         Some(name) => quote! { #name },
@@ -17,7 +18,7 @@ pub fn expand(derive_input: DeriveInput) -> syn::Result<TokenStream> {
     };
     match &derive_input.data {
         Data::Struct(data_struct) => {
-            derive_custom_output_type_struct(&derive_input, data_struct, name)
+            derive_custom_output_type_struct(&derive_input, data_struct, name, args.rename_all)
         }
         Data::Enum(data_enum) => derive_custom_output_type_enum(&derive_input, data_enum, name),
         Data::Union(_) => Err(Error::new(
@@ -31,6 +32,7 @@ fn derive_custom_output_type_struct(
     ast: &DeriveInput,
     data: &DataStruct,
     name: TokenStream,
+    rename_all: Option<RenameRule>,
 ) -> syn::Result<TokenStream> {
     let orig_ident = &ast.ident;
     let generics = &ast.generics;
@@ -43,11 +45,12 @@ fn derive_custom_output_type_struct(
     let mut fields: Vec<TokenStream> = Vec::new();
 
     for field in named.named.iter() {
-        let field_ident = &field.ident;
+        let field_ident = field.ident.as_ref().unwrap();
+        let field_name = graphql_field_name(&field.attrs, field_ident, rename_all)?;
         let field_ty = &field.ty;
         fields.push(quote! {
             .field(async_graphql::dynamic::Field::new(
-                stringify!(#field_ident),
+                #field_name,
                 <#field_ty>::gql_output_type_ref(context),
                 move |ctx| {
                     async_graphql::dynamic::FieldFuture::new(async move {

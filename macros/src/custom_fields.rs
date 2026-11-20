@@ -1,3 +1,4 @@
+use darling::{FromMeta, ast::NestedMeta};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
@@ -5,18 +6,35 @@ use syn::{
     TypeReference, spanned::Spanned,
 };
 
-pub fn expand(
-    input: ItemImpl,
-    annotated_item: proc_macro::TokenStream,
-) -> syn::Result<TokenStream> {
+use crate::field_attrs::{RenameRule, graphql_field_name};
+
+#[derive(FromMeta)]
+struct CustomFieldsArgs {
+    rename_all: Option<RenameRule>,
+}
+
+pub fn expand(args: TokenStream, mut input: ItemImpl) -> syn::Result<TokenStream> {
+    let args = CustomFieldsArgs::from_list(&NestedMeta::parse_meta_list(args)?)?;
     let mut impl_fields: Vec<TokenStream> = Vec::new();
     let mut field_calls: Vec<TokenStream> = Vec::new();
-    for item in input.items.iter() {
+    for item in &mut input.items {
         if let ImplItem::Fn(item_fn) = item {
+            let field_name =
+                graphql_field_name(&item_fn.attrs, &item_fn.sig.ident, args.rename_all)?;
+            item_fn
+                .attrs
+                .retain(|attr| !attr.path().is_ident("seaography"));
+
             let field_fn_ident = format_field_name(&item_fn.sig.ident);
             impl_fields.push(
-                signature_to_field(&item_fn.sig, &item_fn.sig.ident, &field_fn_ident, true)
-                    .unwrap_or_else(Error::into_compile_error),
+                signature_to_field(
+                    &item_fn.sig,
+                    &item_fn.sig.ident,
+                    &field_fn_ident,
+                    &field_name,
+                    true,
+                )
+                .unwrap_or_else(Error::into_compile_error),
             );
             field_calls.push(quote! {
                 Self::#field_fn_ident(context),
@@ -24,10 +42,9 @@ pub fn expand(
         }
     }
 
-    let annotated_item = TokenStream::from(annotated_item);
     let self_ty = &input.self_ty;
     Ok(quote! {
-        #annotated_item
+        #input
 
         impl #self_ty {
             #(#impl_fields)*
@@ -52,10 +69,9 @@ fn signature_to_field(
     sig: &Signature,
     impl_fn_ident: &Ident,
     field_fn_ident: &Ident,
+    field_name: &TokenStream,
     is_member: bool,
 ) -> syn::Result<TokenStream> {
-    let fn_ident: &Ident = &sig.ident;
-    let field_name = fn_ident;
     let return_type: TokenStream = return_type_to_type_ref(&sig.output)?;
     let mut arguments: Vec<TokenStream> = Vec::new();
     let mut resolve_args: Vec<TokenStream> = Vec::new();
@@ -121,7 +137,7 @@ fn signature_to_field(
             ).map_err(|e| seaography::SeaographyError::AsyncGraphQLError(
                 format!(
                     "Error decoding {} argument {}: {}",
-                    stringify!(#field_name),
+                    #field_name,
                     stringify!(#arg_pat),
                     e,
                 ).into()
@@ -153,7 +169,7 @@ fn signature_to_field(
             #imports
 
             async_graphql::dynamic::Field::new(
-                stringify!(#field_name),
+                #field_name,
                 <#return_type>::gql_output_type_ref(context),
                 move |ctx| {
                     async_graphql::dynamic::FieldFuture::new(async move {
